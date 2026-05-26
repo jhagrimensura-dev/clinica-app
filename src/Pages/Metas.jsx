@@ -49,6 +49,9 @@ export default function Metas() {
   const [inputRecordeValor, setInputRecordeValor] = useState('')
 
   const [diasSelecionados, setDiasSelecionados] = useState(() => new Set())
+  const [diasValores, setDiasValores] = useState({})
+  const [diaEditando, setDiaEditando] = useState(null)
+  const [inputTempValor, setInputTempValor] = useState('')
 
   const calendario = gerarCalendario(ano, mes)
 
@@ -58,6 +61,21 @@ export default function Metas() {
     else if (novoMes > 11) { setMes(0); setAno(a => a + 1) }
     else setMes(novoMes)
     setDiasSelecionados(new Set())
+    setDiasValores({})
+    setDiaEditando(null)
+  }
+
+  const iniciarEdicaoValor = (e, key) => {
+    e.stopPropagation()
+    setDiaEditando(key)
+    setInputTempValor(diasValores[key] !== undefined ? String(diasValores[key]) : '')
+  }
+
+  const salvarEdicaoValor = (key) => {
+    const num = parseFloat(String(inputTempValor).replace(/\./g, '').replace(',', '.'))
+    if (!isNaN(num) && num >= 0) setDiasValores(prev => ({ ...prev, [key]: num }))
+    else if (inputTempValor === '') setDiasValores(prev => { const n = { ...prev }; delete n[key]; return n })
+    setDiaEditando(null)
   }
 
   const toggleDia = (si, di) => {
@@ -241,23 +259,57 @@ export default function Metas() {
           <div key={si} className="grid grid-cols-7 gap-1 mb-1">
             {semana.map((dia, di) => {
               const isMesAtual = !dia.mes
-              const isSelected = diasSelecionados.has(`${si}-${di}`)
+              const key = `${si}-${di}`
+              const isSelected = diasSelecionados.has(key)
 
-              if (!isMesAtual) return <div key={di} className="min-h-[60px]" />
+              if (!isMesAtual) return <div key={di} className="min-h-[72px]" />
 
-              const bg = isSelected
-                ? 'bg-yellow-50 border border-yellow-200'
-                : 'bg-white border border-gray-100'
+              const valorNum = diasValores[key]
+              const temValor = valorNum !== undefined && valorNum !== null
+
+              const bg = !isSelected
+                ? 'bg-white border border-gray-100'
+                : !temValor
+                  ? 'bg-yellow-50 border border-yellow-200'
+                  : valorNum >= metaDiariaOriginal
+                    ? 'bg-green-50 border border-green-200'
+                    : 'bg-red-50 border border-red-200'
 
               return (
                 <div
                   key={di}
                   onClick={() => toggleDia(si, di)}
-                  className={`rounded-xl p-2 min-h-[60px] ${bg} cursor-pointer hover:border-yellow-300 transition-all`}
+                  className={`rounded-xl p-2 min-h-[72px] ${bg} cursor-pointer transition-all`}
                 >
-                  <p className="text-xs font-bold text-gray-700">{dia.dia}</p>
-                  {isSelected && diasAtendimento > 0 && (
-                    <p className="text-xs text-yellow-600 mt-1 font-medium">{Math.round(metaDiariaOriginal).toLocaleString('pt-BR')}</p>
+                  <p className="text-sm font-bold text-gray-800">{dia.dia}</p>
+                  {isSelected && (
+                    <div className="mt-1">
+                      {diaEditando === key ? (
+                        <div onClick={e => e.stopPropagation()}>
+                          <input
+                            autoFocus
+                            type="number"
+                            value={inputTempValor}
+                            onChange={e => setInputTempValor(e.target.value)}
+                            onFocus={e => e.target.select()}
+                            onBlur={() => salvarEdicaoValor(key)}
+                            onKeyDown={e => { if (e.key === 'Enter') salvarEdicaoValor(key); if (e.key === 'Escape') setDiaEditando(null) }}
+                            className="w-full text-sm font-bold outline-none bg-transparent border-b border-gray-400"
+                            placeholder="0"
+                          />
+                        </div>
+                      ) : (
+                        <p
+                          className="text-sm font-bold text-gray-800 cursor-text"
+                          onClick={e => iniciarEdicaoValor(e, key)}
+                        >
+                          {temValor ? valorNum.toLocaleString('pt-BR') : <span className="text-gray-300 text-xs font-normal">—</span>}
+                        </p>
+                      )}
+                      {metaDiariaOriginal > 0 && (
+                        <p className="text-xs text-gray-400">/{Math.round(metaDiariaOriginal).toLocaleString('pt-BR')}</p>
+                      )}
+                    </div>
                   )}
                 </div>
               )
@@ -266,7 +318,9 @@ export default function Metas() {
         ))}
 
         <div className="flex items-center gap-6 mt-4 pt-4 border-t border-gray-100">
-          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-200"></div><span className="text-xs text-gray-500">Dia de atendimento</span></div>
+          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-200"></div><span className="text-xs text-gray-500">Selecionado</span></div>
+          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-300"></div><span className="text-xs text-gray-500">Meta batida</span></div>
+          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-300"></div><span className="text-xs text-gray-500">Abaixo da meta</span></div>
           <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-gray-200"></div><span className="text-xs text-gray-500">Não selecionado</span></div>
         </div>
       </div>
