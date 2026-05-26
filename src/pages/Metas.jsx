@@ -262,7 +262,7 @@ export default function Metas() {
               const key = `${si}-${di}`
               const isSelected = diasSelecionados.has(key)
 
-              if (!isMesAtual) return <div key={di} className="min-h-[72px]" />
+              if (!isMesAtual) return <div key={di} className="min-h-[72px] rounded-xl p-2"><p className="text-sm font-bold text-gray-300">{dia.dia}</p></div>
 
               const valorNum = diasValores[key]
               const temValor = valorNum !== undefined && valorNum !== null
