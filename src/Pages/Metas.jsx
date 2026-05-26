@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 const calendario = [
   [
     { dia: 26, mes: 'ant' }, { dia: 27, mes: 'ant' }, { dia: 28, mes: 'ant' }, { dia: 29, mes: 'ant' }, { dia: 30, mes: 'ant' }, { dia: 1, status: 'futuro' }, { dia: 2, status: 'futuro' }
@@ -20,6 +22,88 @@ const calendario = [
 ]
 
 export default function Metas() {
+  const [metaValor, setMetaValor] = useState(200000)
+  const [editando, setEditando] = useState(false)
+  const [inputValor, setInputValor] = useState('')
+
+  const [superMetaValor, setSuperMetaValor] = useState(null)
+  const [editandoSuper, setEditandoSuper] = useState(false)
+  const [inputSuperValor, setInputSuperValor] = useState('')
+
+  const [recordeValor, setRecordeValor] = useState(142500)
+  const [editandoRecorde, setEditandoRecorde] = useState(false)
+  const [inputRecordeValor, setInputRecordeValor] = useState('')
+
+  const diasAtendimento = 15
+  const superMeta = superMetaValor ?? metaValor * 1.1
+  const metaDiariaOriginal = metaValor / diasAtendimento
+
+  const realizado = calendario.flat().reduce((acc, dia) => {
+    if (dia.status === 'abaixo' || dia.status === 'acima') return acc + (dia.real || 0)
+    return acc
+  }, 0)
+
+  const diasRestantes = calendario.flat().filter(dia =>
+    (dia.status === 'futuro' && dia.meta) || dia.status === 'selecionado'
+  ).length
+
+  const metaDiariaAjustada = diasRestantes > 0
+    ? (metaValor - realizado) / diasRestantes
+    : metaDiariaOriginal
+
+  const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+
+  const iniciarEdicao = () => {
+    setInputValor(String(metaValor))
+    setEditando(true)
+  }
+
+  const salvarEdicao = () => {
+    const limpo = inputValor.replace(/\./g, '').replace(',', '.')
+    const valor = parseFloat(limpo)
+    if (!isNaN(valor) && valor > 0) setMetaValor(valor)
+    setEditando(false)
+  }
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') salvarEdicao()
+    if (e.key === 'Escape') setEditando(false)
+  }
+
+  const iniciarEdicaoSuper = () => {
+    setInputSuperValor(String(superMeta))
+    setEditandoSuper(true)
+  }
+
+  const salvarEdicaoSuper = () => {
+    const limpo = inputSuperValor.replace(/\./g, '').replace(',', '.')
+    const valor = parseFloat(limpo)
+    if (!isNaN(valor) && valor > 0) setSuperMetaValor(valor)
+    setEditandoSuper(false)
+  }
+
+  const handleKeyDownSuper = (e) => {
+    if (e.key === 'Enter') salvarEdicaoSuper()
+    if (e.key === 'Escape') setEditandoSuper(false)
+  }
+
+  const iniciarEdicaoRecorde = () => {
+    setInputRecordeValor(String(recordeValor))
+    setEditandoRecorde(true)
+  }
+
+  const salvarEdicaoRecorde = () => {
+    const limpo = inputRecordeValor.replace(/\./g, '').replace(',', '.')
+    const valor = parseFloat(limpo)
+    if (!isNaN(valor) && valor > 0) setRecordeValor(valor)
+    setEditandoRecorde(false)
+  }
+
+  const handleKeyDownRecorde = (e) => {
+    if (e.key === 'Enter') salvarEdicaoRecorde()
+    if (e.key === 'Escape') setEditandoRecorde(false)
+  }
+
   return (
     <div className="p-6 space-y-6">
       <div>
@@ -33,29 +117,133 @@ export default function Metas() {
           <div className="flex justify-between items-start mb-3">
             <div className="flex items-center gap-2">
               <span className="text-yellow-400 text-lg">🎯</span>
+              <p className="text-sm font-semibold text-gray-700">Ideal</p>
+            </div>
+            {!editando && (
+              <button onClick={iniciarEdicao} className="text-gray-300 hover:text-gray-500 text-sm">✏️</button>
+            )}
+          </div>
+          {editando ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1">
+                <span className="text-lg font-bold text-gray-500">R$</span>
+                <input
+                  autoFocus
+                  type="text"
+                  value={inputValor}
+                  onChange={(e) => setInputValor(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="flex-1 text-2xl font-bold text-gray-900 border-b-2 border-pink-400 outline-none bg-transparent w-full"
+                />
+              </div>
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={salvarEdicao}
+                  className="flex-1 bg-pink-500 hover:bg-pink-600 text-white text-xs font-semibold py-1.5 rounded-lg transition-colors"
+                >
+                  Salvar
+                </button>
+                <button
+                  onClick={() => setEditando(false)}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-semibold py-1.5 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-3xl font-bold text-gray-900">{fmt(metaValor)}</p>
+          )}
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <div className="flex justify-between items-start mb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-green-500 text-lg">📈</span>
               <p className="text-sm font-semibold text-gray-700">Meta</p>
             </div>
-            <button className="text-gray-300 hover:text-gray-500 text-sm">✏️</button>
+            {!editandoSuper && (
+              <button onClick={iniciarEdicaoSuper} className="text-gray-300 hover:text-gray-500 text-sm">✏️</button>
+            )}
           </div>
-          <p className="text-3xl font-bold text-gray-900">R$ 200.000,00</p>
+          {editandoSuper ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1">
+                <span className="text-lg font-bold text-gray-400">R$</span>
+                <input
+                  autoFocus
+                  type="text"
+                  value={inputSuperValor}
+                  onChange={(e) => setInputSuperValor(e.target.value)}
+                  onKeyDown={handleKeyDownSuper}
+                  className="flex-1 text-2xl font-bold text-green-500 border-b-2 border-green-400 outline-none bg-transparent w-full"
+                />
+              </div>
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={salvarEdicaoSuper}
+                  className="flex-1 bg-green-500 hover:bg-green-600 text-white text-xs font-semibold py-1.5 rounded-lg transition-colors"
+                >
+                  Salvar
+                </button>
+                <button
+                  onClick={() => setEditandoSuper(false)}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-semibold py-1.5 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="text-3xl font-bold text-green-500">{fmt(superMeta)}</p>
+            </>
+          )}
         </div>
 
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-green-500 text-lg">📈</span>
-            <p className="text-sm font-semibold text-gray-700">Super Meta</p>
+          <div className="flex justify-between items-start mb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-orange-400 text-lg">🏆</span>
+              <p className="text-sm font-semibold text-gray-700">Super Meta</p>
+            </div>
+            {!editandoRecorde && (
+              <button onClick={iniciarEdicaoRecorde} className="text-gray-300 hover:text-gray-500 text-sm">✏️</button>
+            )}
           </div>
-          <p className="text-3xl font-bold text-green-500">R$ 220.000,00</p>
-          <p className="text-xs text-gray-400 mt-1">+10% da meta principal</p>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-orange-400 text-lg">🏆</span>
-            <p className="text-sm font-semibold text-gray-700">Recorde Mensal</p>
-          </div>
-          <p className="text-3xl font-bold text-orange-400">R$ 142.500,00</p>
-          <p className="text-xs text-gray-400 mt-1">maior faturamento histórico</p>
+          {editandoRecorde ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1">
+                <span className="text-lg font-bold text-gray-400">R$</span>
+                <input
+                  autoFocus
+                  type="text"
+                  value={inputRecordeValor}
+                  onChange={(e) => setInputRecordeValor(e.target.value)}
+                  onKeyDown={handleKeyDownRecorde}
+                  className="flex-1 text-2xl font-bold text-orange-400 border-b-2 border-orange-400 outline-none bg-transparent w-full"
+                />
+              </div>
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={salvarEdicaoRecorde}
+                  className="flex-1 bg-orange-400 hover:bg-orange-500 text-white text-xs font-semibold py-1.5 rounded-lg transition-colors"
+                >
+                  Salvar
+                </button>
+                <button
+                  onClick={() => setEditandoRecorde(false)}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-semibold py-1.5 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="text-3xl font-bold text-blue-500">{fmt(recordeValor)}</p>
+            </>
+          )}
         </div>
       </div>
 
@@ -66,7 +254,7 @@ export default function Metas() {
             <p className="text-sm text-gray-500">Dias de Atendimento</p>
             <span className="text-pink-400">📅</span>
           </div>
-          <p className="text-3xl font-bold text-gray-900">15</p>
+          <p className="text-3xl font-bold text-gray-900">{diasAtendimento}</p>
           <p className="text-xs text-gray-400 mt-1">dias selecionados</p>
         </div>
 
@@ -75,7 +263,7 @@ export default function Metas() {
             <p className="text-sm text-gray-500">Meta Diária Original</p>
             <span className="text-pink-400">📊</span>
           </div>
-          <p className="text-3xl font-bold text-gray-900">R$ 13.333,33</p>
+          <p className="text-3xl font-bold text-gray-900">{fmt(metaDiariaOriginal)}</p>
           <p className="text-xs text-gray-400 mt-1">por dia útil</p>
         </div>
 
@@ -84,7 +272,7 @@ export default function Metas() {
             <p className="text-sm text-gray-500">Meta Diária Ajustada</p>
             <span className="text-orange-400">🔥</span>
           </div>
-          <p className="text-3xl font-bold text-gray-900">R$ 20.335,82</p>
+          <p className="text-3xl font-bold text-gray-900">{fmt(metaDiariaAjustada)}</p>
           <p className="text-xs text-gray-400 mt-1">compensando déficit</p>
         </div>
       </div>
