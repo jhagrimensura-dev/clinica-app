@@ -1,19 +1,57 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useState, useEffect } from 'react'
 
 const ClinicaContext = createContext()
+
+function serializeDados(dadosPorMes) {
+  const result = {}
+  for (const [key, value] of Object.entries(dadosPorMes)) {
+    result[key] = {
+      diasSelecionados: [...value.diasSelecionados],
+      diasValores: value.diasValores,
+    }
+  }
+  return result
+}
+
+function deserializeDados(data) {
+  if (!data) return {}
+  const result = {}
+  for (const [key, value] of Object.entries(data)) {
+    result[key] = {
+      diasSelecionados: new Set(value.diasSelecionados || []),
+      diasValores: value.diasValores || {},
+    }
+  }
+  return result
+}
+
+function load(key, fallback, deserialize) {
+  try {
+    const stored = localStorage.getItem(key)
+    if (stored === null) return fallback
+    const parsed = JSON.parse(stored)
+    return deserialize ? deserialize(parsed) : parsed
+  } catch {
+    return fallback
+  }
+}
 
 export function ClinicaProvider({ children }) {
   const hoje = new Date()
   const [ano, setAno] = useState(hoje.getFullYear())
   const [mes, setMes] = useState(hoje.getMonth())
 
-  const [metaValor, setMetaValor] = useState(200000)
-  const [superMetaValor, setSuperMetaValor] = useState(null)
-  const [recordeValor, setRecordeValor] = useState(142500)
+  const [metaValor, setMetaValor] = useState(() => load('clinica_metaValor', 200000, null))
+  const [superMetaValor, setSuperMetaValor] = useState(() => load('clinica_superMetaValor', null, null))
+  const [recordeValor, setRecordeValor] = useState(() => load('clinica_recordeValor', 142500, null))
+  const [dadosPorMes, setDadosPorMes] = useState(() => load('clinica_dadosPorMes', {}, deserializeDados))
+  const [postsPorMes, setPostsPorMes] = useState(() => load('clinica_postsPorMes', {}, null))
 
-  // Dados separados por mês: chave = "ano-mes"
-  const [dadosPorMes, setDadosPorMes] = useState({})
-  const [postsPorMes, setPostsPorMes] = useState({})
+  useEffect(() => { localStorage.setItem('clinica_metaValor', JSON.stringify(metaValor)) }, [metaValor])
+  useEffect(() => { localStorage.setItem('clinica_superMetaValor', JSON.stringify(superMetaValor)) }, [superMetaValor])
+  useEffect(() => { localStorage.setItem('clinica_recordeValor', JSON.stringify(recordeValor)) }, [recordeValor])
+  useEffect(() => { localStorage.setItem('clinica_dadosPorMes', JSON.stringify(serializeDados(dadosPorMes))) }, [dadosPorMes])
+  useEffect(() => { localStorage.setItem('clinica_postsPorMes', JSON.stringify(postsPorMes)) }, [postsPorMes])
 
   const mesKey = `${ano}-${mes}`
 
