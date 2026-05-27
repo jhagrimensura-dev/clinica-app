@@ -62,8 +62,6 @@ export default function Metas() {
     if (novoMes < 0) { setMes(11); setAno(a => a - 1) }
     else if (novoMes > 11) { setMes(0); setAno(a => a + 1) }
     else setMes(novoMes)
-    setDiasSelecionados(new Set())
-    setDiasValores({})
     setDiaEditando(null)
   }
 

@@ -11,8 +11,39 @@ export function ClinicaProvider({ children }) {
   const [superMetaValor, setSuperMetaValor] = useState(null)
   const [recordeValor, setRecordeValor] = useState(142500)
 
-  const [diasSelecionados, setDiasSelecionados] = useState(() => new Set())
-  const [diasValores, setDiasValores] = useState({})
+  // Dados separados por mês: chave = "ano-mes"
+  const [dadosPorMes, setDadosPorMes] = useState({})
+  const [postsPorMes, setPostsPorMes] = useState({})
+
+  const mesKey = `${ano}-${mes}`
+
+  const dadosAtual = dadosPorMes[mesKey] || { diasSelecionados: new Set(), diasValores: {} }
+  const diasSelecionados = dadosAtual.diasSelecionados
+  const diasValores = dadosAtual.diasValores
+  const posts = postsPorMes[mesKey] || []
+
+  const setDiasSelecionados = (updater) => {
+    setDadosPorMes(prev => {
+      const atual = prev[mesKey] || { diasSelecionados: new Set(), diasValores: {} }
+      const novo = typeof updater === 'function' ? updater(atual.diasSelecionados) : updater
+      return { ...prev, [mesKey]: { ...atual, diasSelecionados: novo } }
+    })
+  }
+
+  const setDiasValores = (updater) => {
+    setDadosPorMes(prev => {
+      const atual = prev[mesKey] || { diasSelecionados: new Set(), diasValores: {} }
+      const novo = typeof updater === 'function' ? updater(atual.diasValores) : updater
+      return { ...prev, [mesKey]: { ...atual, diasValores: novo } }
+    })
+  }
+
+  const setPosts = (updater) => {
+    setPostsPorMes(prev => {
+      const atual = prev[mesKey] || []
+      return { ...prev, [mesKey]: typeof updater === 'function' ? updater(atual) : updater }
+    })
+  }
 
   const superMeta = superMetaValor ?? metaValor * 1.1
   const diasAtendimento = diasSelecionados.size
@@ -29,6 +60,7 @@ export function ClinicaProvider({ children }) {
       recordeValor, setRecordeValor,
       diasSelecionados, setDiasSelecionados,
       diasValores, setDiasValores,
+      posts, setPosts,
       superMeta,
       diasAtendimento,
       metaDiaria,

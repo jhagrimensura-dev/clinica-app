@@ -1,4 +1,26 @@
 import { useState } from 'react'
+import { useClinica } from '../context/ClinicaContext'
+
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+
+function gerarCalendario(ano, mes) {
+  const primeiroDia = new Date(ano, mes, 1).getDay()
+  const diasNoMes = new Date(ano, mes + 1, 0).getDate()
+  const diasMesAnterior = new Date(ano, mes, 0).getDate()
+  const semanas = []
+  let semana = []
+  for (let i = primeiroDia - 1; i >= 0; i--) semana.push({ dia: diasMesAnterior - i, mes: 'ant' })
+  for (let dia = 1; dia <= diasNoMes; dia++) {
+    semana.push({ dia })
+    if (semana.length === 7) { semanas.push(semana); semana = [] }
+  }
+  if (semana.length > 0) {
+    let prox = 1
+    while (semana.length < 7) semana.push({ dia: prox++, mes: 'prox' })
+    semanas.push(semana)
+  }
+  return semanas
+}
 
 const TIPOS = [
   { label: 'Caso',       cor: 'bg-yellow-100 text-yellow-700' },
@@ -10,17 +32,6 @@ const TIPOS = [
 
 const FORMATOS = ['Reels', 'Foto', 'Carrossel', 'Stories']
 
-const semanas = [
-  [
-    { dia: 26, mes: 'ant' }, { dia: 27, mes: 'ant' }, { dia: 28, mes: 'ant' }, { dia: 29, mes: 'ant' }, { dia: 30, mes: 'ant' }, { dia: 1 }, { dia: 2 }
-  ],
-  [{ dia: 3 }, { dia: 4 }, { dia: 5 }, { dia: 6 }, { dia: 7 }, { dia: 8 }, { dia: 9 }],
-  [{ dia: 10 }, { dia: 11 }, { dia: 12 }, { dia: 13 }, { dia: 14 }, { dia: 15 }, { dia: 16 }],
-  [{ dia: 17 }, { dia: 18 }, { dia: 19 }, { dia: 20 }, { dia: 21 }, { dia: 22 }, { dia: 23 }],
-  [{ dia: 24 }, { dia: 25 }, { dia: 26 }, { dia: 27 }, { dia: 28 }, { dia: 29 }, { dia: 30 }],
-  [{ dia: 31 }, { dia: 1, mes: 'prox' }, { dia: 2, mes: 'prox' }, { dia: 3, mes: 'prox' }, { dia: 4, mes: 'prox' }, { dia: 5, mes: 'prox' }, { dia: 6, mes: 'prox' }],
-]
-
 const postsIniciais = []
 
 const corDoTipo = (tipo) => TIPOS.find(t => t.label === tipo)?.cor || 'bg-gray-100 text-gray-600'
@@ -29,6 +40,9 @@ const hoje = new Date()
 const dataHoje = `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`
 
 export default function SocialMedia() {
+  const { mes, ano, posts, setPosts } = useClinica()
+  const semanas = gerarCalendario(ano, mes)
+
   const [trafego, setTrafego] = useState(4905.66)
   const [editandoTrafego, setEditandoTrafego] = useState(false)
   const [inputTrafego, setInputTrafego] = useState('')
@@ -36,8 +50,6 @@ export default function SocialMedia() {
   const [seguidores, setSeguidores] = useState(458)
   const [editandoSeguidores, setEditandoSeguidores] = useState(false)
   const [inputSeguidores, setInputSeguidores] = useState('')
-
-  const [posts, setPosts] = useState(postsIniciais)
 
   const [modal, setModal] = useState(null) // null | { dia }
   const [form, setForm] = useState({ data: '', formato: '', tipo: '', link: '', impulsionado: false })
@@ -60,8 +72,8 @@ export default function SocialMedia() {
 
   const abrirModal = (dia) => {
     const dd = String(dia).padStart(2, '0')
-    const mm = String(hoje.getMonth() + 1).padStart(2, '0')
-    setForm({ data: `${dd}/${mm}/${hoje.getFullYear()}`, formato: '', tipo: '', link: '', impulsionado: false })
+    const mm = String(mes + 1).padStart(2, '0')
+    setForm({ data: `${dd}/${mm}/${ano}`, formato: '', tipo: '', link: '', impulsionado: false })
     setModal({ dia })
   }
 
@@ -182,7 +194,7 @@ export default function SocialMedia() {
       {/* Calendário de Posts */}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <div className="mb-4">
-          <h2 className="text-base font-bold text-gray-800">Calendário de Posts</h2>
+          <h2 className="text-base font-bold text-gray-800">Calendário de Posts — {MESES[mes]} {ano}</h2>
           <p className="text-xs text-gray-400 mt-1">Clique em um dia para adicionar um post</p>
         </div>
 
