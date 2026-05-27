@@ -21,18 +21,7 @@ const semanas = [
   [{ dia: 31 }, { dia: 1, mes: 'prox' }, { dia: 2, mes: 'prox' }, { dia: 3, mes: 'prox' }, { dia: 4, mes: 'prox' }, { dia: 5, mes: 'prox' }, { dia: 6, mes: 'prox' }],
 ]
 
-const postsIniciais = [
-  { id: 1, dia: 4, tipo: 'Caso', formato: 'Reels', link: '', impulsionado: false },
-  { id: 2, dia: 5, tipo: 'Caso', formato: 'Foto', link: '', impulsionado: false },
-  { id: 3, dia: 6, tipo: 'Caso', formato: 'Carrossel', link: '', impulsionado: false },
-  { id: 4, dia: 8, tipo: 'Trend', formato: 'Reels', link: '', impulsionado: false },
-  { id: 5, dia: 10, tipo: 'Respiro', formato: 'Foto', link: '', impulsionado: false },
-  { id: 6, dia: 11, tipo: 'Caso', formato: 'Reels', link: '', impulsionado: true },
-  { id: 7, dia: 12, tipo: 'Experiência', formato: 'Carrossel', link: '', impulsionado: false },
-  { id: 8, dia: 13, tipo: 'Caso', formato: 'Reels', link: '', impulsionado: false },
-  { id: 9, dia: 14, tipo: 'Trend', formato: 'Reels', link: '', impulsionado: true },
-  { id: 10, dia: 15, tipo: 'Caso', formato: 'Foto', link: '', impulsionado: false },
-]
+const postsIniciais = []
 
 const corDoTipo = (tipo) => TIPOS.find(t => t.label === tipo)?.cor || 'bg-gray-100 text-gray-600'
 
