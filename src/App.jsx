@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ClinicaProvider } from './context/ClinicaContext'
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
 import Dashboard from './pages/Dashboard'
@@ -122,12 +123,14 @@ export default function App() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar active={active} setActive={setActive} />
-      <div className="flex-1 ml-52 flex flex-col">
-        <Header view={view} setView={setView} mesIndex={mesIndex} setMesIndex={setMesIndex} ano={ano} />
-        <main className="flex-1">{renderPage()}</main>
+    <ClinicaProvider>
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar active={active} setActive={setActive} />
+        <div className="flex-1 ml-52 flex flex-col">
+          <Header view={view} setView={setView} mesIndex={mesIndex} setMesIndex={setMesIndex} ano={ano} />
+          <main className="flex-1">{renderPage()}</main>
+        </div>
       </div>
-    </div>
+    </ClinicaProvider>
   )
 }

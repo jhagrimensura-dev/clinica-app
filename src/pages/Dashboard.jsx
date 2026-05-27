@@ -1,4 +1,11 @@
+import { useClinica } from '../context/ClinicaContext'
+
 export default function Dashboard() {
+  const { metaValor, faturamentoTotal, porcentagemMeta, diasAtendimento, metaDiaria } = useClinica()
+
+  const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  const pct = Math.min(porcentagemMeta, 100).toFixed(1)
+
   return (
     <div className="p-6 space-y-6">
       <div>
@@ -13,12 +20,12 @@ export default function Dashboard() {
             <p className="text-sm text-gray-500 font-medium">Faturamento Total</p>
             <span className="text-pink-400 text-lg">💰</span>
           </div>
-          <p className="text-3xl font-bold text-gray-900 mb-1">R$ 61.749</p>
-          <p className="text-xs text-gray-400 mb-2">Meta: R$ 200.000</p>
+          <p className="text-3xl font-bold text-gray-900 mb-1">{fmt(faturamentoTotal)}</p>
+          <p className="text-xs text-gray-400 mb-2">Meta: {fmt(metaValor)}</p>
           <div className="w-full bg-gray-100 rounded-full h-2 mb-1">
-            <div className="bg-pink-400 h-2 rounded-full" style={{ width: '30.9%' }}></div>
+            <div className="bg-pink-400 h-2 rounded-full transition-all" style={{ width: `${pct}%` }}></div>
           </div>
-          <p className="text-xs text-pink-500 font-medium mb-4">30.9% da meta</p>
+          <p className="text-xs text-pink-500 font-medium mb-4">{pct}% da meta</p>
           <div className="space-y-2 pt-2 border-t border-gray-100">
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Novos</span>
@@ -36,11 +43,9 @@ export default function Dashboard() {
             <p className="text-sm text-gray-500 font-medium">Dias de Atendimento</p>
             <span className="text-pink-400 text-lg">📅</span>
           </div>
-          <p className="text-3xl font-bold text-gray-900 mb-3">8 / 15</p>
+          <p className="text-3xl font-bold text-gray-900 mb-3">{diasAtendimento}</p>
           <div className="space-y-1 text-sm text-gray-500">
-            <p>Dia original: R$ 13.333</p>
-            <p>Dia ajustado: R$ 20.336</p>
-            <p className="font-bold text-gray-800 mt-2">53% atendidos</p>
+            <p>Meta diária: {diasAtendimento > 0 ? fmt(metaDiaria) : '—'}</p>
           </div>
         </div>
 

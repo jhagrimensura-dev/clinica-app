@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useClinica } from '../context/ClinicaContext'
 
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
@@ -32,24 +33,25 @@ function gerarCalendario(ano, mes) {
 }
 
 export default function Metas() {
-  const hoje = new Date()
-  const [ano, setAno] = useState(hoje.getFullYear())
-  const [mes, setMes] = useState(hoje.getMonth())
+  const {
+    ano, setAno, mes, setMes,
+    metaValor, setMetaValor,
+    superMetaValor, setSuperMetaValor,
+    recordeValor, setRecordeValor,
+    diasSelecionados, setDiasSelecionados,
+    diasValores, setDiasValores,
+    superMeta, diasAtendimento, metaDiaria,
+  } = useClinica()
 
-  const [metaValor, setMetaValor] = useState(200000)
   const [editando, setEditando] = useState(false)
   const [inputValor, setInputValor] = useState('')
 
-  const [superMetaValor, setSuperMetaValor] = useState(null)
   const [editandoSuper, setEditandoSuper] = useState(false)
   const [inputSuperValor, setInputSuperValor] = useState('')
 
-  const [recordeValor, setRecordeValor] = useState(142500)
   const [editandoRecorde, setEditandoRecorde] = useState(false)
   const [inputRecordeValor, setInputRecordeValor] = useState('')
 
-  const [diasSelecionados, setDiasSelecionados] = useState(() => new Set())
-  const [diasValores, setDiasValores] = useState({})
   const [diaEditando, setDiaEditando] = useState(null)
   const [inputTempValor, setInputTempValor] = useState('')
 
@@ -90,9 +92,7 @@ export default function Metas() {
     })
   }
 
-  const superMeta = superMetaValor ?? metaValor * 1.1
-  const diasAtendimento = diasSelecionados.size
-  const metaDiariaOriginal = diasAtendimento > 0 ? metaValor / diasAtendimento : 0
+  const metaDiariaOriginal = metaDiaria
 
   const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 

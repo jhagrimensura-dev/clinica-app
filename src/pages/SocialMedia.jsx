@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 const posts = [
   { id: 1, dia: 1, tipo: 'Caso', cor: 'bg-yellow-100 text-yellow-700', alcance: 1 },
   { id: 2, dia: 2, tipo: null, cor: '', alcance: null },
@@ -42,6 +44,30 @@ const semanas = [
 ]
 
 export default function SocialMedia() {
+  const [trafego, setTrafego] = useState(4905.66)
+  const [editandoTrafego, setEditandoTrafego] = useState(false)
+  const [inputTrafego, setInputTrafego] = useState('')
+
+  const [seguidores, setSeguidores] = useState(458)
+  const [editandoSeguidores, setEditandoSeguidores] = useState(false)
+  const [inputSeguidores, setInputSeguidores] = useState('')
+
+  const porSeguidor = seguidores > 0 ? (trafego / seguidores).toFixed(2).replace('.', ',') : '—'
+  const leads = 59
+  const porLead = leads > 0 ? (trafego / leads).toFixed(2).replace('.', ',') : '—'
+
+  const salvarTrafego = () => {
+    const v = parseFloat(inputTrafego.replace(/\./g, '').replace(',', '.'))
+    if (!isNaN(v) && v >= 0) setTrafego(v)
+    setEditandoTrafego(false)
+  }
+
+  const salvarSeguidores = () => {
+    const v = parseInt(inputSeguidores.replace(/\D/g, ''))
+    if (!isNaN(v) && v >= 0) setSeguidores(v)
+    setEditandoSeguidores(false)
+  }
+
   return (
     <div className="p-6 space-y-6">
       {/* Título */}
@@ -61,12 +87,24 @@ export default function SocialMedia() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex justify-between items-start mb-1">
             <p className="text-sm text-gray-500 font-medium">Tráfego Investido</p>
-            <span className="text-pink-400">📈</span>
+            {!editandoTrafego && <button onClick={() => { setInputTrafego(String(trafego)); setEditandoTrafego(true) }} className="text-gray-300 hover:text-gray-500 text-sm">✏️</button>}
           </div>
-          <div className="flex items-center gap-2">
-            <p className="text-2xl font-bold text-gray-900">R$ 4.905,66</p>
-            <button className="text-gray-300 hover:text-gray-500 text-sm">✏️</button>
-          </div>
+          {editandoTrafego ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1">
+                <span className="text-sm font-bold text-gray-400">R$</span>
+                <input autoFocus type="text" value={inputTrafego} onChange={e => setInputTrafego(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') salvarTrafego(); if (e.key === 'Escape') setEditandoTrafego(false) }}
+                  className="flex-1 text-2xl font-bold text-gray-900 border-b-2 border-pink-400 outline-none bg-transparent" />
+              </div>
+              <div className="flex gap-2">
+                <button onClick={salvarTrafego} className="flex-1 bg-pink-500 hover:bg-pink-600 text-white text-xs font-semibold py-1.5 rounded-lg transition-colors">Salvar</button>
+                <button onClick={() => setEditandoTrafego(false)} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-semibold py-1.5 rounded-lg transition-colors">Cancelar</button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-2xl font-bold text-gray-900">R$ {trafego.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+          )}
           <p className="text-xs text-gray-400 mt-1">Investimento do mês</p>
         </div>
 
@@ -74,13 +112,22 @@ export default function SocialMedia() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex justify-between items-start mb-1">
             <p className="text-sm text-gray-500 font-medium">Seguidores</p>
-            <span className="text-pink-400">👥</span>
+            {!editandoSeguidores && <button onClick={() => { setInputSeguidores(String(seguidores)); setEditandoSeguidores(true) }} className="text-gray-300 hover:text-gray-500 text-sm">✏️</button>}
           </div>
-          <div className="flex items-center gap-2">
-            <p className="text-2xl font-bold text-gray-900">458</p>
-            <button className="text-gray-300 hover:text-gray-500 text-sm">✏️</button>
-          </div>
-          <p className="text-xs text-gray-400 mt-1">R$ 10,71 por seguidor</p>
+          {editandoSeguidores ? (
+            <div className="space-y-2">
+              <input autoFocus type="text" value={inputSeguidores} onChange={e => setInputSeguidores(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') salvarSeguidores(); if (e.key === 'Escape') setEditandoSeguidores(false) }}
+                className="w-full text-2xl font-bold text-gray-900 border-b-2 border-pink-400 outline-none bg-transparent" />
+              <div className="flex gap-2">
+                <button onClick={salvarSeguidores} className="flex-1 bg-pink-500 hover:bg-pink-600 text-white text-xs font-semibold py-1.5 rounded-lg transition-colors">Salvar</button>
+                <button onClick={() => setEditandoSeguidores(false)} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-semibold py-1.5 rounded-lg transition-colors">Cancelar</button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-2xl font-bold text-gray-900">{seguidores.toLocaleString('pt-BR')}</p>
+          )}
+          <p className="text-xs text-gray-400 mt-1">R$ {porSeguidor} por seguidor</p>
         </div>
 
         {/* Leads */}
@@ -91,7 +138,7 @@ export default function SocialMedia() {
           </div>
           <p className="text-2xl font-bold text-gray-900">59</p>
           <p className="text-xs text-gray-400 mt-1">59 leads recebidos</p>
-          <p className="text-xs text-gray-400">R$ 83,15 por lead</p>
+          <p className="text-xs text-gray-400">R$ {porLead} por lead</p>
         </div>
 
         {/* Posts */}
