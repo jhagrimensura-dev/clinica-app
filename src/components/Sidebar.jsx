@@ -13,7 +13,6 @@ const menuItems = [
       { id: 'whatsapp_canal', label: 'WhatsApp', icon: '📲' },
     ],
   },
-  { id: 'recorrencia', label: 'Recorrência', icon: '🔄' },
   { id: 'faturamento', label: 'Vendas', icon: '📋' },
   {
     id: 'financeiro', label: 'Financeiro', icon: '💹',
