@@ -26,7 +26,7 @@ export default function Comercial() {
       {/* Título */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Comercial</h1>
+          <h1 className="text-2xl font-bold text-gray-800">WhatsApp</h1>
           <p className="text-sm text-gray-400 mt-1">Acompanhe agendamentos, conversões e fechamentos</p>
         </div>
         <button className="bg-pink-400 hover:bg-pink-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">

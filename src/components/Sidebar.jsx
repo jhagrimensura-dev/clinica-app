@@ -4,7 +4,7 @@ const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
   { id: 'metas', label: 'Metas', icon: '🎯' },
   { id: 'social', label: 'Social Media', icon: '📱' },
-  { id: 'comercial', label: 'Comercial', icon: '💼' },
+  { id: 'comercial', label: 'WhatsApp', icon: '💬' },
   { id: 'recorrencia', label: 'Recorrência', icon: '🔄' },
   { id: 'faturamento', label: 'Faturamento', icon: '📋' },
   {
