@@ -143,7 +143,7 @@ export default function App() {
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar active={active} setActive={setActive} />
         <div className="flex-1 ml-52 flex flex-col">
-          <Header view={view} setView={setView} />
+          {active === 'dashboard' && <Header view={view} setView={setView} />}
           <main className="flex-1">{renderPage()}</main>
         </div>
       </div>
