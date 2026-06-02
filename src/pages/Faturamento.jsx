@@ -28,7 +28,7 @@ export default function Faturamento() {
       {/* Título */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Faturamento</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Vendas</h1>
           <p className="text-sm text-gray-400 mt-1">Receitas, pagamentos e desempenho financeiro</p>
         </div>
         <button className="bg-pink-400 hover:bg-pink-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">
