@@ -118,6 +118,10 @@ export default function App() {
       case 'metas': return <Metas />
       case 'social': return <SocialMedia />
       case 'comercial': return <Comercial />
+      case 'leads_novos': return <PagePlaceholder title="Leads Novos" />
+      case 'leads_recorrentes': return <PagePlaceholder title="Leads Recorrentes" />
+      case 'indicacao': return <PagePlaceholder title="Indicação" />
+      case 'whatsapp_canal': return <PagePlaceholder title="WhatsApp" />
       case 'recorrencia': return <Recorrencia />
       case 'faturamento': return <Faturamento />
       case 'financeiro': return <Financeiro />

@@ -4,7 +4,15 @@ const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
   { id: 'metas', label: 'Metas', icon: '🎯' },
   { id: 'social', label: 'Social Media', icon: '📱' },
-  { id: 'comercial', label: 'WhatsApp', icon: '💬' },
+  {
+    id: 'comercial', label: 'WhatsApp', icon: '💬',
+    sub: [
+      { id: 'leads_novos', label: 'Leads Novos', icon: '🆕' },
+      { id: 'leads_recorrentes', label: 'Leads Recorrentes', icon: '🔄' },
+      { id: 'indicacao', label: 'Indicação', icon: '🤝' },
+      { id: 'whatsapp_canal', label: 'WhatsApp', icon: '📲' },
+    ],
+  },
   { id: 'recorrencia', label: 'Recorrência', icon: '🔄' },
   { id: 'faturamento', label: 'Faturamento', icon: '📋' },
   {
@@ -21,10 +29,19 @@ export default function Sidebar({ active, setActive }) {
   const [financeiroAberto, setFinanceiroAberto] = useState(
     active === 'financeiro' || active === 'contas'
   )
+  const [whatsappAberto, setWhatsappAberto] = useState(
+    ['comercial','leads_novos','leads_recorrentes','indicacao','whatsapp_canal'].includes(active)
+  )
+
+  const subStates = {
+    financeiro: [financeiroAberto, setFinanceiroAberto],
+    comercial: [whatsappAberto, setWhatsappAberto],
+  }
 
   const handleClick = (item) => {
     if (item.sub) {
-      setFinanceiroAberto(v => !v)
+      const [, setter] = subStates[item.id] || [false, () => {}]
+      setter(v => !v)
       setActive(item.id)
     } else {
       setActive(item.id)
@@ -57,11 +74,11 @@ export default function Sidebar({ active, setActive }) {
               <span>{item.icon}</span>
               <span className="flex-1">{item.label}</span>
               {item.sub && (
-                <span className="text-xs text-gray-300">{financeiroAberto ? '▲' : '▼'}</span>
+                <span className="text-xs text-gray-300">{(subStates[item.id]?.[0]) ? '▲' : '▼'}</span>
               )}
             </button>
 
-            {item.sub && financeiroAberto && (
+            {item.sub && subStates[item.id]?.[0] && (
               <div className="ml-4 mb-1">
                 {item.sub.map(sub => (
                   <button
