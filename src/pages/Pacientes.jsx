@@ -1,19 +1,6 @@
 import { useState } from 'react'
 
-const pacientes = [
-  { nome: 'Maria Silva', telefone: '(11) 99999-1111', ultimo: '05/05/2025', procedimento: 'Botox', status: 'Ativo', cor: 'bg-green-100 text-green-700' },
-  { nome: 'João Pedro', telefone: '(11) 99999-2222', ultimo: '10/05/2025', procedimento: 'Preenchimento', status: 'Ativo', cor: 'bg-green-100 text-green-700' },
-  { nome: 'Ana Lima', telefone: '(11) 99999-3333', ultimo: '01/04/2025', procedimento: 'Skinbooster', status: 'Inativo', cor: 'bg-red-100 text-red-700' },
-  { nome: 'Carlos Melo', telefone: '(11) 99999-4444', ultimo: '15/05/2025', procedimento: 'Botox', status: 'Ativo', cor: 'bg-green-100 text-green-700' },
-  { nome: 'Paula Ramos', telefone: '(11) 99999-5555', ultimo: '20/03/2025', procedimento: 'Fio de PDO', status: 'Inativo', cor: 'bg-red-100 text-red-700' },
-  { nome: 'Lucas Torres', telefone: '(11) 99999-6666', ultimo: '18/05/2025', procedimento: 'Preenchimento', status: 'Ativo', cor: 'bg-green-100 text-green-700' },
-  { nome: 'Fernanda K.', telefone: '(11) 99999-7777', ultimo: '02/05/2025', procedimento: 'Botox', status: 'Pendente', cor: 'bg-yellow-100 text-yellow-700' },
-  { nome: 'Bruno Alves', telefone: '(11) 99999-8888', ultimo: '22/05/2025', procedimento: 'Skinbooster', status: 'Ativo', cor: 'bg-green-100 text-green-700' },
-  { nome: 'Camila Faria', telefone: '(11) 99999-9999', ultimo: '08/04/2025', procedimento: 'Preenchimento', status: 'Inativo', cor: 'bg-red-100 text-red-700' },
-  { nome: 'Rafael Nunes', telefone: '(11) 99999-0000', ultimo: '25/05/2025', procedimento: 'Fio de PDO', status: 'Ativo', cor: 'bg-green-100 text-green-700' },
-  { nome: 'Juliana Costa', telefone: '(11) 98888-1111', ultimo: '28/05/2025', procedimento: 'Botox', status: 'Ativo', cor: 'bg-green-100 text-green-700' },
-  { nome: 'Marcos Lima', telefone: '(11) 98888-2222', ultimo: '12/04/2025', procedimento: 'Skinbooster', status: 'Pendente', cor: 'bg-yellow-100 text-yellow-700' },
-]
+const pacientes = []
 
 export default function Pacientes() {
   const [busca, setBusca] = useState('')
