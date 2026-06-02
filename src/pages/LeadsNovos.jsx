@@ -5,12 +5,14 @@ import { useFinanceiro } from '../context/FinanceiroContext'
 const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
 const FOLLOWS = [
-  { key: 'follow1', label: 'Follow #1', bg: 'bg-orange-100', text: 'text-orange-600' },
-  { key: 'follow2', label: 'Follow #2', bg: 'bg-yellow-100', text: 'text-yellow-600' },
-  { key: 'follow3', label: 'Follow #3', bg: 'bg-amber-100', text: 'text-amber-700' },
-  { key: 'agendado', label: 'Agendado', bg: 'bg-blue-100', text: 'text-blue-600' },
-  { key: 'fechado', label: 'Fechado', bg: 'bg-green-100', text: 'text-green-600' },
-  { key: 'perdido', label: 'Perdido', bg: 'bg-red-100', text: 'text-red-500' },
+  { key: 'em_aberto',   label: 'Em aberto',   bg: 'bg-gray-100',   text: 'text-gray-500'   },
+  { key: 'conversando', label: 'Conversando',  bg: 'bg-purple-100', text: 'text-purple-600' },
+  { key: 'follow1',     label: 'Follow #1',    bg: 'bg-orange-100', text: 'text-orange-600' },
+  { key: 'follow2',     label: 'Follow #2',    bg: 'bg-yellow-100', text: 'text-yellow-600' },
+  { key: 'follow3',     label: 'Follow #3',    bg: 'bg-amber-100',  text: 'text-amber-700'  },
+  { key: 'agendado',    label: 'Agendado',     bg: 'bg-blue-100',   text: 'text-blue-600'   },
+  { key: 'fechado',     label: 'Fechado',      bg: 'bg-green-100',  text: 'text-green-600'  },
+  { key: 'perdido',     label: 'Perdido',      bg: 'bg-red-100',    text: 'text-red-500'    },
 ]
 
 function getFollow(key) {
@@ -107,6 +109,7 @@ export default function LeadsNovos() {
   const [modal, setModal] = useState(false)
   const [busca, setBusca] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(null)
+  const [visao, setVisao] = useState('lista')
 
   const leads = getLeadsPorOrigem('leads_novos', ano, mes)
 
@@ -193,11 +196,17 @@ export default function LeadsNovos() {
         </div>
       </div>
 
-      {/* Lista de leads */}
+      {/* Lista / Quadro */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="text-base font-bold text-gray-800">Leads do Mês — {MESES_FULL[mes]}</h2>
-          <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full">{leadsFiltrados.length} leads</span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full">{leadsFiltrados.length} leads</span>
+            <div className="flex rounded-xl overflow-hidden border border-gray-200">
+              <button onClick={() => setVisao('lista')} className={`px-3 py-1.5 text-xs font-semibold flex items-center gap-1 transition-colors ${visao === 'lista' ? 'bg-orange-400 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>≡ Lista</button>
+              <button onClick={() => setVisao('quadro')} className={`px-3 py-1.5 text-xs font-semibold flex items-center gap-1 transition-colors ${visao === 'quadro' ? 'bg-orange-400 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>⊞ Quadro</button>
+            </div>
+          </div>
         </div>
 
         {leadsFiltrados.length === 0 ? (
@@ -206,7 +215,7 @@ export default function LeadsNovos() {
             <p className="text-gray-500 font-semibold">Nenhum lead em {MESES_FULL[mes]}</p>
             <p className="text-gray-400 text-sm mt-1">Clique em "+ Novo Lead" para começar.</p>
           </div>
-        ) : (
+        ) : visao === 'lista' ? (
           <div className="divide-y divide-gray-50">
             {leadsFiltrados.map(lead => {
               const follow = getFollow(lead.status)
@@ -219,36 +228,58 @@ export default function LeadsNovos() {
                     <p className="text-sm font-semibold text-gray-800 truncate">{lead.nome}</p>
                     <p className="text-xs text-gray-400">Follow {dataFormatada(lead.data)}</p>
                   </div>
-                  {lead.obs && (
-                    <p className="text-xs text-gray-400 italic truncate max-w-[180px] hidden md:block">{lead.obs}</p>
-                  )}
+                  {lead.obs && <p className="text-xs text-gray-400 italic truncate max-w-[180px] hidden md:block">{lead.obs}</p>}
                   <select
                     value={lead.status}
                     onChange={e => updateLead(lead.id, { status: e.target.value })}
                     className={`text-xs font-semibold px-3 py-1 rounded-full border-0 outline-none cursor-pointer ${follow.bg} ${follow.text}`}
                   >
-                    {FOLLOWS.map(f => (
-                      <option key={f.key} value={f.key}>{f.label}</option>
-                    ))}
+                    {FOLLOWS.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
                   </select>
-                  <button
-                    onClick={() => abrirWhatsApp(lead.telefone)}
-                    className={`text-xl flex-shrink-0 transition-opacity ${lead.telefone ? 'opacity-70 hover:opacity-100' : 'opacity-20 cursor-not-allowed'}`}
-                    title={lead.telefone ? `Abrir WhatsApp: ${lead.telefone}` : 'Sem telefone cadastrado'}
-                  >
-                    💬
-                  </button>
+                  <button onClick={() => abrirWhatsApp(lead.telefone)} className={`text-xl flex-shrink-0 ${lead.telefone ? 'opacity-70 hover:opacity-100' : 'opacity-20 cursor-not-allowed'}`} title={lead.telefone ? lead.telefone : 'Sem telefone'}>💬</button>
                   {confirmDelete === lead.id ? (
                     <div className="flex gap-1">
                       <button onClick={() => { removeLead(lead.id); setConfirmDelete(null) }} className="text-xs text-red-500 font-semibold px-2 py-1 rounded hover:bg-red-50">Sim</button>
                       <button onClick={() => setConfirmDelete(null)} className="text-xs text-gray-400 px-2 py-1 rounded hover:bg-gray-100">Não</button>
                     </div>
                   ) : (
-                    <button
-                      onClick={() => setConfirmDelete(lead.id)}
-                      className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 text-xs transition-all"
-                    >✕</button>
+                    <button onClick={() => setConfirmDelete(lead.id)} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 text-xs transition-all">✕</button>
                   )}
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          /* Quadro Kanban */
+          <div className="flex gap-3 p-4 overflow-x-auto">
+            {FOLLOWS.map(col => {
+              const colLeads = leadsFiltrados.filter(l => l.status === col.key)
+              return (
+                <div key={col.key} className="flex-shrink-0 w-52 bg-gray-50 rounded-xl p-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${col.bg} ${col.text}`}>{col.label}</span>
+                    <span className="text-xs text-gray-400 font-semibold">{colLeads.length}</span>
+                  </div>
+                  <div className="space-y-2">
+                    {colLeads.length === 0 ? (
+                      <p className="text-xs text-gray-300 text-center py-4">Nenhum item</p>
+                    ) : colLeads.map(lead => (
+                      <div key={lead.id} className="bg-white rounded-xl p-3 shadow-sm border border-gray-100">
+                        <p className="text-sm font-semibold text-gray-800 truncate">{lead.nome}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">Follow {dataFormatada(lead.data)}</p>
+                        <div className="flex items-center justify-between mt-2">
+                          <select
+                            value={lead.status}
+                            onChange={e => updateLead(lead.id, { status: e.target.value })}
+                            className="text-xs text-gray-400 outline-none bg-transparent cursor-pointer"
+                          >
+                            {FOLLOWS.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
+                          </select>
+                          <button onClick={() => abrirWhatsApp(lead.telefone)} className={`text-base ${lead.telefone ? 'opacity-70 hover:opacity-100' : 'opacity-20 cursor-not-allowed'}`}>💬</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )
             })}
