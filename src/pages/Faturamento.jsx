@@ -1,16 +1,5 @@
 export default function Faturamento() {
-  const transacoes = [
-    { data: '02/05', paciente: 'Maria Silva', servico: 'Botox', valor: 850, status: 'Pago', cor: 'bg-green-100 text-green-700' },
-    { data: '03/05', paciente: 'João Pedro', servico: 'Preenchimento', valor: 1200, status: 'Pago', cor: 'bg-green-100 text-green-700' },
-    { data: '05/05', paciente: 'Ana Lima', servico: 'Skinbooster', valor: 600, status: 'Pendente', cor: 'bg-yellow-100 text-yellow-700' },
-    { data: '08/05', paciente: 'Carlos Melo', servico: 'Botox', valor: 750, status: 'Pago', cor: 'bg-green-100 text-green-700' },
-    { data: '10/05', paciente: 'Paula Ramos', servico: 'Fio de PDO', valor: 1800, status: 'Pago', cor: 'bg-green-100 text-green-700' },
-    { data: '12/05', paciente: 'Lucas Torres', servico: 'Preenchimento', valor: 1100, status: 'Pago', cor: 'bg-green-100 text-green-700' },
-    { data: '15/05', paciente: 'Fernanda K.', servico: 'Botox', valor: 900, status: 'Pendente', cor: 'bg-yellow-100 text-yellow-700' },
-    { data: '18/05', paciente: 'Bruno Alves', servico: 'Skinbooster', valor: 650, status: 'Pago', cor: 'bg-green-100 text-green-700' },
-    { data: '20/05', paciente: 'Camila Faria', servico: 'Preenchimento', valor: 1300, status: 'Pago', cor: 'bg-green-100 text-green-700' },
-    { data: '22/05', paciente: 'Rafael Nunes', servico: 'Fio de PDO', valor: 2000, status: 'Cancelado', cor: 'bg-red-100 text-red-700' },
-  ]
+  const transacoes = []
 
   const totalPago = transacoes.filter(t => t.status === 'Pago').reduce((acc, t) => acc + t.valor, 0)
   const totalPendente = transacoes.filter(t => t.status === 'Pendente').reduce((acc, t) => acc + t.valor, 0)
