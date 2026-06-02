@@ -120,9 +120,16 @@ export default function Metas() {
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800">Metas</h1>
-        <p className="text-sm text-gray-400 mt-1">Defina metas mensais e distribua objetivos por dias úteis</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Metas</h1>
+          <p className="text-sm text-gray-400 mt-1">Defina metas mensais e distribua objetivos por dias úteis</p>
+        </div>
+        <div className="flex items-center gap-1 border border-gray-200 rounded-xl px-3 py-1.5 bg-white">
+          <button onClick={() => navMes(-1)} className="text-gray-400 hover:text-gray-600 px-1">‹</button>
+          <span className="text-sm font-semibold text-gray-700 w-28 text-center">{MESES[mes].slice(0,3)} {ano}</span>
+          <button onClick={() => navMes(1)} className="text-gray-400 hover:text-gray-600 px-1">›</button>
+        </div>
       </div>
 
       {/* Cards principais */}
