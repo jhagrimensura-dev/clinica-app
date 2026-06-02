@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { ClinicaProvider } from './context/ClinicaContext'
 import { FinanceiroProvider } from './context/FinanceiroContext'
 import { ContasProvider } from './context/ContasContext'
+import { LeadsProvider } from './context/LeadsContext'
+import LeadsNovos from './pages/LeadsNovos'
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
 import Dashboard from './pages/Dashboard'
@@ -118,7 +120,7 @@ export default function App() {
       case 'metas': return <Metas />
       case 'social': return <SocialMedia />
       case 'comercial': return <Comercial />
-      case 'leads_novos': return <PagePlaceholder title="Leads Novos" />
+      case 'leads_novos': return <LeadsNovos />
       case 'leads_recorrentes': return <PagePlaceholder title="Leads Recorrentes" />
       case 'indicacao': return <PagePlaceholder title="Indicação" />
       case 'whatsapp_canal': return <PagePlaceholder title="WhatsApp" />
@@ -136,6 +138,7 @@ export default function App() {
     <ClinicaProvider>
     <FinanceiroProvider>
     <ContasProvider>
+    <LeadsProvider>
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar active={active} setActive={setActive} />
         <div className="flex-1 ml-52 flex flex-col">
@@ -143,6 +146,7 @@ export default function App() {
           <main className="flex-1">{renderPage()}</main>
         </div>
       </div>
+    </LeadsProvider>
     </ContasProvider>
     </FinanceiroProvider>
     </ClinicaProvider>
