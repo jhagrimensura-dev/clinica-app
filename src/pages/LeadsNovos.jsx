@@ -20,82 +20,132 @@ function getFollow(key) {
 }
 
 function ModalNovoLead({ onClose, onSalvar, ano, mes }) {
-  const [nome, setNome] = useState('')
   const hoje = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`
+  const amanha = (() => { const d = new Date(hoje); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0] })()
+
   const [data, setData] = useState(hoje)
-  const [telefone, setTelefone] = useState('')
+  const [responsavel, setResponsavel] = useState('')
+  const [paciente, setPaciente] = useState('')
+  const [fonte, setFonte] = useState('')
+  const [status, setStatus] = useState('em_aberto')
+  const [proximoFollowup, setProximoFollowup] = useState(amanha)
   const [obs, setObs] = useState('')
 
   const handleSalvar = () => {
-    if (!nome.trim()) return
-    onSalvar({ nome: nome.trim(), data, telefone: telefone.trim(), obs: obs.trim(), status: 'follow1', origem: 'leads_novos' })
+    if (!paciente.trim()) return
+    onSalvar({ nome: paciente.trim(), data, responsavel, fonte, status, proximoFollowup, obs: obs.trim(), origem: 'leads_novos' })
     onClose()
   }
 
   return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-7 space-y-5">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-800">Novo Lead</h2>
+          <h2 className="text-lg font-bold text-gray-900">Novo Lead</h2>
           <button onClick={onClose} className="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
         </div>
 
-        <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-xs font-semibold text-gray-500 mb-1 block">Nome *</label>
+            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Data <span className="text-red-400">*</span></label>
             <input
-              autoFocus
-              type="text"
-              value={nome}
-              onChange={e => setNome(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSalvar()}
-              placeholder="Nome do lead..."
-              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400"
+              type="date"
+              value={data}
+              onChange={e => setData(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400"
             />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-gray-500 mb-1 block">Data de entrada</label>
-              <input
-                type="date"
-                value={data}
-                onChange={e => setData(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-gray-500 mb-1 block">WhatsApp</label>
-              <input
-                type="tel"
-                value={telefone}
-                onChange={e => setTelefone(e.target.value)}
-                placeholder="(62) 9 9999-9999"
-                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400"
-              />
-            </div>
           </div>
           <div>
-            <label className="text-xs font-semibold text-gray-500 mb-1 block">Observação</label>
-            <textarea
-              value={obs}
-              onChange={e => setObs(e.target.value)}
-              placeholder="Interesse, procedimento, etc..."
-              rows={2}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400 resize-none"
-            />
+            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Responsável <span className="text-red-400">*</span></label>
+            <select
+              value={responsavel}
+              onChange={e => setResponsavel(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400 bg-white"
+            >
+              <option value="">Selecione um responsável</option>
+              <option value="Dra. Amanda">Dra. Amanda</option>
+              <option value="Recepção">Recepção</option>
+              <option value="Equipe">Equipe</option>
+            </select>
           </div>
         </div>
 
-        <div className="flex gap-2 pt-1">
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Paciente <span className="text-red-400">*</span></label>
+          <input
+            autoFocus
+            type="text"
+            value={paciente}
+            onChange={e => setPaciente(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSalvar()}
+            placeholder="Selecione ou cadastre um paciente..."
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Origem <span className="text-red-400">*</span></label>
+            <select
+              value={fonte}
+              onChange={e => setFonte(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400 bg-white"
+            >
+              <option value="">Selecione a origem</option>
+              <option value="instagram">Instagram</option>
+              <option value="facebook">Facebook</option>
+              <option value="google">Google</option>
+              <option value="indicacao">Indicação</option>
+              <option value="whatsapp">WhatsApp</option>
+              <option value="outros">Outros</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Status <span className="text-red-400">*</span></label>
+            <select
+              value={status}
+              onChange={e => setStatus(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400 bg-white"
+            >
+              {FOLLOWS.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Próximo Follow-up</label>
+          <input
+            type="date"
+            value={proximoFollowup}
+            onChange={e => setProximoFollowup(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400"
+          />
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Observações</label>
+          <textarea
+            value={obs}
+            onChange={e => setObs(e.target.value)}
+            placeholder="Observações sobre o lead..."
+            rows={3}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400 resize-none"
+          />
+        </div>
+
+        <div className="flex justify-end gap-3 pt-1">
+          <button
+            onClick={onClose}
+            className="px-5 py-2.5 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+          >
+            Cancelar
+          </button>
           <button
             onClick={handleSalvar}
-            disabled={!nome.trim()}
-            className="flex-1 bg-orange-400 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-orange-500 transition-colors disabled:opacity-40"
+            disabled={!paciente.trim()}
+            className="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-40"
           >
-            Adicionar Lead
-          </button>
-          <button onClick={onClose} className="px-4 py-2.5 text-sm text-gray-400 border border-gray-200 rounded-xl hover:bg-gray-50">
-            Cancelar
+            Criar
           </button>
         </div>
       </div>
