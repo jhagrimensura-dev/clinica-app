@@ -10,7 +10,6 @@ const menuItems = [
       { id: 'leads_novos', label: 'Leads Novos', icon: '🆕' },
       { id: 'leads_recorrentes', label: 'Leads Recorrentes', icon: '🔄' },
       { id: 'indicacao', label: 'Indicação', icon: '🤝' },
-      { id: 'whatsapp_canal', label: 'WhatsApp', icon: '📲' },
     ],
   },
   { id: 'faturamento', label: 'Vendas', icon: '📋' },
