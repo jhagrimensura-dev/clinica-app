@@ -55,7 +55,7 @@ export default function SocialMedia() {
   const [form, setForm] = useState({ data: '', formato: '', tipo: '', link: '', impulsionado: false })
 
   const porSeguidor = seguidores > 0 ? (trafego / seguidores).toFixed(2).replace('.', ',') : '—'
-  const leads = 59
+  const leads = 0
   const porLead = leads > 0 ? (trafego / leads).toFixed(2).replace('.', ',') : '—'
 
   const salvarTrafego = () => {
