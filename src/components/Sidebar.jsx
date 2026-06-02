@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
   { id: 'metas', label: 'Metas', icon: '🎯' },
@@ -5,11 +7,30 @@ const menuItems = [
   { id: 'comercial', label: 'Comercial', icon: '💼' },
   { id: 'recorrencia', label: 'Recorrência', icon: '🔄' },
   { id: 'faturamento', label: 'Faturamento', icon: '📋' },
+  {
+    id: 'financeiro', label: 'Financeiro', icon: '💹',
+    sub: [
+      { id: 'contas', label: 'Contas a Pagar', icon: '📌' },
+    ],
+  },
   { id: 'pacientes', label: 'Pacientes', icon: '👤' },
   { id: 'relatorios', label: 'Relatórios', icon: '📄' },
 ]
 
 export default function Sidebar({ active, setActive }) {
+  const [financeiroAberto, setFinanceiroAberto] = useState(
+    active === 'financeiro' || active === 'contas'
+  )
+
+  const handleClick = (item) => {
+    if (item.sub) {
+      setFinanceiroAberto(v => !v)
+      setActive(item.id)
+    } else {
+      setActive(item.id)
+    }
+  }
+
   return (
     <div className="w-52 min-h-screen bg-white border-r border-pink-100 flex flex-col fixed left-0 top-0 bottom-0">
       <div className="p-4 flex items-center gap-3 border-b border-pink-100">
@@ -24,18 +45,41 @@ export default function Sidebar({ active, setActive }) {
       </div>
       <nav className="flex-1 px-3">
         {menuItems.map(item => (
-          <button
-            key={item.id}
-            onClick={() => setActive(item.id)}
-            className={`w-full text-left px-3 py-2 rounded-lg mb-1 text-sm flex items-center gap-3 transition-all ${
-              active === item.id
-                ? 'bg-pink-100 text-pink-600 font-semibold'
-                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-            }`}
-          >
-            <span>{item.icon}</span>
-            <span>{item.label}</span>
-          </button>
+          <div key={item.id}>
+            <button
+              onClick={() => handleClick(item)}
+              className={`w-full text-left px-3 py-2 rounded-lg mb-1 text-sm flex items-center gap-3 transition-all ${
+                active === item.id
+                  ? 'bg-pink-100 text-pink-600 font-semibold'
+                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+              }`}
+            >
+              <span>{item.icon}</span>
+              <span className="flex-1">{item.label}</span>
+              {item.sub && (
+                <span className="text-xs text-gray-300">{financeiroAberto ? '▲' : '▼'}</span>
+              )}
+            </button>
+
+            {item.sub && financeiroAberto && (
+              <div className="ml-4 mb-1">
+                {item.sub.map(sub => (
+                  <button
+                    key={sub.id}
+                    onClick={() => setActive(sub.id)}
+                    className={`w-full text-left px-3 py-1.5 rounded-lg mb-0.5 text-xs flex items-center gap-2 transition-all border-l-2 ${
+                      active === sub.id
+                        ? 'border-pink-400 bg-pink-50 text-pink-600 font-semibold'
+                        : 'border-gray-100 text-gray-400 hover:bg-gray-50 hover:text-gray-600'
+                    }`}
+                  >
+                    <span>{sub.icon}</span>
+                    <span>{sub.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         ))}
       </nav>
       <div className="px-3 pb-4 border-t border-gray-100 pt-3">

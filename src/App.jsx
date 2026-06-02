@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { ClinicaProvider } from './context/ClinicaContext'
+import { FinanceiroProvider } from './context/FinanceiroContext'
+import { ContasProvider } from './context/ContasContext'
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
 import Dashboard from './pages/Dashboard'
@@ -8,6 +10,8 @@ import SocialMedia from './pages/SocialMedia'
 import Comercial from './pages/Comercial'
 import Recorrencia from './pages/Recorrencia'
 import Faturamento from './pages/Faturamento'
+import Financeiro from './pages/Financeiro'
+import ContasPagar from './pages/ContasPagar'
 import Pacientes from './pages/Pacientes'
 import Relatorios from './pages/Relatorios'
 
@@ -116,6 +120,8 @@ export default function App() {
       case 'comercial': return <Comercial />
       case 'recorrencia': return <Recorrencia />
       case 'faturamento': return <Faturamento />
+      case 'financeiro': return <Financeiro />
+      case 'contas': return <ContasPagar />
       case 'pacientes': return <Pacientes />
       case 'relatorios': return <Relatorios />
       default: return <Dashboard />
@@ -124,6 +130,8 @@ export default function App() {
 
   return (
     <ClinicaProvider>
+    <FinanceiroProvider>
+    <ContasProvider>
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar active={active} setActive={setActive} />
         <div className="flex-1 ml-52 flex flex-col">
@@ -131,6 +139,8 @@ export default function App() {
           <main className="flex-1">{renderPage()}</main>
         </div>
       </div>
+    </ContasProvider>
+    </FinanceiroProvider>
     </ClinicaProvider>
   )
 }
