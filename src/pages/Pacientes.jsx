@@ -29,23 +29,23 @@ export default function Pacientes() {
       <div className="grid grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 font-medium mb-1">Total de Pacientes</p>
-          <p className="text-2xl font-bold text-gray-900">124</p>
+          <p className="text-2xl font-bold text-gray-900">0</p>
           <p className="text-xs text-gray-400 mt-1">Base total</p>
         </div>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 font-medium mb-1">Ativos</p>
-          <p className="text-2xl font-bold text-green-500">87</p>
-          <p className="text-xs text-gray-400 mt-1">70,2% da base</p>
+          <p className="text-2xl font-bold text-green-500">0</p>
+          <p className="text-xs text-gray-400 mt-1">—</p>
         </div>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 font-medium mb-1">Inativos</p>
-          <p className="text-2xl font-bold text-red-500">25</p>
-          <p className="text-xs text-gray-400 mt-1">Precisam de reativação</p>
+          <p className="text-2xl font-bold text-red-500">0</p>
+          <p className="text-xs text-gray-400 mt-1">—</p>
         </div>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 font-medium mb-1">Novos no Mês</p>
-          <p className="text-2xl font-bold text-pink-500">23</p>
-          <p className="text-xs text-gray-400 mt-1">Fechamentos do mês</p>
+          <p className="text-2xl font-bold text-pink-500">0</p>
+          <p className="text-xs text-gray-400 mt-1">—</p>
         </div>
       </div>
 
