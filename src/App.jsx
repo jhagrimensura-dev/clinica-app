@@ -123,6 +123,7 @@ export default function App() {
       case 'leads_novos': return <LeadsNovos />
       case 'leads_recorrentes': return <PagePlaceholder title="Leads Recorrentes" />
       case 'indicacao': return <PagePlaceholder title="Indicação" />
+      case 'conexao': return <PagePlaceholder title="Conexão" />
       case 'whatsapp_canal': return <PagePlaceholder title="WhatsApp" />
       case 'recorrencia': return <Recorrencia />
       case 'faturamento': return <Faturamento />
