@@ -138,26 +138,28 @@ export default function Metas() {
 
   const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
-  const iniciarEdicao = () => { setInputValor(String(metaValor)); setEditando(true) }
+  const parseValorInput = (str) => parseFloat(str.replace(/[^\d,]/g, '').replace(',', '.')) || 0
+
+  const iniciarEdicao = () => { setInputValor(String(Math.round(metaValor))); setEditando(true) }
   const salvarEdicao = () => {
-    const valor = parseFloat(inputValor.replace(/\./g, '').replace(',', '.'))
-    if (!isNaN(valor) && valor > 0) setMetaValor(valor)
+    const valor = parseValorInput(inputValor)
+    if (valor > 0) setMetaValor(valor)
     setEditando(false)
   }
   const handleKeyDown = (e) => { if (e.key === 'Enter') salvarEdicao(); if (e.key === 'Escape') setEditando(false) }
 
-  const iniciarEdicaoSuper = () => { setInputSuperValor(String(superMeta)); setEditandoSuper(true) }
+  const iniciarEdicaoSuper = () => { setInputSuperValor(String(Math.round(superMeta))); setEditandoSuper(true) }
   const salvarEdicaoSuper = () => {
-    const valor = parseFloat(inputSuperValor.replace(/\./g, '').replace(',', '.'))
-    if (!isNaN(valor) && valor > 0) setSuperMetaValor(valor)
+    const valor = parseValorInput(inputSuperValor)
+    if (valor > 0) setSuperMetaValor(valor)
     setEditandoSuper(false)
   }
   const handleKeyDownSuper = (e) => { if (e.key === 'Enter') salvarEdicaoSuper(); if (e.key === 'Escape') setEditandoSuper(false) }
 
-  const iniciarEdicaoRecorde = () => { setInputRecordeValor(String(recordeValor)); setEditandoRecorde(true) }
+  const iniciarEdicaoRecorde = () => { setInputRecordeValor(String(Math.round(recordeValor))); setEditandoRecorde(true) }
   const salvarEdicaoRecorde = () => {
-    const valor = parseFloat(inputRecordeValor.replace(/\./g, '').replace(',', '.'))
-    if (!isNaN(valor) && valor > 0) setRecordeValor(valor)
+    const valor = parseValorInput(inputRecordeValor)
+    if (valor > 0) setRecordeValor(valor)
     setEditandoRecorde(false)
   }
   const handleKeyDownRecorde = (e) => { if (e.key === 'Enter') salvarEdicaoRecorde(); if (e.key === 'Escape') setEditandoRecorde(false) }
