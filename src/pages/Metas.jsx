@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useClinica } from '../context/ClinicaContext'
+import { useVendas } from '../context/VendasContext'
 
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
@@ -89,6 +90,17 @@ export default function Metas() {
       return next
     })
   }
+
+  const { lancamentos } = useVendas()
+
+  const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
+  const vendasPorDia = lancamentos
+    .filter(l => l.data.startsWith(prefix))
+    .reduce((acc, l) => {
+      const dia = parseInt(l.data.split('-')[2], 10)
+      acc[dia] = (acc[dia] || 0) + (l.valorTratamento || 0) + (l.valorTaxa || 0)
+      return acc
+    }, {})
 
   const metaDiariaOriginal = metaDiaria
 
@@ -269,14 +281,14 @@ export default function Metas() {
 
               if (!isMesAtual) return <div key={di} className="min-h-[72px] rounded-xl p-2"><p className="text-sm font-bold text-gray-300">{dia.dia}</p></div>
 
-              const valorNum = diasValores[key]
-              const temValor = valorNum !== undefined && valorNum !== null
+              const valorVendas = vendasPorDia[dia.dia] || 0
+              const temVendas = valorVendas > 0
 
               const bg = !isSelected
                 ? 'bg-white border border-gray-100'
-                : !temValor
+                : !temVendas
                   ? 'bg-yellow-50 border border-yellow-200'
-                  : valorNum >= metaDiariaOriginal
+                  : valorVendas >= metaDiariaOriginal
                     ? 'bg-green-50 border border-green-200'
                     : 'bg-red-50 border border-red-200'
 
@@ -289,28 +301,9 @@ export default function Metas() {
                   <p className="text-sm font-bold text-gray-800">{dia.dia}</p>
                   {isSelected && (
                     <div className="mt-1">
-                      {diaEditando === key ? (
-                        <div onClick={e => e.stopPropagation()}>
-                          <input
-                            autoFocus
-                            type="number"
-                            value={inputTempValor}
-                            onChange={e => setInputTempValor(e.target.value)}
-                            onFocus={e => e.target.select()}
-                            onBlur={() => salvarEdicaoValor(key)}
-                            onKeyDown={e => { if (e.key === 'Enter') salvarEdicaoValor(key); if (e.key === 'Escape') setDiaEditando(null) }}
-                            className="w-full text-sm font-bold outline-none bg-transparent border-b border-gray-400"
-                            placeholder="0"
-                          />
-                        </div>
-                      ) : (
-                        <p
-                          className="text-sm font-bold text-gray-800 cursor-text"
-                          onClick={e => iniciarEdicaoValor(e, key)}
-                        >
-                          {temValor ? valorNum.toLocaleString('pt-BR') : <span className="text-gray-300 text-xs font-normal">—</span>}
-                        </p>
-                      )}
+                      <p className={`text-sm font-bold ${temVendas ? (valorVendas >= metaDiariaOriginal ? 'text-green-600' : 'text-red-500') : 'text-gray-300'}`}>
+                        {temVendas ? valorVendas.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '—'}
+                      </p>
                       {metaDiariaOriginal > 0 && (
                         <p className="text-xs text-gray-400">/{Math.round(metaDiariaOriginal).toLocaleString('pt-BR')}</p>
                       )}
