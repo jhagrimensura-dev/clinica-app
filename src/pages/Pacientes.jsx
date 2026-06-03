@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { usePacientes } from '../context/PacientesContext'
+import { useVendas } from '../context/VendasContext'
 
 function ModalNovoPaciente({ onClose, onSalvar }) {
   const [nome, setNome] = useState('')
@@ -118,6 +119,19 @@ function ModalNovoPaciente({ onClose, onSalvar }) {
 
 export default function Pacientes() {
   const { pacientes, addPaciente } = usePacientes()
+  const { lancamentos } = useVendas()
+
+  // LTV por paciente: soma de todos os lançamentos de cada paciente (histórico completo)
+  const ltvPorPaciente = {}
+  lancamentos.forEach(l => {
+    if (l.paciente) {
+      ltvPorPaciente[l.paciente] = (ltvPorPaciente[l.paciente] || 0) + (l.valorTratamento || 0) + (l.valorTaxa || 0)
+    }
+  })
+  const getLTV = (nome) => ltvPorPaciente[nome] || 0
+  const ltvValues = Object.values(ltvPorPaciente)
+  const ltvMedio = ltvValues.length > 0 ? ltvValues.reduce((a, b) => a + b, 0) / ltvValues.length : 0
+  const fmtLTV = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
   const [modal, setModal] = useState(false)
   const [busca, setBusca] = useState('')
   const [filtro, setFiltro] = useState('Todos')
@@ -275,8 +289,8 @@ export default function Pacientes() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
           </div>
-          <p className="text-3xl font-bold text-gray-900 mt-1">R$ 0</p>
-          <p className="text-xs text-gray-400 mt-1">{total > 0 ? `${total} pacientes` : '—'}</p>
+          <p className="text-3xl font-bold text-gray-900 mt-1">{fmtLTV(ltvMedio)}</p>
+          <p className="text-xs text-gray-400 mt-1">{ltvValues.length > 0 ? `${ltvValues.length} paciente(s) com histórico` : 'Sem lançamentos ainda'}</p>
         </div>
       </div>
 
@@ -297,7 +311,7 @@ export default function Pacientes() {
                 <td className="py-3 font-medium text-gray-800">{p.nome}</td>
                 <td className="py-3 text-gray-500">{p.whatsapp || '—'}</td>
                 <td className="py-3 text-gray-500">{p.nascimento ? new Date(p.nascimento).toLocaleDateString('pt-BR') : '—'}</td>
-                <td className="py-3 text-gray-500">R$ 0</td>
+                <td className="py-3 text-gray-500">{getLTV(p.nome) > 0 ? fmtLTV(getLTV(p.nome)) : '—'}</td>
               </tr>
             ))}
           </tbody>

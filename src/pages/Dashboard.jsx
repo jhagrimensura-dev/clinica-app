@@ -1,11 +1,13 @@
 import { useClinica } from '../context/ClinicaContext'
 import { useVendas } from '../context/VendasContext'
 import { useFinanceiro } from '../context/FinanceiroContext'
+import { useLeads } from '../context/LeadsContext'
 
 export default function Dashboard() {
   const { metaValor, diasAtendimento, metaDiaria } = useClinica()
   const { lancamentos } = useVendas()
   const { mes, ano } = useFinanceiro()
+  const { getLeadsPorOrigem } = useLeads()
 
   const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
@@ -23,6 +25,23 @@ export default function Dashboard() {
   const ticketDiario = diasAtendimento > 0 ? totalGeral / diasAtendimento : 0
 
   const pct = metaValor > 0 ? Math.min((totalGeral / metaValor) * 100, 100).toFixed(1) : '0.0'
+
+  // Leads por origem
+  const leadsNovos = getLeadsPorOrigem('leads_novos', ano, mes)
+  const leadsRecorrentes = getLeadsPorOrigem('leads_recorrentes', ano, mes)
+  const leadsIndicacao = getLeadsPorOrigem('indicacao', ano, mes)
+  const totalLeads = leadsNovos.length + leadsIndicacao.length
+
+  const agendNovos = leadsNovos.filter(l => l.status === 'agendado' || l.status === 'fechado').length
+  const agendRecorrentes = leadsRecorrentes.filter(l => l.status === 'agendado' || l.status === 'fechado').length
+  const agendIndicacao = leadsIndicacao.filter(l => l.status === 'agendado' || l.status === 'fechado').length
+  const totalAgend = agendNovos + agendIndicacao
+
+  const convComercial = totalLeads > 0 ? ((totalAgend / totalLeads) * 100).toFixed(1) : '0.0'
+  const convRecorrencia = leadsRecorrentes.length > 0 ? ((agendRecorrentes / leadsRecorrentes.length) * 100).toFixed(1) : '0.0'
+
+  // Social Media (localStorage)
+  const seguidores = parseInt(localStorage.getItem(`social_seguidores_${ano}_${mes}`) || '0')
 
   return (
     <div className="p-6 space-y-6">
@@ -101,9 +120,9 @@ export default function Dashboard() {
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Funil de Conversão</p>
         <div className="grid grid-cols-4 gap-4">
           {[
-            { label: 'Social Media', icon: '🔗', color: 'text-pink-500', value: '0', sub: 'seguidores', extras: ['0 leads recebidos', '0% conversão', '—'] },
-            { label: 'Comercial', icon: '🏢', color: 'text-blue-500', value: '0', sub: 'leads', extras: ['0 agendamentos', '0% conversão'] },
-            { label: 'Recorrência', icon: '🔄', color: 'text-teal-500', value: '0', sub: 'contatos', extras: ['0 agendamentos', '0% conversão'] },
+            { label: 'Social Media', icon: '🔗', color: 'text-pink-500', value: String(seguidores.toLocaleString('pt-BR')), sub: 'seguidores', extras: [`${totalLeads} leads recebidos`, `${convComercial}% conversão`] },
+            { label: 'Comercial', icon: '🏢', color: 'text-blue-500', value: String(totalLeads), sub: `leads (${leadsNovos.length} novos · ${leadsIndicacao.length} indicações)`, extras: [`${totalAgend} agendamentos`, `${convComercial}% conversão`] },
+            { label: 'Recorrência', icon: '🔄', color: 'text-teal-500', value: String(leadsRecorrentes.length), sub: 'contatos recorrentes', extras: [`${agendRecorrentes} agendamentos`, `${convRecorrencia}% conversão`] },
             { label: 'Vendas', icon: '📊', color: 'text-green-500', value: String(lMes.length), sub: 'lançamentos no mês', extras: [`${countNovos} novos · ${countRecorrentes} recorrentes`, lMes.length > 0 ? `${fmt(ticketGeral)} ticket médio` : '—'] },
           ].map((card, i) => (
             <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
