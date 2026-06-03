@@ -4,7 +4,7 @@ import { useFinanceiro } from '../context/FinanceiroContext'
 import { useLeads } from '../context/LeadsContext'
 
 export default function Dashboard() {
-  const { metaValor, diasAtendimento, metaDiaria } = useClinica()
+  const { metaValor, diasAtendimento, metaDiaria, posts } = useClinica()
   const { lancamentos } = useVendas()
   const { mes, ano } = useFinanceiro()
   const { getLeadsPorOrigem } = useLeads()
@@ -42,6 +42,10 @@ export default function Dashboard() {
 
   // Social Media (localStorage)
   const seguidores = parseInt(localStorage.getItem(`social_seguidores_${ano}_${mes}`) || '0')
+  const trafegoInvestido = parseFloat(localStorage.getItem(`social_trafego_${ano}_${mes}`) || '0')
+  const totalPosts = posts.length
+  const totalImpulsionados = posts.filter(p => p.impulsionado).length
+  const custoLead = totalLeads > 0 && trafegoInvestido > 0 ? trafegoInvestido / totalLeads : 0
 
   return (
     <div className="p-6 space-y-6">
@@ -115,14 +119,60 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* SOCIAL MEDIA */}
+      <div>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Social Media</p>
+        <div className="grid grid-cols-4 gap-4">
+          {[
+            {
+              label: 'Seguidores',
+              value: seguidores.toLocaleString('pt-BR'),
+              icon: '👥',
+              color: 'text-pink-500',
+              sub: 'total de seguidores',
+            },
+            {
+              label: 'Posts no Mês',
+              value: String(totalPosts),
+              icon: '📸',
+              color: 'text-purple-500',
+              sub: `${totalImpulsionados} impulsionado${totalImpulsionados !== 1 ? 's' : ''}`,
+            },
+            {
+              label: 'Tráfego Investido',
+              value: fmt(trafegoInvestido),
+              icon: '💸',
+              color: 'text-blue-500',
+              sub: 'investimento do mês',
+            },
+            {
+              label: 'Custo por Lead',
+              value: custoLead > 0 ? fmt(custoLead) : '—',
+              icon: '🎯',
+              color: 'text-teal-500',
+              sub: totalLeads > 0 ? `${totalLeads} leads recebidos` : 'sem leads no mês',
+            },
+          ].map((card, i) => (
+            <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+              <div className="flex justify-between items-start mb-1">
+                <p className="text-sm text-gray-500 font-medium">{card.label}</p>
+                <span className={`text-lg ${card.color}`}>{card.icon}</span>
+              </div>
+              <p className="text-2xl font-bold text-gray-900 mb-1">{card.value}</p>
+              <p className="text-xs text-gray-400">{card.sub}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* FUNIL DE CONVERSÃO */}
       <div>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Funil de Conversão</p>
         <div className="grid grid-cols-4 gap-4">
           {[
             { label: 'Social Media', icon: '🔗', color: 'text-pink-500', value: String(seguidores.toLocaleString('pt-BR')), sub: 'seguidores', extras: [`${totalLeads} leads recebidos`, `${convComercial}% conversão`] },
-            { label: 'Comercial', icon: '🏢', color: 'text-blue-500', value: String(totalLeads), sub: `leads (${leadsNovos.length} novos · ${leadsIndicacao.length} indicações)`, extras: [`${totalAgend} agendamentos`, `${convComercial}% conversão`] },
-            { label: 'Recorrência', icon: '🔄', color: 'text-teal-500', value: String(leadsRecorrentes.length), sub: 'contatos recorrentes', extras: [`${agendRecorrentes} agendamentos`, `${convRecorrencia}% conversão`] },
+            { label: 'Leads Novos', icon: '🏢', color: 'text-blue-500', value: String(totalLeads), sub: `leads (${leadsNovos.length} novos · ${leadsIndicacao.length} indicações)`, extras: [`${totalAgend} agendamentos`, `${convComercial}% conversão`] },
+            { label: 'Leads Recorrência', icon: '🔄', color: 'text-teal-500', value: String(leadsRecorrentes.length), sub: 'contatos recorrentes', extras: [`${agendRecorrentes} agendamentos`, `${convRecorrencia}% conversão`] },
             { label: 'Vendas', icon: '📊', color: 'text-green-500', value: String(lMes.length), sub: 'lançamentos no mês', extras: [`${countNovos} novos · ${countRecorrentes} recorrentes`, lMes.length > 0 ? `${fmt(ticketGeral)} ticket médio` : '—'] },
           ].map((card, i) => (
             <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
