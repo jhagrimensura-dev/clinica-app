@@ -8,18 +8,7 @@ export default function Comercial() {
     [{ dia: 31 }, { dia: 1, mes: 'prox' }, { dia: 2, mes: 'prox' }, { dia: 3, mes: 'prox' }, { dia: 4, mes: 'prox' }, { dia: 5, mes: 'prox' }, { dia: 6, mes: 'prox' }],
   ]
 
-  const agendamentos = [
-    { dia: 1, nome: 'Maria S.', tipo: 'Avaliação', cor: 'bg-blue-100 text-blue-700' },
-    { dia: 3, nome: 'João P.', tipo: 'Retorno', cor: 'bg-green-100 text-green-700' },
-    { dia: 5, nome: 'Ana L.', tipo: 'Avaliação', cor: 'bg-blue-100 text-blue-700' },
-    { dia: 8, nome: 'Carlos M.', tipo: 'Fechamento', cor: 'bg-pink-100 text-pink-700' },
-    { dia: 10, nome: 'Paula R.', tipo: 'Avaliação', cor: 'bg-blue-100 text-blue-700' },
-    { dia: 12, nome: 'Lucas T.', tipo: 'Retorno', cor: 'bg-green-100 text-green-700' },
-    { dia: 15, nome: 'Fernanda K.', tipo: 'Fechamento', cor: 'bg-pink-100 text-pink-700' },
-    { dia: 17, nome: 'Bruno A.', tipo: 'Avaliação', cor: 'bg-blue-100 text-blue-700' },
-    { dia: 19, nome: 'Camila F.', tipo: 'Avaliação', cor: 'bg-blue-100 text-blue-700' },
-    { dia: 22, nome: 'Rafael N.', tipo: 'Fechamento', cor: 'bg-pink-100 text-pink-700' },
-  ]
+  const agendamentos = []
 
   return (
     <div className="p-6 space-y-6">
@@ -38,22 +27,22 @@ export default function Comercial() {
       <div className="grid grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 font-medium mb-1">Leads Recebidos</p>
-          <p className="text-2xl font-bold text-gray-900">59</p>
+          <p className="text-2xl font-bold text-gray-900">0</p>
           <p className="text-xs text-gray-400 mt-1">Total do mês</p>
         </div>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 font-medium mb-1">Avaliações</p>
-          <p className="text-2xl font-bold text-gray-900">38</p>
-          <p className="text-xs text-gray-400 mt-1">64,4% dos leads</p>
+          <p className="text-2xl font-bold text-gray-900">0</p>
+          <p className="text-xs text-gray-400 mt-1">—</p>
         </div>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 font-medium mb-1">Fechamentos</p>
-          <p className="text-2xl font-bold text-gray-900">23</p>
-          <p className="text-xs text-gray-400 mt-1">60,5% das avaliações</p>
+          <p className="text-2xl font-bold text-gray-900">0</p>
+          <p className="text-xs text-gray-400 mt-1">—</p>
         </div>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 font-medium mb-1">Conversão Geral</p>
-          <p className="text-2xl font-bold text-pink-500">12,88%</p>
+          <p className="text-2xl font-bold text-pink-500">0%</p>
           <p className="text-xs text-gray-400 mt-1">Leads → Fechamentos</p>
         </div>
       </div>
@@ -63,11 +52,11 @@ export default function Comercial() {
         <h2 className="text-base font-bold text-gray-800 mb-4">Funil Comercial</h2>
         <div className="space-y-3">
           {[
-            { label: 'Leads Recebidos', valor: 59, total: 59, cor: 'bg-pink-400' },
-            { label: 'Contatos Realizados', valor: 45, total: 59, cor: 'bg-purple-400' },
-            { label: 'Avaliações Agendadas', valor: 38, total: 59, cor: 'bg-blue-400' },
-            { label: 'Avaliações Realizadas', valor: 30, total: 59, cor: 'bg-cyan-400' },
-            { label: 'Fechamentos', valor: 23, total: 59, cor: 'bg-green-400' },
+            { label: 'Leads Recebidos', valor: 0, total: 1, cor: 'bg-pink-400' },
+            { label: 'Contatos Realizados', valor: 0, total: 1, cor: 'bg-purple-400' },
+            { label: 'Avaliações Agendadas', valor: 0, total: 1, cor: 'bg-blue-400' },
+            { label: 'Avaliações Realizadas', valor: 0, total: 1, cor: 'bg-cyan-400' },
+            { label: 'Fechamentos', valor: 0, total: 1, cor: 'bg-green-400' },
           ].map((item, i) => (
             <div key={i}>
               <div className="flex justify-between text-sm mb-1">
