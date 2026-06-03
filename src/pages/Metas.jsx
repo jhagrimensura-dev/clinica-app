@@ -118,23 +118,24 @@ export default function Metas() {
   const hoje = new Date()
   const diaHoje = (hoje.getFullYear() === ano && hoje.getMonth() === mes) ? hoje.getDate() : Infinity
 
-  let metaRestante = metaValor
   const metaDinamicaPorDia = {}
 
-  // Dias passados/hoje: meta rolling (acumula déficit/superávit real)
-  diasOrdenados.forEach(({ dia }, idx) => {
-    if (dia <= diaHoje) {
-      const diasRestantes = diasOrdenados.length - idx
-      metaDinamicaPorDia[dia] = diasRestantes > 0 ? metaRestante / diasRestantes : 0
-      const vendas = vendasPorDia[dia] || 0
-      metaRestante = Math.max(0, metaRestante - vendas)
-    }
-  })
+  // Meta proporcional: metaValor dividido igualmente entre todos os dias selecionados
+  // Dias passados: mostram meta planejada (altera quando dias são marcados/desmarcados)
+  // Dias futuros: ajustado pelo saldo real restante
+  const totalSelecionados = diasOrdenados.length
+  const metaBase = totalSelecionados > 0 ? metaValor / totalSelecionados : 0
 
-  // Dias futuros: meta plana = o que resta dividido igualmente
-  const diasFuturos = diasOrdenados.filter(d => d.dia > diaHoje)
-  const metaFlat = diasFuturos.length > 0 ? metaRestante / diasFuturos.length : 0
-  diasFuturos.forEach(({ dia }) => { metaDinamicaPorDia[dia] = metaFlat })
+  const totalVendasPassadas = diasOrdenados
+    .filter(d => d.dia < diaHoje)
+    .reduce((acc, d) => acc + (vendasPorDia[d.dia] || 0), 0)
+  const saldoRestante = Math.max(0, metaValor - totalVendasPassadas)
+  const diasFuturos = diasOrdenados.filter(d => d.dia >= diaHoje)
+  const metaFutura = diasFuturos.length > 0 ? saldoRestante / diasFuturos.length : 0
+
+  diasOrdenados.forEach(({ dia }) => {
+    metaDinamicaPorDia[dia] = dia < diaHoje ? metaBase : metaFutura
+  })
 
   const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
