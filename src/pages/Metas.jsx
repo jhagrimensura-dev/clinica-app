@@ -329,11 +329,9 @@ export default function Metas() {
                   <p className="text-sm font-bold text-gray-800">{dia.dia}</p>
                   {isSelected && (
                     <div className="mt-1">
-                      {!isFuturo && (
-                        <p className={`text-sm font-bold ${temVendas ? (valorVendas >= metaDoDia ? 'text-green-600' : 'text-red-500') : 'text-gray-400'}`}>
-                          {temVendas ? valorVendas.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '—'}
-                        </p>
-                      )}
+                      <p className={`text-sm font-bold ${temVendas ? (valorVendas >= metaDoDia ? 'text-green-600' : 'text-red-500') : 'text-gray-400'}`}>
+                        {temVendas ? valorVendas.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '—'}
+                      </p>
                       {metaDoDia > 0 && (
                         <p className="text-xs text-gray-400">/{Math.round(metaDoDia).toLocaleString('pt-BR')}</p>
                       )}
