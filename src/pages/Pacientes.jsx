@@ -215,7 +215,16 @@ export default function Pacientes() {
         </div>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex justify-between items-start mb-1">
-            <p className="text-sm text-gray-500">LTV Médio</p>
+            <div className="flex items-center gap-1">
+              <p className="text-sm text-gray-500">LTV Médio</p>
+              <div className="relative group">
+                <span className="w-4 h-4 rounded-full bg-gray-200 text-gray-500 text-xs flex items-center justify-center cursor-help leading-none">?</span>
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-gray-800 text-white text-xs rounded-xl p-3 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                  <p className="font-semibold mb-1">LTV — Lifetime Value</p>
+                  <p className="text-gray-300 leading-relaxed">Valor total que um paciente gera para a clínica ao longo do tempo. Quanto maior o LTV, mais fidelizado é o paciente.</p>
+                </div>
+              </div>
+            </div>
             <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
