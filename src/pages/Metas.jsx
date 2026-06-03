@@ -120,22 +120,10 @@ export default function Metas() {
 
   const metaDinamicaPorDia = {}
 
-  // Meta proporcional: metaValor dividido igualmente entre todos os dias selecionados
-  // Dias passados: mostram meta planejada (altera quando dias são marcados/desmarcados)
-  // Dias futuros: ajustado pelo saldo real restante
-  const totalSelecionados = diasOrdenados.length
-  const metaBase = totalSelecionados > 0 ? metaValor / totalSelecionados : 0
-
-  const totalVendasPassadas = diasOrdenados
-    .filter(d => d.dia < diaHoje)
-    .reduce((acc, d) => acc + (vendasPorDia[d.dia] || 0), 0)
-  const saldoRestante = Math.max(0, metaValor - totalVendasPassadas)
-  const diasFuturos = diasOrdenados.filter(d => d.dia >= diaHoje)
-  const metaFutura = diasFuturos.length > 0 ? saldoRestante / diasFuturos.length : 0
-
-  diasOrdenados.forEach(({ dia }) => {
-    metaDinamicaPorDia[dia] = dia < diaHoje ? metaBase : metaFutura
-  })
+  // Meta flat: metaValor ÷ total de dias selecionados — igual para todos
+  // Assim qualquer toggle atualiza todos os dias e fica consistente com o card "Meta Diária"
+  const metaBase = diasOrdenados.length > 0 ? metaValor / diasOrdenados.length : 0
+  diasOrdenados.forEach(({ dia }) => { metaDinamicaPorDia[dia] = metaBase })
 
   const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
