@@ -20,6 +20,7 @@ import Financeiro from './pages/Financeiro'
 import ContasPagar from './pages/ContasPagar'
 import Pacientes from './pages/Pacientes'
 import Relatorios from './pages/Relatorios'
+import Configuracoes from './pages/Configuracoes'
 
 function PagePlaceholder({ title }) {
   return (
@@ -135,6 +136,7 @@ export default function App() {
       case 'contas': return <ContasPagar />
       case 'pacientes': return <Pacientes />
       case 'relatorios': return <Relatorios />
+      case 'configuracoes': return <Configuracoes />
       default: return <Dashboard />
     }
   }
