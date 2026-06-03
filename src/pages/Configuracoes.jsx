@@ -76,52 +76,160 @@ function TabClinica() {
 }
 
 /* ── ABA WHATSAPP ── */
-function TabWhatsApp() {
-  const [dados, setDados] = useState(() => load('config_whatsapp', { numero: '', linkBio: '', mensagemBoasvindas: '' }))
-  const [salvo, setSalvo] = useState(false)
+function gerarId() {
+  return Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16).toUpperCase()).join('')
+}
 
-  const set = (campo, val) => setDados(d => ({ ...d, [campo]: val }))
-  const salvar = () => {
-    localStorage.setItem('config_whatsapp', JSON.stringify(dados))
-    setSalvo(true)
-    setTimeout(() => setSalvo(false), 2000)
+const TIPOS_WA = ['Comercial', 'Recorrência', 'Indicação', 'Suporte', 'Outro']
+
+function TabWhatsApp() {
+  const defaultContas = [
+    { id: gerarId(), nome: 'Comercial',   tipo: 'Comercial'   },
+    { id: gerarId(), nome: 'Recorrência', tipo: 'Recorrência' },
+  ]
+  const [contas, setContas] = useState(() => load('config_whatsapp_contas', defaultContas))
+  const [modal, setModal] = useState(false)
+  const [novoNome, setNovoNome] = useState('')
+  const [novoTipo, setNovoTipo] = useState('Comercial')
+  const [editando, setEditando] = useState(null)
+  const [copiado, setCopiado] = useState(null)
+
+  const salvarContas = (lista) => {
+    localStorage.setItem('config_whatsapp_contas', JSON.stringify(lista))
+    setContas(lista)
+  }
+
+  const adicionar = () => {
+    if (!novoNome.trim()) return
+    salvarContas([...contas, { id: gerarId(), nome: novoNome.trim(), tipo: novoTipo }])
+    setNovoNome(''); setNovoTipo('Comercial'); setModal(false)
+  }
+
+  const remover = (id) => salvarContas(contas.filter(c => c.id !== id))
+
+  const salvarEdicao = (id, nome, tipo) => {
+    salvarContas(contas.map(c => c.id === id ? { ...c, nome, tipo } : c))
+    setEditando(null)
+  }
+
+  const copiarWebhook = (id) => {
+    navigator.clipboard.writeText(id).catch(() => {})
+    setCopiado(id)
+    setTimeout(() => setCopiado(null), 2000)
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">💬 Configurações de WhatsApp</h2>
-        <p className="text-sm text-gray-400 mt-0.5">Número e mensagens automáticas</p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
         <div>
-          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Número do WhatsApp</label>
-          <input value={dados.numero} onChange={e => set('numero', e.target.value)}
-            placeholder="(64) 99999-9999"
-            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400" />
+          <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">💬 Contas WhatsApp</h2>
+          <p className="text-sm text-gray-400 mt-0.5">Gerencie as contas WhatsApp conectadas à sua clínica</p>
         </div>
-        <div>
-          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Link da Bio</label>
-          <input value={dados.linkBio} onChange={e => set('linkBio', e.target.value)}
-            placeholder="https://wa.me/..."
-            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400" />
-        </div>
+        <button onClick={() => setModal(true)}
+          className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors">
+          + Adicionar WhatsApp
+        </button>
       </div>
 
-      <div>
-        <label className="text-sm font-medium text-gray-700 mb-1.5 block">Mensagem de Boas-vindas</label>
-        <textarea value={dados.mensagemBoasvindas} onChange={e => set('mensagemBoasvindas', e.target.value)}
-          placeholder="Olá! Bem-vindo(a) à clínica..."
-          rows={4}
-          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400 resize-none" />
-        <p className="text-xs text-gray-400 mt-1">Usada como modelo no primeiro contato com novos leads.</p>
+      <div className="space-y-3">
+        {contas.map(conta => (
+          editando?.id === conta.id ? (
+            <EditarConta key={conta.id} conta={conta} onSalvar={salvarEdicao} onCancelar={() => setEditando(null)} />
+          ) : (
+            <div key={conta.id} className="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm">
+              <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-500 flex-shrink-0 text-lg">
+                💬
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold text-gray-800">{conta.nome}</p>
+                  <span className="text-xs bg-amber-100 text-amber-700 font-semibold px-2 py-0.5 rounded-full">{conta.tipo}</span>
+                </div>
+                <p className="text-xs text-gray-400 mt-0.5 font-mono">ID: {conta.id}</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button onClick={() => copiarWebhook(conta.id)}
+                  className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-amber-600 font-medium transition-colors">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  {copiado === conta.id ? 'Copiado!' : 'Webhook'}
+                </button>
+                <button onClick={() => setEditando(conta)}
+                  className="text-gray-300 hover:text-amber-500 transition-colors">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+                <button onClick={() => remover(conta.id)}
+                  className="text-gray-300 hover:text-red-400 transition-colors">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )
+        ))}
+
+        {contas.length === 0 && (
+          <div className="p-10 text-center text-gray-400">
+            <p className="text-3xl mb-2">💬</p>
+            <p className="text-sm">Nenhuma conta conectada. Clique em "+ Adicionar WhatsApp".</p>
+          </div>
+        )}
       </div>
 
-      <button onClick={salvar}
-        className="bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors">
-        {salvo ? '✓ Salvo!' : 'Salvar Alterações'}
-      </button>
+      {/* Modal adicionar */}
+      {modal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-gray-900">Adicionar WhatsApp</h3>
+              <button onClick={() => setModal(false)} className="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Nome da Conta</label>
+              <input autoFocus value={novoNome} onChange={e => setNovoNome(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && adicionar()}
+                placeholder="Ex: Comercial"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400" />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Tipo</label>
+              <select value={novoTipo} onChange={e => setNovoTipo(e.target.value)}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400 bg-white">
+                {TIPOS_WA.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div className="flex justify-end gap-3 pt-1">
+              <button onClick={() => setModal(false)} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
+              <button onClick={adicionar} disabled={!novoNome.trim()}
+                className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl disabled:opacity-40">Adicionar</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function EditarConta({ conta, onSalvar, onCancelar }) {
+  const [nome, setNome] = useState(conta.nome)
+  const [tipo, setTipo] = useState(conta.tipo)
+  return (
+    <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+      <div className="flex-1 grid grid-cols-2 gap-3">
+        <input value={nome} onChange={e => setNome(e.target.value)}
+          className="border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400 bg-white" />
+        <select value={tipo} onChange={e => setTipo(e.target.value)}
+          className="border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400 bg-white">
+          {TIPOS_WA.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+      </div>
+      <button onClick={() => onSalvar(conta.id, nome, tipo)}
+        className="text-xs bg-amber-500 text-white font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-600">Salvar</button>
+      <button onClick={onCancelar} className="text-xs text-gray-400 hover:text-gray-600">Cancelar</button>
     </div>
   )
 }
