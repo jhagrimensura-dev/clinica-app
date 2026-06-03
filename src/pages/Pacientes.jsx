@@ -202,6 +202,29 @@ export default function Pacientes() {
         </div>
       </div>
 
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+          <div className="flex justify-between items-start mb-1">
+            <p className="text-sm text-gray-500">Total de Pacientes</p>
+            <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <p className="text-3xl font-bold text-gray-900 mt-1">{total}</p>
+          <p className="text-xs text-gray-400 mt-1">{total > 0 ? `${total} cadastrados` : 'Nenhum paciente ainda'}</p>
+        </div>
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+          <div className="flex justify-between items-start mb-1">
+            <p className="text-sm text-gray-500">LTV Médio</p>
+            <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+          </div>
+          <p className="text-3xl font-bold text-gray-900 mt-1">R$ 0</p>
+          <p className="text-xs text-gray-400 mt-1">{total > 0 ? `${total} pacientes` : '—'}</p>
+        </div>
+      </div>
+
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <table className="w-full text-sm">
           <thead>
