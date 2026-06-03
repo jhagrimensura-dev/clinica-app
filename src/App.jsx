@@ -4,6 +4,7 @@ import { FinanceiroProvider } from './context/FinanceiroContext'
 import { ContasProvider } from './context/ContasContext'
 import { LeadsProvider } from './context/LeadsContext'
 import { PacientesProvider } from './context/PacientesContext'
+import { VendasProvider } from './context/VendasContext'
 import LeadsNovos from './pages/LeadsNovos'
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
@@ -142,6 +143,7 @@ export default function App() {
     <ContasProvider>
     <LeadsProvider>
     <PacientesProvider>
+    <VendasProvider>
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar active={active} setActive={setActive} />
         <div className="flex-1 ml-52 flex flex-col">
@@ -149,6 +151,7 @@ export default function App() {
           <main className="flex-1">{renderPage()}</main>
         </div>
       </div>
+    </VendasProvider>
     </PacientesProvider>
     </LeadsProvider>
     </ContasProvider>
