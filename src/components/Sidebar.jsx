@@ -48,7 +48,7 @@ export default function Sidebar({ active, setActive, collapsed, setCollapsed }) 
   }
 
   return (
-    <div className={`${collapsed ? 'w-14' : 'w-52'} min-h-screen bg-white border-r border-pink-100 flex flex-col fixed left-0 top-0 bottom-0 transition-all duration-200 z-10`}>
+    <div className={`${collapsed ? 'w-14' : 'w-52'} min-h-screen bg-white border-r border-pink-100 flex flex-col fixed left-0 top-0 bottom-0 transition-all duration-200 z-50`}>
 
       {/* Header */}
       <div className={`p-3 flex items-center border-b border-pink-100 ${collapsed ? 'justify-center' : 'gap-3'}`}>
