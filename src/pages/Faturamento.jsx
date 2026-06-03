@@ -5,10 +5,10 @@ export default function Faturamento() {
   const totalPendente = transacoes.filter(t => t.status === 'Pendente').reduce((acc, t) => acc + t.valor, 0)
 
   const servicos = [
-    { nome: 'Botox', valor: 2500, cor: 'bg-pink-400' },
-    { nome: 'Preenchimento', valor: 3600, cor: 'bg-purple-400' },
-    { nome: 'Skinbooster', valor: 1250, cor: 'bg-blue-400' },
-    { nome: 'Fio de PDO', valor: 1800, cor: 'bg-cyan-400' },
+    { nome: 'Botox', valor: 0, cor: 'bg-pink-400' },
+    { nome: 'Preenchimento', valor: 0, cor: 'bg-purple-400' },
+    { nome: 'Skinbooster', valor: 0, cor: 'bg-blue-400' },
+    { nome: 'Fio de PDO', valor: 0, cor: 'bg-cyan-400' },
   ]
   const totalServicos = servicos.reduce((acc, s) => acc + s.valor, 0)
 
@@ -29,8 +29,8 @@ export default function Faturamento() {
       <div className="grid grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 font-medium mb-1">Faturamento Total</p>
-          <p className="text-2xl font-bold text-gray-900">R$ 38.450</p>
-          <p className="text-xs text-gray-400 mt-1">Meta: R$ 45.000</p>
+          <p className="text-2xl font-bold text-gray-900">R$ 0</p>
+          <p className="text-xs text-gray-400 mt-1">—</p>
         </div>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 font-medium mb-1">Recebido</p>
@@ -44,7 +44,7 @@ export default function Faturamento() {
         </div>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 font-medium mb-1">Ticket Médio</p>
-          <p className="text-2xl font-bold text-pink-500">R$ 1.671</p>
+          <p className="text-2xl font-bold text-pink-500">R$ 0</p>
           <p className="text-xs text-gray-400 mt-1">Por procedimento</p>
         </div>
       </div>
@@ -55,13 +55,13 @@ export default function Faturamento() {
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <h2 className="text-base font-bold text-gray-800 mb-4">Meta do Mês</h2>
           <div className="flex justify-between text-sm mb-2">
-            <span className="text-gray-500">R$ 38.450 de R$ 45.000</span>
-            <span className="font-semibold text-pink-500">85,4%</span>
+            <span className="text-gray-500">R$ 0 de R$ 0</span>
+            <span className="font-semibold text-pink-500">0%</span>
           </div>
           <div className="w-full bg-gray-100 rounded-full h-4 mb-4">
-            <div className="bg-pink-400 h-4 rounded-full" style={{ width: '85.4%' }}></div>
+            <div className="bg-pink-400 h-4 rounded-full" style={{ width: '0%' }}></div>
           </div>
-          <p className="text-xs text-gray-400">Faltam R$ 6.550 para bater a meta 🎯</p>
+          <p className="text-xs text-gray-400">Nenhuma transação registrada</p>
         </div>
 
         {/* Serviços */}
