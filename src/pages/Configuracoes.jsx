@@ -236,65 +236,124 @@ function EditarConta({ conta, onSalvar, onCancelar }) {
 
 /* ── ABA MEU PERFIL ── */
 function TabPerfil() {
-  const [dados, setDados] = useState(() => load('config_perfil', { nome: 'Dra. Amanda Lima', email: '', cargo: 'Dentista', crm: '' }))
+  const [dados, setDados] = useState(() => load('config_perfil', {
+    nome: 'João Henrique', apelido: 'João', email: 'jhagrimensura@gmail.com', cargo: 'Gestor',
+  }))
   const [salvo, setSalvo] = useState(false)
+  const [senha, setSenha] = useState('')
+  const [confirma, setConfirma] = useState('')
+  const [mostrarSenha, setMostrarSenha] = useState(false)
+  const [mostrarConfirma, setMostrarConfirma] = useState(false)
+  const [senhaMsg, setSenhaMsg] = useState('')
 
   const set = (campo, val) => setDados(d => ({ ...d, [campo]: val }))
+
   const salvar = () => {
     localStorage.setItem('config_perfil', JSON.stringify(dados))
     setSalvo(true)
     setTimeout(() => setSalvo(false), 2000)
   }
 
+  const atualizarSenha = () => {
+    if (senha.length < 6) { setSenhaMsg('A senha deve ter pelo menos 6 caracteres'); return }
+    if (senha !== confirma) { setSenhaMsg('As senhas não conferem'); return }
+    setSenhaMsg('✓ Senha atualizada!')
+    setSenha(''); setConfirma('')
+    setTimeout(() => setSenhaMsg(''), 2500)
+  }
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">👤 Meu Perfil</h2>
-        <p className="text-sm text-gray-400 mt-0.5">Suas informações pessoais e profissionais</p>
-      </div>
-
-      <div className="flex items-center gap-5 p-5 bg-gray-50 rounded-2xl border border-gray-100">
-        <div className="w-16 h-16 rounded-full bg-pink-100 flex items-center justify-center text-pink-500 text-2xl font-bold flex-shrink-0">
-          {dados.nome ? dados.nome.charAt(0).toUpperCase() : '?'}
-        </div>
+    <div className="space-y-8">
+      {/* Seção dados pessoais */}
+      <div className="space-y-5">
         <div>
-          <p className="font-bold text-gray-800">{dados.nome || 'Sem nome'}</p>
-          <p className="text-sm text-gray-400">{dados.cargo}</p>
+          <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">👤 Meu Perfil</h2>
+          <p className="text-sm text-gray-400 mt-0.5">Atualize suas informações pessoais</p>
         </div>
-      </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Nome Completo</label>
-          <input value={dados.nome} onChange={e => set('nome', e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400" />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Nome Completo <span className="text-red-400">*</span></label>
+            <input value={dados.nome} onChange={e => set('nome', e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400" />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Apelido</label>
+            <input value={dados.apelido} onChange={e => set('apelido', e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400" />
+          </div>
         </div>
+
         <div>
           <label className="text-sm font-medium text-gray-700 mb-1.5 block">E-mail</label>
-          <input type="email" value={dados.email} onChange={e => set('email', e.target.value)}
-            placeholder="seu@email.com"
-            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400" />
+          <input value={dados.email} disabled
+            className="w-full border border-gray-100 rounded-xl px-3 py-2.5 text-sm bg-gray-50 text-gray-400 cursor-not-allowed" />
+          <p className="text-xs text-gray-400 mt-1">O e-mail não pode ser alterado</p>
         </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Cargo</label>
+            <input value={dados.cargo} onChange={e => set('cargo', e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400" />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Função no Sistema</label>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-xs bg-red-500 text-white font-semibold px-3 py-1 rounded-full">Administrador</span>
+              <span className="text-xs text-gray-400">(não pode ser alterado)</span>
+            </div>
+          </div>
+        </div>
+
+        <button onClick={salvar}
+          className="bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors">
+          {salvo ? '✓ Salvo!' : 'Salvar Alterações'}
+        </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="border-t border-gray-100 pt-6 space-y-5">
         <div>
-          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Cargo / Especialidade</label>
-          <input value={dados.cargo} onChange={e => set('cargo', e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400" />
+          <h2 className="text-lg font-bold text-gray-800">Alterar Senha</h2>
+          <p className="text-sm text-gray-400 mt-0.5">Atualize sua senha de acesso ao sistema</p>
         </div>
-        <div>
-          <label className="text-sm font-medium text-gray-700 mb-1.5 block">CRM / CRO</label>
-          <input value={dados.crm} onChange={e => set('crm', e.target.value)}
-            placeholder="GO-00000"
-            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400" />
-        </div>
-      </div>
 
-      <button onClick={salvar}
-        className="bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors">
-        {salvo ? '✓ Salvo!' : 'Salvar Alterações'}
-      </button>
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Nova Senha <span className="text-red-400">*</span></label>
+          <div className="relative">
+            <input type={mostrarSenha ? 'text' : 'password'} value={senha} onChange={e => setSenha(e.target.value)}
+              placeholder="Digite sua nova senha"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 pr-10 text-sm outline-none focus:border-amber-400" />
+            <button onClick={() => setMostrarSenha(v => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              {mostrarSenha ? '🙈' : '👁️'}
+            </button>
+          </div>
+          <p className="text-xs text-gray-400 mt-1">A senha deve ter pelo menos 6 caracteres</p>
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Confirmar Nova Senha <span className="text-red-400">*</span></label>
+          <div className="relative">
+            <input type={mostrarConfirma ? 'text' : 'password'} value={confirma} onChange={e => setConfirma(e.target.value)}
+              placeholder="Confirme sua nova senha"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 pr-10 text-sm outline-none focus:border-amber-400" />
+            <button onClick={() => setMostrarConfirma(v => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              {mostrarConfirma ? '🙈' : '👁️'}
+            </button>
+          </div>
+        </div>
+
+        {senhaMsg && (
+          <p className={`text-sm font-medium ${senhaMsg.startsWith('✓') ? 'text-green-600' : 'text-red-500'}`}>{senhaMsg}</p>
+        )}
+
+        <button onClick={atualizarSenha}
+          className="bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors">
+          Atualizar Senha
+        </button>
+      </div>
     </div>
   )
 }
