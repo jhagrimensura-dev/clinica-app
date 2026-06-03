@@ -21,6 +21,7 @@ import ContasPagar from './pages/ContasPagar'
 import Pacientes from './pages/Pacientes'
 import Relatorios from './pages/Relatorios'
 import Configuracoes from './pages/Configuracoes'
+import Ajuda from './pages/Ajuda'
 
 function PagePlaceholder({ title }) {
   return (
@@ -137,6 +138,7 @@ export default function App() {
       case 'pacientes': return <Pacientes />
       case 'relatorios': return <Relatorios />
       case 'configuracoes': return <Configuracoes />
+      case 'ajuda': return <Ajuda />
       default: return <Dashboard />
     }
   }

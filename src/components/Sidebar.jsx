@@ -100,7 +100,7 @@ export default function Sidebar({ active, setActive }) {
       </nav>
       <div className="px-3 pb-4 border-t border-gray-100 pt-3">
         <button onClick={() => setActive('configuracoes')} className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-3 transition-colors ${active === 'configuracoes' ? 'bg-pink-50 text-pink-600 font-semibold' : 'text-gray-500 hover:bg-gray-50'}`}><span>⚙️</span><span>Configurações</span></button>
-        <button className="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-3 text-gray-500 hover:bg-gray-50"><span>❓</span><span>Ajuda</span></button>
+        <button onClick={() => setActive('ajuda')} className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-3 transition-colors ${active === 'ajuda' ? 'bg-pink-50 text-pink-600 font-semibold' : 'text-gray-500 hover:bg-gray-50'}`}><span>❓</span><span>Ajuda</span></button>
         <button className="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-3 text-gray-500 hover:bg-gray-50"><span>💬</span><span>WhatsApp</span></button>
       </div>
     </div>
