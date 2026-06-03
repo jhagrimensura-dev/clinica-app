@@ -38,7 +38,7 @@ export default function Faturamento() {
             <span className="text-sm font-semibold text-gray-700 w-24 text-center">{MESES_FULL[mes].slice(0,3)} {ano}</span>
             <button onClick={() => navMes(1)} className="text-gray-400 hover:text-gray-600 px-1">›</button>
           </div>
-          <button className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">
+          <button className="flex items-center gap-2 bg-pink-400 hover:bg-pink-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">
             + Novo Lançamento
           </button>
         </div>
