@@ -120,13 +120,21 @@ export default function Metas() {
 
   let metaRestante = metaValor
   const metaDinamicaPorDia = {}
+
+  // Dias passados/hoje: meta rolling (acumula déficit/superávit real)
   diasOrdenados.forEach(({ dia }, idx) => {
-    const diasRestantes = diasOrdenados.length - idx
-    const metaAjustada = diasRestantes > 0 ? metaRestante / diasRestantes : 0
-    metaDinamicaPorDia[dia] = metaAjustada
-    const vendas = vendasPorDia[dia] || 0
-    if (dia < diaHoje) metaRestante = Math.max(0, metaRestante - vendas)
+    if (dia <= diaHoje) {
+      const diasRestantes = diasOrdenados.length - idx
+      metaDinamicaPorDia[dia] = diasRestantes > 0 ? metaRestante / diasRestantes : 0
+      const vendas = vendasPorDia[dia] || 0
+      metaRestante = Math.max(0, metaRestante - vendas)
+    }
   })
+
+  // Dias futuros: meta plana = o que resta dividido igualmente
+  const diasFuturos = diasOrdenados.filter(d => d.dia > diaHoje)
+  const metaFlat = diasFuturos.length > 0 ? metaRestante / diasFuturos.length : 0
+  diasFuturos.forEach(({ dia }) => { metaDinamicaPorDia[dia] = metaFlat })
 
   const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
