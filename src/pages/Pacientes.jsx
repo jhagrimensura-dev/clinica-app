@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { usePacientes } from '../context/PacientesContext'
 
 function ModalNovoPaciente({ onClose, onSalvar }) {
@@ -121,6 +121,32 @@ export default function Pacientes() {
   const [modal, setModal] = useState(false)
   const [busca, setBusca] = useState('')
   const [filtro, setFiltro] = useState('Todos')
+  const [sugestoes, setSugestoes] = useState([])
+  const [mostrarSugestoes, setMostrarSugestoes] = useState(false)
+  const buscaRef = useRef(null)
+
+  useEffect(() => {
+    const handleClick = (e) => { if (!buscaRef.current?.contains(e.target)) setMostrarSugestoes(false) }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  const handleBusca = (valor) => {
+    setBusca(valor)
+    if (valor.trim().length > 0) {
+      const matches = pacientes.filter(p => p.nome.toLowerCase().includes(valor.toLowerCase())).slice(0, 6)
+      setSugestoes(matches)
+      setMostrarSugestoes(matches.length > 0)
+    } else {
+      setSugestoes([])
+      setMostrarSugestoes(false)
+    }
+  }
+
+  const selecionarSugestao = (nome) => {
+    setBusca(nome)
+    setMostrarSugestoes(false)
+  }
 
   const hoje = new Date()
   const mesAtual = hoje.getMonth()
@@ -182,13 +208,32 @@ export default function Pacientes() {
       </div>
 
       <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-4">
-        <input
-          type="text"
-          placeholder="Buscar paciente..."
-          value={busca}
-          onChange={e => setBusca(e.target.value)}
-          className="flex-1 text-sm border border-gray-200 rounded-xl px-4 py-2 outline-none focus:border-pink-400 transition-colors"
-        />
+        <div className="flex-1 relative" ref={buscaRef}>
+          <input
+            type="text"
+            placeholder="Buscar paciente..."
+            value={busca}
+            onChange={e => handleBusca(e.target.value)}
+            onFocus={() => busca.trim() && sugestoes.length > 0 && setMostrarSugestoes(true)}
+            className="w-full text-sm border border-gray-200 rounded-xl px-4 py-2 outline-none focus:border-pink-400 transition-colors"
+          />
+          {mostrarSugestoes && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden">
+              {sugestoes.map(p => (
+                <button
+                  key={p.id}
+                  onMouseDown={() => selecionarSugestao(p.nome)}
+                  className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-pink-50 hover:text-pink-600 flex items-center gap-3 transition-colors"
+                >
+                  <div className="w-7 h-7 rounded-full bg-pink-100 flex items-center justify-center text-pink-500 font-bold text-xs flex-shrink-0">
+                    {p.nome.charAt(0).toUpperCase()}
+                  </div>
+                  <span>{p.nome}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <div className="flex gap-2">
           {['Todos', 'Ativo', 'Inativo', 'Pendente'].map(f => (
             <button
@@ -201,6 +246,7 @@ export default function Pacientes() {
           ))}
         </div>
       </div>
+
 
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
