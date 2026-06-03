@@ -104,6 +104,30 @@ export default function Metas() {
 
   const metaDiariaOriginal = metaDiaria
 
+  // Calcula meta dinâmica por dia: distribui déficit/superávit nos dias seguintes
+  const diasOrdenados = []
+  calendario.forEach((semana, si) => {
+    semana.forEach((dia, di) => {
+      if (!dia.mes && diasSelecionados.has(`${si}-${di}`)) {
+        diasOrdenados.push({ key: `${si}-${di}`, dia: dia.dia })
+      }
+    })
+  })
+  diasOrdenados.sort((a, b) => a.dia - b.dia)
+
+  const hoje = new Date()
+  const diaHoje = (hoje.getFullYear() === ano && hoje.getMonth() === mes) ? hoje.getDate() : Infinity
+
+  let metaRestante = metaValor
+  const metaDinamicaPorDia = {}
+  diasOrdenados.forEach(({ dia }, idx) => {
+    const diasRestantes = diasOrdenados.length - idx
+    const metaAjustada = diasRestantes > 0 ? metaRestante / diasRestantes : 0
+    metaDinamicaPorDia[dia] = metaAjustada
+    const vendas = vendasPorDia[dia] || 0
+    if (dia < diaHoje) metaRestante = Math.max(0, metaRestante - vendas)
+  })
+
   const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
   const iniciarEdicao = () => { setInputValor(String(metaValor)); setEditando(true) }
@@ -283,14 +307,18 @@ export default function Metas() {
 
               const valorVendas = vendasPorDia[dia.dia] || 0
               const temVendas = valorVendas > 0
+              const metaDoDia = metaDinamicaPorDia[dia.dia] || metaDiariaOriginal
+              const isFuturo = dia.dia >= diaHoje
 
               const bg = !isSelected
                 ? 'bg-white border border-gray-100'
-                : !temVendas
-                  ? 'bg-yellow-50 border border-yellow-200'
-                  : valorVendas >= metaDiariaOriginal
-                    ? 'bg-green-50 border border-green-200'
-                    : 'bg-red-50 border border-red-200'
+                : isFuturo
+                  ? 'bg-blue-50 border border-blue-100'
+                  : !temVendas
+                    ? 'bg-yellow-50 border border-yellow-200'
+                    : valorVendas >= metaDoDia
+                      ? 'bg-green-50 border border-green-200'
+                      : 'bg-red-50 border border-red-200'
 
               return (
                 <div
@@ -301,11 +329,13 @@ export default function Metas() {
                   <p className="text-sm font-bold text-gray-800">{dia.dia}</p>
                   {isSelected && (
                     <div className="mt-1">
-                      <p className={`text-sm font-bold ${temVendas ? (valorVendas >= metaDiariaOriginal ? 'text-green-600' : 'text-red-500') : 'text-gray-300'}`}>
-                        {temVendas ? valorVendas.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '—'}
-                      </p>
-                      {metaDiariaOriginal > 0 && (
-                        <p className="text-xs text-gray-400">/{Math.round(metaDiariaOriginal).toLocaleString('pt-BR')}</p>
+                      {!isFuturo && (
+                        <p className={`text-sm font-bold ${temVendas ? (valorVendas >= metaDoDia ? 'text-green-600' : 'text-red-500') : 'text-gray-400'}`}>
+                          {temVendas ? valorVendas.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '—'}
+                        </p>
+                      )}
+                      {metaDoDia > 0 && (
+                        <p className="text-xs text-gray-400">/{Math.round(metaDoDia).toLocaleString('pt-BR')}</p>
                       )}
                     </div>
                   )}
@@ -316,7 +346,8 @@ export default function Metas() {
         ))}
 
         <div className="flex items-center gap-6 mt-4 pt-4 border-t border-gray-100">
-          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-200"></div><span className="text-xs text-gray-500">Selecionado</span></div>
+          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-200"></div><span className="text-xs text-gray-500">Próximos dias</span></div>
+          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-200"></div><span className="text-xs text-gray-500">Sem venda</span></div>
           <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-300"></div><span className="text-xs text-gray-500">Meta batida</span></div>
           <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-300"></div><span className="text-xs text-gray-500">Abaixo da meta</span></div>
           <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-gray-200"></div><span className="text-xs text-gray-500">Não selecionado</span></div>
