@@ -36,23 +36,7 @@ function PagePlaceholder({ title }) {
 
 function Diario({ mesIndex, ano }) {
   const mesesNome = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro']
-  const diasMaio = [
-    { dia: 1, semana: 'Qui', leads: 4, contatos: 8, atend: 2, fat: 'R$ 6.400', status: 'ok' },
-    { dia: 2, semana: 'Sex', leads: 6, contatos: 12, atend: 3, fat: 'R$ 9.600', status: 'ok' },
-    { dia: 5, semana: 'Seg', leads: 3, contatos: 7, atend: 2, fat: 'R$ 6.400', status: 'ok' },
-    { dia: 6, semana: 'Ter', leads: 5, contatos: 10, atend: 3, fat: 'R$ 9.600', status: 'ok' },
-    { dia: 7, semana: 'Qua', leads: 7, contatos: 14, atend: 4, fat: 'R$ 12.800', status: 'ok' },
-    { dia: 8, semana: 'Qui', leads: 2, contatos: 5, atend: 1, fat: 'R$ 3.200', status: 'baixo' },
-    { dia: 9, semana: 'Sex', leads: 8, contatos: 16, atend: 3, fat: 'R$ 9.600', status: 'ok' },
-    { dia: 12, semana: 'Seg', leads: 5, contatos: 9, atend: 2, fat: 'R$ 6.400', status: 'ok' },
-    { dia: 13, semana: 'Ter', leads: 4, contatos: 8, atend: 1, fat: 'R$ 3.200', status: 'baixo' },
-    { dia: 14, semana: 'Qua', leads: 6, contatos: 11, atend: 2, fat: 'R$ 6.400', status: 'ok' },
-    { dia: 15, semana: 'Qui', leads: 5, contatos: 10, atend: 3, fat: 'R$ 9.600', status: 'ok' },
-    { dia: 16, semana: 'Sex', leads: 9, contatos: 18, atend: 5, fat: 'R$ 16.000', status: 'alto' },
-    { dia: 19, semana: 'Seg', leads: 7, contatos: 13, atend: 3, fat: 'R$ 9.600', status: 'ok' },
-    { dia: 20, semana: 'Ter', leads: 6, contatos: 12, atend: 2, fat: 'R$ 6.400', status: 'ok' },
-    { dia: 21, semana: 'Qua', leads: 4, contatos: 8, atend: 2, fat: 'R$ 6.400', status: 'ok' },
-  ]
+  const diasMaio = []
   return (
     <div className="p-6 space-y-6">
       <div>
@@ -61,10 +45,10 @@ function Diario({ mesIndex, ano }) {
       </div>
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: 'Total de Leads', value: '59', icon: '🔗', color: 'text-pink-500' },
-          { label: 'Atendimentos', value: '24', icon: '📅', color: 'text-blue-500' },
-          { label: 'Vendas', value: '21', icon: '✅', color: 'text-green-500' },
-          { label: 'Faturamento', value: 'R$ 61.749', icon: '💰', color: 'text-purple-500' },
+          { label: 'Total de Leads', value: '0', icon: '🔗', color: 'text-pink-500' },
+          { label: 'Atendimentos', value: '0', icon: '📅', color: 'text-blue-500' },
+          { label: 'Vendas', value: '0', icon: '✅', color: 'text-green-500' },
+          { label: 'Faturamento', value: 'R$ 0', icon: '💰', color: 'text-purple-500' },
         ].map((card, i) => (
           <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
             <div className="flex justify-between items-start mb-2">
@@ -78,7 +62,7 @@ function Diario({ mesIndex, ano }) {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="text-base font-bold text-gray-800">Dias de Atendimento — {mesesNome[mesIndex]}</h2>
-          <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full">15 dias úteis</span>
+          <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full">0 dias úteis</span>
         </div>
         <table className="w-full">
           <thead>
