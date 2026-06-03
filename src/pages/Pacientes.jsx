@@ -235,14 +235,14 @@ export default function Pacientes() {
       </div>
 
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <h2 className="text-base font-bold text-gray-800 mb-4">Lista de Pacientes</h2>
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-xs text-gray-400 border-b border-gray-100">
-              <th className="pb-3 font-semibold">Paciente</th>
+              <th className="pb-3 font-semibold">Nome</th>
               <th className="pb-3 font-semibold">WhatsApp</th>
-              <th className="pb-3 font-semibold">Sexo</th>
               <th className="pb-3 font-semibold">Nascimento</th>
-              <th className="pb-3 font-semibold">Status</th>
+              <th className="pb-3 font-semibold">LTV</th>
             </tr>
           </thead>
           <tbody>
@@ -250,13 +250,8 @@ export default function Pacientes() {
               <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer">
                 <td className="py-3 font-medium text-gray-800">{p.nome}</td>
                 <td className="py-3 text-gray-500">{p.whatsapp || '—'}</td>
-                <td className="py-3 text-gray-500">{p.sexo || '—'}</td>
                 <td className="py-3 text-gray-500">{p.nascimento ? new Date(p.nascimento).toLocaleDateString('pt-BR') : '—'}</td>
-                <td className="py-3">
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusCor(p.status)}`}>
-                    {p.status}
-                  </span>
-                </td>
+                <td className="py-3 text-gray-500">R$ 0</td>
               </tr>
             ))}
           </tbody>
