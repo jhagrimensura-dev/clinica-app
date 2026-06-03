@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useClinica } from '../context/ClinicaContext'
 
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
@@ -43,13 +43,22 @@ export default function SocialMedia() {
   const { mes, ano, posts, setPosts } = useClinica()
   const semanas = gerarCalendario(ano, mes)
 
-  const [trafego, setTrafego] = useState(4905.66)
+  const [trafego, setTrafego] = useState(0)
   const [editandoTrafego, setEditandoTrafego] = useState(false)
   const [inputTrafego, setInputTrafego] = useState('')
 
-  const [seguidores, setSeguidores] = useState(458)
+  const [seguidores, setSeguidores] = useState(0)
   const [editandoSeguidores, setEditandoSeguidores] = useState(false)
   const [inputSeguidores, setInputSeguidores] = useState('')
+
+  useEffect(() => {
+    try {
+      const t = localStorage.getItem(`social_trafego_${ano}_${mes}`)
+      setTrafego(t !== null ? parseFloat(t) : 0)
+      const s = localStorage.getItem(`social_seguidores_${ano}_${mes}`)
+      setSeguidores(s !== null ? parseInt(s) : 0)
+    } catch {}
+  }, [ano, mes])
 
   const [modal, setModal] = useState(null) // null | { dia }
   const [form, setForm] = useState({ data: '', formato: '', tipo: '', link: '', impulsionado: false })
@@ -60,13 +69,19 @@ export default function SocialMedia() {
 
   const salvarTrafego = () => {
     const v = parseFloat(inputTrafego.replace(/\./g, '').replace(',', '.'))
-    if (!isNaN(v) && v >= 0) setTrafego(v)
+    if (!isNaN(v) && v >= 0) {
+      setTrafego(v)
+      try { localStorage.setItem(`social_trafego_${ano}_${mes}`, v) } catch {}
+    }
     setEditandoTrafego(false)
   }
 
   const salvarSeguidores = () => {
     const v = parseInt(inputSeguidores.replace(/\D/g, ''))
-    if (!isNaN(v) && v >= 0) setSeguidores(v)
+    if (!isNaN(v) && v >= 0) {
+      setSeguidores(v)
+      try { localStorage.setItem(`social_seguidores_${ano}_${mes}`, v) } catch {}
+    }
     setEditandoSeguidores(false)
   }
 
