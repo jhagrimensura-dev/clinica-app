@@ -64,7 +64,7 @@ export default function Sidebar({ active, setActive, collapsed, setCollapsed }) 
       {/* Botão recolher */}
       <button
         onClick={() => setCollapsed(v => !v)}
-        className="absolute -right-4 top-6 w-8 h-8 bg-pink-400 hover:bg-pink-500 border-2 border-white rounded-full flex items-center justify-center text-white transition-colors shadow-md"
+        className="absolute -right-4 top-6 w-8 h-8 bg-pink-400 hover:bg-pink-500 border-2 border-white rounded-full flex items-center justify-center text-white transition-colors shadow-md z-50"
         title={collapsed ? 'Expandir menu' : 'Recolher menu'}
       >
         <svg className={`w-4 h-4 transition-transform duration-200 ${collapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
