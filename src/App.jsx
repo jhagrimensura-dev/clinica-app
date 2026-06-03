@@ -6,6 +6,8 @@ import { LeadsProvider } from './context/LeadsContext'
 import { PacientesProvider } from './context/PacientesContext'
 import { VendasProvider } from './context/VendasContext'
 import LeadsNovos from './pages/LeadsNovos'
+import LeadsRecorrentes from './pages/LeadsRecorrentes'
+import Indicacao from './pages/Indicacao'
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
 import Dashboard from './pages/Dashboard'
@@ -123,8 +125,8 @@ export default function App() {
       case 'social': return <SocialMedia />
       case 'comercial': return <Comercial />
       case 'leads_novos': return <LeadsNovos />
-      case 'leads_recorrentes': return <PagePlaceholder title="Leads Recorrentes" />
-      case 'indicacao': return <PagePlaceholder title="Indicação" />
+      case 'leads_recorrentes': return <LeadsRecorrentes />
+      case 'indicacao': return <Indicacao />
       case 'conexao': return <PagePlaceholder title="Conexão" />
       case 'whatsapp_canal': return <PagePlaceholder title="WhatsApp" />
       case 'recorrencia': return <Recorrencia />
