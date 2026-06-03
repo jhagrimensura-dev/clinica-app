@@ -29,11 +29,11 @@ export default function Dashboard() {
           <div className="space-y-2 pt-2 border-t border-gray-100">
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Novos</span>
-              <span className="font-medium text-gray-800">R$ 22.400 <span className="text-pink-400 text-xs ml-1">36.3%</span></span>
+              <span className="font-medium text-gray-800">R$ 0</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Recorrência</span>
-              <span className="font-medium text-gray-800">R$ 37.549 <span className="text-pink-400 text-xs ml-1">60.8%</span></span>
+              <span className="font-medium text-gray-800">R$ 0</span>
             </div>
           </div>
         </div>
@@ -54,8 +54,8 @@ export default function Dashboard() {
             <p className="text-sm text-gray-500 font-medium">Vendas</p>
             <span className="text-pink-400 text-lg">👥</span>
           </div>
-          <p className="text-3xl font-bold text-gray-900 mb-3">21</p>
-          <p className="text-sm text-gray-400">7 novos | 14 recorrentes</p>
+          <p className="text-3xl font-bold text-gray-900 mb-3">0</p>
+          <p className="text-sm text-gray-400">—</p>
         </div>
       </div>
 
@@ -64,10 +64,10 @@ export default function Dashboard() {
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Ticket Médio</p>
         <div className="grid grid-cols-4 gap-4">
           {[
-            { label: 'Geral', value: 'R$ 2.855', sub: '21 pacientes' },
-            { label: 'Novos', value: 'R$ 3.200', sub: '7 pacientes novos' },
-            { label: 'Recorrência', value: 'R$ 2.682', sub: '14 pacientes recorrentes' },
-            { label: 'Diário', value: 'R$ 7.031', sub: 'Média de 8 dias úteis' },
+            { label: 'Geral', value: 'R$ 0', sub: '—' },
+            { label: 'Novos', value: 'R$ 0', sub: '—' },
+            { label: 'Recorrência', value: 'R$ 0', sub: '—' },
+            { label: 'Diário', value: 'R$ 0', sub: '—' },
           ].map((card, i) => (
             <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
               <p className="text-sm text-gray-500 mb-2">{card.label}</p>
@@ -83,10 +83,10 @@ export default function Dashboard() {
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Funil de Conversão</p>
         <div className="grid grid-cols-4 gap-4">
           {[
-            { label: 'Social Media', icon: '🔗', color: 'text-pink-500', value: '458', sub: 'seguidores', extras: ['59 leads recebidos', '12.88% conversão', 'R$ 83,15 custo/lead'] },
-            { label: 'Comercial', icon: '🏢', color: 'text-blue-500', value: '85', sub: 'leads', extras: ['11 agendamentos', '12.9% conversão'] },
-            { label: 'Recorrência', icon: '🔄', color: 'text-teal-500', value: '186', sub: 'contatos', extras: ['13 agendamentos', '7.0% conversão'] },
-            { label: 'Vendas', icon: '📊', color: 'text-green-500', value: '24', sub: 'agendamentos atendidos', extras: ['21 vendas | 7 novos', '87.5% conversão', 'R$ 700,81 custo/venda'] },
+            { label: 'Social Media', icon: '🔗', color: 'text-pink-500', value: '0', sub: 'seguidores', extras: ['0 leads recebidos', '0% conversão', '—'] },
+            { label: 'Comercial', icon: '🏢', color: 'text-blue-500', value: '0', sub: 'leads', extras: ['0 agendamentos', '0% conversão'] },
+            { label: 'Recorrência', icon: '🔄', color: 'text-teal-500', value: '0', sub: 'contatos', extras: ['0 agendamentos', '0% conversão'] },
+            { label: 'Vendas', icon: '📊', color: 'text-green-500', value: '0', sub: 'agendamentos atendidos', extras: ['0 vendas', '0% conversão', '—'] },
           ].map((card, i) => (
             <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
               <div className="flex justify-between items-start mb-1">
