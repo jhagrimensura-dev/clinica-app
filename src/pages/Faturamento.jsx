@@ -1,4 +1,17 @@
+import { useFinanceiro } from '../context/FinanceiroContext'
+
+const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+
 export default function Faturamento() {
+  const { ano, setAno, mes, setMes } = useFinanceiro()
+
+  const navMes = (delta) => {
+    const novo = mes + delta
+    if (novo < 0) { setMes(11); setAno(a => a - 1) }
+    else if (novo > 11) { setMes(0); setAno(a => a + 1) }
+    else setMes(novo)
+  }
+
   const transacoes = []
 
   const totalPago = transacoes.filter(t => t.status === 'Pago').reduce((acc, t) => acc + t.valor, 0)
@@ -14,15 +27,21 @@ export default function Faturamento() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Título */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Vendas</h1>
-          <p className="text-sm text-gray-400 mt-1">Receitas, pagamentos e desempenho financeiro</p>
+          <h1 className="text-2xl font-bold text-gray-800">Faturamento</h1>
+          <p className="text-sm text-gray-400 mt-1">Controle de agendamentos e procedimentos realizados</p>
         </div>
-        <button className="bg-pink-400 hover:bg-pink-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">
-          + Nova Transação
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 border border-gray-200 rounded-xl px-3 py-1.5 bg-white">
+            <button onClick={() => navMes(-1)} className="text-gray-400 hover:text-gray-600 px-1">‹</button>
+            <span className="text-sm font-semibold text-gray-700 w-24 text-center">{MESES_FULL[mes].slice(0,3)} {ano}</span>
+            <button onClick={() => navMes(1)} className="text-gray-400 hover:text-gray-600 px-1">›</button>
+          </div>
+          <button className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">
+            + Novo Lançamento
+          </button>
+        </div>
       </div>
 
       {/* Cards */}
