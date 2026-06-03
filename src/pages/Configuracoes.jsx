@@ -359,96 +359,162 @@ function TabPerfil() {
 }
 
 /* ── ABA EQUIPE ── */
-function TabEquipe() {
-  const [membros, setMembros] = useState(() => load('config_equipe', [
-    { id: 1, nome: 'Dra. Amanda Lima', cargo: 'Dentista', whatsapp: '' },
-  ]))
-  const [novoNome, setNovoNome] = useState('')
-  const [novoCargo, setNovoCargo] = useState('')
-  const [novoWhats, setNovoWhats] = useState('')
-  const [salvo, setSalvo] = useState(false)
+const MEMBROS_DEFAULT = [
+  { id: 1, nome: 'Vinicius Carneiro',    apelido: 'Vini',        funcao: 'Administrador', email: 'amanda.lima@favo.clinic',               cargo: '' },
+  { id: 2, nome: 'João Henrique',        apelido: 'João',        funcao: 'Administrador', email: 'jhagrimensura@gmail.com',               cargo: 'Gestor' },
+  { id: 3, nome: 'Amanda Lima Silva',    apelido: 'Amanda Lima', funcao: 'Administrador', email: 'draamandabiomed@gmail.com',             cargo: 'Doutora' },
+  { id: 4, nome: 'Fernanda Cristina',    apelido: 'Fernanda',    funcao: 'Funcionário',   email: 'atendimentodramandalima@gmail.com',     cargo: 'Comercial' },
+  { id: 5, nome: 'Adriele Moraes',       apelido: 'Adriele',     funcao: 'Funcionário',   email: 'consultoriodramandalima@gmail.com',     cargo: 'Secretaria' },
+  { id: 6, nome: 'Rani Oliveira Matos',  apelido: 'Rani',        funcao: 'Funcionário',   email: 'marketing.clinicaamandalima@gmail.com', cargo: 'Social Mídia' },
+]
 
-  const salvar = (lista) => {
-    localStorage.setItem('config_equipe', JSON.stringify(lista))
-    setSalvo(true)
-    setTimeout(() => setSalvo(false), 2000)
-  }
+const EMPTY_MEMBRO = { nome: '', apelido: '', funcao: 'Funcionário', email: '', cargo: '' }
 
-  const adicionar = () => {
-    if (!novoNome.trim()) return
-    const novo = { id: Date.now(), nome: novoNome.trim(), cargo: novoCargo.trim(), whatsapp: novoWhats.trim() }
-    const lista = [...membros, novo]
-    setMembros(lista)
-    salvar(lista)
-    setNovoNome(''); setNovoCargo(''); setNovoWhats('')
-  }
-
-  const remover = (id) => {
-    const lista = membros.filter(m => m.id !== id)
-    setMembros(lista)
-    salvar(lista)
-  }
-
-  const atualizar = (id, campo, val) => {
-    setMembros(prev => prev.map(m => m.id === id ? { ...m, [campo]: val } : m))
-  }
+function ModalMembro({ membro, onSalvar, onFechar }) {
+  const [form, setForm] = useState(membro || EMPTY_MEMBRO)
+  const set = (campo, val) => setForm(f => ({ ...f, [campo]: val }))
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">👥 Equipe</h2>
-        <p className="text-sm text-gray-400 mt-0.5">Gerencie os membros da sua equipe</p>
-      </div>
-
-      {/* Lista de membros */}
-      <div className="space-y-3">
-        {membros.map(m => (
-          <div key={m.id} className="flex items-center gap-3 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm">
-            <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center text-pink-500 font-bold text-sm flex-shrink-0">
-              {m.nome.charAt(0).toUpperCase()}
-            </div>
-            <div className="flex-1 grid grid-cols-3 gap-3">
-              <input value={m.nome} onChange={e => atualizar(m.id, 'nome', e.target.value)}
-                placeholder="Nome"
-                className="border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400" />
-              <input value={m.cargo} onChange={e => atualizar(m.id, 'cargo', e.target.value)}
-                placeholder="Cargo"
-                className="border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400" />
-              <input value={m.whatsapp} onChange={e => atualizar(m.id, 'whatsapp', e.target.value)}
-                placeholder="WhatsApp"
-                className="border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400" />
-            </div>
-            <button onClick={() => { const lista = membros.map(x => x.id === m.id ? m : x); salvar(lista) }}
-              className="text-xs text-amber-500 font-semibold px-3 py-1.5 border border-amber-200 rounded-lg hover:bg-amber-50 transition-colors">
-              Salvar
-            </button>
-            <button onClick={() => remover(m.id)}
-              className="text-gray-300 hover:text-red-400 text-lg leading-none ml-1">✕</button>
-          </div>
-        ))}
-      </div>
-
-      {/* Adicionar novo membro */}
-      <div className="p-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200 space-y-3">
-        <p className="text-sm font-semibold text-gray-600">Adicionar membro</p>
-        <div className="grid grid-cols-3 gap-3">
-          <input value={novoNome} onChange={e => setNovoNome(e.target.value)}
-            placeholder="Nome *"
-            className="border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400 bg-white" />
-          <input value={novoCargo} onChange={e => setNovoCargo(e.target.value)}
-            placeholder="Cargo"
-            className="border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400 bg-white" />
-          <input value={novoWhats} onChange={e => setNovoWhats(e.target.value)}
-            placeholder="WhatsApp"
-            className="border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400 bg-white" />
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-bold text-gray-900">{membro ? 'Editar Membro' : 'Adicionar Membro'}</h3>
+          <button onClick={onFechar} className="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
         </div>
-        <button onClick={adicionar} disabled={!novoNome.trim()}
-          className="bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-5 py-2 rounded-xl transition-colors disabled:opacity-40">
-          + Adicionar
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs font-medium text-gray-600 mb-1 block">Nome Completo <span className="text-red-400">*</span></label>
+            <input autoFocus value={form.nome} onChange={e => set('nome', e.target.value)}
+              placeholder="Nome completo"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-600 mb-1 block">Apelido</label>
+            <input value={form.apelido} onChange={e => set('apelido', e.target.value)}
+              placeholder="Como é chamado"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400" />
+          </div>
+        </div>
+
+        <div>
+          <label className="text-xs font-medium text-gray-600 mb-1 block">E-mail</label>
+          <input value={form.email} onChange={e => set('email', e.target.value)}
+            placeholder="email@exemplo.com"
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400" />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs font-medium text-gray-600 mb-1 block">Cargo</label>
+            <input value={form.cargo} onChange={e => set('cargo', e.target.value)}
+              placeholder="Ex: Gestor, Doutora..."
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-600 mb-1 block">Função no Sistema</label>
+            <select value={form.funcao} onChange={e => set('funcao', e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400 bg-white">
+              <option>Administrador</option>
+              <option>Funcionário</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 pt-1">
+          <button onClick={onFechar} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
+          <button onClick={() => form.nome.trim() && onSalvar(form)} disabled={!form.nome.trim()}
+            className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl disabled:opacity-40">
+            {membro ? 'Salvar' : 'Adicionar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TabEquipe() {
+  const [membros, setMembros] = useState(() => load('config_equipe', MEMBROS_DEFAULT))
+  const [modal, setModal] = useState(false)
+  const [editando, setEditando] = useState(null)
+
+  const salvarLista = (lista) => {
+    localStorage.setItem('config_equipe', JSON.stringify(lista))
+    setMembros(lista)
+  }
+
+  const adicionar = (form) => {
+    salvarLista([...membros, { ...form, id: Date.now() }])
+    setModal(false)
+  }
+
+  const salvarEdicao = (form) => {
+    salvarLista(membros.map(m => m.id === editando.id ? { ...editando, ...form } : m))
+    setEditando(null)
+  }
+
+  const remover = (id) => salvarLista(membros.filter(m => m.id !== id))
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">👥 Equipe</h2>
+          <p className="text-sm text-gray-400 mt-0.5">Gerencie os membros da sua equipe</p>
+        </div>
+        <button onClick={() => setModal(true)}
+          className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors">
+          + Adicionar Membro
         </button>
       </div>
 
-      {salvo && <p className="text-sm text-green-600 font-medium">✓ Equipe salva!</p>}
+      <div className="space-y-3">
+        {membros.map(m => (
+          <div key={m.id} className="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm">
+            <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center text-pink-600 font-bold text-sm flex-shrink-0">
+              {m.nome.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-sm font-semibold text-gray-800">
+                  {m.nome}{m.apelido ? ` (${m.apelido})` : ''}
+                </p>
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                  m.funcao === 'Administrador'
+                    ? 'bg-red-100 text-red-600'
+                    : 'bg-gray-100 text-gray-500'
+                }`}>{m.funcao}</span>
+              </div>
+              {m.email && <p className="text-xs text-gray-400 mt-0.5">{m.email}</p>}
+              {m.cargo && <p className="text-xs text-gray-500 mt-0.5">{m.cargo}</p>}
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button onClick={() => setEditando(m)}
+                className="text-gray-300 hover:text-amber-500 transition-colors p-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </button>
+              <button onClick={() => remover(m.id)}
+                className="text-gray-300 hover:text-red-400 transition-colors p-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        ))}
+
+        {membros.length === 0 && (
+          <div className="p-10 text-center text-gray-400">
+            <p className="text-3xl mb-2">👥</p>
+            <p className="text-sm">Nenhum membro cadastrado. Clique em "+ Adicionar Membro".</p>
+          </div>
+        )}
+      </div>
+
+      {modal && <ModalMembro onSalvar={adicionar} onFechar={() => setModal(false)} />}
+      {editando && <ModalMembro membro={editando} onSalvar={salvarEdicao} onFechar={() => setEditando(null)} />}
     </div>
   )
 }
