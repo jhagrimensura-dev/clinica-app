@@ -7,6 +7,17 @@ const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho
 
 const FORMAS_PGTO = ['PIX', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Transferência', 'Boleto']
 
+function mascaraMoeda(valor) {
+  const nums = valor.replace(/\D/g, '')
+  if (!nums) return ''
+  const num = parseInt(nums, 10) / 100
+  return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+function parseMoeda(valor) {
+  return parseFloat(valor.replace(/\D/g, '')) / 100 || 0
+}
+
 function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes }) {
   const hoje = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`
   const [data, setData] = useState(hoje)
@@ -16,6 +27,9 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes }) {
   const [procedimentos, setProcedimentos] = useState('')
   const [valorTaxa, setValorTaxa] = useState('')
   const [valorTratamento, setValorTratamento] = useState('')
+
+  const handleValorTaxa = (e) => setValorTaxa(mascaraMoeda(e.target.value))
+  const handleValorTratamento = (e) => setValorTratamento(mascaraMoeda(e.target.value))
   const [formasPgto, setFormasPgto] = useState([])
   const [obs, setObs] = useState('')
 
@@ -25,7 +39,7 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes }) {
 
   const handleCriar = () => {
     if (!paciente) return
-    onSalvar({ data, paciente, tipo, responsavel, procedimentos, valorTaxa: Number(valorTaxa) || 0, valorTratamento: Number(valorTratamento) || 0, formasPgto, obs })
+    onSalvar({ data, paciente, tipo, responsavel, procedimentos, valorTaxa: parseMoeda(valorTaxa), valorTratamento: parseMoeda(valorTratamento), formasPgto, obs })
     onClose()
   }
 
@@ -90,14 +104,14 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes }) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">Valor Taxa (R$)</label>
-              <input type="number" value={valorTaxa} onChange={e => setValorTaxa(e.target.value)}
-                placeholder="R$ 0,00" min="0" step="0.01"
+              <input type="text" inputMode="numeric" value={valorTaxa} onChange={handleValorTaxa}
+                placeholder="R$ 0,00"
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-pink-400" />
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">Valor Tratamento (R$)</label>
-              <input type="number" value={valorTratamento} onChange={e => setValorTratamento(e.target.value)}
-                placeholder="R$ 0,00" min="0" step="0.01"
+              <input type="text" inputMode="numeric" value={valorTratamento} onChange={handleValorTratamento}
+                placeholder="R$ 0,00"
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-pink-400" />
             </div>
           </div>
