@@ -264,14 +264,47 @@ function Modal({ slot, existing, onClose, onSave, onDelete }) {
               </div>
               {!diaInteiro && (
                 <div>
-                  <p className="text-xs text-gray-400 mb-1">Horário</p>
-                  <div className="flex items-center gap-3">
-                    <span className="text-gray-400">🕐</span>
-                    <p className="text-sm font-semibold text-gray-700">{slot.time}</p>
-                    <select value={duracao} onChange={e => setDuracao(Number(e.target.value))}
-                      className="ml-4 py-1 border-b border-gray-200 text-sm focus:outline-none focus:border-pink-400 bg-transparent">
-                      {[15,30,45,60,90,120].map(d => <option key={d} value={d}>{d < 60 ? `${d}min` : `${d/60}h${d%60?d%60:''}`}</option>)}
-                    </select>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs text-gray-400">Horário</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-400 text-xs">🕐</span>
+                      <span className="text-sm font-semibold text-pink-500">{duracao < 60 ? `${duracao}min` : `${Math.floor(duracao/60)}h${duracao%60?duracao%60:''}`} selecionado</span>
+                    </div>
+                  </div>
+                  {/* Faixa de horários */}
+                  <div className="overflow-x-auto pb-1">
+                    <div className="flex gap-0.5" style={{ minWidth: 'max-content' }}>
+                      {HORARIOS.map(h => {
+                        const occupied = (agendamentos || []).some(a => a.date === slot.date && a.time === h)
+                        const selected = h === slot.time
+                        return (
+                          <div key={h}
+                            title={h}
+                            className={`flex flex-col items-center cursor-pointer select-none`}
+                            style={{ width: '28px' }}
+                          >
+                            <div className={`w-full rounded-sm transition-colors
+                              ${selected ? 'bg-pink-400' : occupied ? 'bg-red-300' : 'bg-gray-200 hover:bg-pink-200'}
+                            `} style={{ height: '28px' }} />
+                            {h.endsWith(':00') && (
+                              <span className="text-xs text-gray-400 mt-0.5 whitespace-nowrap" style={{ fontSize: '9px' }}>{h.slice(0,5)}</span>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 mt-2">
+                    <span className="text-xs text-gray-400">Duração:</span>
+                    <div className="flex gap-1 flex-wrap">
+                      {[15,30,45,60,90,120].map(d => (
+                        <button key={d} onClick={() => setDuracao(d)}
+                          className={`px-2 py-0.5 rounded text-xs font-semibold border transition-colors
+                            ${duracao === d ? 'bg-pink-400 text-white border-transparent' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+                          {d < 60 ? `${d}min` : `${Math.floor(d/60)}h${d%60?d%60:''}`}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
