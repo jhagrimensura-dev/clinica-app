@@ -251,11 +251,13 @@ function Modal({ slot, existing, onClose, onSave, onDelete }) {
                   <select value={categoria} onChange={e => setCategoria(e.target.value)}
                     className="py-1.5 border-b border-gray-200 text-sm focus:outline-none focus:border-pink-400 bg-transparent text-gray-500">
                     <option value="">Categoria</option>
-                    <option value="estetica">Estética</option>
-                    <option value="clinica">Clínica</option>
-                    <option value="consulta">Consulta</option>
-                    <option value="retorno">Retorno</option>
-                    <option value="procedimento">Procedimento</option>
+                    <option value="consulta_online">🔵 Consulta On line</option>
+                    <option value="paciente_novo">🩵 Consulta Paciente Novo</option>
+                    <option value="paciente_modelo">🔴 Paciente Modelo</option>
+                    <option value="paciente_recorrente">🟣 Paciente Recorrente - Consulta</option>
+                    <option value="paciente_sem_receita">🟠 Paciente sem receita</option>
+                    <option value="procedimento">🟢 Procedimento</option>
+                    <option value="retorno">🩷 Retorno</option>
                   </select>
                 </div>
               </div>
