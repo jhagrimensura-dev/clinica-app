@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { usePacientes } from '../context/PacientesContext'
 
 // Slots de 15 em 15 minutos, das 7:00 às 19:00
 const HORARIOS = []
@@ -105,11 +106,14 @@ function MiniCalendario({ selected, onSelect }) {
 }
 
 function Modal({ slot, existing, onClose, onSave, onDelete }) {
+  const { pacientes } = usePacientes()
   const [aba, setAba] = useState(existing?.tipo || 'consulta')
   // Consulta
   const [paciente, setPaciente] = useState(existing?.paciente || '')
   const [email, setEmail] = useState(existing?.email || '')
   const [celular, setCelular] = useState(existing?.celular || '')
+  const [sugestoes, setSugestoes] = useState([])
+  const [showSugestoes, setShowSugestoes] = useState(false)
   const [primeiraConsulta, setPrimeiraConsulta] = useState(existing?.primeiraConsulta || false)
   const [procedimento, setProcedimento] = useState(existing?.procedimento || '')
   const [categoria, setCategoria] = useState(existing?.categoria || '')
@@ -171,8 +175,44 @@ function Modal({ slot, existing, onClose, onSave, onDelete }) {
               <div className="grid grid-cols-3 gap-3">
                 <div className="relative">
                   <span className="absolute left-0 top-2 text-gray-400 text-sm">🔍</span>
-                  <input value={paciente} onChange={e => setPaciente(e.target.value)} placeholder="Paciente"
-                    autoFocus className="w-full pl-6 py-2 border-b border-gray-200 text-sm focus:outline-none focus:border-pink-400 bg-transparent" />
+                  <input
+                    value={paciente}
+                    onChange={e => {
+                      const v = e.target.value
+                      setPaciente(v)
+                      if (v.length >= 2) {
+                        const matches = pacientes.filter(p => p.nome.toLowerCase().includes(v.toLowerCase())).slice(0, 5)
+                        setSugestoes(matches)
+                        setShowSugestoes(matches.length > 0)
+                      } else {
+                        setShowSugestoes(false)
+                      }
+                    }}
+                    onBlur={() => setTimeout(() => setShowSugestoes(false), 150)}
+                    placeholder="Paciente"
+                    autoFocus
+                    className="w-full pl-6 py-2 border-b border-gray-200 text-sm focus:outline-none focus:border-pink-400 bg-transparent"
+                  />
+                  {showSugestoes && (
+                    <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+                      {sugestoes.map(p => (
+                        <button key={p.id} onMouseDown={() => {
+                          setPaciente(p.nome)
+                          setCelular(p.whatsapp || '')
+                          setShowSugestoes(false)
+                        }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-pink-50 flex items-center gap-2 border-b border-gray-50 last:border-0">
+                          <div className="w-6 h-6 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                            {p.nome.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-800">{p.nome}</p>
+                            {p.whatsapp && <p className="text-xs text-gray-400">{p.whatsapp}</p>}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="relative">
                   <span className="absolute left-0 top-2 text-gray-400 text-sm">✉️</span>
