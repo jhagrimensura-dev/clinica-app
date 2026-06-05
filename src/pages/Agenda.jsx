@@ -106,68 +106,140 @@ function MiniCalendario({ selected, onSelect }) {
 
 function Modal({ slot, existing, onClose, onSave, onDelete }) {
   const [paciente, setPaciente] = useState(existing?.paciente || '')
+  const [email, setEmail] = useState(existing?.email || '')
+  const [celular, setCelular] = useState(existing?.celular || '')
+  const [primeiraConsulta, setPrimeiraConsulta] = useState(existing?.primeiraConsulta || false)
   const [procedimento, setProcedimento] = useState(existing?.procedimento || '')
+  const [categoria, setCategoria] = useState(existing?.categoria || '')
+  const [obs, setObs] = useState(existing?.obs || '')
   const [status, setStatus] = useState(existing?.status || 'agendado')
   const [duracao, setDuracao] = useState(existing?.duracao || 30)
-  const [telefone, setTelefone] = useState(existing?.telefone || '')
 
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-1">
-          <h3 className="font-bold text-gray-800">{existing ? 'Editar' : 'Novo'} Agendamento</h3>
-          <button onClick={onClose} className="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
-        </div>
-        <p className="text-xs text-pink-500 font-semibold mb-4">{slot.dayLabel} — {slot.time}</p>
-
-        <div className="space-y-3">
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">Paciente *</label>
-            <input value={paciente} onChange={e => setPaciente(e.target.value)} placeholder="Nome do paciente"
-              autoFocus className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300" />
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-4">
+            <h3 className="font-bold text-gray-800 text-base">Nova Consulta</h3>
+            <span className="text-gray-300">|</span>
+            <span className="text-sm text-gray-400">Compromisso</span>
+            <span className="text-gray-300">|</span>
+            <span className="text-sm text-gray-400">Evento</span>
           </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">Telefone</label>
-            <input value={telefone} onChange={e => setTelefone(e.target.value)} placeholder="(00) 00000-0000"
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300" />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">Procedimento</label>
-            <input value={procedimento} onChange={e => setProcedimento(e.target.value)} placeholder="Ex: Consulta, Limpeza, Botox..."
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1">Duração</label>
-              <select value={duracao} onChange={e => setDuracao(Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300">
-                <option value={15}>15 min</option>
-                <option value={30}>30 min</option>
-                <option value={45}>45 min</option>
-                <option value={60}>1 hora</option>
-                <option value={90}>1h30</option>
-                <option value={120}>2 horas</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1">Status</label>
-              <select value={status} onChange={e => setStatus(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300">
-                {Object.entries(STATUS).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
-              </select>
-            </div>
-          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
         </div>
 
-        <div className="flex gap-2 mt-5">
-          {existing && (
-            <button onClick={() => onDelete(existing.id)}
-              className="px-3 py-2 rounded-lg text-sm font-semibold text-red-400 hover:bg-red-50">Excluir</button>
-          )}
-          <button onClick={onClose}
-            className="flex-1 py-2 rounded-lg border border-gray-200 text-sm font-semibold text-gray-500 hover:bg-gray-50">Cancelar</button>
-          <button onClick={() => onSave({ paciente, procedimento, status, duracao, telefone })} disabled={!paciente.trim()}
-            className="flex-1 py-2 rounded-lg bg-pink-400 hover:bg-pink-500 disabled:bg-pink-200 text-white text-sm font-semibold">Salvar</button>
+        <div className="px-6 py-4 space-y-4">
+          {/* Data/hora */}
+          <p className="text-xs text-pink-500 font-semibold">{slot.dayLabel} — {slot.time}</p>
+
+          {/* Paciente, Email, Celular */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="relative">
+              <span className="absolute left-3 top-2.5 text-gray-400 text-sm">🔍</span>
+              <input value={paciente} onChange={e => setPaciente(e.target.value)} placeholder="Paciente"
+                autoFocus className="w-full pl-8 pr-3 py-2 border-b border-gray-200 text-sm focus:outline-none focus:border-pink-400 bg-transparent" />
+            </div>
+            <div className="relative">
+              <span className="absolute left-3 top-2.5 text-gray-400 text-sm">✉️</span>
+              <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email"
+                className="w-full pl-8 pr-3 py-2 border-b border-gray-200 text-sm focus:outline-none focus:border-pink-400 bg-transparent" />
+            </div>
+            <div className="relative">
+              <span className="absolute left-3 top-2.5 text-gray-400 text-sm">📱</span>
+              <input value={celular} onChange={e => setCelular(e.target.value)} placeholder="Celular"
+                className="w-full pl-8 pr-3 py-2 border-b border-gray-200 text-sm focus:outline-none focus:border-pink-400 bg-transparent" />
+            </div>
+          </div>
+
+          {/* Checkboxes */}
+          <div className="flex gap-6">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={primeiraConsulta} onChange={e => setPrimeiraConsulta(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 accent-pink-400" />
+              <span className="text-sm text-gray-600">Primeira Consulta</span>
+            </label>
+          </div>
+
+          {/* Procedimentos */}
+          <div className="border border-gray-200 rounded-lg p-4 space-y-3">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Procedimentos</p>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="col-span-2">
+                <input value={procedimento} onChange={e => setProcedimento(e.target.value)}
+                  placeholder="Procedimentos"
+                  className="w-full px-0 py-1.5 border-b border-gray-200 text-sm focus:outline-none focus:border-pink-400 bg-transparent" />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-400 text-xs">⏱</span>
+                <select value={duracao} onChange={e => setDuracao(Number(e.target.value))}
+                  className="flex-1 py-1.5 border-b border-gray-200 text-sm focus:outline-none focus:border-pink-400 bg-transparent">
+                  <option value={15}>15 min</option>
+                  <option value={30}>30 min</option>
+                  <option value={45}>45 min</option>
+                  <option value={60}>1h00</option>
+                  <option value={90}>1h30</option>
+                  <option value={120}>2h00</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <input value={obs} onChange={e => setObs(e.target.value)} placeholder="Obs"
+                  className="w-full px-0 py-1.5 border-b border-gray-200 text-sm focus:outline-none focus:border-pink-400 bg-transparent" />
+              </div>
+              <div>
+                <select value={categoria} onChange={e => setCategoria(e.target.value)}
+                  className="w-full px-0 py-1.5 border-b border-gray-200 text-sm focus:outline-none focus:border-pink-400 bg-transparent text-gray-500">
+                  <option value="">Categoria</option>
+                  <option value="estetica">Estética</option>
+                  <option value="clinica">Clínica</option>
+                  <option value="consulta">Consulta</option>
+                  <option value="retorno">Retorno</option>
+                  <option value="procedimento">Procedimento</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Status */}
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-semibold text-gray-500">Status:</span>
+            <div className="flex gap-2">
+              {Object.entries(STATUS).map(([k, v]) => (
+                <button key={k} onClick={() => setStatus(k)}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-all border
+                    ${status === k ? `${v.bg} ${v.text} border-transparent` : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+                  {v.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
+          <div className="flex gap-2">
+            {existing && (
+              <button onClick={() => onDelete(existing.id)}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-red-400 hover:bg-red-50 border border-red-100">
+                Excluir
+              </button>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <button onClick={onClose}
+              className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-semibold text-gray-500 hover:bg-gray-50">
+              Cancelar
+            </button>
+            <button onClick={() => onSave({ paciente, email, celular, primeiraConsulta, procedimento, categoria, obs, status, duracao })}
+              disabled={!paciente.trim()}
+              className="px-6 py-2 rounded-lg bg-pink-400 hover:bg-pink-500 disabled:bg-pink-200 text-white text-sm font-semibold">
+              Salvar
+            </button>
+          </div>
         </div>
       </div>
     </div>
