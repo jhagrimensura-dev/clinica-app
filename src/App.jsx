@@ -1,12 +1,10 @@
 import { useState } from 'react'
-import { AuthProvider, useAuth } from './context/AuthContext'
 import { ClinicaProvider } from './context/ClinicaContext'
 import { FinanceiroProvider } from './context/FinanceiroContext'
 import { ContasProvider } from './context/ContasContext'
 import { LeadsProvider } from './context/LeadsContext'
 import { PacientesProvider } from './context/PacientesContext'
 import { VendasProvider } from './context/VendasContext'
-import Login from './pages/Login'
 import LeadsNovos from './pages/LeadsNovos'
 import LeadsRecorrentes from './pages/LeadsRecorrentes'
 import Indicacao from './pages/Indicacao'
@@ -99,23 +97,12 @@ function Diario({ mesIndex, ano }) {
   )
 }
 
-function AppInner() {
-  const { session, recoveryMode } = useAuth()
+export default function App() {
   const [active, setActive] = useState('dashboard')
   const [view, setView] = useState('mensal')
   const [mesIndex, setMesIndex] = useState(4)
   const [collapsed, setCollapsed] = useState(false)
   const ano = 2026
-
-  if (session === undefined) {
-    return (
-      <div className="min-h-screen bg-pink-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-pink-300 border-t-pink-500 rounded-full animate-spin" />
-      </div>
-    )
-  }
-
-  if (!session || recoveryMode) return <Login />
 
   const renderPage = () => {
     if (view === 'diario') return <Diario mesIndex={mesIndex} ano={ano} />
@@ -160,13 +147,5 @@ case 'whatsapp_canal': return <PagePlaceholder title="WhatsApp" />
     </ContasProvider>
     </FinanceiroProvider>
     </ClinicaProvider>
-  )
-}
-
-export default function App() {
-  return (
-    <AuthProvider>
-      <AppInner />
-    </AuthProvider>
   )
 }
