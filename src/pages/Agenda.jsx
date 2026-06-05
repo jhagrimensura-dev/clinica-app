@@ -491,12 +491,16 @@ export default function Agenda() {
             </thead>
             <tbody>
               {HORARIOS.map((time) => {
-                const showLabel = time.endsWith(':00')
+                const isHour = time.endsWith(':00')
+                const isHalf = time.endsWith(':30')
+                const isQuarter = !isHour && !isHalf
                 return (
-                  <tr key={time} style={{ height: '22px' }}>
-                    <td className={`border-r border-gray-100 text-right pr-1.5 align-top ${showLabel ? 'border-t border-gray-100' : ''}`}
-                      style={{ height: '22px' }}>
-                      {showLabel && <span className="text-xs text-gray-300">{time}</span>}
+                  <tr key={time} style={{ height: '24px' }}>
+                    <td className={`border-r border-gray-200 text-right pr-1.5 align-top
+                      ${isHour ? 'border-t border-gray-300' : isHalf ? 'border-t border-gray-200' : 'border-t border-gray-100'}`}
+                      style={{ height: '24px' }}>
+                      {isHour && <span className="text-xs text-gray-400 font-medium">{time}</span>}
+                      {isHalf && <span className="text-xs text-gray-300">{time}</span>}
                     </td>
                     {weekDays.map((day, di) => {
                       if (isOccupied(day, time)) return null
@@ -507,13 +511,13 @@ export default function Agenda() {
                       const rowSpan = appt ? appt.duracao / 15 : 1
                       const isToday = dateKey(day) === todayKey
                       const cfg = appt ? STATUS[appt.status] : null
-                      const showBorder = showLabel
+                      const borderClass = isHour ? 'border-t border-gray-300' : isHalf ? 'border-t border-gray-200' : 'border-t border-gray-100'
 
                       if (fechado && !appt) {
                         return (
-                          <td key={di} className={`border-r border-gray-100 bg-blue-50 ${showBorder ? 'border-t border-blue-100' : ''}`}
-                            style={{ height: '22px' }}>
-                            {showLabel && time === '07:00' && (
+                          <td key={di} className={`border-r border-gray-200 bg-blue-50 ${borderClass}`}
+                            style={{ height: '24px' }}>
+                            {isHour && time === '07:00' && (
                               <div className="flex items-center justify-center h-full">
                                 <span className="text-xs font-bold text-blue-300 tracking-widest">FECHADO</span>
                               </div>
@@ -525,12 +529,12 @@ export default function Agenda() {
                       return (
                         <td key={di} rowSpan={rowSpan}
                           onClick={() => !fechado && openModal(day, time)}
-                          className={`border-r border-gray-100 align-top p-0 transition-colors
-                            ${showBorder ? 'border-t border-gray-100' : ''}
+                          className={`border-r border-gray-200 align-top p-0 transition-colors
+                            ${borderClass}
                             ${!appt && isToday ? 'bg-pink-50/30 hover:bg-pink-100/40 cursor-pointer' : ''}
                             ${!appt && !isToday ? 'hover:bg-gray-50 cursor-pointer' : ''}
                           `}
-                          style={{ height: '22px' }}>
+                          style={{ height: '24px' }}>
                           {appt && (
                             <div onClick={() => openModal(day, time)}
                               className={`w-full h-full px-1.5 py-0.5 cursor-pointer overflow-hidden ${cfg.bg} ${cfg.text} rounded-sm`}
