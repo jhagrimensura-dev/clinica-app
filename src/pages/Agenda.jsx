@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { usePacientes } from '../context/PacientesContext'
 
 // Slots de 15 em 15 minutos, das 7:00 às 19:00
@@ -631,8 +632,9 @@ export default function Agenda() {
         </div>
       </div>
 
-      {modal && (
-        <Modal slot={modal} existing={modal.existing} onClose={() => setModal(null)} onSave={handleSave} onDelete={handleDelete} />
+      {modal && createPortal(
+        <Modal slot={modal} existing={modal.existing} onClose={() => setModal(null)} onSave={handleSave} onDelete={handleDelete} />,
+        document.body
       )}
     </div>
   )
