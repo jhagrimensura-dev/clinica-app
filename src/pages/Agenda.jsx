@@ -156,9 +156,9 @@ function Modal({ slot, existing, onClose, onSave, onDelete }) {
             {ABAS.map((a, i) => (
               <div key={a.id} className="flex items-center gap-1">
                 {i > 0 && <span className="text-gray-200">|</span>}
-                <button onClick={() => setAba(a.id)}
+                <button onClick={(e) => { e.stopPropagation(); setAba(a.id) }}
                   className={`text-sm px-1 transition-colors ${aba === a.id ? 'font-bold text-gray-800' : 'text-gray-400 hover:text-gray-600'}`}>
-                  {aba === a.id ? `Novo${a.id === 'consulta' ? 'a' : ''} ${a.label}` : a.label}
+                  {aba === a.id ? `Nov${a.id === 'consulta' ? 'a' : 'o'} ${a.label}` : a.label}
                 </button>
               </div>
             ))}
