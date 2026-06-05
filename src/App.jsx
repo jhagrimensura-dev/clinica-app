@@ -100,7 +100,7 @@ function Diario({ mesIndex, ano }) {
 }
 
 function AppInner() {
-  const { session } = useAuth()
+  const { session, recoveryMode } = useAuth()
   const [active, setActive] = useState('dashboard')
   const [view, setView] = useState('mensal')
   const [mesIndex, setMesIndex] = useState(4)
@@ -115,7 +115,7 @@ function AppInner() {
     )
   }
 
-  if (!session) return <Login />
+  if (!session || recoveryMode) return <Login />
 
   const renderPage = () => {
     if (view === 'diario') return <Diario mesIndex={mesIndex} ano={ano} />
