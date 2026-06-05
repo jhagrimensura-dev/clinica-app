@@ -11,6 +11,7 @@ import Indicacao from './pages/Indicacao'
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
 import Dashboard from './pages/Dashboard'
+import Agenda from './pages/Agenda'
 import Metas from './pages/Metas'
 import SocialMedia from './pages/SocialMedia'
 import Comercial from './pages/Comercial'
@@ -108,6 +109,7 @@ export default function App() {
     if (view === 'diario') return <Diario mesIndex={mesIndex} ano={ano} />
     switch (active) {
       case 'dashboard': return <Dashboard />
+      case 'agenda': return <Agenda />
       case 'metas': return <Metas />
       case 'social': return <SocialMedia />
       case 'comercial': return <Comercial />

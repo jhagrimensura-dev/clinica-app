@@ -2,6 +2,7 @@ import { useState } from 'react'
 
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
+  { id: 'agenda', label: 'Agenda', icon: '📅' },
   { id: 'metas', label: 'Metas', icon: '🎯' },
   { id: 'social', label: 'Social Media', icon: '📱' },
   {
