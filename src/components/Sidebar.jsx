@@ -59,7 +59,6 @@ export default function Sidebar({ active, setActive, collapsed, setCollapsed }) 
         {!collapsed && (
           <div className="min-w-0">
             <p className="font-bold text-gray-800 text-xs leading-tight truncate">Dra. Amanda Lima</p>
-            <p className="text-xs text-gray-400 leading-tight">Clinical Intelligence</p>
           </div>
         )}
       </div>
