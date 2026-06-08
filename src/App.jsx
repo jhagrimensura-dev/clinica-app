@@ -101,7 +101,7 @@ function Diario({ mesIndex, ano }) {
 }
 
 function DefinirSenha() {
-  const { updatePassword, confirmarPrimeiroAcesso, session } = useAuth()
+  const { updatePassword, session } = useAuth()
   const [senha, setSenha] = useState('')
   const [confirma, setConfirma] = useState('')
   const [erro, setErro] = useState('')
@@ -113,9 +113,12 @@ function DefinirSenha() {
     if (senha !== confirma) { setErro('As senhas não coincidem.'); return }
     setErro(''); setLoading(true)
     const { error } = await updatePassword(senha)
+    if (error) { setLoading(false); setErro('Erro ao definir senha. Tente novamente.'); return }
+    // Limpa o flag needsPassword — session vai atualizar via onAuthStateChange
+    await import('./lib/supabase').then(({ supabase }) =>
+      supabase.auth.updateUser({ data: { needsPassword: false, passwordSet: true } })
+    )
     setLoading(false)
-    if (error) { setErro('Erro ao definir senha. Tente novamente.'); return }
-    confirmarPrimeiroAcesso()
   }
 
   return (
@@ -154,6 +157,7 @@ function DefinirSenha() {
 
 function AppInner() {
   const { session, recoveryMode, primeiroAcesso } = useAuth()
+
   if (session === undefined) return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-white flex items-center justify-center">
       <div className="w-8 h-8 border-4 border-pink-300 border-t-pink-500 rounded-full animate-spin" />

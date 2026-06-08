@@ -6,7 +6,6 @@ const AuthContext = createContext(null)
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(undefined)
   const [recoveryMode, setRecoveryMode] = useState(false)
-  const [primeiroAcesso, setPrimeiroAcesso] = useState(false)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -18,15 +17,6 @@ export function AuthProvider({ children }) {
       setRecoveryMode(true)
       supabase.auth.verifyOtp({ token_hash, type: 'recovery' })
         .then(({ data }) => { if (data.session) setSession(data.session) })
-    } else if (token_hash && (type === 'magiclink' || type === 'signup' || type === 'invite')) {
-      window.history.replaceState({}, '', window.location.pathname)
-      supabase.auth.verifyOtp({ token_hash, type: 'magiclink' })
-        .then(({ data }) => {
-          if (data.session) {
-            setSession(data.session)
-            setPrimeiroAcesso(true)
-          }
-        })
     }
 
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
@@ -43,17 +33,16 @@ export function AuthProvider({ children }) {
   }, [])
 
   const userRole = session?.user?.user_metadata?.funcao === 'Funcionário' ? 'Funcionário' : 'Administrador'
+  const primeiroAcesso = session?.user?.user_metadata?.needsPassword === true
 
   const signIn = (email, password) => supabase.auth.signInWithPassword({ email, password })
   const signInWithMagicLink = (email) => supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } })
-  const inviteUser = (email, funcao = 'Funcionário') => supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: window.location.origin, data: { funcao } } })
+  const inviteUser = (email, funcao = 'Funcionário') => supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: window.location.origin, data: { funcao, needsPassword: true } } })
   const signOut = () => supabase.auth.signOut()
   const updatePassword = (password) => supabase.auth.updateUser({ password })
 
-  const confirmarPrimeiroAcesso = () => setPrimeiroAcesso(false)
-
   return (
-    <AuthContext.Provider value={{ session, userRole, signIn, signInWithMagicLink, inviteUser, signOut, recoveryMode, updatePassword, primeiroAcesso, confirmarPrimeiroAcesso }}>
+    <AuthContext.Provider value={{ session, userRole, primeiroAcesso, signIn, signInWithMagicLink, inviteUser, signOut, recoveryMode, updatePassword }}>
       {children}
     </AuthContext.Provider>
   )
