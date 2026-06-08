@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useAuth } from '../context/AuthContext'
 
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
@@ -25,6 +26,7 @@ const menuItems = [
 ]
 
 export default function Sidebar({ active, setActive, collapsed, setCollapsed }) {
+  const { signOut } = useAuth()
   const [financeiroAberto, setFinanceiroAberto] = useState(
     active === 'financeiro' || active === 'contas'
   )
@@ -133,6 +135,9 @@ export default function Sidebar({ active, setActive, collapsed, setCollapsed }) 
         </button>
         <button title={collapsed ? 'WhatsApp' : ''} className={`w-full text-left px-2 py-2 rounded-lg text-sm flex items-center text-gray-500 hover:bg-gray-50 ${collapsed ? 'justify-center' : 'gap-3'}`}>
           <span>💬</span>{!collapsed && <span>WhatsApp</span>}
+        </button>
+        <button onClick={signOut} title={collapsed ? 'Sair' : ''} className={`w-full text-left px-2 py-2 rounded-lg text-sm flex items-center text-red-400 hover:bg-red-50 ${collapsed ? 'justify-center' : 'gap-3'}`}>
+          <span>🚪</span>{!collapsed && <span>Sair</span>}
         </button>
       </div>
     </div>

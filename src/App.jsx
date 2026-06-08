@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { AuthProvider, useAuth } from './context/AuthContext'
+import Login from './pages/Login'
 import { ClinicaProvider } from './context/ClinicaContext'
 import { FinanceiroProvider } from './context/FinanceiroContext'
 import { ContasProvider } from './context/ContasContext'
@@ -98,7 +100,26 @@ function Diario({ mesIndex, ano }) {
   )
 }
 
+function AppInner() {
+  const { session, recoveryMode } = useAuth()
+  if (session === undefined) return (
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-white flex items-center justify-center">
+      <div className="w-8 h-8 border-4 border-pink-300 border-t-pink-500 rounded-full animate-spin" />
+    </div>
+  )
+  if (!session || recoveryMode) return <Login />
+  return <AppContent />
+}
+
 export default function App() {
+  return (
+    <AuthProvider>
+      <AppInner />
+    </AuthProvider>
+  )
+}
+
+function AppContent() {
   const [active, setActive] = useState('dashboard')
   const [view, setView] = useState('mensal')
   const [mesIndex, setMesIndex] = useState(4)

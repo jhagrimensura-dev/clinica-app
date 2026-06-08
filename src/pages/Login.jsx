@@ -84,11 +84,14 @@ function RedefinirSenha() {
 }
 
 export default function Login() {
-  const { signIn, recoveryMode } = useAuth()
+  const { signIn, signInWithMagicLink, recoveryMode } = useAuth()
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [erro, setErro] = useState('')
   const [loading, setLoading] = useState(false)
+  const [magicSent, setMagicSent] = useState(false)
+  const [magicLoading, setMagicLoading] = useState(false)
+  const [showSenha, setShowSenha] = useState(false)
 
   if (recoveryMode) return <RedefinirSenha />
 
@@ -97,10 +100,18 @@ export default function Login() {
     setErro('')
     setLoading(true)
     const { error } = await signIn(email, senha)
-    if (error) {
-      setErro('Email ou senha incorretos.')
-    }
+    if (error) setErro(error.message || 'Email ou senha incorretos.')
     setLoading(false)
+  }
+
+  const handleMagicLink = async () => {
+    if (!email) { setErro('Digite seu email primeiro.'); return }
+    setErro('')
+    setMagicLoading(true)
+    const { error } = await signInWithMagicLink(email)
+    if (error) setErro('Erro ao enviar link. Tente novamente.')
+    else setMagicSent(true)
+    setMagicLoading(false)
   }
 
   return (
@@ -115,43 +126,70 @@ export default function Login() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <h2 className="text-base font-bold text-gray-800 mb-5">Entrar na conta</h2>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                placeholder="seu@email.com"
-                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent"
-              />
+          {magicSent ? (
+            <div className="text-center py-4 space-y-2">
+              <p className="text-2xl">📬</p>
+              <p className="text-sm font-semibold text-gray-700">Link enviado para seu email!</p>
+              <p className="text-xs text-gray-400">Abra o email e clique no link para entrar.</p>
+              <button onClick={() => setMagicSent(false)} className="text-xs text-pink-400 hover:text-pink-600 mt-2">Voltar</button>
             </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required
+                  placeholder="seu@email.com"
+                  className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent"
+                />
+              </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Senha</label>
-              <input
-                type="password"
-                value={senha}
-                onChange={e => setSenha(e.target.value)}
-                required
-                placeholder="••••••••"
-                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent"
-              />
-            </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Senha</label>
+                <div className="relative">
+                  <input
+                    type={showSenha ? 'text' : 'password'}
+                    value={senha}
+                    onChange={e => setSenha(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-3 py-2.5 pr-10 rounded-lg border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent"
+                  />
+                  <button type="button" onClick={() => setShowSenha(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    {showSenha ? '🙈' : '👁️'}
+                  </button>
+                </div>
+              </div>
 
-            {erro && (
-              <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{erro}</p>
-            )}
+              {erro && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{erro}</p>}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-pink-400 hover:bg-pink-500 disabled:bg-pink-200 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors"
-            >
-              {loading ? 'Entrando...' : 'Entrar'}
-            </button>
-          </form>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-pink-400 hover:bg-pink-500 disabled:bg-pink-200 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors"
+              >
+                {loading ? 'Entrando...' : 'Entrar'}
+              </button>
+
+              <div className="relative flex items-center gap-3">
+                <div className="flex-1 border-t border-gray-100" />
+                <span className="text-xs text-gray-300">ou</span>
+                <div className="flex-1 border-t border-gray-100" />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleMagicLink}
+                disabled={magicLoading}
+                className="w-full border border-gray-200 hover:bg-gray-50 disabled:opacity-50 text-gray-600 font-semibold py-2.5 rounded-lg text-sm transition-colors"
+              >
+                {magicLoading ? 'Enviando...' : 'Entrar com link no email'}
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </div>
