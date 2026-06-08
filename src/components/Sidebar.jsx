@@ -26,7 +26,8 @@ const menuItems = [
 ]
 
 export default function Sidebar({ active, setActive, collapsed, setCollapsed }) {
-  const { signOut } = useAuth()
+  const { signOut, userRole } = useAuth()
+  const isFuncionario = userRole === 'Funcionário'
   const [financeiroAberto, setFinanceiroAberto] = useState(
     active === 'financeiro' || active === 'contas'
   )
@@ -84,7 +85,7 @@ export default function Sidebar({ active, setActive, collapsed, setCollapsed }) 
 
       {/* Menu */}
       <nav className="flex-1 px-2">
-        {menuItems.map(item => (
+        {menuItems.filter(item => !(isFuncionario && item.id === 'financeiro')).map(item => (
           <div key={item.id}>
             <button
               onClick={() => handleClick(item)}
@@ -126,9 +127,11 @@ export default function Sidebar({ active, setActive, collapsed, setCollapsed }) 
 
       {/* Footer */}
       <div className={`px-2 pb-4 border-t border-gray-100 pt-3 space-y-0.5`}>
-        <button onClick={() => setActive('configuracoes')} title={collapsed ? 'Configurações' : ''} className={`w-full text-left px-2 py-2 rounded-lg text-sm flex items-center transition-colors ${collapsed ? 'justify-center' : 'gap-3'} ${active === 'configuracoes' ? 'bg-pink-50 text-pink-600 font-semibold' : 'text-gray-500 hover:bg-gray-50'}`}>
-          <span>⚙️</span>{!collapsed && <span>Configurações</span>}
-        </button>
+        {!isFuncionario && (
+          <button onClick={() => setActive('configuracoes')} title={collapsed ? 'Configurações' : ''} className={`w-full text-left px-2 py-2 rounded-lg text-sm flex items-center transition-colors ${collapsed ? 'justify-center' : 'gap-3'} ${active === 'configuracoes' ? 'bg-pink-50 text-pink-600 font-semibold' : 'text-gray-500 hover:bg-gray-50'}`}>
+            <span>⚙️</span>{!collapsed && <span>Configurações</span>}
+          </button>
+        )}
         <button onClick={() => setActive('ajuda')} title={collapsed ? 'Ajuda' : ''} className={`w-full text-left px-2 py-2 rounded-lg text-sm flex items-center transition-colors ${collapsed ? 'justify-center' : 'gap-3'} ${active === 'ajuda' ? 'bg-pink-50 text-pink-600 font-semibold' : 'text-gray-500 hover:bg-gray-50'}`}>
           <span>❓</span>{!collapsed && <span>Ajuda</span>}
         </button>

@@ -119,8 +119,16 @@ export default function App() {
   )
 }
 
+const PAGINAS_RESTRITAS = ['financeiro', 'contas', 'configuracoes']
+
 function AppContent() {
-  const [active, setActive] = useState('dashboard')
+  const { userRole } = useAuth()
+  const [active, setActiveRaw] = useState('dashboard')
+
+  const setActive = (page) => {
+    if (userRole === 'Funcionário' && PAGINAS_RESTRITAS.includes(page)) return
+    setActiveRaw(page)
+  }
   const [view, setView] = useState('mensal')
   const [mesIndex, setMesIndex] = useState(4)
   const [collapsed, setCollapsed] = useState(false)

@@ -237,15 +237,16 @@ function EditarConta({ conta, onSalvar, onCancelar }) {
 
 /* ── ABA MEU PERFIL ── */
 function TabPerfil() {
-  const [dados, setDados] = useState(() => load('config_perfil', {
-    nome: 'João Henrique', apelido: 'João', email: 'jhagrimensura@gmail.com', cargo: 'Gestor',
-  }))
+  const { session, updatePassword } = useAuth()
+  const emailReal = session?.user?.email || ''
+  const [dados, setDados] = useState(() => load('config_perfil', { nome: '', apelido: '', cargo: '' }))
   const [salvo, setSalvo] = useState(false)
   const [senha, setSenha] = useState('')
   const [confirma, setConfirma] = useState('')
   const [mostrarSenha, setMostrarSenha] = useState(false)
   const [mostrarConfirma, setMostrarConfirma] = useState(false)
   const [senhaMsg, setSenhaMsg] = useState('')
+  const [senhaLoading, setSenhaLoading] = useState(false)
 
   const set = (campo, val) => setDados(d => ({ ...d, [campo]: val }))
 
@@ -255,12 +256,19 @@ function TabPerfil() {
     setTimeout(() => setSalvo(false), 2000)
   }
 
-  const atualizarSenha = () => {
+  const atualizarSenha = async () => {
     if (senha.length < 6) { setSenhaMsg('A senha deve ter pelo menos 6 caracteres'); return }
     if (senha !== confirma) { setSenhaMsg('As senhas não conferem'); return }
-    setSenhaMsg('✓ Senha atualizada!')
-    setSenha(''); setConfirma('')
-    setTimeout(() => setSenhaMsg(''), 2500)
+    setSenhaLoading(true)
+    const { error } = await updatePassword(senha)
+    setSenhaLoading(false)
+    if (error) {
+      setSenhaMsg('Erro ao atualizar senha. Tente novamente.')
+    } else {
+      setSenhaMsg('✓ Senha atualizada com sucesso!')
+      setSenha(''); setConfirma('')
+      setTimeout(() => setSenhaMsg(''), 3000)
+    }
   }
 
   return (
@@ -287,7 +295,7 @@ function TabPerfil() {
 
         <div>
           <label className="text-sm font-medium text-gray-700 mb-1.5 block">E-mail</label>
-          <input value={dados.email} disabled
+          <input value={emailReal} disabled
             className="w-full border border-gray-100 rounded-xl px-3 py-2.5 text-sm bg-gray-50 text-gray-400 cursor-not-allowed" />
           <p className="text-xs text-gray-400 mt-1">O e-mail não pode ser alterado</p>
         </div>
@@ -350,9 +358,9 @@ function TabPerfil() {
           <p className={`text-sm font-medium ${senhaMsg.startsWith('✓') ? 'text-green-600' : 'text-red-500'}`}>{senhaMsg}</p>
         )}
 
-        <button onClick={atualizarSenha}
-          className="bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors">
-          Atualizar Senha
+        <button onClick={atualizarSenha} disabled={senhaLoading}
+          className="bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors">
+          {senhaLoading ? 'Salvando...' : 'Atualizar Senha'}
         </button>
       </div>
     </div>
@@ -455,7 +463,7 @@ function TabEquipe() {
   const enviarConvite = async (membro) => {
     if (!membro.email) return
     setConvidando(membro.id)
-    const { error } = await inviteUser(membro.email)
+    const { error } = await inviteUser(membro.email, membro.funcao)
     setConvidando(null)
     if (error) {
       setFeedbackConvite(f => ({ ...f, [membro.id]: 'erro' }))
