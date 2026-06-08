@@ -25,6 +25,7 @@ import Pacientes from './pages/Pacientes'
 import Relatorios from './pages/Relatorios'
 import Configuracoes from './pages/Configuracoes'
 import Ajuda from './pages/Ajuda'
+import InboxWhatsApp from './pages/InboxWhatsApp'
 
 function PagePlaceholder({ title }) {
   return (
@@ -198,6 +199,7 @@ function AppContent() {
       case 'agenda': return <Agenda />
       case 'metas': return <Metas />
       case 'social': return <SocialMedia />
+      case 'inbox': return <InboxWhatsApp />
       case 'comercial': return <Comercial />
       case 'leads_novos': return <LeadsNovos />
       case 'leads_recorrentes': return <LeadsRecorrentes />
