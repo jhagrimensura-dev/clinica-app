@@ -360,14 +360,7 @@ function TabPerfil() {
 }
 
 /* ── ABA EQUIPE ── */
-const MEMBROS_DEFAULT = [
-  { id: 1, nome: 'Vinicius Carneiro',    apelido: 'Vini',        funcao: 'Administrador', email: 'amanda.lima@favo.clinic',               cargo: '' },
-  { id: 2, nome: 'João Henrique',        apelido: 'João',        funcao: 'Administrador', email: 'jhagrimensura@gmail.com',               cargo: 'Gestor' },
-  { id: 3, nome: 'Amanda Lima Silva',    apelido: 'Amanda Lima', funcao: 'Administrador', email: 'draamandabiomed@gmail.com',             cargo: 'Doutora' },
-  { id: 4, nome: 'Fernanda Cristina',    apelido: 'Fernanda',    funcao: 'Funcionário',   email: 'atendimentodramandalima@gmail.com',     cargo: 'Comercial' },
-  { id: 5, nome: 'Adriele Moraes',       apelido: 'Adriele',     funcao: 'Funcionário',   email: 'consultoriodramandalima@gmail.com',     cargo: 'Secretaria' },
-  { id: 6, nome: 'Rani Oliveira Matos',  apelido: 'Rani',        funcao: 'Funcionário',   email: 'marketing.clinicaamandalima@gmail.com', cargo: 'Social Mídia' },
-]
+const MEMBROS_DEFAULT = []
 
 const EMPTY_MEMBRO = { nome: '', apelido: '', funcao: 'Funcionário', email: '', cargo: '' }
 
