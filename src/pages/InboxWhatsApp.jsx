@@ -115,8 +115,13 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar }) {
   )
 }
 
-export default function InboxWhatsApp() {
+function loadContas() {
+  try { const s = localStorage.getItem('config_whatsapp_contas'); return s ? JSON.parse(s) : [] } catch { return [] }
+}
+
+export default function InboxWhatsApp({ contaId }) {
   const { addLead } = useLeads()
+  const contaAtiva = contaId ? loadContas().find(c => c.id === contaId) : null
   const [conversas, setConversas] = useState(CONVERSAS_MOCK)
   const [selecionada, setSelecionada] = useState(CONVERSAS_MOCK[0])
   const [mensagem, setMensagem] = useState('')
@@ -124,7 +129,7 @@ export default function InboxWhatsApp() {
   const [menuLead, setMenuLead] = useState(false)
   const [modalLead, setModalLead] = useState(null)
   const [leadRegistrado, setLeadRegistrado] = useState({})
-  const [filtroInstancia, setFiltroInstancia] = useState('Todas')
+  const [filtroInstancia, setFiltroInstancia] = useState(contaAtiva ? contaAtiva.nome : 'Todas')
   const messagesEndRef = useRef(null)
 
   useEffect(() => {
@@ -173,7 +178,9 @@ export default function InboxWhatsApp() {
       <div className="w-80 flex-shrink-0 bg-white border-r border-gray-100 flex flex-col">
         {/* Header */}
         <div className="p-4 border-b border-gray-100">
-          <h2 className="text-base font-bold text-gray-800 mb-3">💬 Conversas</h2>
+          <h2 className="text-base font-bold text-gray-800 mb-3">
+            💬 {contaAtiva ? contaAtiva.nome : 'Conversas'}
+          </h2>
           <div className="relative mb-2">
             <input value={busca} onChange={e => setBusca(e.target.value)}
               placeholder="Buscar contato..."

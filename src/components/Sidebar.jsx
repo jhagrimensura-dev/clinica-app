@@ -1,5 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+
+function loadContas() {
+  try { const s = localStorage.getItem('config_whatsapp_contas'); return s ? JSON.parse(s) : [] } catch { return [] }
+}
 
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
@@ -29,6 +33,16 @@ const menuItems = [
 export default function Sidebar({ active, setActive, collapsed, setCollapsed }) {
   const { signOut, userRole } = useAuth()
   const isFuncionario = userRole === 'Funcionário'
+  const [waAberto, setWaAberto] = useState(false)
+  const [contasWA, setContasWA] = useState(loadContas)
+
+  useEffect(() => {
+    const atualizar = () => setContasWA(loadContas())
+    window.addEventListener('storage', atualizar)
+    // atualiza ao montar caso localStorage já tenha dados
+    setContasWA(loadContas())
+    return () => window.removeEventListener('storage', atualizar)
+  }, [])
   const [financeiroAberto, setFinanceiroAberto] = useState(
     active === 'financeiro' || active === 'contas'
   )
@@ -136,9 +150,47 @@ export default function Sidebar({ active, setActive, collapsed, setCollapsed }) 
         <button onClick={() => setActive('ajuda')} title={collapsed ? 'Ajuda' : ''} className={`w-full text-left px-2 py-2 rounded-lg text-sm flex items-center transition-colors ${collapsed ? 'justify-center' : 'gap-3'} ${active === 'ajuda' ? 'bg-pink-50 text-pink-600 font-semibold' : 'text-gray-500 hover:bg-gray-50'}`}>
           <span>❓</span>{!collapsed && <span>Ajuda</span>}
         </button>
-        <button title={collapsed ? 'WhatsApp' : ''} className={`w-full text-left px-2 py-2 rounded-lg text-sm flex items-center text-gray-500 hover:bg-gray-50 ${collapsed ? 'justify-center' : 'gap-3'}`}>
-          <span>💬</span>{!collapsed && <span>WhatsApp</span>}
-        </button>
+        {/* WhatsApp Inboxes */}
+        <div>
+          <button onClick={() => setWaAberto(v => !v)} title={collapsed ? 'WhatsApp' : ''}
+            className={`w-full text-left px-2 py-2 rounded-lg text-sm flex items-center text-gray-500 hover:bg-gray-50 ${collapsed ? 'justify-center' : 'gap-3'}`}>
+            <span>💬</span>
+            {!collapsed && (
+              <>
+                <span className="flex-1">WhatsApp</span>
+                <span className="text-xs text-gray-300">{waAberto ? '▲' : '▼'}</span>
+              </>
+            )}
+          </button>
+          {!collapsed && waAberto && (
+            <div className="ml-4 space-y-0.5 mb-1">
+              {contasWA.length === 0 ? (
+                <button onClick={() => setActive('configuracoes')}
+                  className="w-full text-left px-3 py-1.5 rounded-lg text-xs text-gray-400 hover:bg-gray-50 border-l-2 border-gray-100">
+                  + Adicionar conta
+                </button>
+              ) : (
+                <>
+                  {contasWA.map(conta => (
+                    <button key={conta.id} onClick={() => setActive(`inbox_${conta.id}`)}
+                      className={`w-full text-left px-3 py-1.5 rounded-lg text-xs flex items-center gap-2 transition-all border-l-2 ${
+                        active === `inbox_${conta.id}`
+                          ? 'border-green-400 bg-green-50 text-green-700 font-semibold'
+                          : 'border-gray-100 text-gray-500 hover:bg-gray-50'
+                      }`}>
+                      <span className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0"></span>
+                      {conta.nome}
+                    </button>
+                  ))}
+                  <button onClick={() => setActive('configuracoes')}
+                    className="w-full text-left px-3 py-1.5 rounded-lg text-xs text-gray-400 hover:bg-gray-50 border-l-2 border-gray-100">
+                    + Adicionar
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
         <button onClick={signOut} title={collapsed ? 'Sair' : ''} className={`w-full text-left px-2 py-2 rounded-lg text-sm flex items-center text-red-400 hover:bg-red-50 ${collapsed ? 'justify-center' : 'gap-3'}`}>
           <span>🚪</span>{!collapsed && <span>Sair</span>}
         </button>

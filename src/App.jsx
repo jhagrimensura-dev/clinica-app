@@ -194,6 +194,7 @@ function AppContent() {
 
   const renderPage = () => {
     if (view === 'diario') return <Diario mesIndex={mesIndex} ano={ano} />
+    if (active.startsWith('inbox_')) return <InboxWhatsApp contaId={active.replace('inbox_', '')} />
     switch (active) {
       case 'dashboard': return <Dashboard />
       case 'agenda': return <Agenda />
