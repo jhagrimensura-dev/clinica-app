@@ -83,17 +83,35 @@ function gerarId() {
 
 const TIPOS_WA = ['Comercial', 'Recorrência', 'Indicação', 'Suporte', 'Outro']
 
+function TokenInput({ label, value, onChange }) {
+  const [show, setShow] = useState(false)
+  return (
+    <div>
+      <label className="text-sm font-medium text-gray-700 mb-1.5 block">{label} <span className="text-red-400">*</span></label>
+      <div className="relative">
+        <input type={show ? 'text' : 'password'} value={value} onChange={e => onChange(e.target.value)}
+          placeholder="Ex: 3F1A2B3C4D5E"
+          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 pr-10 text-sm outline-none focus:border-amber-400 font-mono" />
+        <button type="button" onClick={() => setShow(v => !v)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+          {show ? '🙈' : '👁️'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+const EMPTY_CONTA = { nome: '', tipo: 'Comercial', instanciaId: '', instanciaToken: '' }
+
 function TabWhatsApp() {
-  const defaultContas = [
-    { id: gerarId(), nome: 'Comercial',   tipo: 'Comercial'   },
-    { id: gerarId(), nome: 'Recorrência', tipo: 'Recorrência' },
-  ]
+  const defaultContas = []
   const [contas, setContas] = useState(() => load('config_whatsapp_contas', defaultContas))
   const [modal, setModal] = useState(false)
-  const [novoNome, setNovoNome] = useState('')
-  const [novoTipo, setNovoTipo] = useState('Comercial')
+  const [form, setForm] = useState(EMPTY_CONTA)
   const [editando, setEditando] = useState(null)
   const [copiado, setCopiado] = useState(null)
+
+  const setF = (campo, val) => setForm(f => ({ ...f, [campo]: val }))
 
   const salvarContas = (lista) => {
     localStorage.setItem('config_whatsapp_contas', JSON.stringify(lista))
@@ -101,9 +119,9 @@ function TabWhatsApp() {
   }
 
   const adicionar = () => {
-    if (!novoNome.trim()) return
-    salvarContas([...contas, { id: gerarId(), nome: novoNome.trim(), tipo: novoTipo }])
-    setNovoNome(''); setNovoTipo('Comercial'); setModal(false)
+    if (!form.nome.trim() || !form.instanciaId.trim() || !form.instanciaToken.trim()) return
+    salvarContas([...contas, { ...form, id: gerarId(), nome: form.nome.trim() }])
+    setForm(EMPTY_CONTA); setModal(false)
   }
 
   const remover = (id) => salvarContas(contas.filter(c => c.id !== id))
@@ -146,7 +164,10 @@ function TabWhatsApp() {
                   <p className="text-sm font-semibold text-gray-800">{conta.nome}</p>
                   <span className="text-xs bg-amber-100 text-amber-700 font-semibold px-2 py-0.5 rounded-full">{conta.tipo}</span>
                 </div>
-                <p className="text-xs text-gray-400 mt-0.5 font-mono">ID: {conta.id}</p>
+                {conta.instanciaId
+                  ? <p className="text-xs text-gray-400 mt-0.5 font-mono">Instância: {conta.instanciaId}</p>
+                  : <p className="text-xs text-orange-400 mt-0.5">⚠ Instância não configurada</p>
+                }
               </div>
               <div className="flex items-center gap-3">
                 <button onClick={() => copiarWebhook(conta.id)}
@@ -184,28 +205,37 @@ function TabWhatsApp() {
       {/* Modal adicionar */}
       {modal && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-gray-900">Adicionar WhatsApp</h3>
-              <button onClick={() => setModal(false)} className="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
+              <div>
+                <h3 className="text-base font-bold text-gray-900">Adicionar Conta WhatsApp</h3>
+                <p className="text-xs text-gray-400 mt-0.5">Adicione os dados da sua instância</p>
+              </div>
+              <button onClick={() => { setModal(false); setForm(EMPTY_CONTA) }} className="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Nome da Conta</label>
-              <input autoFocus value={novoNome} onChange={e => setNovoNome(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && adicionar()}
-                placeholder="Ex: Comercial"
+              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Nome da conta <span className="text-red-400">*</span></label>
+              <input autoFocus value={form.nome} onChange={e => setF('nome', e.target.value)}
+                placeholder="Ex: Isabela"
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400" />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Tipo</label>
-              <select value={novoTipo} onChange={e => setNovoTipo(e.target.value)}
+              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Tipo <span className="text-red-400">*</span></label>
+              <select value={form.tipo} onChange={e => setF('tipo', e.target.value)}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400 bg-white">
                 {TIPOS_WA.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1.5 block">ID da Instância <span className="text-red-400">*</span></label>
+              <input value={form.instanciaId} onChange={e => setF('instanciaId', e.target.value)}
+                placeholder="Ex: 3F1A2B3C4D5E"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400 font-mono" />
+            </div>
+            <TokenInput label="Token da Instância" value={form.instanciaToken} onChange={v => setF('instanciaToken', v)} />
             <div className="flex justify-end gap-3 pt-1">
-              <button onClick={() => setModal(false)} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
-              <button onClick={adicionar} disabled={!novoNome.trim()}
+              <button onClick={() => { setModal(false); setForm(EMPTY_CONTA) }} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
+              <button onClick={adicionar} disabled={!form.nome.trim() || !form.instanciaId.trim() || !form.instanciaToken.trim()}
                 className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl disabled:opacity-40">Adicionar</button>
             </div>
           </div>
