@@ -106,8 +106,9 @@ function MiniCalendario({ selected, onSelect }) {
   )
 }
 
-function Modal({ slot, existing, onClose, onSave, onDelete }) {
+function Modal({ slot, existing, onClose, onSave, onDelete, agendamentos }) {
   const { pacientes } = usePacientes()
+  const modalRef = useRef(null)
   const [aba, setAba] = useState(existing?.tipo || 'consulta')
   // Consulta
   const [paciente, setPaciente] = useState(existing?.paciente || '')
@@ -139,6 +140,7 @@ function Modal({ slot, existing, onClose, onSave, onDelete }) {
     }
   }
 
+
   const canSave = aba === 'consulta' ? paciente.trim() : aba === 'compromisso' ? compromisso.trim() : evento.trim()
 
   const ABAS = [
@@ -148,8 +150,8 @@ function Modal({ slot, existing, onClose, onSave, onDelete }) {
   ]
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div ref={modalRef} className="bg-white rounded-xl shadow-2xl w-full max-w-2xl">
 
         {/* Header com abas */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
@@ -157,7 +159,7 @@ function Modal({ slot, existing, onClose, onSave, onDelete }) {
             {ABAS.map((a, i) => (
               <div key={a.id} className="flex items-center gap-1">
                 {i > 0 && <span className="text-gray-200">|</span>}
-                <button onClick={(e) => { e.stopPropagation(); setAba(a.id) }}
+                <button type="button" onClick={(e) => { e.stopPropagation(); setAba(a.id) }}
                   className={`text-sm px-1 transition-colors ${aba === a.id ? 'font-bold text-gray-800' : 'text-gray-400 hover:text-gray-600'}`}>
                   {aba === a.id ? `Nov${a.id === 'consulta' ? 'a' : 'o'} ${a.label}` : a.label}
                 </button>
@@ -633,7 +635,7 @@ export default function Agenda() {
       </div>
 
       {modal && createPortal(
-        <Modal slot={modal} existing={modal.existing} onClose={() => setModal(null)} onSave={handleSave} onDelete={handleDelete} />,
+        <Modal slot={modal} existing={modal.existing} onClose={() => setModal(null)} onSave={handleSave} onDelete={handleDelete} agendamentos={agendamentos} />,
         document.body
       )}
     </div>
