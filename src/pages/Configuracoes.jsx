@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useAuth } from '../context/AuthContext'
 
 function load(key, fallback) {
   try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : fallback } catch { return fallback }
@@ -434,9 +435,12 @@ function ModalMembro({ membro, onSalvar, onFechar }) {
 }
 
 function TabEquipe() {
+  const { inviteUser } = useAuth()
   const [membros, setMembros] = useState(() => load('config_equipe', MEMBROS_DEFAULT))
   const [modal, setModal] = useState(false)
   const [editando, setEditando] = useState(null)
+  const [convidando, setConvidando] = useState(null)
+  const [feedbackConvite, setFeedbackConvite] = useState({})
 
   const salvarLista = (lista) => {
     localStorage.setItem('config_equipe', JSON.stringify(lista))
@@ -454,6 +458,19 @@ function TabEquipe() {
   }
 
   const remover = (id) => salvarLista(membros.filter(m => m.id !== id))
+
+  const enviarConvite = async (membro) => {
+    if (!membro.email) return
+    setConvidando(membro.id)
+    const { error } = await inviteUser(membro.email)
+    setConvidando(null)
+    if (error) {
+      setFeedbackConvite(f => ({ ...f, [membro.id]: 'erro' }))
+    } else {
+      setFeedbackConvite(f => ({ ...f, [membro.id]: 'ok' }))
+    }
+    setTimeout(() => setFeedbackConvite(f => ({ ...f, [membro.id]: null })), 4000)
+  }
 
   return (
     <div className="space-y-5">
@@ -489,6 +506,30 @@ function TabEquipe() {
               {m.cargo && <p className="text-xs text-gray-500 mt-0.5">{m.cargo}</p>}
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
+              {m.email && (
+                feedbackConvite[m.id] === 'ok' ? (
+                  <span className="text-xs text-green-500 font-semibold px-2">Enviado!</span>
+                ) : feedbackConvite[m.id] === 'erro' ? (
+                  <span className="text-xs text-red-400 font-semibold px-2">Erro</span>
+                ) : (
+                  <button
+                    onClick={() => enviarConvite(m)}
+                    disabled={convidando === m.id}
+                    title="Enviar convite de acesso"
+                    className="text-gray-300 hover:text-amber-500 transition-colors p-1 disabled:opacity-40">
+                    {convidando === m.id ? (
+                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                    )}
+                  </button>
+                )
+              )}
               <button onClick={() => setEditando(m)}
                 className="text-gray-300 hover:text-amber-500 transition-colors p-1">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

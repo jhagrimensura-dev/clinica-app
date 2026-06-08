@@ -34,11 +34,12 @@ export function AuthProvider({ children }) {
 
   const signIn = (email, password) => supabase.auth.signInWithPassword({ email, password })
   const signInWithMagicLink = (email) => supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } })
+  const inviteUser = (email) => supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: window.location.origin } })
   const signOut = () => supabase.auth.signOut()
   const updatePassword = (password) => supabase.auth.updateUser({ password })
 
   return (
-    <AuthContext.Provider value={{ session, signIn, signInWithMagicLink, signOut, recoveryMode, updatePassword }}>
+    <AuthContext.Provider value={{ session, signIn, signInWithMagicLink, inviteUser, signOut, recoveryMode, updatePassword }}>
       {children}
     </AuthContext.Provider>
   )
