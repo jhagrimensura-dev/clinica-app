@@ -6,17 +6,27 @@ const AuthContext = createContext(null)
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(undefined)
   const [recoveryMode, setRecoveryMode] = useState(false)
+  const [primeiroAcesso, setPrimeiroAcesso] = useState(false)
 
   useEffect(() => {
-    // Supabase moderno envia recovery com ?token_hash=...&type=recovery
     const params = new URLSearchParams(window.location.search)
     const token_hash = params.get('token_hash')
     const type = params.get('type')
+
     if (token_hash && type === 'recovery') {
       window.history.replaceState({}, '', window.location.pathname)
       setRecoveryMode(true)
       supabase.auth.verifyOtp({ token_hash, type: 'recovery' })
         .then(({ data }) => { if (data.session) setSession(data.session) })
+    } else if (token_hash && (type === 'magiclink' || type === 'signup' || type === 'invite')) {
+      window.history.replaceState({}, '', window.location.pathname)
+      supabase.auth.verifyOtp({ token_hash, type: 'magiclink' })
+        .then(({ data }) => {
+          if (data.session) {
+            setSession(data.session)
+            setPrimeiroAcesso(true)
+          }
+        })
     }
 
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
@@ -40,8 +50,10 @@ export function AuthProvider({ children }) {
   const signOut = () => supabase.auth.signOut()
   const updatePassword = (password) => supabase.auth.updateUser({ password })
 
+  const confirmarPrimeiroAcesso = () => setPrimeiroAcesso(false)
+
   return (
-    <AuthContext.Provider value={{ session, userRole, signIn, signInWithMagicLink, inviteUser, signOut, recoveryMode, updatePassword }}>
+    <AuthContext.Provider value={{ session, userRole, signIn, signInWithMagicLink, inviteUser, signOut, recoveryMode, updatePassword, primeiroAcesso, confirmarPrimeiroAcesso }}>
       {children}
     </AuthContext.Provider>
   )

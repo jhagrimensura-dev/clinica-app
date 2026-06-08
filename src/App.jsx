@@ -100,14 +100,67 @@ function Diario({ mesIndex, ano }) {
   )
 }
 
+function DefinirSenha() {
+  const { updatePassword, confirmarPrimeiroAcesso, session } = useAuth()
+  const [senha, setSenha] = useState('')
+  const [confirma, setConfirma] = useState('')
+  const [erro, setErro] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (senha.length < 6) { setErro('A senha deve ter pelo menos 6 caracteres.'); return }
+    if (senha !== confirma) { setErro('As senhas não coincidem.'); return }
+    setErro(''); setLoading(true)
+    const { error } = await updatePassword(senha)
+    setLoading(false)
+    if (error) { setErro('Erro ao definir senha. Tente novamente.'); return }
+    confirmarPrimeiroAcesso()
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-white flex items-center justify-center p-4">
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-8">
+          <div className="w-14 h-14 bg-pink-200 rounded-2xl flex items-center justify-center text-pink-600 font-bold text-2xl mx-auto mb-4">A</div>
+          <h1 className="text-2xl font-bold text-gray-800">Bem-vindo!</h1>
+          <p className="text-sm text-gray-400 mt-1">{session?.user?.email}</p>
+        </div>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <h2 className="text-base font-bold text-gray-800 mb-1">Defina sua senha</h2>
+          <p className="text-xs text-gray-400 mb-5">Crie uma senha para acessar o sistema nas próximas vezes.</p>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Nova senha</label>
+              <input type="password" value={senha} onChange={e => setSenha(e.target.value)} required placeholder="••••••••"
+                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-300" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Confirmar senha</label>
+              <input type="password" value={confirma} onChange={e => setConfirma(e.target.value)} required placeholder="••••••••"
+                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-300" />
+            </div>
+            {erro && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{erro}</p>}
+            <button type="submit" disabled={loading}
+              className="w-full bg-pink-400 hover:bg-pink-500 disabled:bg-pink-200 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors">
+              {loading ? 'Salvando...' : 'Definir senha e entrar'}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function AppInner() {
-  const { session, recoveryMode } = useAuth()
+  const { session, recoveryMode, primeiroAcesso } = useAuth()
   if (session === undefined) return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-white flex items-center justify-center">
       <div className="w-8 h-8 border-4 border-pink-300 border-t-pink-500 rounded-full animate-spin" />
     </div>
   )
   if (!session || recoveryMode) return <Login />
+  if (primeiroAcesso) return <DefinirSenha />
   return <AppContent />
 }
 
