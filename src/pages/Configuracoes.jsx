@@ -107,7 +107,8 @@ const EMPTY_CONTA = { nome: '', tipo: 'Comercial', instanciaId: '', instanciaTok
 const ZAPI_BASE = 'https://api.z-api.io'
 
 async function testarConexao(conta) {
-  const res = await fetch(`${ZAPI_BASE}/instances/${conta.instanciaId}/token/${conta.instanciaToken}/status`)
+  // Usa proxy Vercel para evitar CORS
+  const res = await fetch(`/api/zapi-status?i=${conta.instanciaId}&t=${conta.instanciaToken}`)
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   const data = await res.json()
   return data?.value === 'connected' ? 'open' : (data?.value || 'desconhecido')
@@ -126,6 +127,7 @@ function TabWhatsApp() {
   const [qrStatus, setQrStatus] = useState('aguardando')
   const [qrValue, setQrValue] = useState(null)
   const [qrErro, setQrErro] = useState(null)
+  const [qrContagem, setQrContagem] = useState(20)
 
   const setF = (campo, val) => setForm(f => ({ ...f, [campo]: val }))
 
@@ -168,11 +170,10 @@ function TabWhatsApp() {
     setTestando(null)
   }
 
-  const abrirQR = async (conta) => {
-    setModalQR(conta)
-    setQrStatus('aguardando')
+  const buscarQR = async (conta) => {
     setQrValue(null)
     setQrErro(null)
+    setQrContagem(20)
     try {
       const res = await fetch(`/api/zapi-qr?i=${conta.instanciaId}&t=${conta.instanciaToken}`)
       const data = await res.json()
@@ -186,7 +187,28 @@ function TabWhatsApp() {
     }
   }
 
+  const abrirQR = (conta) => {
+    setModalQR(conta)
+    setQrStatus('aguardando')
+    buscarQR(conta)
+  }
+
   const fecharQR = () => { setModalQR(null); setQrStatus('aguardando'); setQrValue(null); setQrErro(null) }
+
+  // Countdown e auto-refresh do QR Code
+  useEffect(() => {
+    if (!modalQR || qrStatus === 'conectado') return
+    const tick = setInterval(() => {
+      setQrContagem(c => {
+        if (c <= 1) {
+          buscarQR(modalQR)
+          return 20
+        }
+        return c - 1
+      })
+    }, 1000)
+    return () => clearInterval(tick)
+  }, [modalQR, qrStatus])
 
   // Poll status enquanto QR está aberto
   useEffect(() => {
@@ -388,9 +410,12 @@ function TabWhatsApp() {
                     </div>
                   )}
                 </div>
-                <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
+                <div className="flex items-center justify-center gap-3 text-xs text-gray-400">
                   <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
                   Aguardando escaneamento...
+                  <span className={`font-semibold ${qrContagem <= 5 ? 'text-orange-400' : 'text-gray-400'}`}>
+                    {qrContagem}s
+                  </span>
                 </div>
               </>
             )}
