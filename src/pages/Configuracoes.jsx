@@ -355,7 +355,7 @@ function TabWhatsApp() {
                 </p>
                 <div className="flex justify-center">
                   <img
-                    src={`${ZAPI_BASE}/instances/${modalQR.instanciaId}/token/${modalQR.instanciaToken}/qr-code/image`}
+                    src={`/api/zapi-qr?i=${modalQR.instanciaId}&t=${modalQR.instanciaToken}`}
                     alt="QR Code WhatsApp"
                     className="w-56 h-56 rounded-xl border border-gray-100"
                     onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }}
