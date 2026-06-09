@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { QRCodeSVG } from 'qrcode.react'
 
 function load(key, fallback) {
   try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : fallback } catch { return fallback }
@@ -123,7 +124,7 @@ function TabWhatsApp() {
   const [statusConexao, setStatusConexao] = useState({})
   const [modalQR, setModalQR] = useState(null)
   const [qrStatus, setQrStatus] = useState('aguardando')
-  const [qrImagem, setQrImagem] = useState(null)
+  const [qrValue, setQrValue] = useState(null)
   const [qrErro, setQrErro] = useState(null)
 
   const setF = (campo, val) => setForm(f => ({ ...f, [campo]: val }))
@@ -170,18 +171,14 @@ function TabWhatsApp() {
   const abrirQR = async (conta) => {
     setModalQR(conta)
     setQrStatus('aguardando')
-    setQrImagem(null)
+    setQrValue(null)
     setQrErro(null)
     try {
       const res = await fetch(`/api/zapi-qr?i=${conta.instanciaId}&t=${conta.instanciaToken}`)
       const data = await res.json()
       if (data?.value) {
-        // Z-API pode retornar base64 puro ou com prefixo data:
-        const val = data.value
-        const src = val.startsWith('data:') ? val : `data:image/png;base64,${val}`
-        setQrImagem(src)
+        setQrValue(data.value)
       } else {
-        // Mostra resposta completa para debug
         setQrErro(JSON.stringify(data).slice(0, 300))
       }
     } catch (e) {
@@ -189,7 +186,7 @@ function TabWhatsApp() {
     }
   }
 
-  const fecharQR = () => { setModalQR(null); setQrStatus('aguardando'); setQrImagem(null); setQrErro(null) }
+  const fecharQR = () => { setModalQR(null); setQrStatus('aguardando'); setQrValue(null); setQrErro(null) }
 
   // Poll status enquanto QR está aberto
   useEffect(() => {
@@ -373,8 +370,10 @@ function TabWhatsApp() {
                   3 pontos → <strong>Aparelhos conectados</strong> → <strong>Conectar aparelho</strong>
                 </p>
                 <div className="flex justify-center">
-                  {qrImagem ? (
-                    <img src={qrImagem} alt="QR Code WhatsApp" className="w-56 h-56 rounded-xl border border-gray-100" />
+                  {qrValue ? (
+                    <div className="p-3 bg-white border border-gray-100 rounded-xl">
+                      <QRCodeSVG value={qrValue} size={210} />
+                    </div>
                   ) : qrErro ? (
                     <div className="w-56 p-4 rounded-xl border border-red-100 bg-red-50 text-xs text-red-500 text-left">
                       <p className="font-semibold mb-1">Erro ao carregar QR Code:</p>
