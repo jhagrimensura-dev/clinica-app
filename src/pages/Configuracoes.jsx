@@ -176,9 +176,13 @@ function TabWhatsApp() {
       const res = await fetch(`/api/zapi-qr?i=${conta.instanciaId}&t=${conta.instanciaToken}`)
       const data = await res.json()
       if (data?.value) {
-        setQrImagem(data.value)
+        // Z-API pode retornar base64 puro ou com prefixo data:
+        const val = data.value
+        const src = val.startsWith('data:') ? val : `data:image/png;base64,${val}`
+        setQrImagem(src)
       } else {
-        setQrErro(JSON.stringify(data).slice(0, 200))
+        // Mostra resposta completa para debug
+        setQrErro(JSON.stringify(data).slice(0, 300))
       }
     } catch (e) {
       setQrErro(e.message)
