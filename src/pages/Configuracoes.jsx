@@ -123,6 +123,8 @@ function TabWhatsApp() {
   const [statusConexao, setStatusConexao] = useState({})
   const [modalQR, setModalQR] = useState(null)
   const [qrStatus, setQrStatus] = useState('aguardando')
+  const [qrImagem, setQrImagem] = useState(null)
+  const [qrErro, setQrErro] = useState(null)
 
   const setF = (campo, val) => setForm(f => ({ ...f, [campo]: val }))
 
@@ -165,12 +167,25 @@ function TabWhatsApp() {
     setTestando(null)
   }
 
-  const abrirQR = (conta) => {
+  const abrirQR = async (conta) => {
     setModalQR(conta)
     setQrStatus('aguardando')
+    setQrImagem(null)
+    setQrErro(null)
+    try {
+      const res = await fetch(`/api/zapi-qr?i=${conta.instanciaId}&t=${conta.instanciaToken}`)
+      const data = await res.json()
+      if (data?.value) {
+        setQrImagem(data.value)
+      } else {
+        setQrErro(JSON.stringify(data).slice(0, 200))
+      }
+    } catch (e) {
+      setQrErro(e.message)
+    }
   }
 
-  const fecharQR = () => { setModalQR(null); setQrStatus('aguardando') }
+  const fecharQR = () => { setModalQR(null); setQrStatus('aguardando'); setQrImagem(null); setQrErro(null) }
 
   // Poll status enquanto QR está aberto
   useEffect(() => {
@@ -354,15 +369,21 @@ function TabWhatsApp() {
                   3 pontos → <strong>Aparelhos conectados</strong> → <strong>Conectar aparelho</strong>
                 </p>
                 <div className="flex justify-center">
-                  <img
-                    src={`/api/zapi-qr?i=${modalQR.instanciaId}&t=${modalQR.instanciaToken}`}
-                    alt="QR Code WhatsApp"
-                    className="w-56 h-56 rounded-xl border border-gray-100"
-                    onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }}
-                  />
-                  <div style={{ display: 'none' }} className="w-56 h-56 rounded-xl border border-gray-100 items-center justify-center text-gray-400 text-sm">
-                    Erro ao carregar QR Code
-                  </div>
+                  {qrImagem ? (
+                    <img src={qrImagem} alt="QR Code WhatsApp" className="w-56 h-56 rounded-xl border border-gray-100" />
+                  ) : qrErro ? (
+                    <div className="w-56 p-4 rounded-xl border border-red-100 bg-red-50 text-xs text-red-500 text-left">
+                      <p className="font-semibold mb-1">Erro ao carregar QR Code:</p>
+                      <p className="break-all">{qrErro}</p>
+                    </div>
+                  ) : (
+                    <div className="w-56 h-56 rounded-xl border border-gray-100 flex items-center justify-center">
+                      <svg className="w-8 h-8 animate-spin text-gray-300" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                      </svg>
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
                   <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
