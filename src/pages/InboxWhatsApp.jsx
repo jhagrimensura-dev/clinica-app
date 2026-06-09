@@ -1,29 +1,28 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useLeads } from '../context/LeadsContext'
+import { supabase } from '../lib/supabase'
 
-const ZAPI_BASE = 'https://api.z-api.io'
-
-// ── Z-API helper ──────────────────────────────────────────────────
-function zapiUrl(conta, path) {
-  return `${ZAPI_BASE}/instances/${conta.instanciaId}/token/${conta.instanciaToken}/${path}`
-}
-
+// ── Proxy helper (evita CORS) ─────────────────────────────────────
 async function zapiFetch(conta, path, method = 'GET', body = null) {
-  const res = await fetch(zapiUrl(conta, path), {
-    method,
-    headers: { 'Content-Type': 'application/json', 'client-token': conta.instanciaToken },
-    ...(body ? { body: JSON.stringify(body) } : {}),
-  })
+  const encodedPath = encodeURIComponent(path)
+  const res = await fetch(
+    `/api/zapi-proxy?i=${conta.instanciaId}&t=${conta.instanciaToken}&path=${encodedPath}`,
+    {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    }
+  )
   if (!res.ok) {
     const txt = await res.text().catch(() => '')
-    throw new Error(`HTTP ${res.status}: ${txt.slice(0, 120)}`)
+    throw new Error(`HTTP ${res.status}: ${txt.slice(0, 100)}`)
   }
   return res.json()
 }
 
 function formatTs(ms) {
   if (!ms) return ''
-  const d = new Date(ms)
+  const d = new Date(Number(ms))
   if (isNaN(d)) return ''
   const diffDays = Math.floor((Date.now() - d) / 86400000)
   if (diffDays === 0) return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
@@ -31,44 +30,20 @@ function formatTs(ms) {
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
 }
 
-function getMsgTextoZapi(msg) {
-  return msg?.text?.message
-    || msg?.image?.caption
-    || msg?.video?.caption
-    || msg?.audio ? '[áudio]' : ''
-    || msg?.document?.fileName
-    || msg?.sticker ? '[sticker]' : ''
-    || '[mídia]'
-}
-
-function normalizeChatsZapi(data, instancia) {
-  const arr = Array.isArray(data) ? data : []
-  return arr
-    .filter(c => c.phone)
+function normalizeChats(data, instancia) {
+  if (!Array.isArray(data)) return []
+  return data
+    .filter(c => c.phone && !c.isGroupAnnouncement)
     .map(c => ({
       id: c.phone,
       instancia,
-      contato: {
-        nome: c.name || c.phone,
-        telefone: c.phone,
-      },
-      naoLidas: c.unread || 0,
-      horario: formatTs(c.lastMessage?.momment),
-      ultimaMensagem: getMsgTextoZapi(c.lastMessage),
+      contato: { nome: c.name || c.phone, telefone: c.phone, foto: c.profileThumbnail || null },
+      naoLidas: parseInt(c.unread || c.messagesUnread || '0', 10),
+      horario: formatTs(c.lastMessageTime),
+      ultimaMensagem: '',
       mensagens: [],
     }))
-}
-
-function normalizeMensagensZapi(data, phone) {
-  const arr = Array.isArray(data) ? data
-    : Array.isArray(data?.messages) ? data.messages
-    : []
-  return arr.map(m => ({
-    id: m.messageId || String(m.momment || Math.random()),
-    minha: m.fromMe ?? false,
-    texto: getMsgTextoZapi(m),
-    hora: formatTs(m.momment),
-  }))
+    .sort((a, b) => (b.horario || '') < (a.horario || '') ? -1 : 1)
 }
 
 // ── Modal registrar lead ──────────────────────────────────────────
@@ -79,9 +54,9 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar }) {
   const [obs, setObs] = useState('')
 
   const ORIGENS = {
-    leads_novos:      { label: 'Lead Novo',       cor: 'bg-pink-500' },
-    leads_recorrentes:{ label: 'Lead Recorrente',  cor: 'bg-blue-500' },
-    indicacao:        { label: 'Indicação',        cor: 'bg-purple-500' },
+    leads_novos:       { label: 'Lead Novo',       cor: 'bg-pink-500' },
+    leads_recorrentes: { label: 'Lead Recorrente',  cor: 'bg-blue-500' },
+    indicacao:         { label: 'Indicação',        cor: 'bg-purple-500' },
   }
   const origem = ORIGENS[tipo]
 
@@ -139,27 +114,27 @@ export default function InboxWhatsApp({ contaId }) {
   const { addLead } = useLeads()
   const contaAtiva = contaId ? loadContas().find(c => c.id === contaId) : null
 
-  const [conversas, setConversas]       = useState([])
-  const [selecionada, setSelecionada]   = useState(null)
-  const [mensagem, setMensagem]         = useState('')
-  const [busca, setBusca]               = useState('')
-  const [menuLead, setMenuLead]         = useState(false)
-  const [modalLead, setModalLead]       = useState(null)
+  const [conversas, setConversas]     = useState([])
+  const [selecionada, setSelecionada] = useState(null)
+  const [mensagem, setMensagem]       = useState('')
+  const [busca, setBusca]             = useState('')
+  const [menuLead, setMenuLead]       = useState(false)
+  const [modalLead, setModalLead]     = useState(null)
   const [leadRegistrado, setLeadRegistrado] = useState({})
   const [loadingConversas, setLoadingConversas] = useState(false)
-  const [loadingMsgs, setLoadingMsgs]   = useState(false)
-  const [enviando, setEnviando]         = useState(false)
-  const [erro, setErro]                 = useState(null)
+  const [loadingMsgs, setLoadingMsgs] = useState(false)
+  const [enviando, setEnviando]       = useState(false)
+  const [erro, setErro]               = useState(null)
   const messagesEndRef = useRef(null)
-  const pollRef        = useRef(null)
 
+  // Carrega lista de conversas da Z-API
   const fetchConversas = useCallback(async () => {
     if (!contaAtiva?.instanciaId) return
     setLoadingConversas(true)
     setErro(null)
     try {
-      const data = await zapiFetch(contaAtiva, 'chats')
-      const lista = normalizeChatsZapi(data, contaAtiva.nome)
+      const data = await zapiFetch(contaAtiva, 'chats?page=1&pageSize=50')
+      const lista = normalizeChats(data, contaAtiva.nome)
       setConversas(lista)
       if (!selecionada && lista.length > 0) setSelecionada(lista[0])
     } catch (e) {
@@ -168,17 +143,29 @@ export default function InboxWhatsApp({ contaId }) {
     setLoadingConversas(false)
   }, [contaAtiva?.instanciaId, selecionada])
 
+  // Carrega mensagens do Supabase (salvas pelo webhook)
   const fetchMensagens = useCallback(async (phone) => {
     if (!contaAtiva?.instanciaId || !phone) return
     setLoadingMsgs(true)
     try {
-      const data = await zapiFetch(contaAtiva, `chats/${phone}/messages?page=1&pageSize=50`)
-      const msgs = normalizeMensagensZapi(data, phone)
+      const { data } = await supabase
+        .from('whatsapp_mensagens')
+        .select('*')
+        .eq('instancia_id', contaAtiva.instanciaId)
+        .eq('phone', phone)
+        .order('timestamp_ms', { ascending: true })
+        .limit(100)
+
+      const msgs = (data || []).map(m => ({
+        id: m.id,
+        minha: m.de_mim,
+        texto: m.texto || '',
+        hora: formatTs(m.timestamp_ms),
+      }))
+
       setConversas(prev => prev.map(c => c.id === phone ? { ...c, mensagens: msgs, naoLidas: 0 } : c))
       setSelecionada(prev => prev?.id === phone ? { ...prev, mensagens: msgs, naoLidas: 0 } : prev)
-    } catch {
-      // silencia erro de mensagens individuais
-    }
+    } catch {}
     setLoadingMsgs(false)
   }, [contaAtiva?.instanciaId])
 
@@ -192,13 +179,25 @@ export default function InboxWhatsApp({ contaId }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [selecionada?.mensagens?.length])
 
+  // Realtime Supabase para novas mensagens
   useEffect(() => {
-    if (!contaAtiva?.instanciaId) return
-    pollRef.current = setInterval(() => {
-      if (selecionada?.id) fetchMensagens(selecionada.id)
-    }, 10000)
-    return () => clearInterval(pollRef.current)
-  }, [contaAtiva?.id, selecionada?.id])
+    if (!contaAtiva?.instanciaId || !selecionada?.id) return
+    const channel = supabase
+      .channel(`msgs-${selecionada.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'whatsapp_mensagens',
+        filter: `phone=eq.${selecionada.id}`,
+      }, payload => {
+        const m = payload.new
+        const novaMsg = { id: m.id, minha: m.de_mim, texto: m.texto, hora: formatTs(m.timestamp_ms) }
+        setSelecionada(prev => ({ ...prev, mensagens: [...(prev?.mensagens || []), novaMsg] }))
+        setConversas(prev => prev.map(c => c.id === selecionada.id ? { ...c, mensagens: [...(c.mensagens || []), novaMsg] } : c))
+      })
+      .subscribe()
+    return () => supabase.removeChannel(channel)
+  }, [contaAtiva?.instanciaId, selecionada?.id])
 
   const conversa = selecionada ? conversas.find(c => c.id === selecionada.id) || selecionada : null
 
@@ -211,18 +210,25 @@ export default function InboxWhatsApp({ contaId }) {
     const texto = mensagem.trim()
     setMensagem('')
     setEnviando(true)
+
     const msgLocal = {
-      id: String(Date.now()),
-      minha: true,
-      texto,
+      id: String(Date.now()), minha: true, texto,
       hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
     }
-    setConversas(cs => cs.map(c => c.id === conversa.id ? { ...c, mensagens: [...(c.mensagens || []), msgLocal] } : c))
     setSelecionada(prev => ({ ...prev, mensagens: [...(prev?.mensagens || []), msgLocal] }))
+
     try {
-      await zapiFetch(contaAtiva, 'send-text', 'POST', {
+      await zapiFetch(contaAtiva, 'send-text', 'POST', { phone: conversa.id, message: texto })
+
+      // Salva no Supabase também
+      await supabase.from('whatsapp_mensagens').insert({
+        instancia_id: contaAtiva.instanciaId,
         phone: conversa.id,
-        message: texto,
+        nome_contato: conversa.contato.nome,
+        de_mim: true,
+        texto,
+        tipo: 'text',
+        timestamp_ms: Date.now(),
       })
     } catch (e) {
       setErro(`Erro ao enviar: ${e.message}`)
@@ -238,33 +244,18 @@ export default function InboxWhatsApp({ contaId }) {
     setModalLead(null)
   }
 
-  // ── Sem conta configurada ──
   if (!contaAtiva) {
     return (
       <div className="flex-1 flex items-center justify-center bg-gray-50 p-8">
         <div className="text-center max-w-sm">
           <p className="text-4xl mb-4">💬</p>
           <p className="text-base font-semibold text-gray-700 mb-2">Nenhuma conta selecionada</p>
-          <p className="text-sm text-gray-400">Acesse <strong>Configurações → WhatsApp</strong> para adicionar uma conta via Z-API.</p>
+          <p className="text-sm text-gray-400">Acesse <strong>Configurações → WhatsApp</strong> para adicionar uma conta.</p>
         </div>
       </div>
     )
   }
 
-  // ── Conta sem credenciais ──
-  if (!contaAtiva.instanciaId || !contaAtiva.instanciaToken) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-gray-50 p-8">
-        <div className="text-center max-w-sm">
-          <p className="text-3xl mb-4">⚙️</p>
-          <p className="text-base font-semibold text-gray-700 mb-2">Credenciais incompletas</p>
-          <p className="text-sm text-gray-400">Edite a conta <strong>{contaAtiva.nome}</strong> em Configurações e adicione o ID e Token da Z-API.</p>
-        </div>
-      </div>
-    )
-  }
-
-  // ── UI principal ──
   return (
     <div className="flex h-screen overflow-hidden">
 
@@ -290,11 +281,7 @@ export default function InboxWhatsApp({ contaId }) {
           </div>
         </div>
 
-        {erro && (
-          <div className="mx-3 mt-2 p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-500">
-            {erro}
-          </div>
-        )}
+        {erro && <div className="mx-3 mt-2 p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-500">{erro}</div>}
 
         <div className="flex-1 overflow-y-auto">
           {loadingConversas && conversas.length === 0 ? (
@@ -312,20 +299,22 @@ export default function InboxWhatsApp({ contaId }) {
               <button key={c.id} onClick={() => abrirConversa(c)}
                 className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-pink-50 transition-colors ${selecionada?.id === c.id ? 'bg-pink-50 border-l-4 border-l-pink-400' : ''}`}>
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-200 to-pink-300 flex items-center justify-center text-pink-700 font-bold text-sm flex-shrink-0">
-                    {(c.contato.nome || '?').charAt(0).toUpperCase()}
-                  </div>
+                  {c.contato.foto ? (
+                    <img src={c.contato.foto} className="w-10 h-10 rounded-full flex-shrink-0 object-cover" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-200 to-pink-300 flex items-center justify-center text-pink-700 font-bold text-sm flex-shrink-0">
+                      {(c.contato.nome || '?').charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-0.5">
                       <p className="text-sm font-semibold text-gray-800 truncate">{c.contato.nome}</p>
                       <span className="text-xs text-gray-400 flex-shrink-0 ml-1">{c.horario}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <p className="text-xs text-gray-400 truncate">{c.ultimaMensagem}</p>
+                      <p className="text-xs text-gray-400 truncate">{c.mensagens?.at(-1)?.texto || c.ultimaMensagem}</p>
                       {c.naoLidas > 0 && (
-                        <span className="ml-1 flex-shrink-0 bg-green-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                          {c.naoLidas}
-                        </span>
+                        <span className="ml-1 flex-shrink-0 bg-green-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">{c.naoLidas}</span>
                       )}
                     </div>
                   </div>
@@ -341,9 +330,13 @@ export default function InboxWhatsApp({ contaId }) {
         <div className="flex-1 flex flex-col bg-gray-50 min-w-0">
           <div className="bg-white border-b border-gray-100 px-5 py-3 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-200 to-pink-300 flex items-center justify-center text-pink-700 font-bold">
-                {(conversa.contato.nome || '?').charAt(0).toUpperCase()}
-              </div>
+              {conversa.contato.foto ? (
+                <img src={conversa.contato.foto} className="w-10 h-10 rounded-full object-cover" />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-200 to-pink-300 flex items-center justify-center text-pink-700 font-bold">
+                  {(conversa.contato.nome || '?').charAt(0).toUpperCase()}
+                </div>
+              )}
               <div>
                 <p className="text-sm font-bold text-gray-800">{conversa.contato.nome}</p>
                 <p className="text-xs text-gray-400">+{conversa.contato.telefone}</p>
@@ -387,6 +380,12 @@ export default function InboxWhatsApp({ contaId }) {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
                 </svg>
+              </div>
+            ) : !(conversa.mensagens?.length) ? (
+              <div className="flex flex-col items-center justify-center h-full text-center text-gray-400 py-12">
+                <p className="text-3xl mb-3">💬</p>
+                <p className="text-sm font-medium text-gray-500">Nenhuma mensagem ainda</p>
+                <p className="text-xs text-gray-400 mt-1">As mensagens novas aparecerão aqui em tempo real</p>
               </div>
             ) : (conversa.mensagens || []).map(msg => (
               <div key={msg.id} className={`flex ${msg.minha ? 'justify-end' : 'justify-start'}`}>
