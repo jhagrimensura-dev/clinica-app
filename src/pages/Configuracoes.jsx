@@ -177,7 +177,9 @@ function TabWhatsApp() {
     try {
       const res = await fetch(`/api/zapi-qr?i=${conta.instanciaId}&t=${conta.instanciaToken}`)
       const data = await res.json()
-      if (data?.value) {
+      if (data?.connected === true) {
+        setQrStatus('conectado')
+      } else if (data?.value) {
         setQrValue(data.value)
       } else {
         setQrErro(JSON.stringify(data).slice(0, 300))
