@@ -1,63 +1,77 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useLeads } from '../context/LeadsContext'
 
-const CONVERSAS_MOCK = [
-  {
-    id: '1', instancia: 'Comercial',
-    contato: { nome: 'Maria Silva', telefone: '31999887766' },
-    naoLidas: 2, horario: '14:32',
-    mensagens: [
-      { id: 1, minha: false, texto: 'Oi! Vi o perfil de vocês no Instagram e fiquei interessada 😊', hora: '14:28' },
-      { id: 2, minha: false, texto: 'Queria saber sobre procedimentos para manchas no rosto', hora: '14:29' },
-      { id: 3, minha: true,  texto: 'Oi Maria! Tudo bem? Que bom que nos encontrou 😄', hora: '14:31' },
-      { id: 4, minha: true,  texto: 'A Dra. Amanda trabalha com tratamentos de manchas sim! Posso te passar mais informações?', hora: '14:31' },
-      { id: 5, minha: false, texto: 'Sim por favor! Qual o valor?', hora: '14:32' },
-    ],
-  },
-  {
-    id: '2', instancia: 'Comercial',
-    contato: { nome: 'Juliana Ferreira', telefone: '31988776655' },
-    naoLidas: 0, horario: '13:15',
-    mensagens: [
-      { id: 1, minha: false, texto: 'Bom dia! Vocês atendem pelo plano Unimed?', hora: '13:10' },
-      { id: 2, minha: true,  texto: 'Bom dia Juliana! Atendemos sim alguns planos. Pode me dizer qual o seu?', hora: '13:14' },
-      { id: 3, minha: false, texto: 'Unimed BH', hora: '13:15' },
-    ],
-  },
-  {
-    id: '3', instancia: 'Comercial',
-    contato: { nome: 'Fernanda Costa', telefone: '31977665544' },
-    naoLidas: 1, horario: '11:47',
-    mensagens: [
-      { id: 1, minha: false, texto: 'Boa tarde! Minha amiga fez tratamento com vocês e ficou linda!', hora: '11:40' },
-      { id: 2, minha: false, texto: 'Queria marcar uma consulta de avaliação', hora: '11:41' },
-      { id: 3, minha: true,  texto: 'Que ótimo ouvir isso! 💕 Podemos agendar uma avaliação com a Dra. Amanda.', hora: '11:45' },
-      { id: 4, minha: true,  texto: 'Qual seria o melhor dia pra você?', hora: '11:45' },
-      { id: 5, minha: false, texto: 'Pode ser na próxima semana, qualquer dia pela manhã', hora: '11:47' },
-    ],
-  },
-  {
-    id: '4', instancia: 'Recorrência',
-    contato: { nome: 'Camila Rodrigues', telefone: '31966554433' },
-    naoLidas: 0, horario: 'Ontem',
-    mensagens: [
-      { id: 1, minha: true,  texto: 'Oi Camila! Tudo bem? Você fez sua última sessão há 3 meses, já está na hora de renovar! 🌟', hora: '10:00' },
-      { id: 2, minha: false, texto: 'Ai verdade! Estava precisando mesmo', hora: '10:05' },
-      { id: 3, minha: false, texto: 'Pode marcar para semana que vem?', hora: '10:06' },
-    ],
-  },
-  {
-    id: '5', instancia: 'Comercial',
-    contato: { nome: 'Patricia Lima', telefone: '31955443322' },
-    naoLidas: 0, horario: 'Ontem',
-    mensagens: [
-      { id: 1, minha: false, texto: 'Olá, vi o anúncio de vocês. Quanto custa o preenchimento labial?', hora: '09:20' },
-      { id: 2, minha: true,  texto: 'Oi Patricia! O preenchimento labial a partir de R$ 800. Mas o valor exato depende da avaliação da Dra. Amanda.', hora: '09:35' },
-      { id: 3, minha: true,  texto: 'Quer agendar uma avaliação gratuita?', hora: '09:36' },
-    ],
-  },
-]
+const ZAPI_BASE = 'https://api.z-api.io'
 
+// ── Z-API helper ──────────────────────────────────────────────────
+function zapiUrl(conta, path) {
+  return `${ZAPI_BASE}/instances/${conta.instanciaId}/token/${conta.instanciaToken}/${path}`
+}
+
+async function zapiFetch(conta, path, method = 'GET', body = null) {
+  const res = await fetch(zapiUrl(conta, path), {
+    method,
+    headers: { 'Content-Type': 'application/json', 'client-token': conta.instanciaToken },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  })
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '')
+    throw new Error(`HTTP ${res.status}: ${txt.slice(0, 120)}`)
+  }
+  return res.json()
+}
+
+function formatTs(ms) {
+  if (!ms) return ''
+  const d = new Date(ms)
+  if (isNaN(d)) return ''
+  const diffDays = Math.floor((Date.now() - d) / 86400000)
+  if (diffDays === 0) return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  if (diffDays === 1) return 'Ontem'
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+}
+
+function getMsgTextoZapi(msg) {
+  return msg?.text?.message
+    || msg?.image?.caption
+    || msg?.video?.caption
+    || msg?.audio ? '[áudio]' : ''
+    || msg?.document?.fileName
+    || msg?.sticker ? '[sticker]' : ''
+    || '[mídia]'
+}
+
+function normalizeChatsZapi(data, instancia) {
+  const arr = Array.isArray(data) ? data : []
+  return arr
+    .filter(c => c.phone)
+    .map(c => ({
+      id: c.phone,
+      instancia,
+      contato: {
+        nome: c.name || c.phone,
+        telefone: c.phone,
+      },
+      naoLidas: c.unread || 0,
+      horario: formatTs(c.lastMessage?.momment),
+      ultimaMensagem: getMsgTextoZapi(c.lastMessage),
+      mensagens: [],
+    }))
+}
+
+function normalizeMensagensZapi(data, phone) {
+  const arr = Array.isArray(data) ? data
+    : Array.isArray(data?.messages) ? data.messages
+    : []
+  return arr.map(m => ({
+    id: m.messageId || String(m.momment || Math.random()),
+    minha: m.fromMe ?? false,
+    texto: getMsgTextoZapi(m),
+    hora: formatTs(m.momment),
+  }))
+}
+
+// ── Modal registrar lead ──────────────────────────────────────────
 function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar }) {
   const hoje = new Date().toISOString().split('T')[0]
   const [nome, setNome] = useState(contato.nome)
@@ -65,9 +79,9 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar }) {
   const [obs, setObs] = useState('')
 
   const ORIGENS = {
-    leads_novos: { label: 'Lead Novo', cor: 'bg-pink-500' },
-    leads_recorrentes: { label: 'Lead Recorrente', cor: 'bg-blue-500' },
-    indicacao: { label: 'Indicação', cor: 'bg-purple-500' },
+    leads_novos:      { label: 'Lead Novo',       cor: 'bg-pink-500' },
+    leads_recorrentes:{ label: 'Lead Recorrente',  cor: 'bg-blue-500' },
+    indicacao:        { label: 'Indicação',        cor: 'bg-purple-500' },
   }
   const origem = ORIGENS[tipo]
 
@@ -104,7 +118,8 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar }) {
         </div>
         <div className="flex justify-end gap-3 pt-1">
           <button onClick={onFechar} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
-          <button onClick={() => nome.trim() && onSalvar({ nome: nome.trim(), responsavel, obs, origem: tipo, data: hoje, status: 'em_aberto', fonte: 'WhatsApp' })}
+          <button
+            onClick={() => nome.trim() && onSalvar({ nome: nome.trim(), responsavel, obs, origem: tipo, data: hoje, status: 'em_aberto', fonte: 'WhatsApp' })}
             disabled={!nome.trim()}
             className="px-5 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded-xl disabled:opacity-40">
             Registrar
@@ -119,69 +134,153 @@ function loadContas() {
   try { const s = localStorage.getItem('config_whatsapp_contas'); return s ? JSON.parse(s) : [] } catch { return [] }
 }
 
+// ── Página principal ──────────────────────────────────────────────
 export default function InboxWhatsApp({ contaId }) {
   const { addLead } = useLeads()
   const contaAtiva = contaId ? loadContas().find(c => c.id === contaId) : null
-  const [conversas, setConversas] = useState(CONVERSAS_MOCK)
-  const [selecionada, setSelecionada] = useState(CONVERSAS_MOCK[0])
-  const [mensagem, setMensagem] = useState('')
-  const [busca, setBusca] = useState('')
-  const [menuLead, setMenuLead] = useState(false)
-  const [modalLead, setModalLead] = useState(null)
+
+  const [conversas, setConversas]       = useState([])
+  const [selecionada, setSelecionada]   = useState(null)
+  const [mensagem, setMensagem]         = useState('')
+  const [busca, setBusca]               = useState('')
+  const [menuLead, setMenuLead]         = useState(false)
+  const [modalLead, setModalLead]       = useState(null)
   const [leadRegistrado, setLeadRegistrado] = useState({})
-  const [filtroInstancia, setFiltroInstancia] = useState(contaAtiva ? contaAtiva.nome : 'Todas')
+  const [loadingConversas, setLoadingConversas] = useState(false)
+  const [loadingMsgs, setLoadingMsgs]   = useState(false)
+  const [enviando, setEnviando]         = useState(false)
+  const [erro, setErro]                 = useState(null)
   const messagesEndRef = useRef(null)
+  const pollRef        = useRef(null)
+
+  const fetchConversas = useCallback(async () => {
+    if (!contaAtiva?.instanciaId) return
+    setLoadingConversas(true)
+    setErro(null)
+    try {
+      const data = await zapiFetch(contaAtiva, 'chats')
+      const lista = normalizeChatsZapi(data, contaAtiva.nome)
+      setConversas(lista)
+      if (!selecionada && lista.length > 0) setSelecionada(lista[0])
+    } catch (e) {
+      setErro(`Erro ao carregar conversas: ${e.message}`)
+    }
+    setLoadingConversas(false)
+  }, [contaAtiva?.instanciaId, selecionada])
+
+  const fetchMensagens = useCallback(async (phone) => {
+    if (!contaAtiva?.instanciaId || !phone) return
+    setLoadingMsgs(true)
+    try {
+      const data = await zapiFetch(contaAtiva, `chats/${phone}/messages?page=1&pageSize=50`)
+      const msgs = normalizeMensagensZapi(data, phone)
+      setConversas(prev => prev.map(c => c.id === phone ? { ...c, mensagens: msgs, naoLidas: 0 } : c))
+      setSelecionada(prev => prev?.id === phone ? { ...prev, mensagens: msgs, naoLidas: 0 } : prev)
+    } catch {
+      // silencia erro de mensagens individuais
+    }
+    setLoadingMsgs(false)
+  }, [contaAtiva?.instanciaId])
+
+  useEffect(() => { fetchConversas() }, [contaAtiva?.id])
+
+  useEffect(() => {
+    if (selecionada?.id) fetchMensagens(selecionada.id)
+  }, [selecionada?.id])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [selecionada])
+  }, [selecionada?.mensagens?.length])
 
-  const conversa = selecionada ? conversas.find(c => c.id === selecionada.id) : null
+  useEffect(() => {
+    if (!contaAtiva?.instanciaId) return
+    pollRef.current = setInterval(() => {
+      if (selecionada?.id) fetchMensagens(selecionada.id)
+    }, 10000)
+    return () => clearInterval(pollRef.current)
+  }, [contaAtiva?.id, selecionada?.id])
 
-  const conversasFiltradas = conversas.filter(c => {
-    const matchBusca = c.contato.nome.toLowerCase().includes(busca.toLowerCase())
-    const matchInstancia = filtroInstancia === 'Todas' || c.instancia === filtroInstancia
-    return matchBusca && matchInstancia
-  })
+  const conversa = selecionada ? conversas.find(c => c.id === selecionada.id) || selecionada : null
 
-  const enviarMensagem = () => {
-    if (!mensagem.trim() || !conversa) return
-    const nova = { id: Date.now(), minha: true, texto: mensagem.trim(), hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) }
-    setConversas(cs => cs.map(c => c.id === conversa.id ? { ...c, mensagens: [...c.mensagens, nova], horario: nova.hora } : c))
-    setSelecionada(prev => ({ ...prev, mensagens: [...(conversa.mensagens), nova] }))
+  const conversasFiltradas = conversas.filter(c =>
+    c.contato.nome.toLowerCase().includes(busca.toLowerCase())
+  )
+
+  const enviarMensagem = async () => {
+    if (!mensagem.trim() || !conversa || !contaAtiva?.instanciaId) return
+    const texto = mensagem.trim()
     setMensagem('')
+    setEnviando(true)
+    const msgLocal = {
+      id: String(Date.now()),
+      minha: true,
+      texto,
+      hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    }
+    setConversas(cs => cs.map(c => c.id === conversa.id ? { ...c, mensagens: [...(c.mensagens || []), msgLocal] } : c))
+    setSelecionada(prev => ({ ...prev, mensagens: [...(prev?.mensagens || []), msgLocal] }))
+    try {
+      await zapiFetch(contaAtiva, 'send-text', 'POST', {
+        phone: conversa.id,
+        message: texto,
+      })
+    } catch (e) {
+      setErro(`Erro ao enviar: ${e.message}`)
+    }
+    setEnviando(false)
   }
 
-  const abrirConversa = (c) => {
-    setSelecionada(c)
-    setConversas(cs => cs.map(cv => cv.id === c.id ? { ...cv, naoLidas: 0 } : cv))
-    setMenuLead(false)
-  }
-
-  const registrarLead = (tipo) => {
-    setMenuLead(false)
-    setModalLead(tipo)
-  }
-
+  const abrirConversa = (c) => { setSelecionada(c); setMenuLead(false) }
+  const registrarLead = (tipo) => { setMenuLead(false); setModalLead(tipo) }
   const confirmarLead = (dados) => {
     addLead(dados)
     setLeadRegistrado(prev => ({ ...prev, [conversa.id]: dados.origem }))
     setModalLead(null)
   }
 
-  const instancias = ['Todas', ...new Set(conversas.map(c => c.instancia))]
+  // ── Sem conta configurada ──
+  if (!contaAtiva) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-gray-50 p-8">
+        <div className="text-center max-w-sm">
+          <p className="text-4xl mb-4">💬</p>
+          <p className="text-base font-semibold text-gray-700 mb-2">Nenhuma conta selecionada</p>
+          <p className="text-sm text-gray-400">Acesse <strong>Configurações → WhatsApp</strong> para adicionar uma conta via Z-API.</p>
+        </div>
+      </div>
+    )
+  }
 
+  // ── Conta sem credenciais ──
+  if (!contaAtiva.instanciaId || !contaAtiva.instanciaToken) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-gray-50 p-8">
+        <div className="text-center max-w-sm">
+          <p className="text-3xl mb-4">⚙️</p>
+          <p className="text-base font-semibold text-gray-700 mb-2">Credenciais incompletas</p>
+          <p className="text-sm text-gray-400">Edite a conta <strong>{contaAtiva.nome}</strong> em Configurações e adicione o ID e Token da Z-API.</p>
+        </div>
+      </div>
+    )
+  }
+
+  // ── UI principal ──
   return (
-    <div className="flex h-screen overflow-hidden" style={{ height: 'calc(100vh - 0px)' }}>
+    <div className="flex h-screen overflow-hidden">
 
-      {/* Painel esquerdo — lista de conversas */}
+      {/* Lista de conversas */}
       <div className="w-80 flex-shrink-0 bg-white border-r border-gray-100 flex flex-col">
-        {/* Header */}
         <div className="p-4 border-b border-gray-100">
-          <h2 className="text-base font-bold text-gray-800 mb-3">
-            💬 {contaAtiva ? contaAtiva.nome : 'Conversas'}
-          </h2>
-          <div className="relative mb-2">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-bold text-gray-800">💬 {contaAtiva.nome}</h2>
+            <button onClick={fetchConversas} disabled={loadingConversas} title="Atualizar"
+              className="text-gray-300 hover:text-pink-400 transition-colors disabled:opacity-40">
+              <svg className={`w-4 h-4 ${loadingConversas ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </div>
+          <div className="relative">
             <input value={busca} onChange={e => setBusca(e.target.value)}
               placeholder="Buscar contato..."
               className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 pl-8 text-sm outline-none focus:border-pink-300" />
@@ -189,19 +288,24 @@ export default function InboxWhatsApp({ contaId }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
-          <div className="flex gap-1">
-            {instancias.map(inst => (
-              <button key={inst} onClick={() => setFiltroInstancia(inst)}
-                className={`text-xs px-2.5 py-1 rounded-full font-semibold transition-colors ${filtroInstancia === inst ? 'bg-pink-400 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
-                {inst}
-              </button>
-            ))}
-          </div>
         </div>
 
-        {/* Lista */}
+        {erro && (
+          <div className="mx-3 mt-2 p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-500">
+            {erro}
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto">
-          {conversasFiltradas.length === 0 ? (
+          {loadingConversas && conversas.length === 0 ? (
+            <div className="p-8 text-center text-gray-400 text-sm">
+              <svg className="w-6 h-6 animate-spin mx-auto mb-2 text-pink-300" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+              </svg>
+              Carregando conversas...
+            </div>
+          ) : conversasFiltradas.length === 0 ? (
             <div className="p-8 text-center text-gray-400 text-sm">Nenhuma conversa encontrada</div>
           ) : (
             conversasFiltradas.map(c => (
@@ -209,7 +313,7 @@ export default function InboxWhatsApp({ contaId }) {
                 className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-pink-50 transition-colors ${selecionada?.id === c.id ? 'bg-pink-50 border-l-4 border-l-pink-400' : ''}`}>
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-200 to-pink-300 flex items-center justify-center text-pink-700 font-bold text-sm flex-shrink-0">
-                    {c.contato.nome.charAt(0)}
+                    {(c.contato.nome || '?').charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-0.5">
@@ -217,14 +321,13 @@ export default function InboxWhatsApp({ contaId }) {
                       <span className="text-xs text-gray-400 flex-shrink-0 ml-1">{c.horario}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <p className="text-xs text-gray-400 truncate">{c.mensagens.at(-1)?.texto}</p>
+                      <p className="text-xs text-gray-400 truncate">{c.ultimaMensagem}</p>
                       {c.naoLidas > 0 && (
                         <span className="ml-1 flex-shrink-0 bg-green-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                           {c.naoLidas}
                         </span>
                       )}
                     </div>
-                    <span className="text-xs text-gray-300">{c.instancia}</span>
                   </div>
                 </div>
               </button>
@@ -233,22 +336,20 @@ export default function InboxWhatsApp({ contaId }) {
         </div>
       </div>
 
-      {/* Painel direito — conversa */}
+      {/* Painel da conversa */}
       {conversa ? (
         <div className="flex-1 flex flex-col bg-gray-50 min-w-0">
-          {/* Header da conversa */}
           <div className="bg-white border-b border-gray-100 px-5 py-3 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-200 to-pink-300 flex items-center justify-center text-pink-700 font-bold">
-                {conversa.contato.nome.charAt(0)}
+                {(conversa.contato.nome || '?').charAt(0).toUpperCase()}
               </div>
               <div>
                 <p className="text-sm font-bold text-gray-800">{conversa.contato.nome}</p>
-                <p className="text-xs text-gray-400">{conversa.contato.telefone} · {conversa.instancia}</p>
+                <p className="text-xs text-gray-400">+{conversa.contato.telefone}</p>
               </div>
             </div>
 
-            {/* Botão registrar lead */}
             <div className="relative">
               {leadRegistrado[conversa.id] ? (
                 <span className="text-xs text-green-600 font-semibold bg-green-50 px-3 py-1.5 rounded-xl">✓ Lead registrado</span>
@@ -263,16 +364,13 @@ export default function InboxWhatsApp({ contaId }) {
                   </button>
                   {menuLead && (
                     <div className="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-lg z-10 overflow-hidden min-w-[180px]">
-                      <button onClick={() => registrarLead('leads_novos')}
-                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-pink-50 flex items-center gap-2">
+                      <button onClick={() => registrarLead('leads_novos')} className="w-full text-left px-4 py-2.5 text-sm hover:bg-pink-50 flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-pink-400"></span> Lead Novo
                       </button>
-                      <button onClick={() => registrarLead('leads_recorrentes')}
-                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-blue-50 flex items-center gap-2">
+                      <button onClick={() => registrarLead('leads_recorrentes')} className="w-full text-left px-4 py-2.5 text-sm hover:bg-blue-50 flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-blue-400"></span> Lead Recorrente
                       </button>
-                      <button onClick={() => registrarLead('indicacao')}
-                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-purple-50 flex items-center gap-2">
+                      <button onClick={() => registrarLead('indicacao')} className="w-full text-left px-4 py-2.5 text-sm hover:bg-purple-50 flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-purple-400"></span> Indicação
                       </button>
                     </div>
@@ -282,14 +380,18 @@ export default function InboxWhatsApp({ contaId }) {
             </div>
           </div>
 
-          {/* Mensagens */}
           <div className="flex-1 overflow-y-auto px-6 py-4 space-y-2">
-            {conversa.mensagens.map(msg => (
+            {loadingMsgs && !(conversa.mensagens?.length) ? (
+              <div className="flex justify-center pt-8">
+                <svg className="w-5 h-5 animate-spin text-pink-300" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                </svg>
+              </div>
+            ) : (conversa.mensagens || []).map(msg => (
               <div key={msg.id} className={`flex ${msg.minha ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl text-sm shadow-sm ${
-                  msg.minha
-                    ? 'bg-green-100 text-gray-800 rounded-br-sm'
-                    : 'bg-white text-gray-800 rounded-bl-sm'
+                  msg.minha ? 'bg-green-100 text-gray-800 rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm'
                 }`}>
                   <p className="leading-relaxed">{msg.texto}</p>
                   <p className={`text-xs mt-1 ${msg.minha ? 'text-green-600' : 'text-gray-400'} text-right`}>{msg.hora}</p>
@@ -299,7 +401,6 @@ export default function InboxWhatsApp({ contaId }) {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input */}
           <div className="bg-white border-t border-gray-100 px-4 py-3 flex items-center gap-3 flex-shrink-0">
             <input
               value={mensagem}
@@ -308,11 +409,12 @@ export default function InboxWhatsApp({ contaId }) {
               placeholder="Digite uma mensagem..."
               className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-pink-300"
             />
-            <button onClick={enviarMensagem} disabled={!mensagem.trim()}
+            <button onClick={enviarMensagem} disabled={!mensagem.trim() || enviando}
               className="bg-green-500 hover:bg-green-600 disabled:bg-gray-200 text-white p-2.5 rounded-xl transition-colors">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-              </svg>
+              {enviando
+                ? <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                : <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+              }
             </button>
           </div>
         </div>

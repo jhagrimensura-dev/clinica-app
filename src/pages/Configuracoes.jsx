@@ -103,6 +103,15 @@ function TokenInput({ label, value, onChange }) {
 
 const EMPTY_CONTA = { nome: '', tipo: 'Comercial', instanciaId: '', instanciaToken: '' }
 
+const ZAPI_BASE = 'https://api.z-api.io'
+
+async function testarConexao(conta) {
+  const res = await fetch(`${ZAPI_BASE}/instances/${conta.instanciaId}/token/${conta.instanciaToken}/status`)
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  const data = await res.json()
+  return data?.value === 'connected' ? 'open' : (data?.value || 'desconhecido')
+}
+
 function TabWhatsApp() {
   const defaultContas = []
   const [contas, setContas] = useState(() => load('config_whatsapp_contas', defaultContas))
@@ -110,6 +119,10 @@ function TabWhatsApp() {
   const [form, setForm] = useState(EMPTY_CONTA)
   const [editando, setEditando] = useState(null)
   const [copiado, setCopiado] = useState(null)
+  const [testando, setTestando] = useState(null)
+  const [statusConexao, setStatusConexao] = useState({})
+  const [modalQR, setModalQR] = useState(null)
+  const [qrStatus, setQrStatus] = useState('aguardando')
 
   const setF = (campo, val) => setForm(f => ({ ...f, [campo]: val }))
 
@@ -137,6 +150,44 @@ function TabWhatsApp() {
     setTimeout(() => setCopiado(null), 2000)
   }
 
+  const handleTestarConexao = async (conta) => {
+    if (!conta.instanciaId || !conta.instanciaToken) {
+      setStatusConexao(s => ({ ...s, [conta.id]: 'sem_config' }))
+      return
+    }
+    setTestando(conta.id)
+    try {
+      const state = await testarConexao(conta)
+      setStatusConexao(s => ({ ...s, [conta.id]: state }))
+    } catch (e) {
+      setStatusConexao(s => ({ ...s, [conta.id]: 'erro' }))
+    }
+    setTestando(null)
+  }
+
+  const abrirQR = (conta) => {
+    setModalQR(conta)
+    setQrStatus('aguardando')
+  }
+
+  const fecharQR = () => { setModalQR(null); setQrStatus('aguardando') }
+
+  // Poll status enquanto QR está aberto
+  useEffect(() => {
+    if (!modalQR) return
+    const poll = setInterval(async () => {
+      try {
+        const state = await testarConexao(modalQR)
+        if (state === 'open') {
+          setQrStatus('conectado')
+          setStatusConexao(s => ({ ...s, [modalQR.id]: 'open' }))
+          clearInterval(poll)
+        }
+      } catch {}
+    }, 3000)
+    return () => clearInterval(poll)
+  }, [modalQR])
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
@@ -163,13 +214,37 @@ function TabWhatsApp() {
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-semibold text-gray-800">{conta.nome}</p>
                   <span className="text-xs bg-amber-100 text-amber-700 font-semibold px-2 py-0.5 rounded-full">{conta.tipo}</span>
+                  {statusConexao[conta.id] && (
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                      statusConexao[conta.id] === 'open' ? 'bg-green-100 text-green-600'
+                      : statusConexao[conta.id] === 'erro' ? 'bg-red-100 text-red-500'
+                      : statusConexao[conta.id] === 'sem_config' ? 'bg-orange-100 text-orange-500'
+                      : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {statusConexao[conta.id] === 'open' ? '● Conectado'
+                        : statusConexao[conta.id] === 'erro' ? '● Erro'
+                        : statusConexao[conta.id] === 'sem_config' ? '⚠ Sem config'
+                        : `● ${statusConexao[conta.id]}`}
+                    </span>
+                  )}
                 </div>
                 {conta.instanciaId
-                  ? <p className="text-xs text-gray-400 mt-0.5 font-mono">Instância: {conta.instanciaId}</p>
+                  ? <p className="text-xs text-gray-400 mt-0.5 font-mono">Z-API · {conta.instanciaId.slice(0, 16)}...</p>
                   : <p className="text-xs text-orange-400 mt-0.5">⚠ Instância não configurada</p>
                 }
               </div>
               <div className="flex items-center gap-3">
+                <button onClick={() => abrirQR(conta)}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-white bg-green-500 hover:bg-green-600 px-3 py-1.5 rounded-lg transition-colors">
+                  📱 Conectar
+                </button>
+                <button onClick={() => handleTestarConexao(conta)} disabled={testando === conta.id}
+                  className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-green-600 font-medium transition-colors disabled:opacity-40">
+                  {testando === conta.id
+                    ? <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                    : <span>⚡</span>}
+                  Testar
+                </button>
                 <button onClick={() => copiarWebhook(conta.id)}
                   className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-amber-600 font-medium transition-colors">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -209,14 +284,24 @@ function TabWhatsApp() {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-gray-900">Adicionar Conta WhatsApp</h3>
-                <p className="text-xs text-gray-400 mt-0.5">Adicione os dados da sua instância</p>
+                <p className="text-xs text-gray-400 mt-0.5">Conectado via Z-API</p>
               </div>
               <button onClick={() => { setModal(false); setForm(EMPTY_CONTA) }} className="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
             </div>
+
+            {/* Passo a passo Z-API */}
+            <div className="bg-green-50 border border-green-100 rounded-xl p-3 text-xs text-green-700 space-y-1">
+              <p className="font-semibold">Como obter as credenciais:</p>
+              <p>1. Acesse <strong>z-api.io</strong> e crie uma conta gratuita</p>
+              <p>2. Clique em <strong>"Criar instância"</strong></p>
+              <p>3. Copie o <strong>ID da Instância</strong> e o <strong>Token</strong> do painel</p>
+              <p>4. Clique em <strong>"QR Code"</strong> no painel Z-API e escaneie com o WhatsApp Business</p>
+            </div>
+
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">Nome da conta <span className="text-red-400">*</span></label>
               <input autoFocus value={form.nome} onChange={e => setF('nome', e.target.value)}
-                placeholder="Ex: Isabela"
+                placeholder="Ex: Comercial"
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400" />
             </div>
             <div>
@@ -229,8 +314,9 @@ function TabWhatsApp() {
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">ID da Instância <span className="text-red-400">*</span></label>
               <input value={form.instanciaId} onChange={e => setF('instanciaId', e.target.value)}
-                placeholder="Ex: 3F1A2B3C4D5E"
+                placeholder="Ex: 3D6F50ACA2288238F61C661707F5575A"
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400 font-mono" />
+              <p className="text-xs text-gray-400 mt-1">Encontrado no painel Z-API → sua instância → "Instance ID"</p>
             </div>
             <TokenInput label="Token da Instância" value={form.instanciaToken} onChange={v => setF('instanciaToken', v)} />
             <div className="flex justify-end gap-3 pt-1">
@@ -238,6 +324,52 @@ function TabWhatsApp() {
               <button onClick={adicionar} disabled={!form.nome.trim() || !form.instanciaId.trim() || !form.instanciaToken.trim()}
                 className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl disabled:opacity-40">Adicionar</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal QR Code */}
+      {modalQR && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4 text-center">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-gray-900">Conectar WhatsApp</h3>
+              <button onClick={fecharQR} className="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
+            </div>
+
+            {qrStatus === 'conectado' ? (
+              <div className="py-8 space-y-3">
+                <p className="text-5xl">✅</p>
+                <p className="text-lg font-bold text-green-600">WhatsApp Conectado!</p>
+                <p className="text-sm text-gray-400">A conta <strong>{modalQR.nome}</strong> está pronta para uso.</p>
+                <button onClick={fecharQR}
+                  className="mt-2 px-6 py-2.5 bg-green-500 text-white font-semibold rounded-xl hover:bg-green-600">
+                  Fechar
+                </button>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-gray-500">
+                  Abra o <strong>WhatsApp Business</strong> no celular →<br />
+                  3 pontos → <strong>Aparelhos conectados</strong> → <strong>Conectar aparelho</strong>
+                </p>
+                <div className="flex justify-center">
+                  <img
+                    src={`${ZAPI_BASE}/instances/${modalQR.instanciaId}/token/${modalQR.instanciaToken}/qr-code/image`}
+                    alt="QR Code WhatsApp"
+                    className="w-56 h-56 rounded-xl border border-gray-100"
+                    onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }}
+                  />
+                  <div style={{ display: 'none' }} className="w-56 h-56 rounded-xl border border-gray-100 items-center justify-center text-gray-400 text-sm">
+                    Erro ao carregar QR Code
+                  </div>
+                </div>
+                <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
+                  <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                  Aguardando escaneamento...
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
