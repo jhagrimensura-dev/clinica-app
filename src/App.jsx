@@ -26,6 +26,7 @@ import Relatorios from './pages/Relatorios'
 import Configuracoes from './pages/Configuracoes'
 import Ajuda from './pages/Ajuda'
 import InboxWhatsApp from './pages/InboxWhatsApp'
+import WhatsAppFAB from './components/WhatsAppFAB'
 
 function PagePlaceholder({ title }) {
   return (
@@ -231,6 +232,9 @@ case 'whatsapp_canal': return <PagePlaceholder title="WhatsApp" />
           {active === 'dashboard' && <Header view={view} setView={setView} />}
           <main className="flex-1">{renderPage()}</main>
         </div>
+        {active !== 'inbox' && !active.startsWith('inbox_') && (
+          <WhatsAppFAB onOpen={() => setActive('inbox')} />
+        )}
       </div>
     </VendasProvider>
     </PacientesProvider>

@@ -1,5 +1,5 @@
 export default async function handler(req, res) {
-  const { i, t } = req.query
+  const { i, t, ct } = req.query
   if (!i || !t) return res.status(400).json({ error: 'Missing params' })
 
   res.setHeader('Cache-Control', 'no-cache, no-store')
@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     console.log('Fetching Z-API:', url)
 
     const response = await fetch(url, {
-      headers: { 'client-token': t }
+      headers: { 'Content-Type': 'application/json', ...(ct ? { 'client-token': ct } : {}) }
     })
 
     const text = await response.text()

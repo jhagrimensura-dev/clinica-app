@@ -4,7 +4,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
   if (req.method === 'OPTIONS') return res.status(200).end()
 
-  const { i, t, path } = req.query
+  const { i, t, path, ct } = req.query
   if (!i || !t || !path) return res.status(400).json({ error: 'Missing params' })
 
   try {
@@ -13,7 +13,10 @@ export default async function handler(req, res) {
 
     const response = await fetch(url, {
       method: isPost ? 'POST' : 'GET',
-      headers: { 'Content-Type': 'application/json', 'client-token': t },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(ct ? { 'client-token': ct } : {}),
+      },
       ...(isPost && req.body ? { body: JSON.stringify(req.body) } : {}),
     })
 

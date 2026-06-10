@@ -84,11 +84,11 @@ function gerarId() {
 
 const TIPOS_WA = ['Comercial', 'Recorrência', 'Indicação', 'Suporte', 'Outro']
 
-function TokenInput({ label, value, onChange }) {
+function TokenInput({ label, value, onChange, optional }) {
   const [show, setShow] = useState(false)
   return (
     <div>
-      <label className="text-sm font-medium text-gray-700 mb-1.5 block">{label} <span className="text-red-400">*</span></label>
+      <label className="text-sm font-medium text-gray-700 mb-1.5 block">{label} {optional ? <span className="text-gray-400 font-normal">(opcional)</span> : <span className="text-red-400">*</span>}</label>
       <div className="relative">
         <input type={show ? 'text' : 'password'} value={value} onChange={e => onChange(e.target.value)}
           placeholder="Ex: 3F1A2B3C4D5E"
@@ -102,13 +102,13 @@ function TokenInput({ label, value, onChange }) {
   )
 }
 
-const EMPTY_CONTA = { nome: '', tipo: 'Comercial', instanciaId: '', instanciaToken: '' }
+const EMPTY_CONTA = { nome: '', tipo: 'Comercial', instanciaId: '', instanciaToken: '', clientToken: '' }
 
 const ZAPI_BASE = 'https://api.z-api.io'
 
 async function testarConexao(conta) {
-  // Usa proxy Vercel para evitar CORS
-  const res = await fetch(`/api/zapi-status?i=${conta.instanciaId}&t=${conta.instanciaToken}`)
+  const ctParam = conta.clientToken ? `&ct=${encodeURIComponent(conta.clientToken)}` : ''
+  const res = await fetch(`/api/zapi-status?i=${conta.instanciaId}&t=${conta.instanciaToken}${ctParam}`)
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   const data = await res.json()
   return data?.value === 'connected' ? 'open' : (data?.value || 'desconhecido')
@@ -144,8 +144,8 @@ function TabWhatsApp() {
 
   const remover = (id) => salvarContas(contas.filter(c => c.id !== id))
 
-  const salvarEdicao = (id, nome, tipo) => {
-    salvarContas(contas.map(c => c.id === id ? { ...c, nome, tipo } : c))
+  const salvarEdicao = (id, nome, tipo, clientToken) => {
+    salvarContas(contas.map(c => c.id === id ? { ...c, nome, tipo, clientToken } : c))
     setEditando(null)
   }
 
@@ -175,7 +175,8 @@ function TabWhatsApp() {
     setQrErro(null)
     setQrContagem(20)
     try {
-      const res = await fetch(`/api/zapi-qr?i=${conta.instanciaId}&t=${conta.instanciaToken}`)
+      const ctParam = conta.clientToken ? `&ct=${encodeURIComponent(conta.clientToken)}` : ''
+      const res = await fetch(`/api/zapi-qr?i=${conta.instanciaId}&t=${conta.instanciaToken}${ctParam}`)
       const data = await res.json()
       if (data?.connected === true) {
         setQrStatus('conectado')
@@ -359,6 +360,11 @@ function TabWhatsApp() {
               <p className="text-xs text-gray-400 mt-1">Encontrado no painel Z-API → sua instância → "Instance ID"</p>
             </div>
             <TokenInput label="Token da Instância" value={form.instanciaToken} onChange={v => setF('instanciaToken', v)} />
+            <TokenInput label="Security Token (Client Token)" value={form.clientToken} onChange={v => setF('clientToken', v)} optional />
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-xs text-blue-700 space-y-1">
+              <p className="font-semibold">Como obter o Security Token:</p>
+              <p>No painel Z-API → clique no seu nome (canto superior) → <strong>Segurança</strong> → <strong>Token de segurança da conta</strong> → <strong>Configurar agora</strong> → copie o token gerado.</p>
+            </div>
             <div className="flex justify-end gap-3 pt-1">
               <button onClick={() => { setModal(false); setForm(EMPTY_CONTA) }} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
               <button onClick={adicionar} disabled={!form.nome.trim() || !form.instanciaId.trim() || !form.instanciaToken.trim()}
@@ -431,19 +437,33 @@ function TabWhatsApp() {
 function EditarConta({ conta, onSalvar, onCancelar }) {
   const [nome, setNome] = useState(conta.nome)
   const [tipo, setTipo] = useState(conta.tipo)
+  const [clientToken, setClientToken] = useState(conta.clientToken || '')
+  const [showToken, setShowToken] = useState(false)
   return (
-    <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
-      <div className="flex-1 grid grid-cols-2 gap-3">
+    <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl space-y-3">
+      <div className="grid grid-cols-2 gap-3">
         <input value={nome} onChange={e => setNome(e.target.value)}
+          placeholder="Nome da conta"
           className="border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400 bg-white" />
         <select value={tipo} onChange={e => setTipo(e.target.value)}
           className="border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400 bg-white">
           {TIPOS_WA.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
       </div>
-      <button onClick={() => onSalvar(conta.id, nome, tipo)}
-        className="text-xs bg-amber-500 text-white font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-600">Salvar</button>
-      <button onClick={onCancelar} className="text-xs text-gray-400 hover:text-gray-600">Cancelar</button>
+      <div className="relative">
+        <input type={showToken ? 'text' : 'password'} value={clientToken} onChange={e => setClientToken(e.target.value)}
+          placeholder="Security Token (Client Token)"
+          className="w-full border border-gray-200 rounded-xl px-3 py-2 pr-10 text-sm outline-none focus:border-amber-400 bg-white font-mono" />
+        <button type="button" onClick={() => setShowToken(v => !v)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs">
+          {showToken ? '🙈' : '👁️'}
+        </button>
+      </div>
+      <div className="flex justify-end gap-3">
+        <button onClick={onCancelar} className="text-xs text-gray-400 hover:text-gray-600">Cancelar</button>
+        <button onClick={() => onSalvar(conta.id, nome, tipo, clientToken)}
+          className="text-xs bg-amber-500 text-white font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-600">Salvar</button>
+      </div>
     </div>
   )
 }

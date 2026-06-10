@@ -5,8 +5,9 @@ import { supabase } from '../lib/supabase'
 // ── Proxy helper (evita CORS) ─────────────────────────────────────
 async function zapiFetch(conta, path, method = 'GET', body = null) {
   const encodedPath = encodeURIComponent(path)
+  const ctParam = conta.clientToken ? `&ct=${encodeURIComponent(conta.clientToken)}` : ''
   const res = await fetch(
-    `/api/zapi-proxy?i=${conta.instanciaId}&t=${conta.instanciaToken}&path=${encodedPath}`,
+    `/api/zapi-proxy?i=${conta.instanciaId}&t=${conta.instanciaToken}&path=${encodedPath}${ctParam}`,
     {
       method,
       headers: { 'Content-Type': 'application/json' },
@@ -30,9 +31,22 @@ function formatTs(ms) {
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
 }
 
+function getDayLabel(tsMs) {
+  if (!tsMs) return ''
+  const d = new Date(Number(tsMs))
+  const today = new Date()
+  const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1)
+  if (d.toDateString() === today.toDateString()) return 'Hoje'
+  if (d.toDateString() === yesterday.toDateString()) return 'Ontem'
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
 function normalizeChats(data, instancia) {
-  if (!Array.isArray(data)) return []
-  return data
+  const lista = Array.isArray(data) ? data : Array.isArray(data?.value) ? data.value : []
+  if (!lista.length) return []
+  // eslint-disable-next-line no-param-reassign
+  data = lista
+  return lista
     .filter(c => c.phone && !c.isGroupAnnouncement)
     .map(c => ({
       id: c.phone,
@@ -41,7 +55,8 @@ function normalizeChats(data, instancia) {
       naoLidas: parseInt(c.unread || c.messagesUnread || '0', 10),
       horario: formatTs(c.lastMessageTime),
       tsRaw: Number(c.lastMessageTime) || 0,
-      ultimaMensagem: '',
+      ultimaMensagem: c.lastMessage?.body || c.lastMessage?.text?.message || c.lastMessage?.caption || '',
+      ultimaDeMim: c.lastMessage?.fromMe || false,
       mensagens: [],
     }))
     .sort((a, b) => {
@@ -127,6 +142,7 @@ export default function InboxWhatsApp({ contaId }) {
   const [selecionada, setSelecionada] = useState(null)
   const [mensagem, setMensagem]       = useState('')
   const [busca, setBusca]             = useState('')
+  const [filtro, setFiltro]           = useState('todas')
   const [menuLead, setMenuLead]       = useState(false)
   const [modalLead, setModalLead]     = useState(null)
   const [leadRegistrado, setLeadRegistrado] = useState({})
@@ -134,8 +150,32 @@ export default function InboxWhatsApp({ contaId }) {
   const [loadingMsgs, setLoadingMsgs] = useState(false)
   const [enviando, setEnviando]       = useState(false)
   const [erro, setErro]               = useState(null)
+  const [menuAnexo, setMenuAnexo]     = useState(false)
+  const [modalRespostas, setModalRespostas] = useState(false)
+  const [respostasRapidas, setRespostasRapidas] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('respostas_rapidas') || '[]') } catch { return [] }
+  })
+  const [novaResposta, setNovaResposta] = useState('')
+  const inputFotoRef = useRef(null)
+  const inputArquivoRef = useRef(null)
   const messagesEndRef = useRef(null)
   const jaTemSelecao = useRef(false)
+  const msgCountRef = useRef({}) // phone → count, para detectar msgs novas
+  const notifPermissao = useRef(false)
+
+  // Solicita permissão de notificação ao abrir o inbox
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().then(p => { notifPermissao.current = p === 'granted' })
+    } else {
+      notifPermissao.current = Notification.permission === 'granted'
+    }
+  }, [])
+
+  function notificar(nome, texto) {
+    if (!notifPermissao.current || document.visibilityState === 'visible') return
+    new Notification(`💬 ${nome}`, { body: texto, icon: '/pwa-192x192.png' })
+  }
 
   // Carrega lista de conversas da Z-API
   const fetchConversas = useCallback(async (inicial = false) => {
@@ -145,6 +185,11 @@ export default function InboxWhatsApp({ contaId }) {
     try {
       const data = await zapiFetch(contaAtiva, 'chats?page=1&pageSize=50')
       const novaLista = normalizeChats(data, contaAtiva.nome)
+      if (novaLista.length === 0 && data && !Array.isArray(data) && !Array.isArray(data?.value)) {
+        setErro(`Z-API: ${JSON.stringify(data).slice(0, 120)}`)
+      } else {
+        setErro(null)
+      }
       setConversas(prev => {
         // Preserva mensagens já carregadas ao atualizar a lista
         return novaLista.map(nova => {
@@ -180,7 +225,19 @@ export default function InboxWhatsApp({ contaId }) {
         minha: m.de_mim,
         texto: m.texto || '',
         hora: formatTs(m.timestamp_ms),
+        tsMs: m.timestamp_ms,
       }))
+
+      // Detecta mensagens novas e notifica
+      const anteriorCount = msgCountRef.current[phone] ?? -1
+      if (anteriorCount >= 0 && msgs.length > anteriorCount) {
+        const novas = msgs.slice(anteriorCount)
+        novas.filter(m => !m.minha).forEach(m => {
+          const conversa = conversas.find(c => c.id === phone)
+          notificar(conversa?.contato?.nome || phone, m.texto)
+        })
+      }
+      msgCountRef.current[phone] = msgs.length
 
       setConversas(prev => prev.map(c => c.id === phone ? { ...c, mensagens: msgs, naoLidas: 0 } : c))
       setSelecionada(prev => prev?.id === phone ? { ...prev, mensagens: msgs, naoLidas: 0 } : prev)
@@ -193,7 +250,7 @@ export default function InboxWhatsApp({ contaId }) {
   // Atualiza lista de conversas a cada 10s para capturar novas mensagens
   useEffect(() => {
     if (!contaAtiva?.instanciaId) return
-    const interval = setInterval(() => fetchConversas(false), 2000)
+    const interval = setInterval(() => fetchConversas(false), 20000)
     return () => clearInterval(interval)
   }, [contaAtiva?.instanciaId, fetchConversas])
 
@@ -217,7 +274,14 @@ export default function InboxWhatsApp({ contaId }) {
         filter: `phone=eq.${selecionada.id}`,
       }, payload => {
         const m = payload.new
-        const novaMsg = { id: m.id, minha: m.de_mim, texto: m.texto, hora: formatTs(m.timestamp_ms) }
+        const novaMsg = { id: m.id, minha: m.de_mim, texto: m.texto, hora: formatTs(m.timestamp_ms), tsMs: m.timestamp_ms }
+        if (!m.de_mim) {
+          setConversas(prev => {
+            const c = prev.find(x => x.id === selecionada.id)
+            notificar(c?.contato?.nome || selecionada.id, m.texto)
+            return prev
+          })
+        }
         setSelecionada(prev => ({ ...prev, mensagens: [...(prev?.mensagens || []), novaMsg] }))
         setConversas(prev => {
           const updated = prev.map(c => c.id === selecionada.id
@@ -239,9 +303,38 @@ export default function InboxWhatsApp({ contaId }) {
 
   const conversa = selecionada ? conversas.find(c => c.id === selecionada.id) || selecionada : null
 
-  const conversasFiltradas = conversas.filter(c =>
-    c.contato.nome.toLowerCase().includes(busca.toLowerCase())
-  )
+  function salvarRespostas(lista) {
+    setRespostasRapidas(lista)
+    localStorage.setItem('respostas_rapidas', JSON.stringify(lista))
+  }
+
+  async function enviarArquivo(file, tipo) {
+    if (!conversa || !contaAtiva?.instanciaId) return
+    setEnviando(true)
+    setMenuAnexo(false)
+    try {
+      const reader = new FileReader()
+      reader.onload = async (e) => {
+        const base64 = e.target.result
+        if (tipo === 'foto') {
+          await zapiFetch(contaAtiva, 'send-image', 'POST', { phone: conversa.id, image: base64, caption: '' })
+        } else {
+          await zapiFetch(contaAtiva, 'send-document', 'POST', { phone: conversa.id, document: base64, fileName: file.name, caption: '' })
+        }
+      }
+      reader.readAsDataURL(file)
+    } catch (e) {
+      setErro(`Erro ao enviar: ${e.message}`)
+    }
+    setEnviando(false)
+  }
+
+  const conversasFiltradas = conversas.filter(c => {
+    if (busca && !c.contato.nome.toLowerCase().includes(busca.toLowerCase())) return false
+    if (filtro === 'nao_lidas') return c.naoLidas > 0
+    if (filtro === 'arquivadas') return c.arquivada === true
+    return !c.arquivada
+  })
 
   const enviarMensagem = async () => {
     if (!mensagem.trim() || !conversa || !contaAtiva?.instanciaId) return
@@ -309,13 +402,27 @@ export default function InboxWhatsApp({ contaId }) {
               </svg>
             </button>
           </div>
-          <div className="relative">
-            <input value={busca} onChange={e => setBusca(e.target.value)}
-              placeholder="Buscar contato..."
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 pl-8 text-sm outline-none focus:border-pink-300" />
-            <svg className="w-4 h-4 absolute left-2.5 top-2.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+          <div className="relative flex items-center gap-2">
+            <div className="relative flex-1">
+              <input value={busca} onChange={e => setBusca(e.target.value)}
+                placeholder="Buscar conversa..."
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 pl-8 text-sm outline-none focus:border-pink-300" />
+              <svg className="w-4 h-4 absolute left-2.5 top-2.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <button className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-pink-50 text-gray-400 hover:text-pink-500 text-lg font-light transition-colors flex-shrink-0">+</button>
+          </div>
+
+          <div className="flex gap-2 mt-2">
+            {[['todas','Todas'],['nao_lidas','Não lidas'],['arquivadas','Arquivadas']].map(([val, label]) => (
+              <button key={val} onClick={() => setFiltro(val)}
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+                  filtro === val ? 'bg-yellow-400 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                }`}>
+                {label}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -349,10 +456,17 @@ export default function InboxWhatsApp({ contaId }) {
                       <p className="text-sm font-semibold text-gray-800 truncate">{c.contato.nome}</p>
                       <span className="text-xs text-gray-400 flex-shrink-0 ml-1">{c.horario}</span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs text-gray-400 truncate">{c.mensagens?.at(-1)?.texto || c.ultimaMensagem}</p>
+                    <div className="flex items-center justify-between gap-1">
+                      <p className="text-xs text-gray-400 truncate flex-1">
+                        {(() => {
+                          const lastMsg = c.mensagens?.at(-1)
+                          const texto = lastMsg?.texto || c.ultimaMensagem || ''
+                          const deMim = lastMsg ? lastMsg.minha : c.ultimaDeMim
+                          return texto ? (deMim ? `Você: ${texto}` : texto) : ''
+                        })()}
+                      </p>
                       {c.naoLidas > 0 && (
-                        <span className="ml-1 flex-shrink-0 bg-green-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">{c.naoLidas}</span>
+                        <span className="flex-shrink-0 bg-yellow-400 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">{c.naoLidas}</span>
                       )}
                     </div>
                   </div>
@@ -365,7 +479,7 @@ export default function InboxWhatsApp({ contaId }) {
 
       {/* Painel da conversa */}
       {conversa ? (
-        <div className="flex-1 flex flex-col bg-gray-50 min-w-0">
+        <div className="flex-1 flex flex-col bg-gray-50 min-w-0 relative">
           <div className="bg-white border-b border-gray-100 px-5 py-3 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-3">
               {conversa.contato.foto ? (
@@ -425,20 +539,89 @@ export default function InboxWhatsApp({ contaId }) {
                 <p className="text-sm font-medium text-gray-500">Nenhuma mensagem ainda</p>
                 <p className="text-xs text-gray-400 mt-1">As mensagens novas aparecerão aqui em tempo real</p>
               </div>
-            ) : (conversa.mensagens || []).map(msg => (
-              <div key={msg.id} className={`flex ${msg.minha ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl text-sm shadow-sm ${
-                  msg.minha ? 'bg-green-100 text-gray-800 rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm'
-                }`}>
-                  <p className="leading-relaxed break-words whitespace-pre-wrap">{msg.texto}</p>
-                  <p className={`text-xs mt-1 ${msg.minha ? 'text-green-600' : 'text-gray-400'} text-right`}>{msg.hora}</p>
+            ) : (conversa.mensagens || []).map((msg, i, arr) => {
+              const diaAtual = getDayLabel(msg.tsMs)
+              const diaAnterior = i > 0 ? getDayLabel(arr[i - 1].tsMs) : null
+              const mostraSeparador = diaAtual && diaAtual !== diaAnterior
+              return (
+                <div key={msg.id}>
+                  {mostraSeparador && (
+                    <div className="flex items-center gap-3 my-3">
+                      <div className="flex-1 h-px bg-gray-200" />
+                      <span className="text-xs text-gray-400 font-medium bg-gray-100 px-3 py-1 rounded-full">{diaAtual}</span>
+                      <div className="flex-1 h-px bg-gray-200" />
+                    </div>
+                  )}
+                  <div className={`flex ${msg.minha ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl text-sm shadow-sm ${
+                      msg.minha ? 'bg-green-100 text-gray-800 rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm'
+                    }`}>
+                      <p className="leading-relaxed break-words whitespace-pre-wrap">{msg.texto}</p>
+                      <p className={`text-xs mt-1 ${msg.minha ? 'text-green-600' : 'text-gray-400'} text-right`}>{msg.hora}</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="bg-white border-t border-gray-100 px-4 py-3 flex items-end gap-3 flex-shrink-0">
+          {/* Modal Resposta Rápida */}
+          {modalRespostas && (
+            <div className="absolute bottom-20 left-1/2 -translate-x-1/2 w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 z-20 overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                <p className="text-sm font-bold text-gray-800">Respostas rápidas</p>
+                <button onClick={() => setModalRespostas(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+              </div>
+              <div className="max-h-52 overflow-y-auto">
+                {respostasRapidas.length === 0 && <p className="text-xs text-gray-400 text-center py-6">Nenhuma resposta cadastrada ainda</p>}
+                {respostasRapidas.map((r, i) => (
+                  <div key={i} className="flex items-center gap-2 px-4 py-2.5 hover:bg-gray-50 group">
+                    <button className="flex-1 text-left text-sm text-gray-700 truncate" onClick={() => { setMensagem(r); setModalRespostas(false) }}>{r}</button>
+                    <button onClick={() => salvarRespostas(respostasRapidas.filter((_, j) => j !== i))} className="text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 text-xs">✕</button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2 p-3 border-t border-gray-100">
+                <input value={novaResposta} onChange={e => setNovaResposta(e.target.value)}
+                  placeholder="Nova resposta rápida..."
+                  onKeyDown={e => e.key === 'Enter' && novaResposta.trim() && (salvarRespostas([...respostasRapidas, novaResposta.trim()]), setNovaResposta(''))}
+                  className="flex-1 text-sm border border-gray-200 rounded-xl px-3 py-2 outline-none focus:border-pink-300" />
+                <button onClick={() => { if (novaResposta.trim()) { salvarRespostas([...respostasRapidas, novaResposta.trim()]); setNovaResposta('') } }}
+                  className="bg-pink-500 text-white text-sm px-3 py-2 rounded-xl hover:bg-pink-600">Salvar</button>
+              </div>
+            </div>
+          )}
+
+          <input ref={inputFotoRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && enviarArquivo(e.target.files[0], 'foto')} />
+          <input ref={inputArquivoRef} type="file" className="hidden" onChange={e => e.target.files[0] && enviarArquivo(e.target.files[0], 'arquivo')} />
+
+          <div className="bg-white border-t border-gray-100 px-4 py-3 flex items-end gap-2 flex-shrink-0 relative">
+            {/* Menu + */}
+            <div className="relative">
+              <button onClick={() => { setMenuAnexo(v => !v); setModalRespostas(false) }}
+                className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-500 text-xl font-light transition-colors flex-shrink-0">+</button>
+              {menuAnexo && (
+                <div className="absolute bottom-11 left-0 bg-white border border-gray-100 rounded-2xl shadow-xl z-20 overflow-hidden min-w-[160px]">
+                  <button onClick={() => { inputFotoRef.current.click(); setMenuAnexo(false) }}
+                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3">
+                    <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    Foto
+                  </button>
+                  <button onClick={() => { inputArquivoRef.current.click(); setMenuAnexo(false) }}
+                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3">
+                    <svg className="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    Arquivo
+                  </button>
+                  <button onClick={() => { setModalRespostas(true); setMenuAnexo(false) }}
+                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3">
+                    <svg className="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                    Resposta rápida
+                  </button>
+                </div>
+              )}
+            </div>
+
             <textarea
               value={mensagem}
               onChange={e => { setMensagem(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px' }}
@@ -449,7 +632,7 @@ export default function InboxWhatsApp({ contaId }) {
               className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-pink-300"
             />
             <button onClick={enviarMensagem} disabled={!mensagem.trim() || enviando}
-              className="bg-green-500 hover:bg-green-600 disabled:bg-gray-200 text-white p-2.5 rounded-xl transition-colors">
+              className="bg-green-500 hover:bg-green-600 disabled:bg-gray-200 text-white p-2.5 rounded-xl transition-colors flex-shrink-0">
               {enviando
                 ? <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
                 : <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
