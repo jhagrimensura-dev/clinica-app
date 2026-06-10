@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   if (!i || !t || !path) return res.status(400).json({ error: 'Missing params' })
 
   try {
-    const url = `https://api.z-api.io/instances/${i}/token/${t}/${path}`
+    const url = `https://api.z-api.io/instances/${i}/token/${t}/${decodeURIComponent(path)}`
     const isPost = req.method === 'POST'
 
     const response = await fetch(url, {

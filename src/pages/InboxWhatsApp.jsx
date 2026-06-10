@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useLeads } from '../context/LeadsContext'
 import { supabase } from '../lib/supabase'
+import Picker from '@emoji-mart/react'
+import data from '@emoji-mart/data'
 
 // ── Proxy helper (evita CORS) ─────────────────────────────────────
 async function zapiFetch(conta, path, method = 'GET', body = null) {
@@ -158,12 +160,17 @@ export default function InboxWhatsApp({ contaId }) {
     try { return JSON.parse(localStorage.getItem('respostas_rapidas') || '[]') } catch { return [] }
   })
   const [novaResposta, setNovaResposta] = useState('')
+  const [showEmoji, setShowEmoji] = useState(false)
   const inputFotoRef = useRef(null)
   const inputArquivoRef = useRef(null)
   const messagesEndRef = useRef(null)
   const jaTemSelecao = useRef(false)
-  const msgCountRef = useRef({}) // phone → count, para detectar msgs novas
+  const msgCountRef = useRef({})
   const notifPermissao = useRef(false)
+  const selecionadaRef = useRef(null)
+  const fotosCache = useRef((() => { try { return JSON.parse(localStorage.getItem('wpp_fotos') || '{}') } catch { return {} } })())
+
+  useEffect(() => { selecionadaRef.current = selecionada }, [selecionada])
 
   // Solicita permissão de notificação ao abrir o inbox
   useEffect(() => {
@@ -193,16 +200,37 @@ export default function InboxWhatsApp({ contaId }) {
         setErro(null)
       }
       setConversas(prev => {
-        // Preserva mensagens já carregadas ao atualizar a lista
         return novaLista.map(nova => {
           const existente = prev.find(c => c.id === nova.id)
-          return existente ? { ...nova, mensagens: existente.mensagens } : nova
+          const naoLidas = selecionadaRef.current?.id === nova.id
+            ? 0
+            : Math.max(existente?.naoLidas || 0, nova.naoLidas || 0)
+          return existente ? { ...nova, mensagens: existente.mensagens, naoLidas } : nova
         })
       })
       if (!jaTemSelecao.current && novaLista.length > 0) {
         setSelecionada(novaLista[0])
         jaTemSelecao.current = true
       }
+
+      // Carrega fotos de perfil em fila (apenas quem não tem)
+      novaLista.forEach((conv, i) => {
+        if (conv.contato.foto) return
+        const cached = fotosCache.current[conv.id]
+        if (cached !== undefined) {
+          if (cached) setConversas(prev => prev.map(c => c.id === conv.id ? { ...c, contato: { ...c.contato, foto: cached } } : c))
+          return
+        }
+        setTimeout(async () => {
+          try {
+            const d = await zapiFetch(contaAtiva, `profile-picture?phone=${conv.id}`)
+            const url = d?.value || d?.url || d?.profilePicUrl || null
+            fotosCache.current[conv.id] = url || ''
+            localStorage.setItem('wpp_fotos', JSON.stringify(fotosCache.current))
+            if (url) setConversas(prev => prev.map(c => c.id === conv.id ? { ...c, contato: { ...c.contato, foto: url } } : c))
+          } catch { fotosCache.current[conv.id] = '' }
+        }, i * 250)
+      })
     } catch (e) {
       setErro(`Erro ao carregar conversas: ${e.message}`)
     }
@@ -337,6 +365,23 @@ export default function InboxWhatsApp({ contaId }) {
     return () => supabase.removeChannel(channel)
   }, [contaAtiva?.instanciaId, selecionada?.id])
 
+  // Realtime global: incrementa não lidas para conversas que não estão abertas
+  useEffect(() => {
+    if (!contaAtiva?.instanciaId) return
+    const ch = supabase
+      .channel('inbox-unread-global')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'whatsapp_mensagens' }, payload => {
+        const m = payload.new
+        if (m.de_mim) return
+        if (selecionadaRef.current?.id === m.phone) return
+        setConversas(prev => prev.map(c =>
+          c.id === m.phone ? { ...c, naoLidas: (c.naoLidas || 0) + 1 } : c
+        ))
+      })
+      .subscribe()
+    return () => supabase.removeChannel(ch)
+  }, [contaAtiva?.instanciaId])
+
   // Polling a cada 5s como fallback caso o realtime não esteja ativo
   useEffect(() => {
     if (!contaAtiva?.instanciaId || !selecionada?.id) return
@@ -410,7 +455,11 @@ export default function InboxWhatsApp({ contaId }) {
     setEnviando(false)
   }
 
-  const abrirConversa = (c) => { setSelecionada(c); setMenuLead(false) }
+  const abrirConversa = (c) => {
+    setSelecionada(c)
+    setMenuLead(false)
+    setConversas(prev => prev.map(x => x.id === c.id ? { ...x, naoLidas: 0 } : x))
+  }
   const registrarLead = (tipo) => { setMenuLead(false); setModalLead(tipo) }
   const confirmarLead = (dados) => {
     addLead(dados)
@@ -671,6 +720,21 @@ export default function InboxWhatsApp({ contaId }) {
           <input ref={inputFotoRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && enviarArquivo(e.target.files[0], 'foto')} />
           <input ref={inputArquivoRef} type="file" className="hidden" onChange={e => e.target.files[0] && enviarArquivo(e.target.files[0], 'arquivo')} />
 
+          {showEmoji && (
+            <div className="absolute bottom-20 left-4 z-30" style={{ filter: 'drop-shadow(0 4px 24px rgba(0,0,0,0.12))' }}>
+              <Picker
+                data={data}
+                locale="pt"
+                set="native"
+                theme="light"
+                previewPosition="none"
+                skinTonePosition="none"
+                onEmojiSelect={e => { setMensagem(prev => prev + e.native); setShowEmoji(false) }}
+                onClickOutside={() => setShowEmoji(false)}
+              />
+            </div>
+          )}
+
           <div className="bg-white border-t border-gray-100 px-4 py-3 flex items-end gap-2 flex-shrink-0 relative">
             {/* Menu + */}
             <div className="relative">
@@ -696,6 +760,10 @@ export default function InboxWhatsApp({ contaId }) {
                 </div>
               )}
             </div>
+
+            <button onClick={() => { setShowEmoji(v => !v); setMenuAnexo(false); setModalRespostas(false) }}
+              className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-yellow-50 text-xl transition-colors flex-shrink-0"
+              title="Emojis">😊</button>
 
             <textarea
               value={mensagem}
