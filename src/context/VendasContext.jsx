@@ -24,8 +24,11 @@ export function VendasProvider({ children }) {
 
   const removeLancamento = (id) => setLancamentos(prev => prev.filter(l => l.id !== id))
 
+  const updateLancamento = (id, dados) =>
+    setLancamentos(prev => prev.map(l => l.id === id ? { ...l, ...dados } : l))
+
   return (
-    <VendasContext.Provider value={{ lancamentos, addLancamento, removeLancamento }}>
+    <VendasContext.Provider value={{ lancamentos, addLancamento, removeLancamento, updateLancamento }}>
       {children}
     </VendasContext.Provider>
   )

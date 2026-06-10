@@ -1,11 +1,20 @@
 function extrairTexto(body) {
   if (body?.text?.message) return body.text.message
-  if (body?.image?.caption) return body.image.caption
-  if (body?.video?.caption) return body.video.caption
-  if (body?.document?.caption) return body.document.caption
-  if (body?.document?.fileName) return body.document.fileName
+  if (body?.image) return body.image.caption || '[imagem]'
+  if (body?.video) return body.video.caption || '[vídeo]'
+  if (body?.document) return body.document.caption || body.document.fileName || '[documento]'
   if (body?.audio) return '[áudio]'
   if (body?.sticker) return '[sticker]'
+  return null
+}
+
+function extrairMediaUrl(body) {
+  if (body?.image?.imageUrl) return body.image.imageUrl
+  if (body?.image?.url) return body.image.url
+  if (body?.video?.videoUrl) return body.video.videoUrl
+  if (body?.video?.url) return body.video.url
+  if (body?.document?.documentUrl) return body.document.documentUrl
+  if (body?.document?.url) return body.document.url
   return null
 }
 
@@ -20,6 +29,7 @@ export default async function handler(req, res) {
     const messageId = payload?.messageId || payload?.id
     const deMin = payload?.fromMe ?? false
     const texto = extrairTexto(payload)
+    const mediaUrl = extrairMediaUrl(payload)
     const nomeContato = payload?.senderName || payload?.chatName || phone
     const ts = payload?.momment || payload?.timestamp || Date.now()
 
@@ -44,6 +54,7 @@ export default async function handler(req, res) {
         de_mim: deMin,
         texto,
         tipo: payload?.type || 'text',
+        media_url: mediaUrl || null,
         timestamp_ms: Number(ts),
       }),
     })

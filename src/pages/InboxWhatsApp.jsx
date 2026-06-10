@@ -224,6 +224,8 @@ export default function InboxWhatsApp({ contaId }) {
         id: m.id,
         minha: m.de_mim,
         texto: m.texto || '',
+        tipo: m.tipo || 'text',
+        mediaUrl: m.media_url || null,
         hora: formatTs(m.timestamp_ms),
         tsMs: m.timestamp_ms,
       }))
@@ -274,7 +276,7 @@ export default function InboxWhatsApp({ contaId }) {
         filter: `phone=eq.${selecionada.id}`,
       }, payload => {
         const m = payload.new
-        const novaMsg = { id: m.id, minha: m.de_mim, texto: m.texto, hora: formatTs(m.timestamp_ms), tsMs: m.timestamp_ms }
+        const novaMsg = { id: m.id, minha: m.de_mim, texto: m.texto, tipo: m.tipo || 'text', mediaUrl: m.media_url || null, hora: formatTs(m.timestamp_ms), tsMs: m.timestamp_ms }
         if (!m.de_mim) {
           setConversas(prev => {
             const c = prev.find(x => x.id === selecionada.id)
@@ -553,11 +555,36 @@ export default function InboxWhatsApp({ contaId }) {
                     </div>
                   )}
                   <div className={`flex ${msg.minha ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl text-sm shadow-sm ${
+                    <div className={`max-w-xs lg:max-w-md rounded-2xl text-sm shadow-sm overflow-hidden ${
                       msg.minha ? 'bg-green-100 text-gray-800 rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm'
                     }`}>
-                      <p className="leading-relaxed break-words whitespace-pre-wrap">{msg.texto}</p>
-                      <p className={`text-xs mt-1 ${msg.minha ? 'text-green-600' : 'text-gray-400'} text-right`}>{msg.hora}</p>
+                      {msg.mediaUrl && (msg.tipo === 'image' || msg.mediaUrl.match(/\.(jpg|jpeg|png|gif|webp)/i)) ? (
+                        <div>
+                          <a href={msg.mediaUrl} target="_blank" rel="noreferrer">
+                            <img src={msg.mediaUrl} alt="imagem" className="max-w-full rounded-xl block cursor-pointer hover:opacity-90 transition-opacity" style={{ maxHeight: 280 }} />
+                          </a>
+                          {msg.texto && msg.texto !== '[imagem]' && (
+                            <p className="px-4 pt-2 pb-1 leading-relaxed break-words whitespace-pre-wrap">{msg.texto}</p>
+                          )}
+                        </div>
+                      ) : msg.mediaUrl && msg.tipo === 'video' ? (
+                        <div className="px-4 py-2.5">
+                          <a href={msg.mediaUrl} target="_blank" rel="noreferrer"
+                            className="flex items-center gap-2 text-blue-500 underline text-xs">
+                            🎥 {msg.texto !== '[vídeo]' ? msg.texto : 'Ver vídeo'}
+                          </a>
+                        </div>
+                      ) : msg.mediaUrl ? (
+                        <div className="px-4 py-2.5">
+                          <a href={msg.mediaUrl} target="_blank" rel="noreferrer"
+                            className="flex items-center gap-2 text-blue-500 underline text-xs">
+                            📎 {msg.texto}
+                          </a>
+                        </div>
+                      ) : (
+                        <p className="px-4 py-2.5 leading-relaxed break-words whitespace-pre-wrap">{msg.texto}</p>
+                      )}
+                      <p className={`text-xs px-4 pb-2 ${msg.minha ? 'text-green-600' : 'text-gray-400'} text-right`}>{msg.hora}</p>
                     </div>
                   </div>
                 </div>
