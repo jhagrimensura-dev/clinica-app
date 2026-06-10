@@ -40,10 +40,16 @@ function normalizeChats(data, instancia) {
       contato: { nome: c.name || c.phone, telefone: c.phone, foto: c.profileThumbnail || null },
       naoLidas: parseInt(c.unread || c.messagesUnread || '0', 10),
       horario: formatTs(c.lastMessageTime),
+      tsRaw: Number(c.lastMessageTime) || 0,
       ultimaMensagem: '',
       mensagens: [],
     }))
-    .sort((a, b) => (b.horario || '') < (a.horario || '') ? -1 : 1)
+    .sort((a, b) => {
+      const aUnread = a.naoLidas > 0 ? 1 : 0
+      const bUnread = b.naoLidas > 0 ? 1 : 0
+      if (bUnread !== aUnread) return bUnread - aUnread
+      return b.tsRaw - a.tsRaw
+    })
 }
 
 // ── Modal registrar lead ──────────────────────────────────────────
@@ -112,7 +118,10 @@ function loadContas() {
 // ── Página principal ──────────────────────────────────────────────
 export default function InboxWhatsApp({ contaId }) {
   const { addLead } = useLeads()
-  const contaAtiva = contaId ? loadContas().find(c => c.id === contaId) : null
+  const todasContas = loadContas()
+  const contaAtiva = contaId
+    ? todasContas.find(c => c.id === contaId)
+    : todasContas[0] || null
 
   const [conversas, setConversas]     = useState([])
   const [selecionada, setSelecionada] = useState(null)
@@ -126,22 +135,32 @@ export default function InboxWhatsApp({ contaId }) {
   const [enviando, setEnviando]       = useState(false)
   const [erro, setErro]               = useState(null)
   const messagesEndRef = useRef(null)
+  const jaTemSelecao = useRef(false)
 
   // Carrega lista de conversas da Z-API
-  const fetchConversas = useCallback(async () => {
+  const fetchConversas = useCallback(async (inicial = false) => {
     if (!contaAtiva?.instanciaId) return
-    setLoadingConversas(true)
+    if (inicial) setLoadingConversas(true)
     setErro(null)
     try {
       const data = await zapiFetch(contaAtiva, 'chats?page=1&pageSize=50')
-      const lista = normalizeChats(data, contaAtiva.nome)
-      setConversas(lista)
-      if (!selecionada && lista.length > 0) setSelecionada(lista[0])
+      const novaLista = normalizeChats(data, contaAtiva.nome)
+      setConversas(prev => {
+        // Preserva mensagens já carregadas ao atualizar a lista
+        return novaLista.map(nova => {
+          const existente = prev.find(c => c.id === nova.id)
+          return existente ? { ...nova, mensagens: existente.mensagens } : nova
+        })
+      })
+      if (!jaTemSelecao.current && novaLista.length > 0) {
+        setSelecionada(novaLista[0])
+        jaTemSelecao.current = true
+      }
     } catch (e) {
       setErro(`Erro ao carregar conversas: ${e.message}`)
     }
-    setLoadingConversas(false)
-  }, [contaAtiva?.instanciaId, selecionada])
+    if (inicial) setLoadingConversas(false)
+  }, [contaAtiva?.instanciaId])
 
   // Carrega mensagens do Supabase (salvas pelo webhook)
   const fetchMensagens = useCallback(async (phone) => {
@@ -169,7 +188,14 @@ export default function InboxWhatsApp({ contaId }) {
     setLoadingMsgs(false)
   }, [contaAtiva?.instanciaId])
 
-  useEffect(() => { fetchConversas() }, [contaAtiva?.id])
+  useEffect(() => { jaTemSelecao.current = false; fetchConversas(true) }, [contaAtiva?.id])
+
+  // Atualiza lista de conversas a cada 10s para capturar novas mensagens
+  useEffect(() => {
+    if (!contaAtiva?.instanciaId) return
+    const interval = setInterval(() => fetchConversas(false), 2000)
+    return () => clearInterval(interval)
+  }, [contaAtiva?.instanciaId, fetchConversas])
 
   useEffect(() => {
     if (selecionada?.id) fetchMensagens(selecionada.id)
@@ -193,11 +219,23 @@ export default function InboxWhatsApp({ contaId }) {
         const m = payload.new
         const novaMsg = { id: m.id, minha: m.de_mim, texto: m.texto, hora: formatTs(m.timestamp_ms) }
         setSelecionada(prev => ({ ...prev, mensagens: [...(prev?.mensagens || []), novaMsg] }))
-        setConversas(prev => prev.map(c => c.id === selecionada.id ? { ...c, mensagens: [...(c.mensagens || []), novaMsg] } : c))
+        setConversas(prev => {
+          const updated = prev.map(c => c.id === selecionada.id
+            ? { ...c, mensagens: [...(c.mensagens || []), novaMsg], tsRaw: Date.now(), horario: novaMsg.hora }
+            : c)
+          return [updated.find(c => c.id === selecionada.id), ...updated.filter(c => c.id !== selecionada.id)]
+        })
       })
       .subscribe()
     return () => supabase.removeChannel(channel)
   }, [contaAtiva?.instanciaId, selecionada?.id])
+
+  // Polling a cada 5s como fallback caso o realtime não esteja ativo
+  useEffect(() => {
+    if (!contaAtiva?.instanciaId || !selecionada?.id) return
+    const interval = setInterval(() => fetchMensagens(selecionada.id), 2000)
+    return () => clearInterval(interval)
+  }, [contaAtiva?.instanciaId, selecionada?.id, fetchMensagens])
 
   const conversa = selecionada ? conversas.find(c => c.id === selecionada.id) || selecionada : null
 
@@ -392,7 +430,7 @@ export default function InboxWhatsApp({ contaId }) {
                 <div className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl text-sm shadow-sm ${
                   msg.minha ? 'bg-green-100 text-gray-800 rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm'
                 }`}>
-                  <p className="leading-relaxed">{msg.texto}</p>
+                  <p className="leading-relaxed break-words whitespace-pre-wrap">{msg.texto}</p>
                   <p className={`text-xs mt-1 ${msg.minha ? 'text-green-600' : 'text-gray-400'} text-right`}>{msg.hora}</p>
                 </div>
               </div>
@@ -400,12 +438,14 @@ export default function InboxWhatsApp({ contaId }) {
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="bg-white border-t border-gray-100 px-4 py-3 flex items-center gap-3 flex-shrink-0">
-            <input
+          <div className="bg-white border-t border-gray-100 px-4 py-3 flex items-end gap-3 flex-shrink-0">
+            <textarea
               value={mensagem}
-              onChange={e => setMensagem(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && !e.shiftKey && enviarMensagem()}
+              onChange={e => { setMensagem(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px' }}
+              onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), enviarMensagem())}
               placeholder="Digite uma mensagem..."
+              rows={1}
+              style={{ resize: 'none', overflow: 'hidden' }}
               className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-pink-300"
             />
             <button onClick={enviarMensagem} disabled={!mensagem.trim() || enviando}
