@@ -610,8 +610,8 @@ export default function InboxWhatsApp({ contaId }) {
                         </div>
                       ) : msg.mediaUrl && (msg.tipo === 'audio' || msg.mediaUrl.match(/\.(mp3|ogg|wav|m4a|opus|aac)/i)) ? (
                         <div className="px-3 py-2.5">
-                          <audio controls src={msg.mediaUrl} style={{ maxWidth: 240, height: 40 }}
-                            className="rounded-lg w-full" />
+                          <audio controls src={msg.mediaUrl} style={{ width: 280, height: 48 }}
+                            className="rounded-lg" />
                         </div>
                       ) : msg.mediaUrl && msg.tipo === 'video' ? (
                         <div className="px-4 py-2.5">
