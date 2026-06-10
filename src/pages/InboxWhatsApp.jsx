@@ -48,17 +48,19 @@ function normalizeChats(data, instancia) {
   data = lista
   return lista
     .filter(c => c.phone && !c.isGroupAnnouncement)
-    .map(c => ({
-      id: c.phone,
+    .map(c => {
+      const cleanPhone = (c.phone || '').replace(/@s\.whatsapp\.net$/, '').replace(/@c\.us$/, '').replace(/@lid$/, '')
+      return {
+      id: cleanPhone,
       instancia,
-      contato: { nome: c.name || c.phone, telefone: c.phone, foto: c.profileThumbnail || null },
+      contato: { nome: c.name || cleanPhone, telefone: cleanPhone, foto: c.profileThumbnail || null },
       naoLidas: parseInt(c.unread || c.messagesUnread || '0', 10),
       horario: formatTs(c.lastMessageTime),
       tsRaw: Number(c.lastMessageTime) || 0,
       ultimaMensagem: c.lastMessage?.body || c.lastMessage?.text?.message || c.lastMessage?.caption || '',
       ultimaDeMim: c.lastMessage?.fromMe || false,
       mensagens: [],
-    }))
+    }})
     .sort((a, b) => {
       const aUnread = a.naoLidas > 0 ? 1 : 0
       const bUnread = b.naoLidas > 0 ? 1 : 0
@@ -207,28 +209,67 @@ export default function InboxWhatsApp({ contaId }) {
     if (inicial) setLoadingConversas(false)
   }, [contaAtiva?.instanciaId])
 
-  // Carrega mensagens do Supabase (salvas pelo webhook)
-  const fetchMensagens = useCallback(async (phone) => {
+  // Normaliza mensagens do Z-API para o formato interno
+  function normalizarMsgsZapi(data) {
+    const lista = Array.isArray(data) ? data : Array.isArray(data?.messages) ? data.messages : []
+    return lista.map(m => {
+      const texto = m.text?.message || m.body || m.caption || m.fileName || (m.audio ? '[áudio]' : '[mídia]')
+      const mediaUrl = m.image?.imageUrl || m.image?.url || m.video?.videoUrl || m.document?.documentUrl || m.audio?.audioUrl || m.audio?.url || null
+      return {
+        id: m.messageId || m.id || String(m.momment || m.timestamp),
+        minha: m.fromMe ?? false,
+        texto,
+        tipo: m.type || 'text',
+        mediaUrl,
+        hora: formatTs((m.momment || m.timestamp || 0) * (String(m.momment || m.timestamp || 0).length < 13 ? 1000 : 1)),
+        tsMs: (m.momment || m.timestamp || 0) * (String(m.momment || m.timestamp || 0).length < 13 ? 1000 : 1),
+      }
+    }).filter(m => m.texto)
+  }
+
+  // Carrega mensagens do Supabase
+  const fetchMensagens = useCallback(async (phone, chatNome) => {
     if (!contaAtiva?.instanciaId || !phone) return
     setLoadingMsgs(true)
     try {
-      const { data } = await supabase
+      // Busca por phone (mensagens recebidas + enviadas pelo app)
+      const { data: byPhone } = await supabase
         .from('whatsapp_mensagens')
         .select('*')
-        .eq('instancia_id', contaAtiva.instanciaId)
         .eq('phone', phone)
         .order('timestamp_ms', { ascending: true })
         .limit(100)
 
-      const msgs = (data || []).map(m => ({
-        id: m.id,
+      // Busca mensagens enviadas pelo celular (@lid) identificadas pelo nome do contato
+      let byNome = []
+      if (chatNome && chatNome !== phone) {
+        const { data: d } = await supabase
+          .from('whatsapp_mensagens')
+          .select('*')
+          .eq('de_mim', true)
+          .eq('nome_contato', chatNome)
+          .neq('phone', phone)
+          .order('timestamp_ms', { ascending: true })
+          .limit(50)
+        byNome = d || []
+      }
+
+      // Mescla e deduplica por message_id
+      const seen = new Set()
+      const toMap = m => ({
+        id: m.message_id || String(m.id),
         minha: m.de_mim,
         texto: m.texto || '',
         tipo: m.tipo || 'text',
         mediaUrl: m.media_url || null,
         hora: formatTs(m.timestamp_ms),
         tsMs: m.timestamp_ms,
-      }))
+      })
+      let msgs = [...(byPhone || []), ...byNome]
+        .filter(m => { const k = m.message_id || m.id; const ok = !seen.has(k); seen.add(k); return ok })
+        .map(toMap)
+
+      msgs.sort((a, b) => a.tsMs - b.tsMs)
 
       // Detecta mensagens novas e notifica
       const anteriorCount = msgCountRef.current[phone] ?? -1
@@ -257,7 +298,7 @@ export default function InboxWhatsApp({ contaId }) {
   }, [contaAtiva?.instanciaId, fetchConversas])
 
   useEffect(() => {
-    if (selecionada?.id) fetchMensagens(selecionada.id)
+    if (selecionada?.id) fetchMensagens(selecionada.id, selecionada?.contato?.nome)
   }, [selecionada?.id])
 
   useEffect(() => {
@@ -299,7 +340,7 @@ export default function InboxWhatsApp({ contaId }) {
   // Polling a cada 5s como fallback caso o realtime não esteja ativo
   useEffect(() => {
     if (!contaAtiva?.instanciaId || !selecionada?.id) return
-    const interval = setInterval(() => fetchMensagens(selecionada.id), 2000)
+    const interval = setInterval(() => fetchMensagens(selecionada.id, selecionada?.contato?.nome), 5000)
     return () => clearInterval(interval)
   }, [contaAtiva?.instanciaId, selecionada?.id, fetchMensagens])
 
@@ -567,6 +608,11 @@ export default function InboxWhatsApp({ contaId }) {
                             <p className="px-4 pt-2 pb-1 leading-relaxed break-words whitespace-pre-wrap">{msg.texto}</p>
                           )}
                         </div>
+                      ) : msg.mediaUrl && (msg.tipo === 'audio' || msg.mediaUrl.match(/\.(mp3|ogg|wav|m4a|opus|aac)/i)) ? (
+                        <div className="px-3 py-2.5">
+                          <audio controls src={msg.mediaUrl} style={{ maxWidth: 240, height: 40 }}
+                            className="rounded-lg w-full" />
+                        </div>
                       ) : msg.mediaUrl && msg.tipo === 'video' ? (
                         <div className="px-4 py-2.5">
                           <a href={msg.mediaUrl} target="_blank" rel="noreferrer"
@@ -581,6 +627,8 @@ export default function InboxWhatsApp({ contaId }) {
                             📎 {msg.texto}
                           </a>
                         </div>
+                      ) : msg.tipo === 'audio' ? (
+                        <p className="px-4 py-2.5 text-gray-400 text-xs">🎵 Áudio (URL indisponível)</p>
                       ) : (
                         <p className="px-4 py-2.5 leading-relaxed break-words whitespace-pre-wrap">{msg.texto}</p>
                       )}

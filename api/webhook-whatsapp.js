@@ -15,6 +15,8 @@ function extrairMediaUrl(body) {
   if (body?.video?.url) return body.video.url
   if (body?.document?.documentUrl) return body.document.documentUrl
   if (body?.document?.url) return body.document.url
+  if (body?.audio?.audioUrl) return body.audio.audioUrl
+  if (body?.audio?.url) return body.audio.url
   return null
 }
 
@@ -25,18 +27,40 @@ export default async function handler(req, res) {
     const payload = req.body
     const instanciaId = req.query.i
 
-    const phone = payload?.phone || payload?.chatId?.replace('@s.whatsapp.net', '')
+    const rawPhone = payload?.phone || ''
+    const rawChatId = (payload?.chatId || '').replace('@s.whatsapp.net', '').replace('@c.us', '').replace('@lid', '')
+    const isLidPhone = rawPhone.includes('@lid')
+    let phone = (rawPhone && !rawPhone.includes('@') && /^\d+$/.test(rawPhone))
+      ? rawPhone
+      : rawChatId || rawPhone.replace(/@.*/g, '')
     const messageId = payload?.messageId || payload?.id
     const deMin = payload?.fromMe ?? false
     const texto = extrairTexto(payload)
     const mediaUrl = extrairMediaUrl(payload)
-    const nomeContato = payload?.senderName || payload?.chatName || phone
+    // Prioriza chatName (nome salvo no celular) para que enviados e recebidos do mesmo chat sejam consistentes
+    const nomeContato = payload?.chatName || payload?.senderName || phone
     const ts = payload?.momment || payload?.timestamp || Date.now()
 
-    if (!phone || !texto) return res.status(200).json({ ok: true, skipped: true })
+    if (!texto) return res.status(200).json({ ok: true, skipped: true })
 
     const SUPABASE_URL = process.env.VITE_SUPABASE_URL
     const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY
+
+    // Para mensagens enviadas pelo celular (@lid), busca o telefone real pelo nome do chat
+    if (deMin && isLidPhone && nomeContato && nomeContato !== phone) {
+      try {
+        const iid = encodeURIComponent(instanciaId || payload?.instanceId || '')
+        const nc = encodeURIComponent(nomeContato)
+        const lookupRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/whatsapp_mensagens?instancia_id=eq.${iid}&nome_contato=eq.${nc}&de_mim=eq.false&select=phone&limit=1`,
+          { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+        )
+        const lookupData = await lookupRes.json()
+        if (lookupData?.[0]?.phone) phone = lookupData[0].phone
+      } catch (_) {}
+    }
+
+    if (!phone) return res.status(200).json({ ok: true, skipped: true })
 
     await fetch(`${SUPABASE_URL}/rest/v1/whatsapp_mensagens`, {
       method: 'POST',
