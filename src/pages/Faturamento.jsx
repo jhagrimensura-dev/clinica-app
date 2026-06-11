@@ -4,8 +4,22 @@ import { useVendas } from '../context/VendasContext'
 import { usePacientes } from '../context/PacientesContext'
 
 const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
-
 const FORMAS_PGTO = ['PIX', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Transferência', 'Boleto']
+const CORES_PROC = ['bg-brand-400','bg-purple-400','bg-blue-400','bg-cyan-400','bg-teal-400','bg-orange-400','bg-pink-400','bg-indigo-400']
+const PROCS_DEFAULT = [
+  { nome: 'Botox', preco: 0 },
+  { nome: 'Preenchimento', preco: 0 },
+  { nome: 'Skinbooster', preco: 0 },
+  { nome: 'Fio de PDO', preco: 0 },
+]
+
+function getProcedimentos() {
+  try { return JSON.parse(localStorage.getItem('procedimentos_cadastro')) || PROCS_DEFAULT }
+  catch { return PROCS_DEFAULT }
+}
+function saveProcedimentos(procs) {
+  localStorage.setItem('procedimentos_cadastro', JSON.stringify(procs))
+}
 
 function mascaraMoeda(valor) {
   const nums = valor.replace(/\D/g, '')
@@ -18,7 +32,75 @@ function parseMoeda(valor) {
   return parseFloat(valor.replace(/\D/g, '')) / 100 || 0
 }
 
-function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes }) {
+function SelectProcedimento({ value, onChange, procs, onProcsChange }) {
+  const [adicionando, setAdicionando] = useState(false)
+  const [novoNome, setNovoNome] = useState('')
+  const [novoPreco, setNovoPreco] = useState('')
+
+  const salvar = () => {
+    if (!novoNome.trim()) return
+    const preco = parseMoeda(novoPreco)
+    const novos = [...procs, { nome: novoNome.trim(), preco }]
+    saveProcedimentos(novos)
+    onProcsChange(novos)
+    onChange(novoNome.trim(), preco)
+    setAdicionando(false)
+    setNovoNome('')
+    setNovoPreco('')
+  }
+
+  const cancelar = () => { setAdicionando(false); setNovoNome(''); setNovoPreco('') }
+
+  // se valor atual não está na lista, mostra como opção extra
+  const valorForaDaLista = value && value !== '__novo__' && !procs.find(p => p.nome === value)
+
+  if (adicionando) {
+    return (
+      <div className="space-y-2">
+        <div className="flex gap-2">
+          <input type="text" value={novoNome} onChange={e => setNovoNome(e.target.value)}
+            placeholder="Nome do procedimento" autoFocus
+            className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400" />
+          <input type="text" inputMode="numeric" value={novoPreco}
+            onChange={e => setNovoPreco(mascaraMoeda(e.target.value))}
+            placeholder="Preço consulta"
+            className="w-36 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400" />
+        </div>
+        <div className="flex gap-2">
+          <button type="button" onClick={salvar} disabled={!novoNome.trim()}
+            className="px-4 py-1.5 bg-brand-400 text-white text-xs font-semibold rounded-lg disabled:opacity-40 hover:bg-brand-500">
+            Salvar procedimento
+          </button>
+          <button type="button" onClick={cancelar}
+            className="px-4 py-1.5 border border-gray-200 text-xs text-gray-500 rounded-lg hover:bg-gray-50">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <select value={value}
+      onChange={e => {
+        if (e.target.value === '__novo__') { setAdicionando(true); return }
+        const proc = procs.find(p => p.nome === e.target.value)
+        onChange(e.target.value, proc?.preco ?? null)
+      }}
+      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400 bg-white">
+      <option value="">Selecione um procedimento</option>
+      {valorForaDaLista && <option value={value}>{value}</option>}
+      {procs.map(p => (
+        <option key={p.nome} value={p.nome}>
+          {p.nome}{p.preco > 0 ? ` — R$ ${p.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : ''}
+        </option>
+      ))}
+      <option value="__novo__">+ Adicionar novo procedimento...</option>
+    </select>
+  )
+}
+
+function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes, procs, onProcsChange }) {
   const hoje = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`
   const [data, setData] = useState(hoje)
   const [paciente, setPaciente] = useState('')
@@ -27,12 +109,16 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes }) {
   const [procedimentos, setProcedimentos] = useState('')
   const [valorTaxa, setValorTaxa] = useState('')
   const [valorTratamento, setValorTratamento] = useState('')
-
-  const handleValorTaxa = (e) => setValorTaxa(mascaraMoeda(e.target.value))
-  const handleValorTratamento = (e) => setValorTratamento(mascaraMoeda(e.target.value))
   const [formasPgto, setFormasPgto] = useState([])
   const [agendado, setAgendado] = useState(false)
   const [obs, setObs] = useState('')
+
+  const handleProcChange = (nome, preco) => {
+    setProcedimentos(nome)
+    if (preco != null && preco > 0) {
+      setValorTaxa(mascaraMoeda(String(Math.round(preco * 100))))
+    }
+  }
 
   const toggleForma = (forma) => {
     setFormasPgto(prev => prev.includes(forma) ? prev.filter(f => f !== forma) : [...prev, forma])
@@ -53,7 +139,6 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes }) {
         </div>
 
         <div className="space-y-4">
-          {/* Data + Paciente */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">Data</label>
@@ -70,7 +155,6 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes }) {
             </div>
           </div>
 
-          {/* Tipo + Responsável */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">Tipo</label>
@@ -93,38 +177,32 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes }) {
             </div>
           </div>
 
-          {/* Procedimentos */}
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Procedimentos</label>
-            <input type="text" value={procedimentos} onChange={e => setProcedimentos(e.target.value)}
-              placeholder="Digite ou selecione os procedimentos"
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400" />
+            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Procedimento</label>
+            <SelectProcedimento value={procedimentos} onChange={handleProcChange} procs={procs} onProcsChange={onProcsChange} />
           </div>
 
-          {/* Valor Taxa + Valor Tratamento */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">Consultas (R$)</label>
-              <input type="text" inputMode="numeric" value={valorTaxa} onChange={handleValorTaxa}
+              <input type="text" inputMode="numeric" value={valorTaxa} onChange={e => setValorTaxa(mascaraMoeda(e.target.value))}
                 placeholder="R$ 0,00"
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400" />
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">Valor Tratamento (R$)</label>
-              <input type="text" inputMode="numeric" value={valorTratamento} onChange={handleValorTratamento}
+              <input type="text" inputMode="numeric" value={valorTratamento} onChange={e => setValorTratamento(mascaraMoeda(e.target.value))}
                 placeholder="R$ 0,00"
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400" />
             </div>
           </div>
 
-          {/* Agendado */}
           <label className="flex items-center gap-3 border border-gray-200 rounded-xl px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors">
             <input type="checkbox" checked={agendado} onChange={e => setAgendado(e.target.checked)}
               className="accent-brand-400 w-4 h-4" />
             <span className="text-sm font-medium text-gray-700">Paciente veio por agendamento</span>
           </label>
 
-          {/* Formas de Pagamento */}
           <div>
             <label className="text-sm font-medium text-gray-700 mb-2 block">Formas de Pagamento</label>
             <div className="grid grid-cols-2 gap-2">
@@ -138,7 +216,6 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes }) {
             </div>
           </div>
 
-          {/* Observações */}
           <div>
             <label className="text-sm font-medium text-gray-700 mb-1.5 block">Observações</label>
             <textarea value={obs} onChange={e => setObs(e.target.value)}
@@ -162,7 +239,7 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes }) {
   )
 }
 
-function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pacientes }) {
+function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pacientes, procs, onProcsChange }) {
   const [data, setData] = useState(lancamento.data)
   const [paciente, setPaciente] = useState(lancamento.paciente)
   const [tipo, setTipo] = useState(lancamento.tipo)
@@ -174,6 +251,13 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
   const [agendado, setAgendado] = useState(lancamento.agendado || false)
   const [obs, setObs] = useState(lancamento.obs || '')
   const [confirmarExcluir, setConfirmarExcluir] = useState(false)
+
+  const handleProcChange = (nome, preco) => {
+    setProcedimentos(nome)
+    if (preco != null && preco > 0) {
+      setValorTaxa(mascaraMoeda(String(Math.round(preco * 100))))
+    }
+  }
 
   const toggleForma = (forma) =>
     setFormasPgto(prev => prev.includes(forma) ? prev.filter(f => f !== forma) : [...prev, forma])
@@ -232,10 +316,8 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Procedimentos</label>
-            <input type="text" value={procedimentos} onChange={e => setProcedimentos(e.target.value)}
-              placeholder="Digite ou selecione os procedimentos"
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400" />
+            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Procedimento</label>
+            <SelectProcedimento value={procedimentos} onChange={handleProcChange} procs={procs} onProcsChange={onProcsChange} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -336,6 +418,9 @@ export default function Faturamento() {
   const { pacientes } = usePacientes()
   const [modal, setModal] = useState(false)
   const [editando, setEditando] = useState(null)
+  const [procs, setProcs] = useState(() => getProcedimentos())
+
+  const handleProcsChange = (novos) => setProcs(novos)
 
   const navMes = (delta) => {
     const novo = mes + delta
@@ -354,12 +439,14 @@ export default function Faturamento() {
 
   const fmt = (v) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
 
-  const servicos = [
-    { nome: 'Botox', valor: 0, cor: 'bg-brand-400' },
-    { nome: 'Preenchimento', valor: 0, cor: 'bg-purple-400' },
-    { nome: 'Skinbooster', valor: 0, cor: 'bg-blue-400' },
-    { nome: 'Fio de PDO', valor: 0, cor: 'bg-cyan-400' },
-  ]
+  // Receita agrupada por procedimento
+  const receitaPorProc = procs.map((p, i) => {
+    const total = lancamentosMes
+      .filter(l => l.procedimentos === p.nome)
+      .reduce((acc, l) => acc + (l.valorTaxa || 0) + (l.valorTratamento || 0), 0)
+    return { ...p, total, cor: CORES_PROC[i % CORES_PROC.length] }
+  })
+  const maxReceita = Math.max(...receitaPorProc.map(p => p.total), 1)
 
   return (
     <div className="p-6 space-y-6">
@@ -404,7 +491,7 @@ export default function Faturamento() {
         </div>
       </div>
 
-      {/* Meta + Serviços */}
+      {/* Meta + Procedimentos */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <h2 className="text-base font-bold text-gray-800 mb-4">Meta do Mês</h2>
@@ -419,16 +506,17 @@ export default function Faturamento() {
         </div>
 
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <h2 className="text-base font-bold text-gray-800 mb-4">Receita por Serviço</h2>
+          <h2 className="text-base font-bold text-gray-800 mb-4">Receita por Procedimento</h2>
           <div className="space-y-3">
-            {servicos.map((s, i) => (
+            {receitaPorProc.map((p, i) => (
               <div key={i}>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-600">{s.nome}</span>
-                  <span className="font-semibold text-gray-800">R$ {s.valor.toLocaleString('pt-BR')}</span>
+                  <span className="text-gray-600">{p.nome}</span>
+                  <span className="font-semibold text-gray-800">R$ {fmt(p.total)}</span>
                 </div>
                 <div className="w-full bg-gray-100 rounded-full h-2">
-                  <div className={`${s.cor} h-2 rounded-full`} style={{ width: '0%' }}></div>
+                  <div className={`${p.cor} h-2 rounded-full transition-all`}
+                    style={{ width: `${(p.total / maxReceita) * 100}%` }}></div>
                 </div>
               </div>
             ))}
@@ -470,15 +558,15 @@ export default function Faturamento() {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs text-gray-400 border-b border-gray-100">
-                <th className="pb-3 font-semibold">Data</th>
-                <th className="pb-3 font-semibold">Paciente</th>
-                <th className="pb-3 font-semibold">Tipo</th>
-                <th className="pb-3 font-semibold">Responsável</th>
-                <th className="pb-3 font-semibold">Procedimentos</th>
-                <th className="pb-3 font-semibold text-right">Consultas (R$)</th>
-                <th className="pb-3 font-semibold text-right">Trat.</th>
-                <th className="pb-3 font-semibold text-right">Total</th>
-                <th className="pb-3 font-semibold">Pagto</th>
+                <th className="pb-3 px-3 font-semibold">Data</th>
+                <th className="pb-3 px-3 font-semibold">Paciente</th>
+                <th className="pb-3 px-3 font-semibold">Tipo</th>
+                <th className="pb-3 px-3 font-semibold">Responsável</th>
+                <th className="pb-3 px-3 font-semibold">Procedimentos</th>
+                <th className="pb-3 px-3 font-semibold text-right">Consultas (R$)</th>
+                <th className="pb-3 px-3 font-semibold text-right">Trat.</th>
+                <th className="pb-3 px-3 font-semibold text-right">Total</th>
+                <th className="pb-3 px-3 font-semibold">Pagto</th>
               </tr>
             </thead>
             <tbody>
@@ -487,15 +575,15 @@ export default function Faturamento() {
                 return (
                   <tr key={l.id} onClick={() => setEditando(l)}
                     className="border-b border-gray-50 hover:bg-brand-50 cursor-pointer transition-colors">
-                    <td className="py-3 text-gray-500 whitespace-nowrap">{new Date(l.data).toLocaleDateString('pt-BR')}</td>
-                    <td className="py-3 font-medium text-gray-800">{l.paciente}</td>
-                    <td className="py-3"><span className="px-2 py-1 rounded-full text-xs font-semibold bg-brand-100 text-brand-600">{l.tipo}</span></td>
-                    <td className="py-3 text-gray-600 text-sm">{l.responsavel || '—'}</td>
-                    <td className="py-3 text-gray-500 max-w-[180px] truncate">{l.procedimentos || '—'}</td>
-                    <td className="py-3 text-gray-600 text-right whitespace-nowrap">R$ {fmt(l.valorTaxa || 0)}</td>
-                    <td className="py-3 text-gray-600 text-right whitespace-nowrap">R$ {fmt(l.valorTratamento || 0)}</td>
-                    <td className="py-3 font-semibold text-gray-800 text-right whitespace-nowrap">R$ {fmt(total)}</td>
-                    <td className="py-3 text-gray-500 max-w-[120px] truncate">{l.formasPgto?.join(', ') || '—'}</td>
+                    <td className="py-3 px-3 text-gray-500 whitespace-nowrap">{new Date(l.data).toLocaleDateString('pt-BR')}</td>
+                    <td className="py-3 px-3 font-medium text-gray-800">{l.paciente}</td>
+                    <td className="py-3 px-3"><span className="px-2 py-1 rounded-full text-xs font-semibold bg-brand-100 text-brand-600">{l.tipo}</span></td>
+                    <td className="py-3 px-3 text-gray-600 text-sm">{l.responsavel || '—'}</td>
+                    <td className="py-3 px-3 text-gray-500 max-w-[180px] truncate">{l.procedimentos || '—'}</td>
+                    <td className="py-3 px-3 text-gray-600 text-right whitespace-nowrap">R$ {fmt(l.valorTaxa || 0)}</td>
+                    <td className="py-3 px-3 text-gray-600 text-right whitespace-nowrap">R$ {fmt(l.valorTratamento || 0)}</td>
+                    <td className="py-3 px-3 font-semibold text-gray-800 text-right whitespace-nowrap">R$ {fmt(total)}</td>
+                    <td className="py-3 px-3 text-gray-500 max-w-[120px] truncate">{l.formasPgto?.join(', ') || '—'}</td>
                   </tr>
                 )
               })}
@@ -507,8 +595,8 @@ export default function Faturamento() {
         )}
       </div>
 
-      {modal && <ModalNovoLancamento onClose={() => setModal(false)} onSalvar={addLancamento} ano={ano} mes={mes} pacientes={pacientes} />}
-      {editando && <ModalEditarLancamento lancamento={editando} onClose={() => setEditando(null)} onAtualizar={updateLancamento} onExcluir={removeLancamento} pacientes={pacientes} />}
+      {modal && <ModalNovoLancamento onClose={() => setModal(false)} onSalvar={addLancamento} ano={ano} mes={mes} pacientes={pacientes} procs={procs} onProcsChange={handleProcsChange} />}
+      {editando && <ModalEditarLancamento lancamento={editando} onClose={() => setEditando(null)} onAtualizar={updateLancamento} onExcluir={removeLancamento} pacientes={pacientes} procs={procs} onProcsChange={handleProcsChange} />}
     </div>
   )
 }
