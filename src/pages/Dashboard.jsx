@@ -59,22 +59,22 @@ export default function Dashboard() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex justify-between items-start mb-1">
             <p className="text-sm text-gray-500 font-medium">Faturamento Total</p>
-            <span className="text-pink-400 text-lg">💰</span>
+            <span className="text-brand-400 text-lg">💰</span>
           </div>
           <p className="text-3xl font-bold text-gray-900 mb-1">{fmt(totalGeral)}</p>
           <p className="text-xs text-gray-400 mb-2">Meta: {fmt(metaValor)}</p>
           <div className="w-full bg-gray-100 rounded-full h-2 mb-1">
-            <div className="bg-pink-400 h-2 rounded-full transition-all" style={{ width: `${pct}%` }}></div>
+            <div className="bg-brand-400 h-2 rounded-full transition-all" style={{ width: `${pct}%` }}></div>
           </div>
-          <p className="text-xs text-pink-500 font-medium mb-4">{pct}% da meta</p>
+          <p className="text-xs text-brand-500 font-medium mb-4">{pct}% da meta</p>
           <div className="space-y-2 pt-2 border-t border-gray-100">
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Novos</span>
-              <span className="font-medium text-gray-800">{fmt(totalNovos)} <span className="text-pink-400 text-xs ml-1">{countNovos} venda(s)</span></span>
+              <span className="font-medium text-gray-800">{fmt(totalNovos)} <span className="text-brand-400 text-xs ml-1">{countNovos} venda(s)</span></span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Recorrência</span>
-              <span className="font-medium text-gray-800">{fmt(totalRecorrentes)} <span className="text-pink-400 text-xs ml-1">{countRecorrentes} venda(s)</span></span>
+              <span className="font-medium text-gray-800">{fmt(totalRecorrentes)} <span className="text-brand-400 text-xs ml-1">{countRecorrentes} venda(s)</span></span>
             </div>
           </div>
         </div>
@@ -82,7 +82,7 @@ export default function Dashboard() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex justify-between items-start mb-1">
             <p className="text-sm text-gray-500 font-medium">Dias de Atendimento</p>
-            <span className="text-pink-400 text-lg">📅</span>
+            <span className="text-brand-400 text-lg">📅</span>
           </div>
           <p className="text-3xl font-bold text-gray-900 mb-3">{diasAtendimento}</p>
           <div className="space-y-1 text-sm text-gray-500">
@@ -93,7 +93,7 @@ export default function Dashboard() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex justify-between items-start mb-1">
             <p className="text-sm text-gray-500 font-medium">Vendas</p>
-            <span className="text-pink-400 text-lg">👥</span>
+            <span className="text-brand-400 text-lg">👥</span>
           </div>
           <p className="text-3xl font-bold text-gray-900 mb-3">{lMes.length}</p>
           <p className="text-sm text-gray-400">{countNovos} novos · {countRecorrentes} recorrentes</p>
@@ -128,7 +128,7 @@ export default function Dashboard() {
               label: 'Seguidores',
               value: seguidores.toLocaleString('pt-BR'),
               icon: '👥',
-              color: 'text-pink-500',
+              color: 'text-brand-500',
               sub: 'total de seguidores',
             },
             {
@@ -170,7 +170,7 @@ export default function Dashboard() {
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Funil de Conversão</p>
         <div className="grid grid-cols-4 gap-4">
           {[
-            { label: 'Social Media', icon: '🔗', color: 'text-pink-500', value: String(seguidores.toLocaleString('pt-BR')), sub: 'seguidores', extras: [`${totalLeads} leads recebidos`, `${convComercial}% conversão`] },
+            { label: 'Social Media', icon: '🔗', color: 'text-brand-500', value: String(seguidores.toLocaleString('pt-BR')), sub: 'seguidores', extras: [`${totalLeads} leads recebidos`, `${convComercial}% conversão`] },
             { label: 'Leads Novos', icon: '🏢', color: 'text-blue-500', value: String(totalLeads), sub: `leads (${leadsNovos.length} novos · ${leadsIndicacao.length} indicações)`, extras: [`${totalAgend} agendamentos`, `${convComercial}% conversão`] },
             { label: 'Leads Recorrência', icon: '🔄', color: 'text-teal-500', value: String(leadsRecorrentes.length), sub: 'contatos recorrentes', extras: [`${agendRecorrentes} agendamentos`, `${convRecorrencia}% conversão`] },
             { label: 'Vendas', icon: '📊', color: 'text-green-500', value: String(lMes.length), sub: 'lançamentos no mês', extras: [`${countNovos} novos · ${countRecorrentes} recorrentes`, lMes.length > 0 ? `${fmt(ticketGeral)} ticket médio` : '—'] },

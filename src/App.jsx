@@ -50,7 +50,7 @@ function Diario({ mesIndex, ano }) {
       </div>
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: 'Total de Leads', value: '0', icon: '🔗', color: 'text-pink-500' },
+          { label: 'Total de Leads', value: '0', icon: '🔗', color: 'text-brand-500' },
           { label: 'Atendimentos', value: '0', icon: '📅', color: 'text-blue-500' },
           { label: 'Vendas', value: '0', icon: '✅', color: 'text-green-500' },
           { label: 'Faturamento', value: 'R$ 0', icon: '💰', color: 'text-purple-500' },
@@ -79,7 +79,7 @@ function Diario({ mesIndex, ano }) {
           </thead>
           <tbody>
             {diasMaio.map((d, i) => (
-              <tr key={i} className="border-t border-gray-50 hover:bg-pink-50 transition-colors">
+              <tr key={i} className="border-t border-gray-50 hover:bg-brand-50 transition-colors">
                 <td className="px-6 py-3">
                   <span className="font-bold text-sm text-gray-800">{d.dia}</span>
                   <span className="text-xs text-gray-400 ml-2">{d.semana}</span>
@@ -124,10 +124,10 @@ function DefinirSenha() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-white flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-brand-50 to-white flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="w-14 h-14 bg-pink-200 rounded-2xl flex items-center justify-center text-pink-600 font-bold text-2xl mx-auto mb-4">A</div>
+          <div className="w-14 h-14 bg-brand-200 rounded-2xl flex items-center justify-center text-brand-600 font-bold text-2xl mx-auto mb-4">A</div>
           <h1 className="text-2xl font-bold text-gray-800">Bem-vindo!</h1>
           <p className="text-sm text-gray-400 mt-1">{session?.user?.email}</p>
         </div>
@@ -138,16 +138,16 @@ function DefinirSenha() {
             <div>
               <label className="block text-xs font-semibold text-gray-500 mb-1.5">Nova senha</label>
               <input type="password" value={senha} onChange={e => setSenha(e.target.value)} required placeholder="••••••••"
-                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-300" />
+                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-300" />
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-500 mb-1.5">Confirmar senha</label>
               <input type="password" value={confirma} onChange={e => setConfirma(e.target.value)} required placeholder="••••••••"
-                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-300" />
+                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-300" />
             </div>
             {erro && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{erro}</p>}
             <button type="submit" disabled={loading}
-              className="w-full bg-pink-400 hover:bg-pink-500 disabled:bg-pink-200 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors">
+              className="w-full bg-brand-400 hover:bg-brand-500 disabled:bg-brand-200 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors">
               {loading ? 'Salvando...' : 'Definir senha e entrar'}
             </button>
           </form>
@@ -161,8 +161,8 @@ function AppInner() {
   const { session, recoveryMode, primeiroAcesso } = useAuth()
 
   if (session === undefined) return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-white flex items-center justify-center">
-      <div className="w-8 h-8 border-4 border-pink-300 border-t-pink-500 rounded-full animate-spin" />
+    <div className="min-h-screen bg-gradient-to-br from-brand-50 to-white flex items-center justify-center">
+      <div className="w-8 h-8 border-4 border-brand-300 border-t-brand-500 rounded-full animate-spin" />
     </div>
   )
   if (!session || recoveryMode) return <Login />
@@ -226,7 +226,7 @@ case 'whatsapp_canal': return <PagePlaceholder title="WhatsApp" />
     <LeadsProvider>
     <PacientesProvider>
     <VendasProvider>
-      <div className="flex min-h-screen bg-gray-50">
+      <div className="flex min-h-screen" style={{ background: 'linear-gradient(135deg, #F5EDE0 0%, #EDD9C0 50%, #E8D4BE 100%)' }}>
         <Sidebar active={active} setActive={setActive} collapsed={collapsed} setCollapsed={setCollapsed} />
         <div className={`flex-1 ${collapsed ? 'ml-14' : 'ml-52'} flex flex-col transition-all duration-200`}>
           {active === 'dashboard' && <Header view={view} setView={setView} />}
