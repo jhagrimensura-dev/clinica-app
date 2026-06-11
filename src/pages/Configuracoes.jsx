@@ -83,7 +83,7 @@ function gerarId() {
   return Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16).toUpperCase()).join('')
 }
 
-const TIPOS_WA = ['Comercial', 'Recorrência', 'Indicação', 'Suporte', 'Outro']
+const TIPOS_WA = ['Leads Novos', 'Leads Recorrentes', 'Indicação', 'Suporte', 'Geral']
 
 function TokenInput({ label, value, onChange, optional }) {
   const [show, setShow] = useState(false)
@@ -103,7 +103,7 @@ function TokenInput({ label, value, onChange, optional }) {
   )
 }
 
-const EMPTY_CONTA = { nome: '', tipo: 'Comercial', instanciaId: '', instanciaToken: '', clientToken: '' }
+const EMPTY_CONTA = { nome: '', tipo: 'Leads Novos', instanciaId: '', instanciaToken: '', clientToken: '' }
 
 const ZAPI_BASE = 'https://api.z-api.io'
 
@@ -750,7 +750,7 @@ function TabEquipe() {
       <div className="space-y-3">
         {membros.map(m => (
           <div key={m.id} className="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm">
-            <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center text-pink-600 font-bold text-sm flex-shrink-0">
+            <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold text-sm flex-shrink-0">
               {m.nome.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">

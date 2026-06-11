@@ -27,8 +27,21 @@ const TIPOS = [
   { label: 'Trend',      cor: 'bg-purple-100 text-purple-700' },
   { label: 'Experiência',cor: 'bg-blue-100 text-blue-700' },
   { label: 'Respiro',    cor: 'bg-green-100 text-green-700' },
-  { label: 'Colab',      cor: 'bg-pink-100 text-pink-700' },
+  { label: 'Colab',      cor: 'bg-brand-100 text-brand-700' },
 ]
+
+const ROTINA_TIPOS = [
+  { label: 'Criação',    cor: 'bg-yellow-100 text-yellow-700' },
+  { label: 'Publicação', cor: 'bg-green-100 text-green-700' },
+  { label: 'DMs',        cor: 'bg-blue-100 text-blue-700' },
+  { label: 'Análise',    cor: 'bg-purple-100 text-purple-700' },
+  { label: 'Reunião',    cor: 'bg-brand-100 text-brand-700' },
+  { label: 'Outro',      cor: 'bg-gray-100 text-gray-600' },
+]
+
+const DIAS_SEMANA_FULL = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado']
+
+const corDoTipoRotina = (tipo) => ROTINA_TIPOS.find(t => t.label === tipo)?.cor || 'bg-gray-100 text-gray-600'
 
 const FORMATOS = ['Reels', 'Foto', 'Carrossel', 'Stories']
 
@@ -40,7 +53,16 @@ const hoje = new Date()
 const dataHoje = `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`
 
 export default function SocialMedia() {
-  const { mes, ano, posts, setPosts } = useClinica()
+  const { mes, ano, setMes, setAno, posts, setPosts } = useClinica()
+
+  const mesAnterior = () => {
+    if (mes === 0) { setMes(11); setAno(a => a - 1) }
+    else setMes(m => m - 1)
+  }
+  const proximoMes = () => {
+    if (mes === 11) { setMes(0); setAno(a => a + 1) }
+    else setMes(m => m + 1)
+  }
   const semanas = gerarCalendario(ano, mes)
 
   const [trafego, setTrafego] = useState(0)
@@ -62,6 +84,30 @@ export default function SocialMedia() {
 
   const [modal, setModal] = useState(null) // null | { dia }
   const [form, setForm] = useState({ data: '', formato: '', tipo: '', link: '', impulsionado: false })
+
+  const [rotina, setRotina] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('social_rotina') || '{}') } catch { return {} }
+  })
+  const [modalRotina, setModalRotina] = useState(null) // null | { diaSemana: 0-6 }
+  const [formRotina, setFormRotina] = useState({ texto: '', tipo: '' })
+
+  const salvarRotina = (nova) => {
+    setRotina(nova)
+    try { localStorage.setItem('social_rotina', JSON.stringify(nova)) } catch {}
+  }
+
+  const adicionarTarefaRotina = () => {
+    if (!formRotina.texto.trim() || !formRotina.tipo) return
+    const ds = modalRotina.diaSemana
+    const novaLista = [...(rotina[ds] || []), { id: Date.now(), texto: formRotina.texto.trim(), tipo: formRotina.tipo }]
+    salvarRotina({ ...rotina, [ds]: novaLista })
+    setFormRotina({ texto: '', tipo: '' })
+  }
+
+  const removerTarefaRotina = (diaSemana, id, e) => {
+    e.stopPropagation()
+    salvarRotina({ ...rotina, [diaSemana]: (rotina[diaSemana] || []).filter(t => t.id !== id) })
+  }
 
   const porSeguidor = seguidores > 0 ? (trafego / seguidores).toFixed(2).replace('.', ',') : '—'
   const leads = 0
@@ -113,9 +159,20 @@ export default function SocialMedia() {
           <h1 className="text-2xl font-bold text-gray-800">Social Media</h1>
           <p className="text-sm text-gray-400 mt-1">Gerencie métricas de redes sociais e posts</p>
         </div>
-        <button onClick={() => abrirModal(hoje.getDate())} className="flex items-center gap-2 bg-pink-400 hover:bg-pink-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">
-          + Novo Post
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl px-1 py-1">
+            <button onClick={mesAnterior} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <span className="text-sm font-semibold text-gray-700 min-w-[130px] text-center">{MESES[mes]} {ano}</span>
+            <button onClick={proximoMes} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+          <button onClick={() => abrirModal(hoje.getDate())} className="flex items-center gap-2 bg-brand-400 hover:bg-brand-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">
+            + Novo Post
+          </button>
+        </div>
       </div>
 
       {/* Cards de métricas */}
@@ -132,10 +189,10 @@ export default function SocialMedia() {
                 <span className="text-sm font-bold text-gray-400">R$</span>
                 <input autoFocus type="text" value={inputTrafego} onChange={e => setInputTrafego(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') salvarTrafego(); if (e.key === 'Escape') setEditandoTrafego(false) }}
-                  className="flex-1 text-2xl font-bold text-gray-900 border-b-2 border-pink-400 outline-none bg-transparent" />
+                  className="flex-1 text-2xl font-bold text-gray-900 border-b-2 border-brand-400 outline-none bg-transparent" />
               </div>
               <div className="flex gap-2">
-                <button onClick={salvarTrafego} className="flex-1 bg-pink-500 hover:bg-pink-600 text-white text-xs font-semibold py-1.5 rounded-lg transition-colors">Salvar</button>
+                <button onClick={salvarTrafego} className="flex-1 bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold py-1.5 rounded-lg transition-colors">Salvar</button>
                 <button onClick={() => setEditandoTrafego(false)} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-semibold py-1.5 rounded-lg transition-colors">Cancelar</button>
               </div>
             </div>
@@ -155,9 +212,9 @@ export default function SocialMedia() {
             <div className="space-y-2">
               <input autoFocus type="text" value={inputSeguidores} onChange={e => setInputSeguidores(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') salvarSeguidores(); if (e.key === 'Escape') setEditandoSeguidores(false) }}
-                className="w-full text-2xl font-bold text-gray-900 border-b-2 border-pink-400 outline-none bg-transparent" />
+                className="w-full text-2xl font-bold text-gray-900 border-b-2 border-brand-400 outline-none bg-transparent" />
               <div className="flex gap-2">
-                <button onClick={salvarSeguidores} className="flex-1 bg-pink-500 hover:bg-pink-600 text-white text-xs font-semibold py-1.5 rounded-lg transition-colors">Salvar</button>
+                <button onClick={salvarSeguidores} className="flex-1 bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold py-1.5 rounded-lg transition-colors">Salvar</button>
                 <button onClick={() => setEditandoSeguidores(false)} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-semibold py-1.5 rounded-lg transition-colors">Cancelar</button>
               </div>
             </div>
@@ -171,7 +228,7 @@ export default function SocialMedia() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex justify-between items-start mb-1">
             <p className="text-sm text-gray-500 font-medium">Leads</p>
-            <span className="text-pink-400">🔗</span>
+            <span className="text-brand-400">🔗</span>
           </div>
           <p className="text-2xl font-bold text-gray-900">{leads}</p>
           <p className="text-xs text-gray-400 mt-1">{leads} leads recebidos</p>
@@ -182,7 +239,7 @@ export default function SocialMedia() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex justify-between items-start mb-2">
             <p className="text-sm text-gray-500 font-medium">Posts</p>
-            <span className="text-pink-400">📊</span>
+            <span className="text-brand-400">📊</span>
           </div>
           <p className="text-2xl font-bold text-gray-900 mb-3">{posts.length}</p>
           <div className="space-y-1">
@@ -191,7 +248,7 @@ export default function SocialMedia() {
               { tipo: 'Trends', key: 'Trend', cor: 'bg-purple-400' },
               { tipo: 'Experiências', key: 'Experiência', cor: 'bg-blue-400' },
               { tipo: 'Respiros', key: 'Respiro', cor: 'bg-green-400' },
-              { tipo: 'Colabs', key: 'Colab', cor: 'bg-pink-400' },
+              { tipo: 'Colabs', key: 'Colab', cor: 'bg-brand-400' },
               { tipo: 'Impulsionados', key: '_imp', cor: 'bg-orange-300' },
             ].map((item, i) => (
               <div key={i} className="flex items-center justify-between text-xs">
@@ -229,7 +286,7 @@ export default function SocialMedia() {
                 <div
                   key={ci}
                   onClick={() => isMesAtual && abrirModal(celula.dia)}
-                  className={`min-h-[80px] p-2 border-r border-gray-100 last:border-r-0 transition-colors ${isMesAtual ? 'cursor-pointer hover:bg-pink-50' : 'bg-gray-50'}`}
+                  className={`min-h-[80px] p-2 border-r border-gray-100 last:border-r-0 transition-colors ${isMesAtual ? 'cursor-pointer hover:bg-brand-50' : 'bg-gray-50'}`}
                 >
                   <span className={`text-xs font-bold ${isMesAtual ? 'text-gray-700' : 'text-gray-300'}`}>{celula.dia}</span>
                   <div className="space-y-1 mt-1">
@@ -250,6 +307,102 @@ export default function SocialMedia() {
         ))}
       </div>
 
+      {/* Calendário de Rotina */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <div className="mb-4">
+          <h2 className="text-base font-bold text-gray-800">Rotina da Social Media — {MESES[mes]} {ano}</h2>
+          <p className="text-xs text-gray-400 mt-1">Tarefas fixas por dia da semana • clique em um dia para adicionar ou editar</p>
+        </div>
+
+        <div className="grid grid-cols-7 mb-2">
+          {['DOM','SEG','TER','QUA','QUI','SEX','SAB'].map(d => (
+            <div key={d} className="text-center text-xs font-semibold text-gray-400 py-2">{d}</div>
+          ))}
+        </div>
+
+        {semanas.map((semana, si) => (
+          <div key={si} className="grid grid-cols-7 border-t border-gray-100">
+            {semana.map((celula, ci) => {
+              const isMesAtual = !celula.mes
+              const tarefas = rotina[ci] || []
+              return (
+                <div
+                  key={ci}
+                  onClick={() => isMesAtual && (setModalRotina({ diaSemana: ci }), setFormRotina({ texto: '', tipo: '' }))}
+                  className={`min-h-[80px] p-2 border-r border-gray-100 last:border-r-0 transition-colors ${isMesAtual ? 'cursor-pointer hover:bg-brand-50' : 'bg-gray-50'}`}
+                >
+                  <span className={`text-xs font-bold ${isMesAtual ? 'text-gray-700' : 'text-gray-300'}`}>{celula.dia}</span>
+                  <div className="space-y-1 mt-1">
+                    {isMesAtual && tarefas.map(tarefa => (
+                      <div key={tarefa.id} className={`text-xs px-1.5 py-0.5 rounded-md font-medium flex items-center justify-between gap-1 ${corDoTipoRotina(tarefa.tipo)}`}>
+                        <span className="truncate">{tarefa.texto}</span>
+                        <button onClick={e => removerTarefaRotina(ci, tarefa.id, e)} className="opacity-40 hover:opacity-100 text-xs leading-none flex-shrink-0">×</button>
+                      </div>
+                    ))}
+                    {isMesAtual && tarefas.length === 0 && (
+                      <div className="text-xs text-gray-200 mt-2 text-center">+</div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ))}
+      </div>
+
+      {/* Modal Rotina */}
+      {modalRotina && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setModalRotina(null)}>
+          <div className="bg-white rounded-2xl p-6 w-[420px] shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h2 className="text-lg font-bold text-gray-800">Rotina — {DIAS_SEMANA_FULL[modalRotina.diaSemana]}</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Toda semana nesse dia</p>
+              </div>
+              <button onClick={() => setModalRotina(null)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+            </div>
+
+            {(rotina[modalRotina.diaSemana] || []).length > 0 && (
+              <div className="mb-4 space-y-1.5">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Tarefas cadastradas</p>
+                {(rotina[modalRotina.diaSemana] || []).map(tarefa => (
+                  <div key={tarefa.id} className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium ${corDoTipoRotina(tarefa.tipo)}`}>
+                    <span>{tarefa.texto}</span>
+                    <button onClick={e => removerTarefaRotina(modalRotina.diaSemana, tarefa.id, e)} className="opacity-50 hover:opacity-100 ml-2 text-sm leading-none">×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Nova tarefa <span className="text-red-400">*</span></label>
+                <input autoFocus type="text" value={formRotina.texto}
+                  onChange={e => setFormRotina(f => ({ ...f, texto: e.target.value }))}
+                  onKeyDown={e => e.key === 'Enter' && adicionarTarefaRotina()}
+                  placeholder="Ex: Criar conteúdo para Reels"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Categoria <span className="text-red-400">*</span></label>
+                <select value={formRotina.tipo} onChange={e => setFormRotina(f => ({ ...f, tipo: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400 bg-white">
+                  <option value="">Selecione</option>
+                  {ROTINA_TIPOS.map(t => <option key={t.label} value={t.label}>{t.label}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setModalRotina(null)}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-semibold py-2.5 rounded-xl transition-colors">Fechar</button>
+              <button onClick={adicionarTarefaRotina} disabled={!formRotina.texto.trim() || !formRotina.tipo}
+                className="flex-1 bg-brand-500 hover:bg-brand-600 disabled:opacity-40 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">Adicionar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal Novo Post */}
       {modal && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setModal(null)}>
@@ -263,13 +416,13 @@ export default function SocialMedia() {
               <div>
                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Data do Post</label>
                 <input type="text" value={form.data} onChange={e => setForm(f => ({ ...f, data: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-pink-400" />
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400" />
               </div>
 
               <div>
                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Formato <span className="text-red-400">*</span></label>
                 <select value={form.formato} onChange={e => setForm(f => ({ ...f, formato: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-pink-400 bg-white">
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400 bg-white">
                   <option value="">Selecione o formato</option>
                   {FORMATOS.map(f => <option key={f} value={f}>{f}</option>)}
                 </select>
@@ -278,7 +431,7 @@ export default function SocialMedia() {
               <div>
                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Tipo <span className="text-red-400">*</span></label>
                 <select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-pink-400 bg-white">
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400 bg-white">
                   <option value="">Selecione o tipo</option>
                   {TIPOS.map(t => <option key={t.label} value={t.label}>{t.label}</option>)}
                 </select>
@@ -288,12 +441,12 @@ export default function SocialMedia() {
                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Link do Post</label>
                 <input type="text" value={form.link} onChange={e => setForm(f => ({ ...f, link: e.target.value }))}
                   placeholder="https://instagram.com/p/..."
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-pink-400" />
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400" />
               </div>
 
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={form.impulsionado} onChange={e => setForm(f => ({ ...f, impulsionado: e.target.checked }))}
-                  className="w-4 h-4 accent-pink-400" />
+                  className="w-4 h-4 accent-brand-400" />
                 <span className="text-sm text-gray-600">Post Impulsionado</span>
               </label>
             </div>
@@ -301,7 +454,7 @@ export default function SocialMedia() {
             <div className="flex gap-3 mt-6">
               <button onClick={() => setModal(null)} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-semibold py-2.5 rounded-xl transition-colors">Cancelar</button>
               <button onClick={salvarPost} disabled={!form.tipo}
-                className="flex-1 bg-pink-500 hover:bg-pink-600 disabled:opacity-40 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">Salvar</button>
+                className="flex-1 bg-brand-500 hover:bg-brand-600 disabled:opacity-40 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">Salvar</button>
             </div>
           </div>
         </div>

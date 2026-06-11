@@ -67,11 +67,11 @@ export default function Sidebar({ active, setActive, collapsed, setCollapsed }) 
   }
 
   return (
-    <div className={`${collapsed ? 'w-14' : 'w-52'} min-h-screen bg-white border-r border-pink-100 flex flex-col fixed left-0 top-0 bottom-0 transition-all duration-200 z-50`}>
+    <div className={`${collapsed ? 'w-14' : 'w-52'} min-h-screen bg-white border-r border-brand-100 flex flex-col fixed left-0 top-0 bottom-0 transition-all duration-200 z-50`}>
 
       {/* Header */}
-      <div className={`p-3 flex items-center border-b border-pink-100 ${collapsed ? 'justify-center' : 'gap-3'}`}>
-        <div className="w-9 h-9 bg-pink-200 rounded-xl flex items-center justify-center text-pink-600 font-bold text-sm flex-shrink-0">A</div>
+      <div className={`p-3 flex items-center border-b border-brand-100 ${collapsed ? 'justify-center' : 'gap-3'}`}>
+        <div className="w-9 h-9 bg-brand-200 rounded-xl flex items-center justify-center text-brand-600 font-bold text-sm flex-shrink-0">A</div>
         {!collapsed && (
           <div className="min-w-0">
             <p className="font-bold text-gray-800 text-xs leading-tight truncate">Dra. Amanda Lima</p>
@@ -82,7 +82,7 @@ export default function Sidebar({ active, setActive, collapsed, setCollapsed }) 
       {/* Botão recolher */}
       <button
         onClick={() => setCollapsed(v => !v)}
-        className="absolute -right-4 top-6 w-8 h-8 bg-pink-400 hover:bg-pink-500 border-2 border-white rounded-full flex items-center justify-center text-white transition-colors shadow-md z-50"
+        className="absolute -right-4 top-6 w-8 h-8 bg-brand-400 hover:bg-brand-500 border-2 border-white rounded-full flex items-center justify-center text-white transition-colors shadow-md z-50"
         title={collapsed ? 'Expandir menu' : 'Recolher menu'}
       >
         <svg className={`w-4 h-4 transition-transform duration-200 ${collapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -107,7 +107,7 @@ export default function Sidebar({ active, setActive, collapsed, setCollapsed }) 
               title={collapsed ? item.label : ''}
               className={`w-full text-left px-2 py-2 rounded-lg mb-1 text-sm flex items-center transition-all ${collapsed ? 'justify-center' : 'gap-3'} ${
                 active === item.id
-                  ? 'bg-pink-100 text-pink-600 font-semibold'
+                  ? 'bg-brand-100 text-brand-600 font-semibold'
                   : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
               }`}
             >
@@ -126,7 +126,7 @@ export default function Sidebar({ active, setActive, collapsed, setCollapsed }) 
                     onClick={() => setActive(sub.id)}
                     className={`w-full text-left px-3 py-1.5 rounded-lg mb-0.5 text-xs flex items-center gap-2 transition-all border-l-2 ${
                       active === sub.id
-                        ? 'border-pink-400 bg-pink-50 text-pink-600 font-semibold'
+                        ? 'border-brand-400 bg-brand-50 text-brand-600 font-semibold'
                         : 'border-gray-100 text-gray-400 hover:bg-gray-50 hover:text-gray-600'
                     }`}
                   >
@@ -143,11 +143,11 @@ export default function Sidebar({ active, setActive, collapsed, setCollapsed }) 
       {/* Footer */}
       <div className={`px-2 pb-4 border-t border-gray-100 pt-3 space-y-0.5`}>
         {!isFuncionario && (
-          <button onClick={() => setActive('configuracoes')} title={collapsed ? 'Configurações' : ''} className={`w-full text-left px-2 py-2 rounded-lg text-sm flex items-center transition-colors ${collapsed ? 'justify-center' : 'gap-3'} ${active === 'configuracoes' ? 'bg-pink-50 text-pink-600 font-semibold' : 'text-gray-500 hover:bg-gray-50'}`}>
+          <button onClick={() => setActive('configuracoes')} title={collapsed ? 'Configurações' : ''} className={`w-full text-left px-2 py-2 rounded-lg text-sm flex items-center transition-colors ${collapsed ? 'justify-center' : 'gap-3'} ${active === 'configuracoes' ? 'bg-brand-50 text-brand-600 font-semibold' : 'text-gray-500 hover:bg-gray-50'}`}>
             <span>⚙️</span>{!collapsed && <span>Configurações</span>}
           </button>
         )}
-        <button onClick={() => setActive('ajuda')} title={collapsed ? 'Ajuda' : ''} className={`w-full text-left px-2 py-2 rounded-lg text-sm flex items-center transition-colors ${collapsed ? 'justify-center' : 'gap-3'} ${active === 'ajuda' ? 'bg-pink-50 text-pink-600 font-semibold' : 'text-gray-500 hover:bg-gray-50'}`}>
+        <button onClick={() => setActive('ajuda')} title={collapsed ? 'Ajuda' : ''} className={`w-full text-left px-2 py-2 rounded-lg text-sm flex items-center transition-colors ${collapsed ? 'justify-center' : 'gap-3'} ${active === 'ajuda' ? 'bg-brand-50 text-brand-600 font-semibold' : 'text-gray-500 hover:bg-gray-50'}`}>
           <span>❓</span>{!collapsed && <span>Ajuda</span>}
         </button>
         {/* WhatsApp Inboxes */}
@@ -171,17 +171,32 @@ export default function Sidebar({ active, setActive, collapsed, setCollapsed }) 
                 </button>
               ) : (
                 <>
-                  {contasWA.map(conta => (
-                    <button key={conta.id} onClick={() => setActive(`inbox_${conta.id}`)}
-                      className={`w-full text-left px-3 py-1.5 rounded-lg text-xs flex items-center gap-2 transition-all border-l-2 ${
-                        active === `inbox_${conta.id}`
-                          ? 'border-green-400 bg-green-50 text-green-700 font-semibold'
-                          : 'border-gray-100 text-gray-500 hover:bg-gray-50'
-                      }`}>
-                      <span className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0"></span>
-                      {conta.nome}
-                    </button>
-                  ))}
+                  {contasWA.map(conta => {
+                    const tipoColor = {
+                      'Leads Novos':       'bg-brand-100 text-brand-700',
+                      'Leads Recorrentes': 'bg-blue-100 text-blue-700',
+                      'Indicação':         'bg-purple-100 text-purple-700',
+                      'Suporte':           'bg-yellow-100 text-yellow-700',
+                    }[conta.tipo] || 'bg-gray-100 text-gray-500'
+                    return (
+                      <button key={conta.id} onClick={() => setActive(`inbox_${conta.id}`)}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-xs flex flex-col gap-0.5 transition-all border-l-2 ${
+                          active === `inbox_${conta.id}`
+                            ? 'border-green-400 bg-green-50 text-green-700 font-semibold'
+                            : 'border-gray-100 text-gray-500 hover:bg-gray-50'
+                        }`}>
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0"></span>
+                          <span className="truncate">{conta.nome}</span>
+                        </div>
+                        {conta.tipo && (
+                          <span className={`ml-4 self-start text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${tipoColor}`}>
+                            {conta.tipo}
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
                   <button onClick={() => setActive('configuracoes')}
                     className="w-full text-left px-3 py-1.5 rounded-lg text-xs text-gray-400 hover:bg-gray-50 border-l-2 border-gray-100">
                     + Adicionar

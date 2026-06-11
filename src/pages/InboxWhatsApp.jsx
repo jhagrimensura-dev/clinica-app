@@ -79,7 +79,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar }) {
   const [obs, setObs] = useState('')
 
   const ORIGENS = {
-    leads_novos:       { label: 'Lead Novo',       cor: 'bg-pink-500' },
+    leads_novos:       { label: 'Lead Novo',       cor: 'bg-brand-500' },
     leads_recorrentes: { label: 'Lead Recorrente',  cor: 'bg-blue-500' },
     indicacao:         { label: 'Indicação',        cor: 'bg-purple-500' },
   }
@@ -98,12 +98,12 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar }) {
         <div>
           <label className="text-xs font-semibold text-gray-500 mb-1 block">Nome</label>
           <input value={nome} onChange={e => setNome(e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-pink-300" />
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300" />
         </div>
         <div>
           <label className="text-xs font-semibold text-gray-500 mb-1 block">Responsável</label>
           <select value={responsavel} onChange={e => setResponsavel(e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-pink-300 bg-white">
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 bg-white">
             <option value="">Selecione</option>
             <option>Dra. Amanda</option>
             <option>Recepção</option>
@@ -114,7 +114,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar }) {
           <label className="text-xs font-semibold text-gray-500 mb-1 block">Observação</label>
           <textarea value={obs} onChange={e => setObs(e.target.value)} rows={2}
             placeholder="Ex: Interesse em preenchimento labial"
-            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-pink-300 resize-none" />
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 resize-none" />
         </div>
         <div className="flex justify-end gap-3 pt-1">
           <button onClick={onFechar} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
@@ -132,6 +132,12 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar }) {
 
 function loadContas() {
   try { const s = localStorage.getItem('config_whatsapp_contas'); return s ? JSON.parse(s) : [] } catch { return [] }
+}
+
+const TIPO_PARA_ORIGEM = {
+  'Leads Novos':      'leads_novos',
+  'Leads Recorrentes': 'leads_recorrentes',
+  'Indicação':        'indicacao',
 }
 
 // ── Página principal ──────────────────────────────────────────────
@@ -183,6 +189,7 @@ export default function InboxWhatsApp({ contaId }) {
   const selecionadaRef = useRef(null)
   const emojiContainerRef = useRef(null)
   const fotosCache = useRef((() => { try { return JSON.parse(localStorage.getItem('wpp_fotos') || '{}') } catch { return {} } })())
+  const lastReadRef = useRef((() => { try { return JSON.parse(localStorage.getItem('wpp_last_read') || '{}') } catch { return {} } })())
 
   useEffect(() => { selecionadaRef.current = selecionada }, [selecionada])
 
@@ -224,13 +231,31 @@ export default function InboxWhatsApp({ contaId }) {
       } else {
         setErro(null)
       }
+      // Calcula não lidas via Supabase (comparando com última abertura de cada conversa)
+      const phones = novaLista.map(c => c.id)
+      const minTs = Math.min(...phones.map(p => lastReadRef.current[p] || (Date.now() - 7 * 86400000)))
+      const { data: msgData } = await supabase
+        .from('whatsapp_mensagens')
+        .select('phone, timestamp_ms')
+        .eq('de_mim', false)
+        .in('phone', phones)
+        .gte('timestamp_ms', minTs)
+
+      const naoLidasMap = {}
+      for (const m of msgData || []) {
+        const lastRead = lastReadRef.current[m.phone] || 0
+        if (m.timestamp_ms > lastRead) {
+          naoLidasMap[m.phone] = (naoLidasMap[m.phone] || 0) + 1
+        }
+      }
+
       setConversas(prev => {
         return novaLista.map(nova => {
           const existente = prev.find(c => c.id === nova.id)
           const naoLidas = selecionadaRef.current?.id === nova.id
             ? 0
-            : Math.max(existente?.naoLidas || 0, nova.naoLidas || 0)
-          return existente ? { ...nova, mensagens: existente.mensagens, naoLidas } : nova
+            : naoLidasMap[nova.id] || 0
+          return existente ? { ...nova, mensagens: existente.mensagens, naoLidas } : { ...nova, naoLidas }
         })
       })
       if (!jaTemSelecao.current && novaLista.length > 0) {
@@ -484,6 +509,8 @@ export default function InboxWhatsApp({ contaId }) {
     setSelecionada(c)
     setMenuLead(false)
     setConversas(prev => prev.map(x => x.id === c.id ? { ...x, naoLidas: 0 } : x))
+    lastReadRef.current[c.id] = Date.now()
+    localStorage.setItem('wpp_last_read', JSON.stringify(lastReadRef.current))
   }
   const registrarLead = (tipo) => { setMenuLead(false); setModalLead(tipo) }
   const confirmarLead = (dados) => {
@@ -511,9 +538,20 @@ export default function InboxWhatsApp({ contaId }) {
       <div className="w-80 flex-shrink-0 bg-white border-r border-gray-100 flex flex-col">
         <div className="p-4 border-b border-gray-100">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-bold text-gray-800">💬 {contaAtiva.nome}</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-bold text-gray-800">💬 {contaAtiva.nome}</h2>
+              {contaAtiva.tipo && (
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                  contaAtiva.tipo === 'Leads Novos' ? 'bg-brand-100 text-brand-700'
+                  : contaAtiva.tipo === 'Leads Recorrentes' ? 'bg-blue-100 text-blue-700'
+                  : contaAtiva.tipo === 'Indicação' ? 'bg-purple-100 text-purple-700'
+                  : contaAtiva.tipo === 'Suporte' ? 'bg-yellow-100 text-yellow-700'
+                  : 'bg-gray-100 text-gray-500'
+                }`}>{contaAtiva.tipo}</span>
+              )}
+            </div>
             <button onClick={fetchConversas} disabled={loadingConversas} title="Atualizar"
-              className="text-gray-300 hover:text-pink-400 transition-colors disabled:opacity-40">
+              className="text-gray-300 hover:text-brand-400 transition-colors disabled:opacity-40">
               <svg className={`w-4 h-4 ${loadingConversas ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
@@ -523,12 +561,12 @@ export default function InboxWhatsApp({ contaId }) {
             <div className="relative flex-1">
               <input value={busca} onChange={e => setBusca(e.target.value)}
                 placeholder="Buscar conversa..."
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 pl-8 text-sm outline-none focus:border-pink-300" />
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 pl-8 text-sm outline-none focus:border-brand-300" />
               <svg className="w-4 h-4 absolute left-2.5 top-2.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-            <button className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-pink-50 text-gray-400 hover:text-pink-500 text-lg font-light transition-colors flex-shrink-0">+</button>
+            <button className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-brand-50 text-gray-400 hover:text-brand-500 text-lg font-light transition-colors flex-shrink-0">+</button>
           </div>
 
           <div className="flex gap-2 mt-2">
@@ -548,7 +586,7 @@ export default function InboxWhatsApp({ contaId }) {
         <div className="flex-1 overflow-y-auto">
           {loadingConversas && conversas.length === 0 ? (
             <div className="p-8 text-center text-gray-400 text-sm">
-              <svg className="w-6 h-6 animate-spin mx-auto mb-2 text-pink-300" fill="none" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 animate-spin mx-auto mb-2 text-brand-300" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
               </svg>
@@ -559,31 +597,38 @@ export default function InboxWhatsApp({ contaId }) {
           ) : (
             conversasFiltradas.map(c => (
               <button key={c.id} onClick={() => abrirConversa(c)}
-                className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-pink-50 transition-colors ${selecionada?.id === c.id ? 'bg-pink-50 border-l-4 border-l-pink-400' : ''}`}>
-                <div className="flex items-start gap-3">
+                className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-brand-50 transition-colors ${selecionada?.id === c.id ? 'bg-brand-50 border-l-4 border-l-brand-400' : ''}`}>
+                <div className="flex items-center gap-3">
                   {c.contato.foto ? (
-                    <img src={c.contato.foto} className="w-10 h-10 rounded-full flex-shrink-0 object-cover" />
+                    <img src={c.contato.foto} className="w-12 h-12 rounded-full flex-shrink-0 object-cover" />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-200 to-pink-300 flex items-center justify-center text-pink-700 font-bold text-sm flex-shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand-200 to-brand-300 flex items-center justify-center text-brand-700 font-bold flex-shrink-0">
                       {(c.contato.nome || '?').charAt(0).toUpperCase()}
                     </div>
                   )}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-0.5">
-                      <p className="text-sm font-semibold text-gray-800 truncate">{c.contato.nome}</p>
-                      <span className="text-xs text-gray-400 flex-shrink-0 ml-1">{c.horario}</span>
-                    </div>
-                    <div className="flex items-center justify-between gap-1">
-                      <p className="text-xs text-gray-400 truncate flex-1">
+                  <div className="flex-1 min-w-0 flex gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm truncate ${c.naoLidas > 0 ? 'font-bold text-gray-900' : 'font-semibold text-gray-800'}`}>{c.contato.nome}</p>
+                      <p className="text-xs text-gray-400 truncate mt-0.5">
                         {(() => {
                           const lastMsg = c.mensagens?.at(-1)
                           const texto = lastMsg?.texto || c.ultimaMensagem || ''
+                          const tipo = lastMsg?.tipo || ''
                           const deMim = lastMsg ? lastMsg.minha : c.ultimaDeMim
-                          return texto ? (deMim ? `Você: ${texto}` : texto) : ''
+                          const preview = tipo === 'audio' || texto === '[áudio]' ? '🎤 Áudio'
+                            : tipo === 'image' || texto === '[imagem]' ? '🖼️ Imagem'
+                            : tipo === 'video' || texto === '[vídeo]' ? '🎥 Vídeo'
+                            : texto
+                          return preview ? (deMim ? `Você: ${preview}` : preview) : ''
                         })()}
                       </p>
+                    </div>
+                    <div className="flex flex-col items-end justify-between flex-shrink-0 min-w-[48px]">
+                      <span className="text-xs text-gray-400">{c.horario}</span>
                       {c.naoLidas > 0 && (
-                        <span className="flex-shrink-0 bg-yellow-400 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">{c.naoLidas}</span>
+                        <span className="bg-orange-500 text-white text-xs font-bold rounded-full min-w-[22px] h-[22px] px-1.5 flex items-center justify-center">
+                          {c.naoLidas > 99 ? '99+' : c.naoLidas}
+                        </span>
                       )}
                     </div>
                   </div>
@@ -602,7 +647,7 @@ export default function InboxWhatsApp({ contaId }) {
               {conversa.contato.foto ? (
                 <img src={conversa.contato.foto} className="w-10 h-10 rounded-full object-cover" />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-200 to-pink-300 flex items-center justify-center text-pink-700 font-bold">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-200 to-brand-300 flex items-center justify-center text-brand-700 font-bold">
                   {(conversa.contato.nome || '?').charAt(0).toUpperCase()}
                 </div>
               )}
@@ -615,6 +660,11 @@ export default function InboxWhatsApp({ contaId }) {
             <div className="relative">
               {leadRegistrado[conversa.id] ? (
                 <span className="text-xs text-green-600 font-semibold bg-green-50 px-3 py-1.5 rounded-xl">✓ Lead registrado</span>
+              ) : TIPO_PARA_ORIGEM[contaAtiva?.tipo] ? (
+                <button onClick={() => registrarLead(TIPO_PARA_ORIGEM[contaAtiva.tipo])}
+                  className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
+                  Registrar como {contaAtiva.tipo === 'Leads Novos' ? 'Lead Novo' : contaAtiva.tipo === 'Leads Recorrentes' ? 'Lead Recorrente' : 'Indicação'}
+                </button>
               ) : (
                 <>
                   <button onClick={() => setMenuLead(v => !v)}
@@ -626,8 +676,8 @@ export default function InboxWhatsApp({ contaId }) {
                   </button>
                   {menuLead && (
                     <div className="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-lg z-10 overflow-hidden min-w-[180px]">
-                      <button onClick={() => registrarLead('leads_novos')} className="w-full text-left px-4 py-2.5 text-sm hover:bg-pink-50 flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-pink-400"></span> Lead Novo
+                      <button onClick={() => registrarLead('leads_novos')} className="w-full text-left px-4 py-2.5 text-sm hover:bg-brand-50 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-brand-400"></span> Lead Novo
                       </button>
                       <button onClick={() => registrarLead('leads_recorrentes')} className="w-full text-left px-4 py-2.5 text-sm hover:bg-blue-50 flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-blue-400"></span> Lead Recorrente
@@ -645,7 +695,7 @@ export default function InboxWhatsApp({ contaId }) {
           <div className="flex-1 overflow-y-auto px-6 py-4 space-y-2">
             {loadingMsgs && !(conversa.mensagens?.length) ? (
               <div className="flex justify-center pt-8">
-                <svg className="w-5 h-5 animate-spin text-pink-300" fill="none" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 animate-spin text-brand-300" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
                 </svg>
@@ -735,9 +785,9 @@ export default function InboxWhatsApp({ contaId }) {
                 <input value={novaResposta} onChange={e => setNovaResposta(e.target.value)}
                   placeholder="Nova resposta rápida..."
                   onKeyDown={e => e.key === 'Enter' && novaResposta.trim() && (salvarRespostas([...respostasRapidas, novaResposta.trim()]), setNovaResposta(''))}
-                  className="flex-1 text-sm border border-gray-200 rounded-xl px-3 py-2 outline-none focus:border-pink-300" />
+                  className="flex-1 text-sm border border-gray-200 rounded-xl px-3 py-2 outline-none focus:border-brand-300" />
                 <button onClick={() => { if (novaResposta.trim()) { salvarRespostas([...respostasRapidas, novaResposta.trim()]); setNovaResposta('') } }}
-                  className="bg-pink-500 text-white text-sm px-3 py-2 rounded-xl hover:bg-pink-600">Salvar</button>
+                  className="bg-brand-500 text-white text-sm px-3 py-2 rounded-xl hover:bg-brand-600">Salvar</button>
               </div>
             </div>
           )}
@@ -802,7 +852,7 @@ export default function InboxWhatsApp({ contaId }) {
               placeholder="Digite uma mensagem..."
               rows={1}
               style={{ resize: 'none', overflow: 'hidden' }}
-              className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-pink-300"
+              className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-brand-300"
             />
             <button onClick={enviarMensagem} disabled={!mensagem.trim() || enviando}
               className="bg-green-500 hover:bg-green-600 disabled:bg-gray-200 text-white p-2.5 rounded-xl transition-colors flex-shrink-0">
