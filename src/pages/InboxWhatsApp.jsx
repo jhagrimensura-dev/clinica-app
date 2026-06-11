@@ -163,14 +163,27 @@ export default function InboxWhatsApp({ contaId }) {
   const [showEmoji, setShowEmoji] = useState(false)
   const inputFotoRef = useRef(null)
   const inputArquivoRef = useRef(null)
+  const textareaRef = useRef(null)
   const messagesEndRef = useRef(null)
   const jaTemSelecao = useRef(false)
   const msgCountRef = useRef({})
   const notifPermissao = useRef(false)
   const selecionadaRef = useRef(null)
+  const emojiContainerRef = useRef(null)
   const fotosCache = useRef((() => { try { return JSON.parse(localStorage.getItem('wpp_fotos') || '{}') } catch { return {} } })())
 
   useEffect(() => { selecionadaRef.current = selecionada }, [selecionada])
+
+  useEffect(() => {
+    if (!showEmoji) return
+    const handler = (e) => {
+      if (emojiContainerRef.current && !emojiContainerRef.current.contains(e.target)) {
+        setShowEmoji(false)
+      }
+    }
+    const t = setTimeout(() => document.addEventListener('mousedown', handler), 150)
+    return () => { clearTimeout(t); document.removeEventListener('mousedown', handler) }
+  }, [showEmoji])
 
   // Solicita permissão de notificação ao abrir o inbox
   useEffect(() => {
@@ -721,7 +734,7 @@ export default function InboxWhatsApp({ contaId }) {
           <input ref={inputArquivoRef} type="file" className="hidden" onChange={e => e.target.files[0] && enviarArquivo(e.target.files[0], 'arquivo')} />
 
           {showEmoji && (
-            <div className="absolute bottom-20 left-4 z-30" style={{ filter: 'drop-shadow(0 4px 24px rgba(0,0,0,0.12))' }}>
+            <div ref={emojiContainerRef} className="absolute bottom-20 left-4 z-30" style={{ filter: 'drop-shadow(0 4px 24px rgba(0,0,0,0.12))' }}>
               <Picker
                 data={data}
                 locale="pt"
@@ -729,8 +742,11 @@ export default function InboxWhatsApp({ contaId }) {
                 theme="light"
                 previewPosition="none"
                 skinTonePosition="none"
-                onEmojiSelect={e => { setMensagem(prev => prev + e.native); setShowEmoji(false) }}
-                onClickOutside={() => setShowEmoji(false)}
+                onEmojiSelect={e => {
+                  setMensagem(prev => prev + e.native)
+                  setShowEmoji(false)
+                  setTimeout(() => textareaRef.current?.focus(), 50)
+                }}
               />
             </div>
           )}
@@ -761,11 +777,13 @@ export default function InboxWhatsApp({ contaId }) {
               )}
             </div>
 
-            <button onClick={() => { setShowEmoji(v => !v); setMenuAnexo(false); setModalRespostas(false) }}
+            <button
+              onMouseDown={e => { e.preventDefault(); setShowEmoji(v => !v); setMenuAnexo(false); setModalRespostas(false) }}
               className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-yellow-50 text-xl transition-colors flex-shrink-0"
               title="Emojis">😊</button>
 
             <textarea
+              ref={textareaRef}
               value={mensagem}
               onChange={e => { setMensagem(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px' }}
               onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), enviarMensagem())}
