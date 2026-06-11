@@ -52,10 +52,15 @@ function normalizeChats(data, instancia) {
     .filter(c => c.phone && !c.isGroupAnnouncement)
     .map(c => {
       const cleanPhone = (c.phone || '').replace(/@s\.whatsapp\.net$/, '').replace(/@c\.us$/, '').replace(/@lid$/, '')
+      const thumb = c.profileThumbnail || c.profilePicUrl || c.photo || null
+      const foto = !thumb ? null
+        : thumb.startsWith('http') ? thumb
+        : thumb.startsWith('data:') ? thumb
+        : `data:image/jpeg;base64,${thumb}`
       return {
       id: cleanPhone,
       instancia,
-      contato: { nome: c.name || cleanPhone, telefone: cleanPhone, foto: c.profileThumbnail || null },
+      contato: { nome: c.name || cleanPhone, telefone: cleanPhone, foto },
       naoLidas: parseInt(c.unread || c.messagesUnread || '0', 10),
       horario: formatTs(c.lastMessageTime),
       tsRaw: Number(c.lastMessageTime) || 0,
@@ -188,7 +193,14 @@ export default function InboxWhatsApp({ contaId }) {
   const notifPermissao = useRef(false)
   const selecionadaRef = useRef(null)
   const emojiContainerRef = useRef(null)
-  const fotosCache = useRef((() => { try { return JSON.parse(localStorage.getItem('wpp_fotos') || '{}') } catch { return {} } })())
+  const fotosCache = useRef((() => {
+    try {
+      const raw = JSON.parse(localStorage.getItem('wpp_fotos') || '{}')
+      // Remove entradas vazias de tentativas anteriores que falharam
+      const limpo = Object.fromEntries(Object.entries(raw).filter(([, v]) => v))
+      return limpo
+    } catch { return {} }
+  })())
   const lastReadRef = useRef((() => { try { return JSON.parse(localStorage.getItem('wpp_last_read') || '{}') } catch { return {} } })())
 
   useEffect(() => { selecionadaRef.current = selecionada }, [selecionada])
@@ -274,11 +286,18 @@ export default function InboxWhatsApp({ contaId }) {
         setTimeout(async () => {
           try {
             const d = await zapiFetch(contaAtiva, `profile-picture?phone=${conv.id}`)
-            const url = d?.value || d?.url || d?.profilePicUrl || null
-            fotosCache.current[conv.id] = url || ''
-            localStorage.setItem('wpp_fotos', JSON.stringify(fotosCache.current))
-            if (url) setConversas(prev => prev.map(c => c.id === conv.id ? { ...c, contato: { ...c.contato, foto: url } } : c))
-          } catch { fotosCache.current[conv.id] = '' }
+            console.log('[foto]', conv.id, d)
+            const raw = d?.link || d?.value || d?.url || d?.profilePicUrl || d?.picture || d?.photo || null
+            const url = !raw ? null
+              : raw.startsWith('http') ? raw
+              : raw.startsWith('data:') ? raw
+              : `data:image/jpeg;base64,${raw}`
+            if (url) {
+              fotosCache.current[conv.id] = url
+              localStorage.setItem('wpp_fotos', JSON.stringify(fotosCache.current))
+              setConversas(prev => prev.map(c => c.id === conv.id ? { ...c, contato: { ...c.contato, foto: url } } : c))
+            }
+          } catch (e) { console.log('[foto erro]', conv.id, e.message) }
         }, i * 250)
       })
     } catch (e) {
@@ -600,12 +619,13 @@ export default function InboxWhatsApp({ contaId }) {
                 className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-brand-50 transition-colors ${selecionada?.id === c.id ? 'bg-brand-50 border-l-4 border-l-brand-400' : ''}`}>
                 <div className="flex items-center gap-3">
                   {c.contato.foto ? (
-                    <img src={c.contato.foto} className="w-12 h-12 rounded-full flex-shrink-0 object-cover" />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand-200 to-brand-300 flex items-center justify-center text-brand-700 font-bold flex-shrink-0">
-                      {(c.contato.nome || '?').charAt(0).toUpperCase()}
-                    </div>
-                  )}
+                    <img src={c.contato.foto} className="w-12 h-12 rounded-full flex-shrink-0 object-cover"
+                      onError={e => { e.target.style.display = 'none'; delete fotosCache.current[c.id]; e.target.nextSibling.style.display = 'flex' }} />
+                  ) : null}
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand-200 to-brand-300 items-center justify-center text-brand-700 font-bold flex-shrink-0"
+                    style={{ display: c.contato.foto ? 'none' : 'flex' }}>
+                    {(c.contato.nome || '?').charAt(0).toUpperCase()}
+                  </div>
                   <div className="flex-1 min-w-0 flex gap-2">
                     <div className="flex-1 min-w-0">
                       <p className={`text-sm truncate ${c.naoLidas > 0 ? 'font-bold text-gray-900' : 'font-semibold text-gray-800'}`}>{c.contato.nome}</p>
@@ -645,12 +665,13 @@ export default function InboxWhatsApp({ contaId }) {
           <div className="bg-white border-b border-gray-100 px-5 py-3 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-3">
               {conversa.contato.foto ? (
-                <img src={conversa.contato.foto} className="w-10 h-10 rounded-full object-cover" />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-200 to-brand-300 flex items-center justify-center text-brand-700 font-bold">
-                  {(conversa.contato.nome || '?').charAt(0).toUpperCase()}
-                </div>
-              )}
+                <img src={conversa.contato.foto} className="w-10 h-10 rounded-full object-cover"
+                  onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }} />
+              ) : null}
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-200 to-brand-300 items-center justify-center text-brand-700 font-bold"
+                style={{ display: conversa.contato.foto ? 'none' : 'flex' }}>
+                {(conversa.contato.nome || '?').charAt(0).toUpperCase()}
+              </div>
               <div>
                 <p className="text-sm font-bold text-gray-800">{conversa.contato.nome}</p>
                 <p className="text-xs text-gray-400">+{conversa.contato.telefone}</p>
