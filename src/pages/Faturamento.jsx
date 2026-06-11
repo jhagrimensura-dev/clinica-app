@@ -58,12 +58,12 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes }) {
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">Data</label>
               <input type="date" value={data} onChange={e => setData(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-pink-400" />
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400" />
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">Nome do Paciente</label>
               <select value={paciente} onChange={e => setPaciente(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-pink-400 bg-white">
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400 bg-white">
                 <option value="">Selecione um paciente</option>
                 {pacientes.map(p => <option key={p.id} value={p.nome}>{p.nome}</option>)}
               </select>
@@ -75,7 +75,7 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes }) {
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">Tipo</label>
               <select value={tipo} onChange={e => setTipo(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-pink-400 bg-white">
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400 bg-white">
                 <option value="Novo">Novo</option>
                 <option value="Recorrente">Recorrente</option>
                 <option value="Indicação">Indicação</option>
@@ -84,7 +84,7 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes }) {
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">Responsável</label>
               <select value={responsavel} onChange={e => setResponsavel(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-pink-400 bg-white">
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400 bg-white">
                 <option value="">Selecione o responsável</option>
                 <option value="Dra. Amanda">Dra. Amanda</option>
                 <option value="Recepção">Recepção</option>
@@ -98,29 +98,29 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes }) {
             <label className="text-sm font-medium text-gray-700 mb-1.5 block">Procedimentos</label>
             <input type="text" value={procedimentos} onChange={e => setProcedimentos(e.target.value)}
               placeholder="Digite ou selecione os procedimentos"
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-pink-400" />
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400" />
           </div>
 
           {/* Valor Taxa + Valor Tratamento */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Valor Taxa (R$)</label>
+              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Consultas (R$)</label>
               <input type="text" inputMode="numeric" value={valorTaxa} onChange={handleValorTaxa}
                 placeholder="R$ 0,00"
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-pink-400" />
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400" />
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">Valor Tratamento (R$)</label>
               <input type="text" inputMode="numeric" value={valorTratamento} onChange={handleValorTratamento}
                 placeholder="R$ 0,00"
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-pink-400" />
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400" />
             </div>
           </div>
 
           {/* Agendado */}
           <label className="flex items-center gap-3 border border-gray-200 rounded-xl px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors">
             <input type="checkbox" checked={agendado} onChange={e => setAgendado(e.target.checked)}
-              className="accent-pink-400 w-4 h-4" />
+              className="accent-brand-400 w-4 h-4" />
             <span className="text-sm font-medium text-gray-700">Paciente veio por agendamento</span>
           </label>
 
@@ -144,7 +144,7 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes }) {
             <textarea value={obs} onChange={e => setObs(e.target.value)}
               placeholder="Observações adicionais (opcional)"
               rows={3}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-pink-400 resize-none" />
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400 resize-none" />
           </div>
         </div>
 
@@ -197,12 +197,12 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">Data</label>
               <input type="date" value={data} onChange={e => setData(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-pink-400" />
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400" />
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">Nome do Paciente</label>
               <select value={paciente} onChange={e => setPaciente(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-pink-400 bg-white">
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400 bg-white">
                 <option value="">Selecione um paciente</option>
                 {pacientes.map(p => <option key={p.id} value={p.nome}>{p.nome}</option>)}
               </select>
@@ -213,7 +213,7 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">Tipo</label>
               <select value={tipo} onChange={e => setTipo(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-pink-400 bg-white">
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400 bg-white">
                 <option value="Novo">Novo</option>
                 <option value="Recorrente">Recorrente</option>
                 <option value="Indicação">Indicação</option>
@@ -222,7 +222,7 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">Responsável</label>
               <select value={responsavel} onChange={e => setResponsavel(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-pink-400 bg-white">
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400 bg-white">
                 <option value="">Selecione o responsável</option>
                 <option value="Dra. Amanda">Dra. Amanda</option>
                 <option value="Recepção">Recepção</option>
@@ -235,27 +235,27 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
             <label className="text-sm font-medium text-gray-700 mb-1.5 block">Procedimentos</label>
             <input type="text" value={procedimentos} onChange={e => setProcedimentos(e.target.value)}
               placeholder="Digite ou selecione os procedimentos"
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-pink-400" />
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400" />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Valor Taxa (R$)</label>
+              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Consultas (R$)</label>
               <input type="text" inputMode="numeric" value={valorTaxa} onChange={e => setValorTaxa(mascaraMoeda(e.target.value))}
                 placeholder="R$ 0,00"
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-pink-400" />
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400" />
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">Valor Tratamento (R$)</label>
               <input type="text" inputMode="numeric" value={valorTratamento} onChange={e => setValorTratamento(mascaraMoeda(e.target.value))}
                 placeholder="R$ 0,00"
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-pink-400" />
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400" />
             </div>
           </div>
 
           <label className="flex items-center gap-3 border border-gray-200 rounded-xl px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors">
             <input type="checkbox" checked={agendado} onChange={e => setAgendado(e.target.checked)}
-              className="accent-pink-400 w-4 h-4" />
+              className="accent-brand-400 w-4 h-4" />
             <span className="text-sm font-medium text-gray-700">Paciente veio por agendamento</span>
           </label>
 
@@ -296,7 +296,7 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
             <textarea value={obs} onChange={e => setObs(e.target.value)}
               placeholder="Observações adicionais (opcional)"
               rows={3}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-pink-400 resize-none" />
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400 resize-none" />
           </div>
         </div>
 
@@ -355,7 +355,7 @@ export default function Faturamento() {
   const fmt = (v) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
 
   const servicos = [
-    { nome: 'Botox', valor: 0, cor: 'bg-pink-400' },
+    { nome: 'Botox', valor: 0, cor: 'bg-brand-400' },
     { nome: 'Preenchimento', valor: 0, cor: 'bg-purple-400' },
     { nome: 'Skinbooster', valor: 0, cor: 'bg-blue-400' },
     { nome: 'Fio de PDO', valor: 0, cor: 'bg-cyan-400' },
@@ -374,7 +374,7 @@ export default function Faturamento() {
             <span className="text-sm font-semibold text-gray-700 w-24 text-center">{MESES_FULL[mes].slice(0,3)} {ano}</span>
             <button onClick={() => navMes(1)} className="text-gray-400 hover:text-gray-600 px-1">›</button>
           </div>
-          <button onClick={() => setModal(true)} className="flex items-center gap-2 bg-pink-400 hover:bg-pink-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">
+          <button onClick={() => setModal(true)} className="flex items-center gap-2 bg-brand-400 hover:bg-brand-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">
             + Novo Lançamento
           </button>
         </div>
@@ -393,13 +393,13 @@ export default function Faturamento() {
           <p className="text-xs text-gray-400 mt-1">Valor dos procedimentos</p>
         </div>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <p className="text-sm text-gray-500 font-medium mb-1">Taxas</p>
+          <p className="text-sm text-gray-500 font-medium mb-1">Consultas (R$)</p>
           <p className="text-2xl font-bold text-yellow-500">R$ {fmt(totalTaxas)}</p>
-          <p className="text-xs text-gray-400 mt-1">Total de taxas</p>
+          <p className="text-xs text-gray-400 mt-1">Total de consultas</p>
         </div>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 font-medium mb-1">Ticket Médio</p>
-          <p className="text-2xl font-bold text-pink-500">R$ {fmt(ticketMedio)}</p>
+          <p className="text-2xl font-bold text-brand-500">R$ {fmt(ticketMedio)}</p>
           <p className="text-xs text-gray-400 mt-1">Por lançamento</p>
         </div>
       </div>
@@ -410,10 +410,10 @@ export default function Faturamento() {
           <h2 className="text-base font-bold text-gray-800 mb-4">Meta do Mês</h2>
           <div className="flex justify-between text-sm mb-2">
             <span className="text-gray-500">R$ {fmt(totalGeral)} de R$ 0</span>
-            <span className="font-semibold text-pink-500">0%</span>
+            <span className="font-semibold text-brand-500">0%</span>
           </div>
           <div className="w-full bg-gray-100 rounded-full h-4 mb-4">
-            <div className="bg-pink-400 h-4 rounded-full" style={{ width: '0%' }}></div>
+            <div className="bg-brand-400 h-4 rounded-full" style={{ width: '0%' }}></div>
           </div>
           <p className="text-xs text-gray-400">{lancamentosMes.length === 0 ? 'Nenhuma transação registrada' : `${lancamentosMes.length} lançamento(s) no mês`}</p>
         </div>
@@ -442,7 +442,7 @@ export default function Faturamento() {
           <h2 className="text-base font-bold text-gray-800">Lançamentos de Faturamento</h2>
           <button
             onClick={() => {
-              const headers = ['Data','Paciente','Tipo','Responsável','Procedimentos','Taxa','Tratamento','Total','Pagamento']
+              const headers = ['Data','Paciente','Tipo','Responsável','Procedimentos','Consultas (R$)','Tratamento','Total','Pagamento']
               const rows = lancamentosMes.map(l => [
                 new Date(l.data).toLocaleDateString('pt-BR'),
                 l.paciente, l.tipo,
@@ -475,7 +475,7 @@ export default function Faturamento() {
                 <th className="pb-3 font-semibold">Tipo</th>
                 <th className="pb-3 font-semibold">Responsável</th>
                 <th className="pb-3 font-semibold">Procedimentos</th>
-                <th className="pb-3 font-semibold text-right">Taxa</th>
+                <th className="pb-3 font-semibold text-right">Consultas (R$)</th>
                 <th className="pb-3 font-semibold text-right">Trat.</th>
                 <th className="pb-3 font-semibold text-right">Total</th>
                 <th className="pb-3 font-semibold">Pagto</th>
@@ -486,10 +486,10 @@ export default function Faturamento() {
                 const total = (l.valorTaxa || 0) + (l.valorTratamento || 0)
                 return (
                   <tr key={l.id} onClick={() => setEditando(l)}
-                    className="border-b border-gray-50 hover:bg-pink-50 cursor-pointer transition-colors">
+                    className="border-b border-gray-50 hover:bg-brand-50 cursor-pointer transition-colors">
                     <td className="py-3 text-gray-500 whitespace-nowrap">{new Date(l.data).toLocaleDateString('pt-BR')}</td>
                     <td className="py-3 font-medium text-gray-800">{l.paciente}</td>
-                    <td className="py-3"><span className="px-2 py-1 rounded-full text-xs font-semibold bg-pink-100 text-pink-600">{l.tipo}</span></td>
+                    <td className="py-3"><span className="px-2 py-1 rounded-full text-xs font-semibold bg-brand-100 text-brand-600">{l.tipo}</span></td>
                     <td className="py-3 text-gray-600 text-sm">{l.responsavel || '—'}</td>
                     <td className="py-3 text-gray-500 max-w-[180px] truncate">{l.procedimentos || '—'}</td>
                     <td className="py-3 text-gray-600 text-right whitespace-nowrap">R$ {fmt(l.valorTaxa || 0)}</td>
