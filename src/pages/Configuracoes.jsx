@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { QRCodeSVG } from 'qrcode.react'
+import { supabase } from '../lib/supabase'
 
 function load(key, fallback) {
   try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : fallback } catch { return fallback }
@@ -117,6 +118,28 @@ async function testarConexao(conta) {
 function TabWhatsApp() {
   const defaultContas = []
   const [contas, setContas] = useState(() => load('config_whatsapp_contas', defaultContas))
+
+  // Sincroniza com Supabase ao abrir
+  useEffect(() => {
+    supabase.from('configuracoes').select('valor').eq('chave', 'config_whatsapp_contas').single()
+      .then(({ data }) => {
+        if (data?.valor?.length) {
+          // Supabase tem dados → carrega no localStorage
+          setContas(data.valor)
+          localStorage.setItem('config_whatsapp_contas', JSON.stringify(data.valor))
+        } else {
+          // Supabase vazio → envia o localStorage para o Supabase
+          const local = load('config_whatsapp_contas', [])
+          if (local.length > 0) {
+            supabase.from('configuracoes').upsert({
+              chave: 'config_whatsapp_contas',
+              valor: local,
+              updated_at: new Date().toISOString(),
+            }).then(() => {})
+          }
+        }
+      })
+  }, [])
   const [modal, setModal] = useState(false)
   const [form, setForm] = useState(EMPTY_CONTA)
   const [editando, setEditando] = useState(null)
@@ -134,6 +157,11 @@ function TabWhatsApp() {
   const salvarContas = (lista) => {
     localStorage.setItem('config_whatsapp_contas', JSON.stringify(lista))
     setContas(lista)
+    supabase.from('configuracoes').upsert({
+      chave: 'config_whatsapp_contas',
+      valor: lista,
+      updated_at: new Date().toISOString(),
+    }).then(() => {})
   }
 
   const adicionar = () => {

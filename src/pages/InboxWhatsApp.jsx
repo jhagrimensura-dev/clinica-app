@@ -137,10 +137,22 @@ function loadContas() {
 // ── Página principal ──────────────────────────────────────────────
 export default function InboxWhatsApp({ contaId }) {
   const { addLead } = useLeads()
-  const todasContas = loadContas()
+  const [todasContas, setTodasContas] = useState(loadContas)
   const contaAtiva = contaId
     ? todasContas.find(c => c.id === contaId)
     : todasContas[0] || null
+
+  // Carrega do Supabase se localStorage estiver vazio (novo computador)
+  useEffect(() => {
+    if (todasContas.length > 0) return
+    supabase.from('configuracoes').select('valor').eq('chave', 'config_whatsapp_contas').single()
+      .then(({ data }) => {
+        if (data?.valor?.length) {
+          setTodasContas(data.valor)
+          localStorage.setItem('config_whatsapp_contas', JSON.stringify(data.valor))
+        }
+      })
+  }, [])
 
   const [conversas, setConversas]     = useState([])
   const [selecionada, setSelecionada] = useState(null)
