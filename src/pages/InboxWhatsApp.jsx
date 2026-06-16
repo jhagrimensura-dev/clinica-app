@@ -177,6 +177,13 @@ export default function InboxWhatsApp({ contaId }) {
   const [loadingMsgs, setLoadingMsgs] = useState(false)
   const [enviando, setEnviando]       = useState(false)
   const [erro, setErro]               = useState(null)
+  const [desconectado, setDesconectado] = useState(false)
+  const [qrCode, setQrCode]           = useState(null)
+  const [loadingQr, setLoadingQr]     = useState(false)
+  const [painelIA, setPainelIA]       = useState(true)
+  const [sugestaoIA, setSugestaoIA]   = useState('')
+  const [loadingIA, setLoadingIA]     = useState(false)
+  const [erroIA, setErroIA]           = useState('')
   const [menuAnexo, setMenuAnexo]     = useState(false)
   const [modalRespostas, setModalRespostas] = useState(false)
   const [respostasRapidas, setRespostasRapidas] = useState(() => {
@@ -193,6 +200,7 @@ export default function InboxWhatsApp({ contaId }) {
   const notifPermissao = useRef(false)
   const selecionadaRef = useRef(null)
   const emojiContainerRef = useRef(null)
+  const pendingMsgs = useRef(new Set())
   const fotosCache = useRef((() => {
     try {
       const raw = JSON.parse(localStorage.getItem('wpp_fotos') || '{}')
@@ -301,7 +309,12 @@ export default function InboxWhatsApp({ contaId }) {
         }, i * 250)
       })
     } catch (e) {
-      setErro(`Erro ao carregar conversas: ${e.message}`)
+      if (e.message.includes('connected with whatsapp') || e.message.includes('"connected"')) {
+        setDesconectado(true)
+        setErro(null)
+      } else {
+        setErro(`Erro ao carregar conversas: ${e.message}`)
+      }
     }
     if (inicial) setLoadingConversas(false)
   }, [contaAtiva?.instanciaId])
@@ -385,6 +398,84 @@ export default function InboxWhatsApp({ contaId }) {
     setLoadingMsgs(false)
   }, [contaAtiva?.instanciaId])
 
+  const fetchQrCode = async () => {
+    if (!contaAtiva?.instanciaId) return
+    setLoadingQr(true)
+    setQrCode(null)
+    try {
+      const ctParam = contaAtiva.clientToken ? `&ct=${encodeURIComponent(contaAtiva.clientToken)}` : ''
+      const res = await fetch(`/api/zapi-qr?i=${contaAtiva.instanciaId}&t=${contaAtiva.instanciaToken}${ctParam}`)
+      const d = await res.json()
+      const qr = d?.value || d?.qrcode || d?.qr || null
+      setQrCode(qr)
+    } catch {}
+    setLoadingQr(false)
+  }
+
+  // Polling de status quando desconectado
+  useEffect(() => {
+    if (!desconectado || !contaAtiva?.instanciaId) return
+    const check = async () => {
+      try {
+        const ctParam = contaAtiva.clientToken ? `&ct=${encodeURIComponent(contaAtiva.clientToken)}` : ''
+        const res = await fetch(`/api/zapi-status?i=${contaAtiva.instanciaId}&t=${contaAtiva.instanciaToken}${ctParam}`)
+        const d = await res.json()
+        if (d?.connected === true || d?.status === 'connected' || d?.value === 'connected' || d?.smartphoneConnected === true) {
+          setDesconectado(false)
+          setQrCode(null)
+          jaTemSelecao.current = false
+          fetchConversas(true)
+        }
+      } catch {}
+    }
+    check()
+    const interval = setInterval(check, 4000)
+    return () => clearInterval(interval)
+  }, [desconectado, contaAtiva?.instanciaId])
+
+  const pedirSugestaoIA = useCallback(async (msgs, nomeContato, direcao = '') => {
+    setLoadingIA(true)
+    setSugestaoIA('')
+    setErroIA('')
+    if (!msgs?.length) {
+      setErroIA('Nenhuma mensagem encontrada nesta conversa.')
+      setLoadingIA(false)
+      return
+    }
+    try {
+      const ultimas = msgs.slice(-10)
+      const conversaTexto = ultimas.map(m => `${m.minha ? 'Atendente' : nomeContato || 'Lead'}: ${m.texto}`).join('\n')
+      const res = await fetch('/api/claude-assist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversa: conversaTexto, nomeContato, direcao }),
+      })
+      const d = await res.json()
+      if (d.sugestao) setSugestaoIA(d.sugestao)
+      else if (d.error) setErroIA(`Erro: ${d.error}`)
+      else setErroIA('Resposta inesperada da IA.')
+    } catch (e) {
+      setErroIA(`Erro de rede: ${e.message}`)
+    }
+    setLoadingIA(false)
+  }, [])
+
+  // Dispara sugestão quando chega mensagem nova do lead
+  useEffect(() => {
+    if (!selecionada?.mensagens?.length || !painelIA) return
+    const ultima = selecionada.mensagens[selecionada.mensagens.length - 1]
+    if (!ultima.minha) {
+      pedirSugestaoIA(selecionada.mensagens, selecionada.contato?.nome)
+    }
+  }, [selecionada?.mensagens?.length])
+
+  useEffect(() => {
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = el.scrollHeight + 'px'
+  }, [mensagem])
+
   useEffect(() => { jaTemSelecao.current = false; fetchConversas(true) }, [contaAtiva?.id])
 
   // Atualiza lista de conversas a cada 10s para capturar novas mensagens
@@ -414,15 +505,30 @@ export default function InboxWhatsApp({ contaId }) {
         filter: `phone=eq.${selecionada.id}`,
       }, payload => {
         const m = payload.new
-        const novaMsg = { id: m.id, minha: m.de_mim, texto: m.texto, tipo: m.tipo || 'text', mediaUrl: m.media_url || null, hora: formatTs(m.timestamp_ms), tsMs: m.timestamp_ms }
+        const novaMsg = { id: m.message_id || String(m.id), minha: m.de_mim, texto: m.texto, tipo: m.tipo || 'text', mediaUrl: m.media_url || null, hora: formatTs(m.timestamp_ms), tsMs: m.timestamp_ms }
         if (!m.de_mim) {
           setConversas(prev => {
             const c = prev.find(x => x.id === selecionada.id)
             notificar(c?.contato?.nome || selecionada.id, m.texto)
             return prev
           })
+          setSelecionada(prev => ({ ...prev, mensagens: [...(prev?.mensagens || []), novaMsg] }))
+        } else if (pendingMsgs.current.has(m.texto)) {
+          // Substitui a mensagem local otimista pela confirmada do Supabase
+          pendingMsgs.current.delete(m.texto)
+          setSelecionada(prev => ({
+            ...prev,
+            mensagens: (prev?.mensagens || []).map(x =>
+              (x.id?.startsWith('local-') && x.texto === m.texto) ? novaMsg : x
+            ),
+          }))
+        } else {
+          setSelecionada(prev => {
+            const msgs = prev?.mensagens || []
+            if (msgs.some(x => x.id === novaMsg.id)) return prev
+            return { ...prev, mensagens: [...msgs, novaMsg] }
+          })
         }
-        setSelecionada(prev => ({ ...prev, mensagens: [...(prev?.mensagens || []), novaMsg] }))
         setConversas(prev => {
           const updated = prev.map(c => c.id === selecionada.id
             ? { ...c, mensagens: [...(c.mensagens || []), novaMsg], tsRaw: Date.now(), horario: novaMsg.hora }
@@ -499,10 +605,12 @@ export default function InboxWhatsApp({ contaId }) {
     setMensagem('')
     setEnviando(true)
 
+    const localId = `local-${Date.now()}`
     const msgLocal = {
-      id: String(Date.now()), minha: true, texto,
+      id: localId, minha: true, texto,
       hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
     }
+    pendingMsgs.current.add(texto)
     setSelecionada(prev => ({ ...prev, mensagens: [...(prev?.mensagens || []), msgLocal] }))
 
     try {
@@ -600,7 +708,30 @@ export default function InboxWhatsApp({ contaId }) {
           </div>
         </div>
 
-        {erro && <div className="mx-3 mt-2 p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-500">{erro}</div>}
+        {erro && !desconectado && <div className="mx-3 mt-2 p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-500">{erro}</div>}
+
+        {desconectado && (
+          <div className="mx-3 mt-3 p-4 bg-orange-50 border border-orange-200 rounded-2xl text-center">
+            <p className="text-2xl mb-2">📵</p>
+            <p className="text-sm font-bold text-orange-700 mb-1">WhatsApp desconectado</p>
+            <p className="text-xs text-orange-500 mb-3">Escaneie o QR code para reconectar</p>
+            {!qrCode ? (
+              <button onClick={fetchQrCode} disabled={loadingQr}
+                className="w-full bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white text-sm font-semibold py-2 rounded-xl transition-colors">
+                {loadingQr ? 'Gerando QR Code...' : 'Gerar QR Code'}
+              </button>
+            ) : (
+              <div>
+                <img src={qrCode} alt="QR Code WhatsApp" className="w-48 h-48 mx-auto rounded-xl mb-2" />
+                <button onClick={fetchQrCode} disabled={loadingQr}
+                  className="text-xs text-orange-500 hover:text-orange-700 underline">
+                  Gerar novo QR Code
+                </button>
+              </div>
+            )}
+            <p className="text-xs text-gray-400 mt-3 animate-pulse">Verificando conexão automaticamente...</p>
+          </div>
+        )}
 
         <div className="flex-1 overflow-y-auto">
           {loadingConversas && conversas.length === 0 ? (
@@ -646,7 +777,7 @@ export default function InboxWhatsApp({ contaId }) {
                     <div className="flex flex-col items-end justify-between flex-shrink-0 min-w-[48px]">
                       <span className="text-xs text-gray-400">{c.horario}</span>
                       {c.naoLidas > 0 && (
-                        <span className="bg-orange-500 text-white text-xs font-bold rounded-full min-w-[22px] h-[22px] px-1.5 flex items-center justify-center">
+                        <span className="bg-green-500 text-white text-xs font-bold rounded-full min-w-[22px] h-[22px] px-1.5 flex items-center justify-center">
                           {c.naoLidas > 99 ? '99+' : c.naoLidas}
                         </span>
                       )}
@@ -661,6 +792,7 @@ export default function InboxWhatsApp({ contaId }) {
 
       {/* Painel da conversa */}
       {conversa ? (
+        <div className="flex-1 flex min-w-0">
         <div className="flex-1 flex flex-col bg-gray-50 min-w-0 relative">
           <div className="bg-white border-b border-gray-100 px-5 py-3 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-3">
@@ -868,11 +1000,11 @@ export default function InboxWhatsApp({ contaId }) {
             <textarea
               ref={textareaRef}
               value={mensagem}
-              onChange={e => { setMensagem(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px' }}
+              onChange={e => { setMensagem(e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px' }}
               onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), enviarMensagem())}
-              placeholder="Digite uma mensagem..."
+              placeholder="Digite uma mensagem ou instrução para a IA..."
               rows={1}
-              style={{ resize: 'none', overflow: 'hidden' }}
+              style={{ resize: 'none', overflow: 'hidden', maxHeight: '200px' }}
               className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-brand-300"
             />
             <button onClick={enviarMensagem} disabled={!mensagem.trim() || enviando}
@@ -883,6 +1015,88 @@ export default function InboxWhatsApp({ contaId }) {
               }
             </button>
           </div>
+        </div>
+
+        {/* Painel IA */}
+        {painelIA && (
+          <div className="w-72 flex-shrink-0 bg-white border-l border-gray-100 flex flex-col">
+            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-base">✨</span>
+                <p className="text-sm font-bold text-gray-800">Assistente IA</p>
+              </div>
+              <button onClick={() => setPainelIA(false)} className="text-gray-300 hover:text-gray-500 text-lg leading-none">×</button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              <p className="text-xs text-gray-400 text-center">Sugestão de resposta para a última mensagem do lead</p>
+
+              {loadingIA ? (
+                <div className="flex flex-col items-center gap-2 py-6">
+                  <svg className="w-5 h-5 animate-spin text-brand-400" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                  </svg>
+                  <p className="text-xs text-gray-400">Analisando conversa...</p>
+                </div>
+              ) : erroIA ? (
+                <div className="space-y-2">
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+                    <p className="text-xs text-red-600 leading-relaxed">{erroIA}</p>
+                  </div>
+                  <button
+                    onClick={() => pedirSugestaoIA(conversa.mensagens, conversa.contato.nome)}
+                    className="w-full border border-gray-200 text-gray-500 text-sm py-2 rounded-xl hover:bg-gray-50 transition-colors">
+                    Tentar novamente
+                  </button>
+                </div>
+              ) : sugestaoIA ? (
+                <div className="space-y-2">
+                  <div className="bg-brand-50 border border-brand-200 rounded-xl p-3">
+                    <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{sugestaoIA}</p>
+                  </div>
+                  <button
+                    onClick={() => { setMensagem(sugestaoIA); setSugestaoIA('') }}
+                    className="w-full bg-green-500 hover:bg-green-600 text-white text-sm font-semibold py-2 rounded-xl transition-colors">
+                    Usar esta resposta
+                  </button>
+                  <button
+                    onClick={() => pedirSugestaoIA(conversa.mensagens, conversa.contato.nome, mensagem)}
+                    className="w-full border border-gray-200 text-gray-500 text-sm py-2 rounded-xl hover:bg-gray-50 transition-colors">
+                    Gerar outra sugestão
+                  </button>
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <p className="text-xs text-gray-400 mb-3">Digite uma instrução no campo de mensagem (opcional) e clique abaixo</p>
+                  <button
+                    onClick={() => pedirSugestaoIA(conversa.mensagens, conversa.contato.nome, mensagem)}
+                    className="bg-brand-400 hover:bg-brand-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
+                    Analisar conversa
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="p-3 border-t border-gray-100">
+              <p className="text-[10px] text-gray-400 text-center mb-2">Use o campo de mensagem como instrução</p>
+              <button
+                onClick={() => pedirSugestaoIA(conversa.mensagens, conversa.contato.nome, mensagem)}
+                disabled={loadingIA}
+                className="w-full bg-brand-400 hover:bg-brand-500 disabled:bg-brand-200 text-white text-xs font-semibold py-2 rounded-xl transition-colors">
+                {loadingIA ? 'Analisando...' : '✨ Gerar sugestão'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!painelIA && (
+          <button onClick={() => setPainelIA(true)}
+            className="absolute right-0 top-1/2 -translate-y-1/2 bg-brand-400 hover:bg-brand-500 text-white text-xs font-semibold px-2 py-4 rounded-l-xl shadow-md transition-colors"
+            style={{ writingMode: 'vertical-rl' }}>
+            ✨ IA
+          </button>
+        )}
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center text-gray-400 bg-gray-50">
