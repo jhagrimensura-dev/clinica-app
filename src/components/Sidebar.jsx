@@ -90,13 +90,7 @@ export default function Sidebar({ active, setActive, collapsed, setCollapsed }) 
         </svg>
       </button>
 
-      {/* Label Navegação */}
-      {!collapsed && (
-        <div className="px-3 pt-4 pb-1">
-          <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider px-2 mb-2">Navegação</p>
-        </div>
-      )}
-      {collapsed && <div className="pt-3" />}
+      <div className="pt-3" />
 
       {/* Menu */}
       <nav className="flex-1 px-2">
