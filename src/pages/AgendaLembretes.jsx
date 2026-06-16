@@ -373,8 +373,23 @@ export default function AgendaLembretes() {
             </div>
             <div>
               <label className="text-xs font-semibold text-gray-500 mb-1 block">Telefone</label>
-              <input value={fTel} onChange={e => setFTel(e.target.value)} placeholder="(11) 99999-9999"
-                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300" />
+              <div className="flex gap-2">
+                <input value={fTel} onChange={e => setFTel(e.target.value)} placeholder="(11) 99999-9999"
+                  className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300" />
+                {fTel.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sessionStorage.setItem('inbox_abrir_telefone', fTel.trim())
+                      setModal(null)
+                      window.dispatchEvent(new CustomEvent('navegarInbox'))
+                    }}
+                    title="Abrir conversa no WhatsApp"
+                    className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-green-500 hover:bg-green-600 text-white rounded-xl transition-colors text-base">
+                    💬
+                  </button>
+                )}
+              </div>
             </div>
             <div>
               <label className="text-xs font-semibold text-gray-500 mb-1 block">Descrição</label>

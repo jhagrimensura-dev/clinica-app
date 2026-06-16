@@ -439,6 +439,19 @@ export default function InboxWhatsApp({ contaId }) {
           return existente ? { ...nova, mensagens: existente.mensagens, naoLidas } : { ...nova, naoLidas }
         })
       })
+      const telefoneAbrir = sessionStorage.getItem('inbox_abrir_telefone')
+      if (telefoneAbrir) {
+        const digits = telefoneAbrir.replace(/\D/g, '')
+        const match = novaLista.find(c => {
+          const cDigits = c.id.replace(/\D/g, '')
+          return cDigits === digits || cDigits.endsWith(digits.slice(-9)) || digits.endsWith(cDigits.slice(-9))
+        })
+        if (match) {
+          setSelecionada(match)
+          jaTemSelecao.current = true
+          sessionStorage.removeItem('inbox_abrir_telefone')
+        }
+      }
       if (!jaTemSelecao.current && novaLista.length > 0) {
         setSelecionada(novaLista[0])
         jaTemSelecao.current = true

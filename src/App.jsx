@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Login from './pages/Login'
 import { ClinicaProvider } from './context/ClinicaContext'
@@ -189,6 +189,12 @@ function AppContent() {
     if (userRole === 'Funcionário' && PAGINAS_RESTRITAS.includes(page)) return
     setActiveRaw(page)
   }
+
+  useEffect(() => {
+    const handler = () => setActiveRaw('inbox')
+    window.addEventListener('navegarInbox', handler)
+    return () => window.removeEventListener('navegarInbox', handler)
+  }, [])
   const [view, setView] = useState('mensal')
   const [mesIndex, setMesIndex] = useState(4)
   const [collapsed, setCollapsed] = useState(false)
