@@ -352,6 +352,7 @@ export default function InboxWhatsApp({ contaId }) {
   })
   const [novaResposta, setNovaResposta] = useState('')
   const [showEmoji, setShowEmoji] = useState(false)
+  const [menuOpcoes, setMenuOpcoes] = useState(null)
   const inputFotoRef = useRef(null)
   const inputArquivoRef = useRef(null)
   const textareaRef = useRef(null)
@@ -393,6 +394,13 @@ export default function InboxWhatsApp({ contaId }) {
       notifPermissao.current = Notification.permission === 'granted'
     }
   }, [])
+
+  useEffect(() => {
+    if (!menuOpcoes) return
+    const handler = () => setMenuOpcoes(null)
+    document.addEventListener('click', handler)
+    return () => document.removeEventListener('click', handler)
+  }, [menuOpcoes])
 
   function notificar(nome, texto) {
     if (!notifPermissao.current || document.visibilityState === 'visible') return
@@ -814,9 +822,17 @@ export default function InboxWhatsApp({ contaId }) {
   const abrirConversa = (c) => {
     setSelecionada(c)
     setMenuLead(false)
+    setMenuOpcoes(null)
     setConversas(prev => prev.map(x => x.id === c.id ? { ...x, naoLidas: 0 } : x))
     lastReadRef.current[c.id] = Date.now()
     localStorage.setItem('wpp_last_read', JSON.stringify(lastReadRef.current))
+  }
+
+  const marcarNaoLida = (convId) => {
+    delete lastReadRef.current[convId]
+    localStorage.setItem('wpp_last_read', JSON.stringify(lastReadRef.current))
+    setConversas(prev => prev.map(c => c.id === convId ? { ...c, naoLidas: Math.max(c.naoLidas || 0, 1) } : c))
+    setMenuOpcoes(null)
   }
   const registrarLead = (tipo) => { setMenuLead(false); setModalLead(tipo) }
   const confirmarLead = (dados) => {
@@ -940,8 +956,9 @@ export default function InboxWhatsApp({ contaId }) {
             <div className="p-8 text-center text-gray-400 text-sm">Nenhuma conversa encontrada</div>
           ) : (
             conversasFiltradas.map(c => (
-              <button key={c.id} onClick={() => abrirConversa(c)}
-                className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-brand-50 transition-colors ${selecionada?.id === c.id ? 'bg-brand-50 border-l-4 border-l-brand-400' : ''}`}>
+              <div key={c.id}
+                onClick={() => abrirConversa(c)}
+                className={`relative w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-brand-50 transition-colors cursor-pointer group ${selecionada?.id === c.id ? 'bg-brand-50 border-l-4 border-l-brand-400' : ''}`}>
                 <div className="flex items-center gap-3">
                   {c.contato.foto ? (
                     <img src={c.contato.foto} className="w-12 h-12 rounded-full flex-shrink-0 object-cover"
@@ -968,17 +985,36 @@ export default function InboxWhatsApp({ contaId }) {
                         })()}
                       </p>
                     </div>
-                    <div className="flex flex-col items-end justify-between flex-shrink-0 min-w-[48px]">
-                      <span className="text-xs text-gray-400">{c.horario}</span>
+                    <div className="flex flex-col items-end justify-between flex-shrink-0 min-w-[48px] relative">
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-gray-400 group-hover:hidden">{c.horario}</span>
+                        <button
+                          onClick={e => { e.stopPropagation(); setMenuOpcoes(menuOpcoes === c.id ? null : c.id) }}
+                          className="hidden group-hover:flex w-5 h-5 items-center justify-center text-gray-400 hover:text-gray-700 rounded-full hover:bg-gray-200 text-base leading-none font-bold"
+                          title="Opções">
+                          ⋮
+                        </button>
+                      </div>
                       {c.naoLidas > 0 && (
                         <span className="bg-green-500 text-white text-xs font-bold rounded-full min-w-[22px] h-[22px] px-1.5 flex items-center justify-center">
                           {c.naoLidas > 99 ? '99+' : c.naoLidas}
                         </span>
                       )}
+                      {menuOpcoes === c.id && (
+                        <div
+                          onClick={e => e.stopPropagation()}
+                          className="absolute right-0 top-6 bg-white rounded-xl shadow-xl border border-gray-100 z-50 py-1 w-48">
+                          <button
+                            onClick={() => marcarNaoLida(c.id)}
+                            className="w-full text-left px-4 py-2.5 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                            <span>📩</span> Marcar como não lida
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
-              </button>
+              </div>
             ))
           )}
         </div>
