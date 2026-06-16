@@ -39,7 +39,8 @@ export default async function handler(req, res) {
     const mediaUrl = extrairMediaUrl(payload)
     // Prioriza chatName (nome salvo no celular) para que enviados e recebidos do mesmo chat sejam consistentes
     const nomeContato = payload?.chatName || payload?.senderName || phone
-    const ts = payload?.momment || payload?.timestamp || Date.now()
+    const tsRaw = payload?.momment || payload?.timestamp || Date.now()
+    const ts = Number(tsRaw) < 10000000000 ? Number(tsRaw) * 1000 : Number(tsRaw)
 
     if (!texto) return res.status(200).json({ ok: true, skipped: true })
 

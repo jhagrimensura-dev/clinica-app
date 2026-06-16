@@ -557,14 +557,15 @@ export default function InboxWhatsApp({ contaId }) {
 
       // Mescla e deduplica por message_id
       const seen = new Set()
+      const normTs = t => Number(t) < 10000000000 ? Number(t) * 1000 : Number(t)
       const toMap = m => ({
         id: m.message_id || String(m.id),
         minha: m.de_mim,
         texto: m.texto || '',
         tipo: m.tipo || 'text',
         mediaUrl: m.media_url || null,
-        hora: formatTs(m.timestamp_ms),
-        tsMs: m.timestamp_ms,
+        hora: formatTs(normTs(m.timestamp_ms)),
+        tsMs: normTs(m.timestamp_ms),
       })
       let msgs = [...(byPhone || []), ...byNome]
         .filter(m => { const k = m.message_id || m.id; const ok = !seen.has(k); seen.add(k); return ok })
@@ -697,7 +698,8 @@ export default function InboxWhatsApp({ contaId }) {
         filter: `phone=eq.${selecionada.id}`,
       }, payload => {
         const m = payload.new
-        const novaMsg = { id: m.message_id || String(m.id), minha: m.de_mim, texto: m.texto, tipo: m.tipo || 'text', mediaUrl: m.media_url || null, hora: formatTs(m.timestamp_ms), tsMs: m.timestamp_ms }
+        const _ts = Number(m.timestamp_ms) < 10000000000 ? Number(m.timestamp_ms) * 1000 : Number(m.timestamp_ms)
+        const novaMsg = { id: m.message_id || String(m.id), minha: m.de_mim, texto: m.texto, tipo: m.tipo || 'text', mediaUrl: m.media_url || null, hora: formatTs(_ts), tsMs: _ts }
         if (!m.de_mim) {
           setConversas(prev => {
             const c = prev.find(x => x.id === selecionada.id)
