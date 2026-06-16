@@ -193,7 +193,7 @@ export default function Pacientes() {
           <h1 className="text-2xl font-bold text-gray-800">Pacientes</h1>
           <p className="text-sm text-gray-400 mt-1">Gerencie sua base de pacientes</p>
         </div>
-        <button onClick={() => setModal(true)} className="bg-pink-400 hover:bg-pink-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">
+        <button onClick={() => setModal(true)} className="bg-brand-400 hover:bg-brand-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">
           + Novo Paciente
         </button>
       </div>
@@ -216,7 +216,7 @@ export default function Pacientes() {
         </div>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 font-medium mb-1">Novos no Mês</p>
-          <p className="text-2xl font-bold text-pink-500">{novosMes}</p>
+          <p className="text-2xl font-bold text-brand-500">{novosMes}</p>
           <p className="text-xs text-gray-400 mt-1">Cadastros do mês</p>
         </div>
       </div>
@@ -229,7 +229,7 @@ export default function Pacientes() {
             value={busca}
             onChange={e => handleBusca(e.target.value)}
             onFocus={() => busca.trim() && sugestoes.length > 0 && setMostrarSugestoes(true)}
-            className="w-full text-sm border border-gray-200 rounded-xl px-4 py-2 outline-none focus:border-pink-400 transition-colors"
+            className="w-full text-sm border border-gray-200 rounded-xl px-4 py-2 outline-none focus:border-brand-400 transition-colors"
           />
           {mostrarSugestoes && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden">
@@ -237,9 +237,9 @@ export default function Pacientes() {
                 <button
                   key={p.id}
                   onMouseDown={() => selecionarSugestao(p.nome)}
-                  className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-pink-50 hover:text-pink-600 flex items-center gap-3 transition-colors"
+                  className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-600 flex items-center gap-3 transition-colors"
                 >
-                  <div className="w-7 h-7 rounded-full bg-pink-100 flex items-center justify-center text-pink-500 font-bold text-xs flex-shrink-0">
+                  <div className="w-7 h-7 rounded-full bg-brand-100 flex items-center justify-center text-brand-500 font-bold text-xs flex-shrink-0">
                     {p.nome.charAt(0).toUpperCase()}
                   </div>
                   <span>{p.nome}</span>
@@ -253,7 +253,7 @@ export default function Pacientes() {
             <button
               key={f}
               onClick={() => setFiltro(f)}
-              className={`text-xs font-semibold px-4 py-2 rounded-xl transition-all ${filtro === f ? 'bg-pink-400 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+              className={`text-xs font-semibold px-4 py-2 rounded-xl transition-all ${filtro === f ? 'bg-brand-400 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
             >
               {f}
             </button>

@@ -104,7 +104,6 @@ export default function Metas() {
 
   const metaDiariaOriginal = metaDiaria
 
-  // Calcula meta dinâmica por dia: distribui déficit/superávit nos dias seguintes
   const diasOrdenados = []
   calendario.forEach((semana, si) => {
     semana.forEach((dia, di) => {
@@ -118,10 +117,14 @@ export default function Metas() {
   const hoje = new Date()
   const diaHoje = (hoje.getFullYear() === ano && hoje.getMonth() === mes) ? hoje.getDate() : Infinity
 
-  const metaDinamicaPorDia = {}
+  // Meta Diária Ajustada: redistribui nos dias restantes o que falta para bater a meta
+  const diasPassados = diasOrdenados.filter(d => d.dia < diaHoje)
+  const diasRestantes = diasOrdenados.filter(d => d.dia >= diaHoje)
+  const totalVendasPassadas = diasPassados.reduce((acc, d) => acc + (vendasPorDia[d.dia] || 0), 0)
+  const faltaParaMeta = Math.max(metaValor - totalVendasPassadas, 0)
+  const metaDiariaAjustada = diasRestantes.length > 0 ? faltaParaMeta / diasRestantes.length : 0
 
-  // Meta flat: metaValor ÷ total de dias selecionados — igual para todos
-  // Assim qualquer toggle atualiza todos os dias e fica consistente com o card "Meta Diária"
+  const metaDinamicaPorDia = {}
   const metaBase = diasOrdenados.length > 0 ? metaValor / diasOrdenados.length : 0
   diasOrdenados.forEach(({ dia }) => { metaDinamicaPorDia[dia] = metaBase })
 
@@ -160,10 +163,10 @@ export default function Metas() {
           <h1 className="text-2xl font-bold text-gray-800">Metas</h1>
           <p className="text-sm text-gray-400 mt-1">Defina metas mensais e distribua objetivos por dias úteis</p>
         </div>
-        <div className="flex items-center gap-1 border border-pink-200 rounded-xl px-3 py-1.5 bg-pink-50">
-          <button onClick={() => navMes(-1)} className="text-pink-400 hover:text-pink-600 px-1">‹</button>
-          <span className="text-sm font-semibold text-pink-600 w-28 text-center">{MESES[mes].slice(0,3)} {ano}</span>
-          <button onClick={() => navMes(1)} className="text-pink-400 hover:text-pink-600 px-1">›</button>
+        <div className="flex items-center gap-1 border border-brand-200 rounded-xl px-3 py-1.5 bg-brand-50">
+          <button onClick={() => navMes(-1)} className="text-brand-400 hover:text-brand-600 px-1">‹</button>
+          <span className="text-sm font-semibold text-brand-600 w-28 text-center">{MESES[mes].slice(0,3)} {ano}</span>
+          <button onClick={() => navMes(1)} className="text-brand-400 hover:text-brand-600 px-1">›</button>
         </div>
       </div>
 
@@ -182,10 +185,10 @@ export default function Metas() {
               <div className="flex items-center gap-1">
                 <span className="text-lg font-bold text-gray-500">R$</span>
                 <input autoFocus type="text" value={inputValor} onChange={(e) => setInputValor(e.target.value)} onKeyDown={handleKeyDown}
-                  className="flex-1 text-2xl font-bold text-gray-900 border-b-2 border-pink-400 outline-none bg-transparent w-full" />
+                  className="flex-1 text-2xl font-bold text-gray-900 border-b-2 border-brand-400 outline-none bg-transparent w-full" />
               </div>
               <div className="flex gap-2 mt-2">
-                <button onClick={salvarEdicao} className="flex-1 bg-pink-500 hover:bg-pink-600 text-white text-xs font-semibold py-1.5 rounded-lg transition-colors">Salvar</button>
+                <button onClick={salvarEdicao} className="flex-1 bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold py-1.5 rounded-lg transition-colors">Salvar</button>
                 <button onClick={() => setEditando(false)} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-semibold py-1.5 rounded-lg transition-colors">Cancelar</button>
               </div>
             </div>
@@ -250,7 +253,7 @@ export default function Metas() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex justify-between items-start mb-1">
             <p className="text-sm text-gray-500">Dias de Atendimento</p>
-            <span className="text-pink-400">📅</span>
+            <span className="text-brand-400">📅</span>
           </div>
           <p className="text-3xl font-bold text-gray-900">{diasAtendimento}</p>
           <p className="text-xs text-gray-400 mt-1">dias selecionados</p>
@@ -258,20 +261,28 @@ export default function Metas() {
 
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex justify-between items-start mb-1">
-            <p className="text-sm text-gray-500">Meta Diária</p>
-            <span className="text-pink-400">📊</span>
+            <p className="text-sm text-gray-500">Meta Diária Original</p>
+            <svg className="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
           </div>
           <p className="text-3xl font-bold text-gray-900">{diasAtendimento > 0 ? fmt(metaDiariaOriginal) : '—'}</p>
-          <p className="text-xs text-gray-400 mt-1">por dia de atendimento</p>
+          <p className="text-xs text-gray-400 mt-1">por dia útil</p>
         </div>
 
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex justify-between items-start mb-1">
-            <p className="text-sm text-gray-500">Mês</p>
-            <span className="text-orange-400">📆</span>
+            <p className="text-sm text-gray-500">Meta Diária Ajustada</p>
+            <span className="text-orange-400">📋</span>
           </div>
-          <p className="text-xl font-bold text-gray-900 capitalize">{MESES[mes]}</p>
-          <p className="text-xs text-gray-400 mt-1">{ano}</p>
+          <p className={`text-3xl font-bold ${metaDiariaAjustada > metaDiariaOriginal ? 'text-red-500' : 'text-green-600'}`}>
+            {diasRestantes.length > 0 ? fmt(metaDiariaAjustada) : '—'}
+          </p>
+          <p className="text-xs text-gray-400 mt-1">
+            {diasRestantes.length > 0
+              ? metaDiariaAjustada > metaDiariaOriginal ? 'acima do original — déficit' : 'compensando superávit'
+              : 'sem dias restantes'}
+          </p>
         </div>
       </div>
 

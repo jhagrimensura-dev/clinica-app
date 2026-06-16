@@ -13,7 +13,7 @@ export default function Relatorios() {
           <h1 className="text-2xl font-bold text-gray-800">Relatórios</h1>
           <p className="text-sm text-gray-400 mt-1">Visão geral do desempenho do consultório</p>
         </div>
-        <button className="bg-pink-400 hover:bg-pink-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">
+        <button className="bg-brand-400 hover:bg-brand-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">
           Exportar PDF
         </button>
       </div>
@@ -37,7 +37,7 @@ export default function Relatorios() {
         </div>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 font-medium mb-1">Conversão Média</p>
-          <p className="text-2xl font-bold text-pink-500">11,4%</p>
+          <p className="text-2xl font-bold text-brand-500">11,4%</p>
           <p className="text-xs text-gray-400 mt-1">Jan — Mai 2025</p>
         </div>
       </div>
@@ -53,7 +53,7 @@ export default function Relatorios() {
               </span>
               <div className="w-full flex items-end justify-center" style={{ height: '140px' }}>
                 <div
-                  className={`w-full rounded-t-xl transition-all ${i === 4 ? 'bg-pink-400' : 'bg-pink-200'}`}
+                  className={`w-full rounded-t-xl transition-all ${i === 4 ? 'bg-brand-400' : 'bg-brand-200'}`}
                   style={{ height: faturamento[i] > 0 ? `${(faturamento[i] / maxFat) * 140}px` : '4px' }}
                 ></div>
               </div>
@@ -110,7 +110,7 @@ export default function Relatorios() {
                 <td className="py-3">R$ {row.fat.toLocaleString('pt-BR')}</td>
                 <td className="py-3">{row.leads}</td>
                 <td className="py-3">{row.pac}</td>
-                <td className="py-3 text-pink-500 font-semibold">{row.conv}</td>
+                <td className="py-3 text-brand-500 font-semibold">{row.conv}</td>
               </tr>
             ))}
           </tbody>

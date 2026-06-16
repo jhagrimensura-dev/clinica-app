@@ -13,7 +13,7 @@ export default function Ajuda() {
 
         <div className="flex items-start gap-2 mb-6">
           {[
-            { icon: '👥', label: 'Seguidores', desc: 'Base de audiência nas redes sociais', color: 'bg-pink-100 text-pink-600' },
+            { icon: '👥', label: 'Seguidores', desc: 'Base de audiência nas redes sociais', color: 'bg-brand-100 text-brand-600' },
             { icon: '🔗', label: 'Leads', desc: 'Contatos interessados na consulta', color: 'bg-purple-100 text-purple-600' },
             { icon: '📅', label: 'Agendamentos', desc: 'Consultas marcadas na clínica', color: 'bg-orange-100 text-orange-600' },
             { icon: '✅', label: 'Vendas', desc: 'Pacientes que fecharam tratamento', color: 'bg-green-100 text-green-600' },
@@ -49,7 +49,7 @@ export default function Ajuda() {
         </div>
 
         {/* Social Media */}
-        <Section titulo="📱 Social Media" cor="bg-pink-50 border-pink-100" indicadores={[
+        <Section titulo="📱 Social Media" cor="bg-brand-50 border-brand-100" indicadores={[
           { nome: 'Conversão Seguidores → Leads', bench: '10%', benchColor: 'text-amber-600', desc: 'Percentual de seguidores que se tornam leads qualificados', formula: 'Fórmula: (Leads / Seguidores) × 100' },
           { nome: 'Custo por Seguidor', bench: 'R$ 6,00', benchColor: 'text-amber-600', desc: 'Investimento médio para conquistar um novo seguidor', formula: 'Fórmula: Investimento em Tráfego / Novos Seguidores' },
           { nome: 'Custo por Lead (CPL)', bench: 'R$ 100,00', benchColor: 'text-amber-600', desc: 'Investimento médio para gerar um lead qualificado', formula: 'Fórmula: Investimento em Tráfego / Total de Leads' },

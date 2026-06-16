@@ -93,8 +93,8 @@ function MiniCalendario({ selected, onSelect }) {
           return (
             <button key={i} onClick={() => onSelect(new Date(ano, mes, d))}
               className={`text-xs w-7 h-7 rounded-full mx-auto flex items-center justify-center transition-colors
-                ${isSelected ? 'bg-pink-400 text-white font-bold' : ''}
-                ${isHoje && !isSelected ? 'bg-pink-100 text-pink-600 font-bold' : ''}
+                ${isSelected ? 'bg-brand-400 text-white font-bold' : ''}
+                ${isHoje && !isSelected ? 'bg-brand-100 text-brand-600 font-bold' : ''}
                 ${!isSelected && !isHoje ? 'text-gray-600 hover:bg-gray-100' : ''}
               `}>
               {d}
@@ -170,7 +170,7 @@ function Modal({ slot, existing, onClose, onSave, onDelete, agendamentos }) {
         </div>
 
         <div className="px-6 py-4 space-y-4">
-          <p className="text-xs text-pink-500 font-semibold">{slot.dayLabel} — {slot.time}</p>
+          <p className="text-xs text-brand-500 font-semibold">{slot.dayLabel} — {slot.time}</p>
 
           {/* ABA CONSULTA */}
           {aba === 'consulta' && (
@@ -194,7 +194,7 @@ function Modal({ slot, existing, onClose, onSave, onDelete, agendamentos }) {
                     onBlur={() => setTimeout(() => setShowSugestoes(false), 150)}
                     placeholder="Paciente"
                     autoFocus
-                    className="w-full pl-6 py-2 border-b border-gray-200 text-sm focus:outline-none focus:border-pink-400 bg-transparent"
+                    className="w-full pl-6 py-2 border-b border-gray-200 text-sm focus:outline-none focus:border-brand-400 bg-transparent"
                   />
                   {showSugestoes && (
                     <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
@@ -204,8 +204,8 @@ function Modal({ slot, existing, onClose, onSave, onDelete, agendamentos }) {
                           setCelular(p.whatsapp || '')
                           setShowSugestoes(false)
                         }}
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-pink-50 flex items-center gap-2 border-b border-gray-50 last:border-0">
-                          <div className="w-6 h-6 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-brand-50 flex items-center gap-2 border-b border-gray-50 last:border-0">
+                          <div className="w-6 h-6 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
                             {p.nome.charAt(0).toUpperCase()}
                           </div>
                           <div>
@@ -220,17 +220,17 @@ function Modal({ slot, existing, onClose, onSave, onDelete, agendamentos }) {
                 <div className="relative">
                   <span className="absolute left-0 top-2 text-gray-400 text-sm">✉️</span>
                   <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email"
-                    className="w-full pl-6 py-2 border-b border-gray-200 text-sm focus:outline-none focus:border-pink-400 bg-transparent" />
+                    className="w-full pl-6 py-2 border-b border-gray-200 text-sm focus:outline-none focus:border-brand-400 bg-transparent" />
                 </div>
                 <div className="relative">
                   <span className="absolute left-0 top-2 text-gray-400 text-sm">📱</span>
                   <input value={celular} onChange={e => setCelular(e.target.value)} placeholder="Celular"
-                    className="w-full pl-6 py-2 border-b border-gray-200 text-sm focus:outline-none focus:border-pink-400 bg-transparent" />
+                    className="w-full pl-6 py-2 border-b border-gray-200 text-sm focus:outline-none focus:border-brand-400 bg-transparent" />
                 </div>
               </div>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={primeiraConsulta} onChange={e => setPrimeiraConsulta(e.target.checked)}
-                  className="w-4 h-4 accent-pink-400" />
+                  className="w-4 h-4 accent-brand-400" />
                 <span className="text-sm text-gray-600">Primeira Consulta</span>
               </label>
               <div className="border border-gray-100 rounded-lg p-4 space-y-3">
@@ -238,21 +238,21 @@ function Modal({ slot, existing, onClose, onSave, onDelete, agendamentos }) {
                 <div className="grid grid-cols-3 gap-3">
                   <div className="col-span-2">
                     <input value={procedimento} onChange={e => setProcedimento(e.target.value)} placeholder="Procedimentos"
-                      className="w-full py-1.5 border-b border-gray-200 text-sm focus:outline-none focus:border-pink-400 bg-transparent" />
+                      className="w-full py-1.5 border-b border-gray-200 text-sm focus:outline-none focus:border-brand-400 bg-transparent" />
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-gray-400 text-xs">⏱</span>
                     <select value={duracao} onChange={e => setDuracao(Number(e.target.value))}
-                      className="flex-1 py-1.5 border-b border-gray-200 text-sm focus:outline-none focus:border-pink-400 bg-transparent">
+                      className="flex-1 py-1.5 border-b border-gray-200 text-sm focus:outline-none focus:border-brand-400 bg-transparent">
                       {[15,30,45,60,90,120].map(d => <option key={d} value={d}>{d < 60 ? `${d}min` : `${d/60}h${d%60?d%60:''}` }</option>)}
                     </select>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <input value={obs} onChange={e => setObs(e.target.value)} placeholder="Obs"
-                    className="py-1.5 border-b border-gray-200 text-sm focus:outline-none focus:border-pink-400 bg-transparent" />
+                    className="py-1.5 border-b border-gray-200 text-sm focus:outline-none focus:border-brand-400 bg-transparent" />
                   <select value={categoria} onChange={e => setCategoria(e.target.value)}
-                    className="py-1.5 border-b border-gray-200 text-sm focus:outline-none focus:border-pink-400 bg-transparent text-gray-500">
+                    className="py-1.5 border-b border-gray-200 text-sm focus:outline-none focus:border-brand-400 bg-transparent text-gray-500">
                     <option value="">Categoria</option>
                     <option value="consulta_online">🔵 Consulta On line</option>
                     <option value="paciente_novo">🩵 Consulta Paciente Novo</option>
@@ -283,7 +283,7 @@ function Modal({ slot, existing, onClose, onSave, onDelete, agendamentos }) {
               <div className="flex items-start gap-3">
                 <span className="text-gray-400 mt-2">📅</span>
                 <input value={compromisso} onChange={e => setCompromisso(e.target.value)} placeholder="Compromisso *"
-                  autoFocus className="flex-1 py-2 border-b border-gray-200 text-sm focus:outline-none focus:border-pink-400 bg-transparent" />
+                  autoFocus className="flex-1 py-2 border-b border-gray-200 text-sm focus:outline-none focus:border-brand-400 bg-transparent" />
               </div>
               <div className="flex items-center gap-4 text-sm text-gray-500">
                 <span>Profissional:</span>
@@ -292,7 +292,7 @@ function Modal({ slot, existing, onClose, onSave, onDelete, agendamentos }) {
               <div className="flex items-start gap-3">
                 <span className="text-gray-400 mt-2">🏷️</span>
                 <input value={obsComp} onChange={e => setObsComp(e.target.value)} placeholder="Observações"
-                  className="flex-1 py-2 border-b border-gray-200 text-sm focus:outline-none focus:border-pink-400 bg-transparent" />
+                  className="flex-1 py-2 border-b border-gray-200 text-sm focus:outline-none focus:border-brand-400 bg-transparent" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -303,7 +303,7 @@ function Modal({ slot, existing, onClose, onSave, onDelete, agendamentos }) {
                 </div>
                 <label className="flex items-center gap-2 cursor-pointer mt-4">
                   <input type="checkbox" checked={diaInteiro} onChange={e => setDiaInteiro(e.target.checked)}
-                    className="w-4 h-4 accent-pink-400" />
+                    className="w-4 h-4 accent-brand-400" />
                   <span className="text-sm text-gray-600">Dia Inteiro</span>
                 </label>
               </div>
@@ -313,7 +313,7 @@ function Modal({ slot, existing, onClose, onSave, onDelete, agendamentos }) {
                     <p className="text-xs text-gray-400">Horário</p>
                     <div className="flex items-center gap-2">
                       <span className="text-gray-400 text-xs">🕐</span>
-                      <span className="text-sm font-semibold text-pink-500">{duracao < 60 ? `${duracao}min` : `${Math.floor(duracao/60)}h${duracao%60?duracao%60:''}`} selecionado</span>
+                      <span className="text-sm font-semibold text-brand-500">{duracao < 60 ? `${duracao}min` : `${Math.floor(duracao/60)}h${duracao%60?duracao%60:''}`} selecionado</span>
                     </div>
                   </div>
                   {/* Faixa de horários */}
@@ -329,7 +329,7 @@ function Modal({ slot, existing, onClose, onSave, onDelete, agendamentos }) {
                             style={{ width: '28px' }}
                           >
                             <div className={`w-full rounded-sm transition-colors
-                              ${selected ? 'bg-pink-400' : occupied ? 'bg-red-300' : 'bg-gray-200 hover:bg-pink-200'}
+                              ${selected ? 'bg-brand-400' : occupied ? 'bg-red-300' : 'bg-gray-200 hover:bg-brand-200'}
                             `} style={{ height: '28px' }} />
                             {h.endsWith(':00') && (
                               <span className="text-xs text-gray-400 mt-0.5 whitespace-nowrap" style={{ fontSize: '9px' }}>{h.slice(0,5)}</span>
@@ -345,7 +345,7 @@ function Modal({ slot, existing, onClose, onSave, onDelete, agendamentos }) {
                       {[15,30,45,60,90,120].map(d => (
                         <button key={d} onClick={() => setDuracao(d)}
                           className={`px-2 py-0.5 rounded text-xs font-semibold border transition-colors
-                            ${duracao === d ? 'bg-pink-400 text-white border-transparent' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+                            ${duracao === d ? 'bg-brand-400 text-white border-transparent' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
                           {d < 60 ? `${d}min` : `${Math.floor(d/60)}h${d%60?d%60:''}`}
                         </button>
                       ))}
@@ -362,7 +362,7 @@ function Modal({ slot, existing, onClose, onSave, onDelete, agendamentos }) {
               <div className="flex items-start gap-3">
                 <span className="text-gray-400 mt-2">🎯</span>
                 <input value={evento} onChange={e => setEvento(e.target.value)} placeholder="Nome do Evento *"
-                  autoFocus className="flex-1 py-2 border-b border-gray-200 text-sm focus:outline-none focus:border-pink-400 bg-transparent" />
+                  autoFocus className="flex-1 py-2 border-b border-gray-200 text-sm focus:outline-none focus:border-brand-400 bg-transparent" />
               </div>
               <div className="flex items-center gap-4 text-sm text-gray-500">
                 <span>Data e Horário:</span>
@@ -371,14 +371,14 @@ function Modal({ slot, existing, onClose, onSave, onDelete, agendamentos }) {
               <div className="flex items-center gap-2">
                 <span className="text-gray-400 text-xs">⏱</span>
                 <select value={duracao} onChange={e => setDuracao(Number(e.target.value))}
-                  className="py-1.5 border-b border-gray-200 text-sm focus:outline-none focus:border-pink-400 bg-transparent">
+                  className="py-1.5 border-b border-gray-200 text-sm focus:outline-none focus:border-brand-400 bg-transparent">
                   {[15,30,45,60,90,120].map(d => <option key={d} value={d}>{d < 60 ? `${d}min` : `${d/60}h${d%60?d%60:''}`}</option>)}
                 </select>
               </div>
               <div className="flex items-start gap-3">
                 <span className="text-gray-400 mt-2">🏷️</span>
                 <input value={obsEvento} onChange={e => setObsEvento(e.target.value)} placeholder="Observações"
-                  className="flex-1 py-2 border-b border-gray-200 text-sm focus:outline-none focus:border-pink-400 bg-transparent" />
+                  className="flex-1 py-2 border-b border-gray-200 text-sm focus:outline-none focus:border-brand-400 bg-transparent" />
               </div>
             </>
           )}
@@ -400,7 +400,7 @@ function Modal({ slot, existing, onClose, onSave, onDelete, agendamentos }) {
               Cancelar
             </button>
             <button onClick={handleSave} disabled={!canSave}
-              className="px-6 py-2 rounded-lg bg-pink-400 hover:bg-pink-500 disabled:bg-pink-200 text-white text-sm font-semibold">
+              className="px-6 py-2 rounded-lg bg-brand-400 hover:bg-brand-500 disabled:bg-brand-200 text-white text-sm font-semibold">
               Agendar
             </button>
           </div>
@@ -483,9 +483,9 @@ export default function Agenda() {
 
         <div className="px-3 py-2 border-t border-gray-100">
           <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Profissional</p>
-          <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-pink-50 border border-pink-100">
-            <div className="w-5 h-5 rounded-full bg-pink-300 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">A</div>
-            <span className="text-xs font-semibold text-pink-700 truncate">Amanda Lima Silva</span>
+          <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-brand-50 border border-brand-100">
+            <div className="w-5 h-5 rounded-full bg-brand-300 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">A</div>
+            <span className="text-xs font-semibold text-brand-700 truncate">Amanda Lima Silva</span>
           </div>
         </div>
 
@@ -553,13 +553,13 @@ export default function Agenda() {
                   const fechado = !HORARIO_FUNC[dow]
                   return (
                     <th key={i} className={`border-b border-r border-gray-100 py-2 text-center
-                      ${isToday ? 'bg-pink-50' : fechado ? 'bg-blue-50' : 'bg-white'}`}>
+                      ${isToday ? 'bg-brand-50' : fechado ? 'bg-blue-50' : 'bg-white'}`}>
                       <p className={`text-xs font-bold uppercase tracking-wide
-                        ${isToday ? 'text-pink-400' : fechado ? 'text-blue-400' : 'text-gray-400'}`}>
+                        ${isToday ? 'text-brand-400' : fechado ? 'text-blue-400' : 'text-gray-400'}`}>
                         {DIAS_SEMANA[dow]}
                       </p>
                       <p className={`text-base font-bold leading-tight
-                        ${isToday ? 'text-pink-500' : fechado ? 'text-blue-400' : 'text-gray-700'}`}>
+                        ${isToday ? 'text-brand-500' : fechado ? 'text-blue-400' : 'text-gray-700'}`}>
                         {day.getDate()}
                       </p>
                     </th>
@@ -609,7 +609,7 @@ export default function Agenda() {
                           onClick={() => !fechado && openModal(day, time)}
                           className={`border-r border-gray-200 align-top p-0 transition-colors
                             ${borderClass}
-                            ${!appt && isToday ? 'bg-pink-50/30 hover:bg-pink-100/40 cursor-pointer' : ''}
+                            ${!appt && isToday ? 'bg-brand-50/30 hover:bg-brand-100/40 cursor-pointer' : ''}
                             ${!appt && !isToday ? 'hover:bg-gray-50 cursor-pointer' : ''}
                           `}
                           style={{ height: '24px' }}>

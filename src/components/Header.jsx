@@ -27,7 +27,7 @@ export default function Header({ view, setView }) {
           <button
             onClick={() => setView('mensal')}
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-              view === 'mensal' ? 'bg-pink-400 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              view === 'mensal' ? 'bg-brand-400 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             📅 Mensal
@@ -35,7 +35,7 @@ export default function Header({ view, setView }) {
           <button
             onClick={() => setView('diario')}
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-              view === 'diario' ? 'bg-pink-400 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              view === 'diario' ? 'bg-brand-400 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             📋 Diário

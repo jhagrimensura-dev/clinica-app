@@ -18,7 +18,7 @@ export default function Comercial() {
           <h1 className="text-2xl font-bold text-gray-800">WhatsApp</h1>
           <p className="text-sm text-gray-400 mt-1">Acompanhe agendamentos, conversões e fechamentos</p>
         </div>
-        <button className="bg-pink-400 hover:bg-pink-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">
+        <button className="bg-brand-400 hover:bg-brand-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">
           + Novo Agendamento
         </button>
       </div>
@@ -42,7 +42,7 @@ export default function Comercial() {
         </div>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 font-medium mb-1">Conversão Geral</p>
-          <p className="text-2xl font-bold text-pink-500">0%</p>
+          <p className="text-2xl font-bold text-brand-500">0%</p>
           <p className="text-xs text-gray-400 mt-1">Leads → Fechamentos</p>
         </div>
       </div>
@@ -52,7 +52,7 @@ export default function Comercial() {
         <h2 className="text-base font-bold text-gray-800 mb-4">Funil Comercial</h2>
         <div className="space-y-3">
           {[
-            { label: 'Leads Recebidos', valor: 0, total: 1, cor: 'bg-pink-400' },
+            { label: 'Leads Recebidos', valor: 0, total: 1, cor: 'bg-brand-400' },
             { label: 'Contatos Realizados', valor: 0, total: 1, cor: 'bg-purple-400' },
             { label: 'Avaliações Agendadas', valor: 0, total: 1, cor: 'bg-blue-400' },
             { label: 'Avaliações Realizadas', valor: 0, total: 1, cor: 'bg-cyan-400' },
@@ -93,7 +93,7 @@ export default function Comercial() {
               return (
                 <div
                   key={ci}
-                  className={`min-h-[80px] p-2 border-r border-gray-100 last:border-r-0 cursor-pointer hover:bg-pink-50 transition-colors ${!isMesAtual ? 'bg-gray-50' : ''}`}
+                  className={`min-h-[80px] p-2 border-r border-gray-100 last:border-r-0 cursor-pointer hover:bg-brand-50 transition-colors ${!isMesAtual ? 'bg-gray-50' : ''}`}
                 >
                   <span className={`text-xs font-bold ${isMesAtual ? 'text-gray-700' : 'text-gray-300'}`}>
                     {celula.dia}

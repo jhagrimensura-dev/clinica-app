@@ -35,7 +35,7 @@ function ContaItem({ conta, onPagar, onRemover }) {
       <button
         onClick={() => onPagar(conta)}
         className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-          conta.pago ? 'bg-green-400 border-green-400 text-white' : 'border-gray-300 hover:border-pink-400'
+          conta.pago ? 'bg-green-400 border-green-400 text-white' : 'border-gray-300 hover:border-brand-400'
         }`}
       >
         {conta.pago && <span className="text-[10px] font-bold">✓</span>}
@@ -48,7 +48,7 @@ function ContaItem({ conta, onPagar, onRemover }) {
         <div className="flex items-center gap-2 mt-0.5">
           <span className="text-xs text-gray-400">vence {data}</span>
           {conta.campoKey && (
-            <span className="text-xs text-pink-400 font-medium">→ preenche financeiro</span>
+            <span className="text-xs text-brand-400 font-medium">→ preenche financeiro</span>
           )}
         </div>
       </div>
@@ -146,7 +146,7 @@ function ModalNovaConta({ onClose, onSalvar, ano, mes, categorias }) {
               onChange={e => set('nome', e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSalvar()}
               placeholder="Ex: Aluguel, Salário Bárbara..."
-              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-pink-400"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400"
             />
           </div>
 
@@ -160,7 +160,7 @@ function ModalNovaConta({ onClose, onSalvar, ano, mes, categorias }) {
                 value={form.valor}
                 onChange={e => set('valor', e.target.value)}
                 placeholder="0,00"
-                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-pink-400"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400"
               />
             </div>
             <div>
@@ -169,7 +169,7 @@ function ModalNovaConta({ onClose, onSalvar, ano, mes, categorias }) {
                 type="date"
                 value={form.vencimento}
                 onChange={e => set('vencimento', e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-pink-400"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400"
               />
             </div>
           </div>
@@ -179,7 +179,7 @@ function ModalNovaConta({ onClose, onSalvar, ano, mes, categorias }) {
             <select
               value={form.categoria}
               onChange={e => { set('categoria', e.target.value); set('campoKey', '') }}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-pink-400 bg-white"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400 bg-white"
             >
               <option value="receitas">Receitas</option>
               <option value="custos">Custos</option>
@@ -196,7 +196,7 @@ function ModalNovaConta({ onClose, onSalvar, ano, mes, categorias }) {
             <select
               value={form.campoKey}
               onChange={e => set('campoKey', e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-pink-400 bg-white"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400 bg-white"
             >
               <option value="">Não vincular</option>
               {camposOptions.map(o => (
@@ -208,7 +208,7 @@ function ModalNovaConta({ onClose, onSalvar, ano, mes, categorias }) {
           <div className="flex items-center gap-3 pt-1">
             <button
               onClick={() => set('recorrente', !form.recorrente)}
-              className={`w-10 h-5 rounded-full transition-colors relative flex-shrink-0 ${form.recorrente ? 'bg-pink-400' : 'bg-gray-200'}`}
+              className={`w-10 h-5 rounded-full transition-colors relative flex-shrink-0 ${form.recorrente ? 'bg-brand-400' : 'bg-gray-200'}`}
             >
               <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.recorrente ? 'translate-x-5' : 'translate-x-0.5'}`} />
             </button>
@@ -224,7 +224,7 @@ function ModalNovaConta({ onClose, onSalvar, ano, mes, categorias }) {
                 max="24"
                 value={form.mesesRepetir}
                 onChange={e => set('mesesRepetir', parseInt(e.target.value) || 1)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-pink-400"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400"
               />
               <p className="text-xs text-gray-400 mt-1">Serão criadas {form.mesesRepetir} contas, uma por mês a partir de {MESES_FULL[mes]}.</p>
             </div>
@@ -235,7 +235,7 @@ function ModalNovaConta({ onClose, onSalvar, ano, mes, categorias }) {
           <button
             onClick={handleSalvar}
             disabled={!form.nome.trim() || !form.valor}
-            className="flex-1 bg-pink-500 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-pink-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-1 bg-brand-500 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-brand-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {form.recorrente ? `Criar ${form.mesesRepetir} meses` : 'Adicionar conta'}
           </button>
@@ -303,7 +303,7 @@ export default function ContasPagar() {
           </div>
           <button
             onClick={() => setModalAberto(true)}
-            className="bg-pink-500 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-pink-600 transition-colors shadow-sm"
+            className="bg-brand-500 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-brand-600 transition-colors shadow-sm"
           >
             + Nova Conta
           </button>
@@ -314,7 +314,7 @@ export default function ContasPagar() {
       <div className="flex gap-1 flex-wrap">
         {MESES.map((m, i) => (
           <button key={i} onClick={() => setMes(i)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${mes === i ? 'bg-pink-400 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'}`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${mes === i ? 'bg-brand-400 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'}`}
           >{m}</button>
         ))}
       </div>
@@ -368,7 +368,7 @@ export default function ContasPagar() {
           <p className="text-gray-400 text-sm mt-1">Adicione contas fixas ou avulsas para controlar os pagamentos.</p>
           <button
             onClick={() => setModalAberto(true)}
-            className="mt-5 bg-pink-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-pink-600 transition-colors"
+            className="mt-5 bg-brand-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-brand-600 transition-colors"
           >
             + Adicionar primeira conta
           </button>

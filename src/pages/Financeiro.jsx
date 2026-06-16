@@ -41,7 +41,7 @@ function CurrencyInput({ value, onChange }) {
       onBlur={handleBlur}
       onChange={handleChange}
       placeholder="R$ 0,00"
-      className="w-full text-right px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-100 bg-gray-50 focus:bg-white transition-all"
+      className="w-full text-right px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 focus:ring-1 focus:ring-brand-100 bg-gray-50 focus:bg-white transition-all"
     />
   )
 }
@@ -124,9 +124,9 @@ function Secao({ titulo, cor, icon, keys, ocultosList, categoria, dados, setValo
                 onChange={e => setNovoNome(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') confirmarAdd(); if (e.key === 'Escape') setAdicionando(false) }}
                 placeholder="Nome do campo..."
-                className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-1.5 outline-none focus:border-pink-400"
+                className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-1.5 outline-none focus:border-brand-400"
               />
-              <button onClick={confirmarAdd} className="text-xs bg-pink-500 text-white px-3 py-1.5 rounded-lg font-semibold">Adicionar</button>
+              <button onClick={confirmarAdd} className="text-xs bg-brand-500 text-white px-3 py-1.5 rounded-lg font-semibold">Adicionar</button>
               <button onClick={() => setAdicionando(false)} className="text-xs text-gray-400 px-2 py-1.5">Cancelar</button>
             </div>
           ) : (
@@ -153,7 +153,7 @@ function Secao({ titulo, cor, icon, keys, ocultosList, categoria, dados, setValo
                       <span className="text-xs text-gray-400 italic">{label}</span>
                       <button
                         onClick={() => onToggleOculto(categoria, key)}
-                        className="text-xs text-pink-500 font-semibold hover:text-pink-700 ml-2"
+                        className="text-xs text-brand-500 font-semibold hover:text-brand-700 ml-2"
                       >
                         Restaurar
                       </button>
@@ -237,7 +237,7 @@ export default function Financeiro() {
             onClick={() => setMes(i)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               mes === i
-                ? 'bg-pink-400 text-white shadow-sm'
+                ? 'bg-brand-400 text-white shadow-sm'
                 : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'
             }`}
           >

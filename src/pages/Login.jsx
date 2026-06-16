@@ -25,10 +25,10 @@ function RedefinirSenha() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-white flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-brand-50 to-white flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="w-14 h-14 bg-pink-200 rounded-2xl flex items-center justify-center text-pink-600 font-bold text-2xl mx-auto mb-4">A</div>
+          <div className="w-14 h-14 bg-brand-200 rounded-2xl flex items-center justify-center text-brand-600 font-bold text-2xl mx-auto mb-4">A</div>
           <h1 className="text-2xl font-bold text-gray-800">Clinical Intelligence</h1>
           <p className="text-sm text-gray-400 mt-1">Dra. Amanda Lima</p>
         </div>
@@ -52,7 +52,7 @@ function RedefinirSenha() {
                     onChange={e => setSenha(e.target.value)}
                     required
                     placeholder="••••••••"
-                    className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent"
+                    className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-300 focus:border-transparent"
                   />
                 </div>
                 <div>
@@ -63,14 +63,14 @@ function RedefinirSenha() {
                     onChange={e => setConfirmar(e.target.value)}
                     required
                     placeholder="••••••••"
-                    className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent"
+                    className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-300 focus:border-transparent"
                   />
                 </div>
                 {erro && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{erro}</p>}
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-pink-400 hover:bg-pink-500 disabled:bg-pink-200 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors"
+                  className="w-full bg-brand-400 hover:bg-brand-500 disabled:bg-brand-200 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors"
                 >
                   {loading ? 'Salvando...' : 'Salvar senha'}
                 </button>
@@ -115,10 +115,10 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-white flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-brand-50 to-white flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="w-14 h-14 bg-pink-200 rounded-2xl flex items-center justify-center text-pink-600 font-bold text-2xl mx-auto mb-4">A</div>
+          <div className="w-14 h-14 bg-brand-200 rounded-2xl flex items-center justify-center text-brand-600 font-bold text-2xl mx-auto mb-4">A</div>
           <h1 className="text-2xl font-bold text-gray-800">Clinical Intelligence</h1>
           <p className="text-sm text-gray-400 mt-1">Dra. Amanda Lima</p>
         </div>
@@ -131,7 +131,7 @@ export default function Login() {
               <p className="text-2xl">📬</p>
               <p className="text-sm font-semibold text-gray-700">Link enviado para seu email!</p>
               <p className="text-xs text-gray-400">Abra o email e clique no link para entrar.</p>
-              <button onClick={() => setMagicSent(false)} className="text-xs text-pink-400 hover:text-pink-600 mt-2">Voltar</button>
+              <button onClick={() => setMagicSent(false)} className="text-xs text-brand-400 hover:text-brand-600 mt-2">Voltar</button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -143,7 +143,7 @@ export default function Login() {
                   onChange={e => setEmail(e.target.value)}
                   required
                   placeholder="seu@email.com"
-                  className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent"
+                  className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-300 focus:border-transparent"
                 />
               </div>
 
@@ -155,7 +155,7 @@ export default function Login() {
                     value={senha}
                     onChange={e => setSenha(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full px-3 py-2.5 pr-10 rounded-lg border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent"
+                    className="w-full px-3 py-2.5 pr-10 rounded-lg border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-300 focus:border-transparent"
                   />
                   <button type="button" onClick={() => setShowSenha(v => !v)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -169,7 +169,7 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-pink-400 hover:bg-pink-500 disabled:bg-pink-200 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors"
+                className="w-full bg-brand-400 hover:bg-brand-500 disabled:bg-brand-200 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors"
               >
                 {loading ? 'Entrando...' : 'Entrar'}
               </button>
