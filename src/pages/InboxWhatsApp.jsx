@@ -3,6 +3,7 @@ import { useLeads } from '../context/LeadsContext'
 import { supabase } from '../lib/supabase'
 import Picker from '@emoji-mart/react'
 import data from '@emoji-mart/data'
+import { loadLembretes, saveLembretes, gerarIdLembrete } from './AgendaLembretes'
 
 // ── Proxy helper (evita CORS) ─────────────────────────────────────
 async function zapiFetch(conta, path, method = 'GET', body = null) {
@@ -77,11 +78,58 @@ function normalizeChats(data, instancia) {
 }
 
 // ── Modal registrar lead ──────────────────────────────────────────
+const ORIGENS_PADRAO = ['WhatsApp', 'Instagram', 'Tráfego', 'Indicação', 'Retorno', 'Resgate']
+function loadOrigens() {
+  try { return JSON.parse(localStorage.getItem('lead_origens') || 'null') || ORIGENS_PADRAO } catch { return ORIGENS_PADRAO }
+}
+function saveOrigens(lista) { localStorage.setItem('lead_origens', JSON.stringify(lista)) }
+
+const STATUS_PADRAO = ['Em aberto', 'Conversando', 'Follow #1', 'Follow #2', 'Follow #3', 'Agendou', 'Perdido']
+function loadStatus() {
+  try { return JSON.parse(localStorage.getItem('lead_status') || 'null') || STATUS_PADRAO } catch { return STATUS_PADRAO }
+}
+function saveStatus(lista) { localStorage.setItem('lead_status', JSON.stringify(lista)) }
+
 function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar }) {
   const hoje = new Date().toISOString().split('T')[0]
   const [nome, setNome] = useState(contato.nome)
+  const [telefone, setTelefone] = useState(contato.telefone || '')
   const [responsavel, setResponsavel] = useState('')
+  const [origemCustom, setOrigemCustom] = useState('WhatsApp')
+  const [status, setStatus] = useState('Em aberto')
+  const [data, setData] = useState(hoje)
+  const [lembrete, setLembrete] = useState('')
+  const [lembreteHora, setLembreteHora] = useState('')
   const [obs, setObs] = useState('')
+  const [origens, setOrigens] = useState(loadOrigens)
+  const [editandoOrigens, setEditandoOrigens] = useState(false)
+  const [novaOrigem, setNovaOrigem] = useState('')
+  const [statusLista, setStatusLista] = useState(loadStatus)
+  const [editandoStatus, setEditandoStatus] = useState(false)
+  const [novoStatus, setNovoStatus] = useState('')
+
+  function adicionarOrigem() {
+    const v = novaOrigem.trim()
+    if (!v || origens.includes(v)) return
+    const nova = [...origens, v]
+    setOrigens(nova); saveOrigens(nova); setNovaOrigem('')
+  }
+  function removerOrigem(o) {
+    const nova = origens.filter(x => x !== o)
+    setOrigens(nova); saveOrigens(nova)
+    if (origemCustom === o) setOrigemCustom(nova[0] || '')
+  }
+  function adicionarStatus() {
+    const v = novoStatus.trim()
+    if (!v || statusLista.includes(v)) return
+    const nova = [...statusLista, v]
+    setStatusLista(nova); saveStatus(nova); setNovoStatus('')
+  }
+  function removerStatus(s) {
+    const nova = statusLista.filter(x => x !== s)
+    setStatusLista(nova); saveStatus(nova)
+    if (status === s) setStatus(nova[0] || '')
+  }
 
   const ORIGENS = {
     leads_novos:       { label: 'Lead Novo',       cor: 'bg-brand-500' },
@@ -92,7 +140,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar }) {
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-base font-bold text-gray-900">Registrar Lead</h3>
@@ -100,31 +148,140 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar }) {
           </div>
           <button onClick={onFechar} className="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
         </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1 block">Data *</label>
+            <input type="date" value={data} onChange={e => setData(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300" />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1 block">Responsável</label>
+            <select value={responsavel} onChange={e => setResponsavel(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 bg-white">
+              <option value="">Selecione</option>
+              <option>Dra. Amanda</option>
+              <option>Fernanda</option>
+              <option>Recepção</option>
+              <option>Equipe</option>
+            </select>
+          </div>
+        </div>
+
         <div>
-          <label className="text-xs font-semibold text-gray-500 mb-1 block">Nome</label>
+          <label className="text-xs font-semibold text-gray-500 mb-1 block">Nome *</label>
           <input value={nome} onChange={e => setNome(e.target.value)}
             className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300" />
         </div>
+
         <div>
-          <label className="text-xs font-semibold text-gray-500 mb-1 block">Responsável</label>
-          <select value={responsavel} onChange={e => setResponsavel(e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 bg-white">
-            <option value="">Selecione</option>
-            <option>Dra. Amanda</option>
-            <option>Recepção</option>
-            <option>Equipe</option>
-          </select>
+          <label className="text-xs font-semibold text-gray-500 mb-1 block">Telefone</label>
+          <input value={telefone} onChange={e => setTelefone(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300" />
         </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-semibold text-gray-500">Origem</label>
+              <button onClick={() => setEditandoOrigens(v => !v)}
+                className="text-[10px] text-brand-500 hover:text-brand-700 font-semibold">
+                {editandoOrigens ? 'Fechar' : '✎ Editar lista'}
+              </button>
+            </div>
+            {editandoOrigens ? (
+              <div className="border border-gray-200 rounded-xl p-3 space-y-1.5 bg-gray-50">
+                {origens.map((o, i) => (
+                  <div key={o} className="flex items-center gap-1">
+                    <div className="flex flex-col gap-0.5 flex-shrink-0">
+                      <button onClick={() => { if (i === 0) return; const n = [...origens]; [n[i-1],n[i]]=[n[i],n[i-1]]; setOrigens(n); saveOrigens(n) }}
+                        disabled={i === 0} className="text-gray-300 hover:text-gray-500 disabled:opacity-20 leading-none text-[10px]">▲</button>
+                      <button onClick={() => { if (i === origens.length-1) return; const n = [...origens]; [n[i],n[i+1]]=[n[i+1],n[i]]; setOrigens(n); saveOrigens(n) }}
+                        disabled={i === origens.length-1} className="text-gray-300 hover:text-gray-500 disabled:opacity-20 leading-none text-[10px]">▼</button>
+                    </div>
+                    <span className="flex-1 text-sm text-gray-700">{o}</span>
+                    <button onClick={() => removerOrigem(o)}
+                      className="text-gray-300 hover:text-red-400 text-xs font-bold flex-shrink-0">✕</button>
+                  </div>
+                ))}
+                <div className="flex gap-2 pt-1 border-t border-gray-200">
+                  <input value={novaOrigem} onChange={e => setNovaOrigem(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && adicionarOrigem()}
+                    placeholder="Nova origem..."
+                    className="flex-1 text-sm border border-gray-200 rounded-lg px-2 py-1 outline-none focus:border-brand-300 bg-white" />
+                  <button onClick={adicionarOrigem}
+                    className="text-xs bg-brand-400 hover:bg-brand-500 text-white px-3 py-1 rounded-lg font-semibold">+ Add</button>
+                </div>
+              </div>
+            ) : (
+              <select value={origemCustom} onChange={e => setOrigemCustom(e.target.value)}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 bg-white">
+                {origens.map(o => <option key={o}>{o}</option>)}
+              </select>
+            )}
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-semibold text-gray-500">Status</label>
+              <button onClick={() => setEditandoStatus(v => !v)}
+                className="text-[10px] text-brand-500 hover:text-brand-700 font-semibold">
+                {editandoStatus ? 'Fechar' : '✎ Editar lista'}
+              </button>
+            </div>
+            {editandoStatus ? (
+              <div className="border border-gray-200 rounded-xl p-3 space-y-1.5 bg-gray-50">
+                {statusLista.map((s, i) => (
+                  <div key={s} className="flex items-center gap-1">
+                    <div className="flex flex-col gap-0.5 flex-shrink-0">
+                      <button onClick={() => { if (i === 0) return; const n = [...statusLista]; [n[i-1],n[i]]=[n[i],n[i-1]]; setStatusLista(n); saveStatus(n) }}
+                        disabled={i === 0} className="text-gray-300 hover:text-gray-500 disabled:opacity-20 leading-none text-[10px]">▲</button>
+                      <button onClick={() => { if (i === statusLista.length-1) return; const n = [...statusLista]; [n[i],n[i+1]]=[n[i+1],n[i]]; setStatusLista(n); saveStatus(n) }}
+                        disabled={i === statusLista.length-1} className="text-gray-300 hover:text-gray-500 disabled:opacity-20 leading-none text-[10px]">▼</button>
+                    </div>
+                    <span className="flex-1 text-sm text-gray-700">{s}</span>
+                    <button onClick={() => removerStatus(s)}
+                      className="text-gray-300 hover:text-red-400 text-xs font-bold flex-shrink-0">✕</button>
+                  </div>
+                ))}
+                <div className="flex gap-2 pt-1 border-t border-gray-200">
+                  <input value={novoStatus} onChange={e => setNovoStatus(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && adicionarStatus()}
+                    placeholder="Novo status..."
+                    className="flex-1 text-sm border border-gray-200 rounded-lg px-2 py-1 outline-none focus:border-brand-300 bg-white" />
+                  <button onClick={adicionarStatus}
+                    className="text-xs bg-brand-400 hover:bg-brand-500 text-white px-3 py-1 rounded-lg font-semibold">+ Add</button>
+                </div>
+              </div>
+            ) : (
+              <select value={status} onChange={e => setStatus(e.target.value)}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 bg-white">
+                {statusLista.map(s => <option key={s}>{s}</option>)}
+              </select>
+            )}
+          </div>
+        </div>
+
         <div>
-          <label className="text-xs font-semibold text-gray-500 mb-1 block">Observação</label>
-          <textarea value={obs} onChange={e => setObs(e.target.value)} rows={2}
+          <label className="text-xs font-semibold text-gray-500 mb-1 block">Próximo Lembrete</label>
+          <div className="flex gap-2">
+            <input type="date" value={lembrete} onChange={e => setLembrete(e.target.value)}
+              className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300" />
+            <input type="time" value={lembreteHora} onChange={e => setLembreteHora(e.target.value)}
+              className="w-28 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300" />
+          </div>
+        </div>
+
+        <div>
+          <label className="text-xs font-semibold text-gray-500 mb-1 block">Observações</label>
+          <textarea value={obs} onChange={e => setObs(e.target.value)} rows={3}
             placeholder="Ex: Interesse em preenchimento labial"
             className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 resize-none" />
         </div>
+
         <div className="flex justify-end gap-3 pt-1">
           <button onClick={onFechar} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
           <button
-            onClick={() => nome.trim() && onSalvar({ nome: nome.trim(), responsavel, obs, origem: tipo, data: hoje, status: 'em_aberto', fonte: 'WhatsApp' })}
+            onClick={() => nome.trim() && onSalvar({ nome: nome.trim(), telefone, responsavel, obs, origem: tipo, origemCustom, data, status, lembrete: lembrete || null, lembreteHora: lembreteHora || null, fonte: 'WhatsApp' })}
             disabled={!nome.trim()}
             className="px-5 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded-xl disabled:opacity-40">
             Registrar
@@ -651,6 +808,21 @@ export default function InboxWhatsApp({ contaId }) {
   const registrarLead = (tipo) => { setMenuLead(false); setModalLead(tipo) }
   const confirmarLead = (dados) => {
     addLead(dados)
+    if (dados.lembrete) {
+      const lista = loadLembretes()
+      lista.push({
+        id: gerarIdLembrete(),
+        leadNome: dados.nome,
+        leadTelefone: dados.telefone || '',
+        descricao: dados.obs || '',
+        data: dados.lembrete,
+        hora: dados.lembreteHora || '',
+        cor: 'blue',
+        concluido: false,
+        criadoEm: Date.now(),
+      })
+      saveLembretes(lista)
+    }
     setLeadRegistrado(prev => ({ ...prev, [conversa.id]: dados.origem }))
     setModalLead(null)
   }

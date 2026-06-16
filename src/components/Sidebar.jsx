@@ -13,6 +13,7 @@ const menuItems = [
   {
     id: 'comercial', label: 'WhatsApp', icon: '💬',
     sub: [
+      { id: 'agenda_lembretes', label: 'Lembretes', icon: '🔔' },
       { id: 'leads_novos', label: 'Leads Novos', icon: '🆕' },
       { id: 'leads_recorrentes', label: 'Leads Recorrentes', icon: '🔄' },
       { id: 'indicacao', label: 'Indicação', icon: '🤝' },

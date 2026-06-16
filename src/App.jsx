@@ -26,6 +26,7 @@ import Relatorios from './pages/Relatorios'
 import Configuracoes from './pages/Configuracoes'
 import Ajuda from './pages/Ajuda'
 import InboxWhatsApp from './pages/InboxWhatsApp'
+import AgendaLembretes from './pages/AgendaLembretes'
 import WhatsAppFAB from './components/WhatsAppFAB'
 
 function PagePlaceholder({ title }) {
@@ -203,6 +204,7 @@ function AppContent() {
       case 'social': return <SocialMedia />
       case 'inbox': return <InboxWhatsApp />
       case 'comercial': return <Comercial />
+      case 'agenda_lembretes': return <AgendaLembretes />
       case 'leads_novos': return <LeadsNovos />
       case 'leads_recorrentes': return <LeadsRecorrentes />
       case 'indicacao': return <Indicacao />
