@@ -161,7 +161,6 @@ export default function Metas() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Metas</h1>
-          <p className="text-sm text-gray-400 mt-1">Defina metas mensais e distribua objetivos por dias úteis</p>
         </div>
         <div className="flex items-center gap-1 border border-brand-200 rounded-xl px-3 py-1.5 bg-brand-50">
           <button onClick={() => navMes(-1)} className="text-brand-400 hover:text-brand-600 px-1">‹</button>

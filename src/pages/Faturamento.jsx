@@ -453,7 +453,6 @@ export default function Faturamento() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Faturamento</h1>
-          <p className="text-sm text-gray-400 mt-1">Controle de agendamentos e procedimentos realizados</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1 border border-gray-200 rounded-xl px-3 py-1.5 bg-white">

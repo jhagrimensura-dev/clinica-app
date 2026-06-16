@@ -11,7 +11,6 @@ export default function Relatorios() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Relatórios</h1>
-          <p className="text-sm text-gray-400 mt-1">Visão geral do desempenho do consultório</p>
         </div>
         <button className="bg-brand-400 hover:bg-brand-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">
           Exportar PDF

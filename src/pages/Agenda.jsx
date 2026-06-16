@@ -481,14 +481,6 @@ export default function Agenda() {
 
         <MiniCalendario selected={refDate} onSelect={handleSelectDay} />
 
-        <div className="px-3 py-2 border-t border-gray-100">
-          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Profissional</p>
-          <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-brand-50 border border-brand-100">
-            <div className="w-5 h-5 rounded-full bg-brand-300 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">A</div>
-            <span className="text-xs font-semibold text-brand-700 truncate">Amanda Lima Silva</span>
-          </div>
-        </div>
-
         {/* Próximos agendamentos */}
         <div className="px-3 py-2 border-t border-gray-100 flex-1">
           <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Próximos</p>

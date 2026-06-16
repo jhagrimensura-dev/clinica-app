@@ -17,11 +17,14 @@ export default function Dashboard() {
   const totalGeral = lMes.reduce((acc, l) => acc + (l.valorTratamento || 0) + (l.valorTaxa || 0), 0)
   const totalNovos = lMes.filter(l => l.tipo === 'Novo').reduce((acc, l) => acc + (l.valorTratamento || 0) + (l.valorTaxa || 0), 0)
   const totalRecorrentes = lMes.filter(l => l.tipo === 'Recorrente').reduce((acc, l) => acc + (l.valorTratamento || 0) + (l.valorTaxa || 0), 0)
+  const totalIndicacaoLanc = lMes.filter(l => l.tipo === 'Indicação').reduce((acc, l) => acc + (l.valorTratamento || 0) + (l.valorTaxa || 0), 0)
   const countNovos = lMes.filter(l => l.tipo === 'Novo').length
   const countRecorrentes = lMes.filter(l => l.tipo === 'Recorrente').length
+  const countIndicacaoLanc = lMes.filter(l => l.tipo === 'Indicação').length
   const ticketGeral = lMes.length > 0 ? totalGeral / lMes.length : 0
   const ticketNovos = countNovos > 0 ? totalNovos / countNovos : 0
   const ticketRecorrentes = countRecorrentes > 0 ? totalRecorrentes / countRecorrentes : 0
+  const ticketIndicacao = countIndicacaoLanc > 0 ? totalIndicacaoLanc / countIndicacaoLanc : 0
   const ticketDiario = diasAtendimento > 0 ? totalGeral / diasAtendimento : 0
 
   const pct = metaValor > 0 ? Math.min((totalGeral / metaValor) * 100, 100).toFixed(1) : '0.0'
@@ -102,11 +105,12 @@ export default function Dashboard() {
       {/* TICKET MÉDIO */}
       <div>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Ticket Médio</p>
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-5 gap-4">
           {[
             { label: 'Geral', value: fmt(ticketGeral), sub: `${lMes.length} lançamento(s)` },
             { label: 'Novos', value: fmt(ticketNovos), sub: `${countNovos} novo(s)` },
             { label: 'Recorrência', value: fmt(ticketRecorrentes), sub: `${countRecorrentes} recorrente(s)` },
+            { label: 'Indicação', value: fmt(ticketIndicacao), sub: `${countIndicacaoLanc} indicação(ões)` },
             { label: 'Diário', value: fmt(ticketDiario), sub: `${diasAtendimento} dias úteis` },
           ].map((card, i) => (
             <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">

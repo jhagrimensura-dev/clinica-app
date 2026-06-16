@@ -460,7 +460,6 @@ export default function Pacientes() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Pacientes</h1>
-          <p className="text-sm text-gray-400 mt-1">Gerencie sua base de pacientes</p>
         </div>
         <button onClick={() => setModal(true)} className="bg-brand-400 hover:bg-brand-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">
           + Novo Paciente

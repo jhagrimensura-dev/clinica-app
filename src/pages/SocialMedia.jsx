@@ -183,7 +183,6 @@ export default function SocialMedia() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Social Media</h1>
-          <p className="text-sm text-gray-400 mt-1">Gerencie métricas de redes sociais e posts</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl px-1 py-1">

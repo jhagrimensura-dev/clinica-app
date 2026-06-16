@@ -214,7 +214,6 @@ export default function Financeiro() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Financeiro</h1>
-          <p className="text-sm text-gray-400 mt-1">Controle de receitas, custos e resultado mensal</p>
         </div>
         <div className="flex items-center gap-2">
           <button
