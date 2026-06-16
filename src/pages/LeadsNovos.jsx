@@ -153,10 +153,130 @@ function ModalNovoLead({ onClose, onSalvar, ano, mes }) {
   )
 }
 
+function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
+  const [data, setData] = useState(lead.data || '')
+  const [responsavel, setResponsavel] = useState(lead.responsavel || '')
+  const [paciente, setPaciente] = useState(lead.nome || '')
+  const [fonte, setFonte] = useState(lead.fonte || lead.origemCustom || '')
+  const [status, setStatus] = useState(lead.status || 'em_aberto')
+  const [agendadoPara, setAgendadoPara] = useState(lead.agendadoPara || '')
+  const [proximoFollowup, setProximoFollowup] = useState(lead.proximoFollowup || '')
+  const [obs, setObs] = useState(lead.obs || '')
+  const [confirmando, setConfirmando] = useState(false)
+
+  const handleSalvar = () => {
+    if (!paciente.trim()) return
+    onSalvar(lead.id, { nome: paciente.trim(), data, responsavel, fonte, status, agendadoPara: agendadoPara || null, proximoFollowup, obs: obs.trim() })
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-7 space-y-5 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold text-gray-900">Editar Lead</h2>
+          <button onClick={onClose} className="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Data</label>
+            <input type="date" value={data} onChange={e => setData(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400" />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Responsável</label>
+            <select value={responsavel} onChange={e => setResponsavel(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400 bg-white">
+              <option value="">Selecione</option>
+              <option>Dra. Amanda</option>
+              <option>Fernanda</option>
+              <option>Recepção</option>
+              <option>Equipe</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Nome *</label>
+          <input autoFocus value={paciente} onChange={e => setPaciente(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400" />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Origem</label>
+            <select value={fonte} onChange={e => setFonte(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400 bg-white">
+              <option value="">Selecione</option>
+              <option value="instagram">Instagram</option>
+              <option value="facebook">Facebook</option>
+              <option value="google">Google</option>
+              <option value="indicacao">Indicação</option>
+              <option value="whatsapp">WhatsApp</option>
+              <option value="outros">Outros</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Status</label>
+            <select value={status} onChange={e => setStatus(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400 bg-white">
+              {FOLLOWS.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {status === 'agendado' && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+            <label className="text-sm font-semibold text-blue-700 mb-1.5 block">📅 Agendado para</label>
+            <input type="date" value={agendadoPara} onChange={e => setAgendadoPara(e.target.value)}
+              className="w-full border border-blue-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-400 bg-white" />
+          </div>
+        )}
+
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Próximo Follow-up</label>
+          <input type="date" value={proximoFollowup} onChange={e => setProximoFollowup(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400" />
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Observações</label>
+          <textarea value={obs} onChange={e => setObs(e.target.value)} rows={3}
+            placeholder="Observações sobre o lead..."
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400 resize-none" />
+        </div>
+
+        <div className="flex items-center justify-between pt-1">
+          {confirmando ? (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-red-500">Excluir lead?</span>
+              <button onClick={() => { onExcluir(lead.id); onClose() }}
+                className="text-sm font-semibold text-red-500 hover:text-red-700 px-3 py-1 rounded-lg hover:bg-red-50">Sim</button>
+              <button onClick={() => setConfirmando(false)}
+                className="text-sm text-gray-400 hover:text-gray-600 px-3 py-1 rounded-lg hover:bg-gray-50">Não</button>
+            </div>
+          ) : (
+            <button onClick={() => setConfirmando(true)}
+              className="text-sm text-red-400 hover:text-red-600 font-semibold">Excluir</button>
+          )}
+          <div className="flex gap-3">
+            <button onClick={onClose}
+              className="px-5 py-2.5 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
+            <button onClick={handleSalvar} disabled={!paciente.trim()}
+              className="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl disabled:opacity-40">Salvar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function LeadsNovos() {
   const { ano, setAno, mes, setMes, MESES } = useFinanceiro()
   const { getLeadsPorOrigem, addLead, updateLead, removeLead } = useLeads()
   const [modal, setModal] = useState(false)
+  const [modalEditar, setModalEditar] = useState(null)
   const [busca, setBusca] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [visao, setVisao] = useState('lista')
@@ -270,7 +390,7 @@ export default function LeadsNovos() {
             {leadsFiltrados.map(lead => {
               const follow = getFollow(lead.status)
               return (
-                <div key={lead.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 transition-colors group">
+                <div key={lead.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 transition-colors group cursor-pointer" onClick={() => setModalEditar(lead)}>
                   <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-500 font-bold text-sm flex-shrink-0">
                     {lead.nome.charAt(0).toUpperCase()}
                   </div>
@@ -285,19 +405,20 @@ export default function LeadsNovos() {
                   {lead.obs && <p className="text-xs text-gray-400 italic truncate max-w-[180px] hidden md:block">{lead.obs}</p>}
                   <select
                     value={lead.status}
-                    onChange={e => updateLead(lead.id, { status: e.target.value })}
+                    onChange={e => { e.stopPropagation(); updateLead(lead.id, { status: e.target.value }) }}
+                    onClick={e => e.stopPropagation()}
                     className={`text-xs font-semibold px-3 py-1 rounded-full border-0 outline-none cursor-pointer ${follow.bg} ${follow.text}`}
                   >
                     {FOLLOWS.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
                   </select>
-                  <button onClick={() => abrirWhatsApp(lead.telefone)} className={`text-xl flex-shrink-0 ${lead.telefone ? 'opacity-70 hover:opacity-100' : 'opacity-20 cursor-not-allowed'}`} title={lead.telefone ? lead.telefone : 'Sem telefone'}>💬</button>
+                  <button onClick={e => { e.stopPropagation(); abrirWhatsApp(lead.telefone) }} className={`text-xl flex-shrink-0 ${lead.telefone ? 'opacity-70 hover:opacity-100' : 'opacity-20 cursor-not-allowed'}`} title={lead.telefone ? lead.telefone : 'Sem telefone'}>💬</button>
                   {confirmDelete === lead.id ? (
-                    <div className="flex gap-1">
+                    <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                       <button onClick={() => { removeLead(lead.id); setConfirmDelete(null) }} className="text-xs text-red-500 font-semibold px-2 py-1 rounded hover:bg-red-50">Sim</button>
                       <button onClick={() => setConfirmDelete(null)} className="text-xs text-gray-400 px-2 py-1 rounded hover:bg-gray-100">Não</button>
                     </div>
                   ) : (
-                    <button onClick={() => setConfirmDelete(lead.id)} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 text-xs transition-all">✕</button>
+                    <button onClick={e => { e.stopPropagation(); setConfirmDelete(lead.id) }} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 text-xs transition-all">✕</button>
                   )}
                 </div>
               )
@@ -318,7 +439,7 @@ export default function LeadsNovos() {
                     {colLeads.length === 0 ? (
                       <p className="text-xs text-gray-300 text-center py-4">Nenhum item</p>
                     ) : colLeads.map(lead => (
-                      <div key={lead.id} className="bg-white rounded-xl p-3 shadow-sm border border-gray-100">
+                      <div key={lead.id} className="bg-white rounded-xl p-3 shadow-sm border border-gray-100 cursor-pointer hover:border-amber-200 transition-colors" onClick={() => setModalEditar(lead)}>
                         <p className="text-sm font-semibold text-gray-800 truncate">{lead.nome}</p>
                         {lead.status === 'agendado' && lead.agendadoPara ? (
                           <p className="text-xs text-blue-500 font-semibold mt-0.5">📅 {dataFormatada(lead.agendadoPara)}</p>
@@ -328,12 +449,13 @@ export default function LeadsNovos() {
                         <div className="flex items-center justify-between mt-2">
                           <select
                             value={lead.status}
-                            onChange={e => updateLead(lead.id, { status: e.target.value })}
+                            onChange={e => { e.stopPropagation(); updateLead(lead.id, { status: e.target.value }) }}
+                            onClick={e => e.stopPropagation()}
                             className="text-xs text-gray-400 outline-none bg-transparent cursor-pointer"
                           >
                             {FOLLOWS.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
                           </select>
-                          <button onClick={() => abrirWhatsApp(lead.telefone)} className={`text-base ${lead.telefone ? 'opacity-70 hover:opacity-100' : 'opacity-20 cursor-not-allowed'}`}>💬</button>
+                          <button onClick={e => { e.stopPropagation(); abrirWhatsApp(lead.telefone) }} className={`text-base ${lead.telefone ? 'opacity-70 hover:opacity-100' : 'opacity-20 cursor-not-allowed'}`}>💬</button>
                         </div>
                       </div>
                     ))}
@@ -351,6 +473,14 @@ export default function LeadsNovos() {
           onSalvar={addLead}
           ano={ano}
           mes={mes}
+        />
+      )}
+      {modalEditar && (
+        <ModalEditarLead
+          lead={modalEditar}
+          onClose={() => setModalEditar(null)}
+          onSalvar={updateLead}
+          onExcluir={removeLead}
         />
       )}
     </div>
