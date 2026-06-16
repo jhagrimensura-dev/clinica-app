@@ -280,6 +280,7 @@ export default function LeadsNovos() {
   const [busca, setBusca] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [visao, setVisao] = useState('lista')
+  const [dragOver, setDragOver] = useState(null)
 
   const leads = getLeadsPorOrigem('leads_novos', ano, mes)
 
@@ -440,17 +441,34 @@ export default function LeadsNovos() {
           <div className="flex gap-3 p-4 overflow-x-auto">
             {FOLLOWS.map(col => {
               const colLeads = leadsFiltrados.filter(l => l.status === col.key)
+              const isDragOver = dragOver === col.key
               return (
-                <div key={col.key} className="flex-shrink-0 w-52 bg-gray-50 rounded-xl p-3">
+                <div key={col.key}
+                  className={`flex-shrink-0 w-52 rounded-xl p-3 transition-colors ${isDragOver ? 'bg-amber-50 ring-2 ring-amber-300' : 'bg-gray-50'}`}
+                  onDragOver={e => { e.preventDefault(); setDragOver(col.key) }}
+                  onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOver(null) }}
+                  onDrop={e => {
+                    e.preventDefault()
+                    const leadId = e.dataTransfer.getData('leadId')
+                    if (leadId) updateLead(leadId, { status: col.key })
+                    setDragOver(null)
+                  }}>
                   <div className="flex items-center justify-between mb-3">
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${col.bg} ${col.text}`}>{col.label}</span>
                     <span className="text-xs text-gray-400 font-semibold">{colLeads.length}</span>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 min-h-[60px]">
                     {colLeads.length === 0 ? (
-                      <p className="text-xs text-gray-300 text-center py-4">Nenhum item</p>
+                      <p className={`text-xs text-center py-4 transition-colors ${isDragOver ? 'text-amber-400 font-semibold' : 'text-gray-300'}`}>
+                        {isDragOver ? 'Soltar aqui' : 'Nenhum item'}
+                      </p>
                     ) : colLeads.map(lead => (
-                      <div key={lead.id} className="bg-white rounded-xl p-3 shadow-sm border border-gray-100 cursor-pointer hover:border-amber-200 transition-colors" onClick={() => setModalEditar(lead)}>
+                      <div key={lead.id}
+                        draggable
+                        onDragStart={e => { e.dataTransfer.setData('leadId', lead.id); e.dataTransfer.effectAllowed = 'move' }}
+                        onDragEnd={() => setDragOver(null)}
+                        className="bg-white rounded-xl p-3 shadow-sm border border-gray-100 cursor-grab active:cursor-grabbing hover:border-amber-200 transition-colors"
+                        onClick={() => setModalEditar(lead)}>
                         <p className="text-sm font-semibold text-gray-800 truncate">{lead.nome}</p>
                         {lead.status === 'agendado' && lead.agendadoPara ? (
                           <p className="text-xs text-blue-500 font-semibold mt-0.5">📅 {dataFormatada(lead.agendadoPara)}</p>
@@ -472,6 +490,11 @@ export default function LeadsNovos() {
                         </div>
                       </div>
                     ))}
+                    {colLeads.length > 0 && isDragOver && (
+                      <div className="border-2 border-dashed border-amber-300 rounded-xl h-12 flex items-center justify-center">
+                        <span className="text-xs text-amber-400 font-semibold">Soltar aqui</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )
