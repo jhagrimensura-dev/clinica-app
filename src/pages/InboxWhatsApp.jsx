@@ -184,6 +184,10 @@ export default function InboxWhatsApp({ contaId }) {
   const [sugestaoIA, setSugestaoIA]   = useState('')
   const [loadingIA, setLoadingIA]     = useState(false)
   const [erroIA, setErroIA]           = useState('')
+  const [modalConfigIA, setModalConfigIA] = useState(false)
+  const [conhecimentoIA, setConhecimentoIA] = useState(() => {
+    try { return localStorage.getItem('ia_conhecimento') || '' } catch { return '' }
+  })
   const [menuAnexo, setMenuAnexo]     = useState(false)
   const [modalRespostas, setModalRespostas] = useState(false)
   const [respostasRapidas, setRespostasRapidas] = useState(() => {
@@ -443,12 +447,13 @@ export default function InboxWhatsApp({ contaId }) {
       return
     }
     try {
-      const ultimas = msgs.slice(-10)
-      const conversaTexto = ultimas.map(m => `${m.minha ? 'Atendente' : nomeContato || 'Lead'}: ${m.texto}`).join('\n')
+      const conversaTexto = msgs.map(m => `${m.minha ? 'Atendente' : nomeContato || 'Lead'}: ${m.texto}`).join('\n')
+      const exemplos = (() => { try { return JSON.parse(localStorage.getItem('ia_exemplos') || '[]').slice(0, 6) } catch { return [] } })()
+      const conhecimento = (() => { try { return localStorage.getItem('ia_conhecimento') || '' } catch { return '' } })()
       const res = await fetch('/api/claude-assist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ conversa: conversaTexto, nomeContato, direcao }),
+        body: JSON.stringify({ conversa: conversaTexto, nomeContato, direcao, exemplos, conhecimento }),
       })
       const d = await res.json()
       if (d.sugestao) setSugestaoIA(d.sugestao)
@@ -1029,7 +1034,16 @@ export default function InboxWhatsApp({ contaId }) {
                 <span className="text-base">✨</span>
                 <p className="text-sm font-bold text-gray-800">Assistente IA</p>
               </div>
-              <button onClick={() => setPainelIA(false)} className="text-gray-300 hover:text-gray-500 text-lg leading-none">×</button>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setModalConfigIA(true)} title="Configurar IA"
+                  className="text-gray-300 hover:text-brand-400 transition-colors">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </button>
+                <button onClick={() => setPainelIA(false)} className="text-gray-300 hover:text-gray-500 text-lg leading-none">×</button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -1060,7 +1074,21 @@ export default function InboxWhatsApp({ contaId }) {
                     <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{sugestaoIA}</p>
                   </div>
                   <button
-                    onClick={() => { setMensagem(sugestaoIA); setSugestaoIA('') }}
+                    onClick={() => {
+                      const ultimaMsgLead = conversa.mensagens?.filter(m => !m.minha).at(-1)?.texto
+                      if (ultimaMsgLead) {
+                        try {
+                          const exemplos = JSON.parse(localStorage.getItem('ia_exemplos') || '[]')
+                          const atualizados = [
+                            { lead: ultimaMsgLead, resposta: sugestaoIA },
+                            ...exemplos.filter(e => e.lead !== ultimaMsgLead),
+                          ].slice(0, 15)
+                          localStorage.setItem('ia_exemplos', JSON.stringify(atualizados))
+                        } catch {}
+                      }
+                      setMensagem(sugestaoIA)
+                      setSugestaoIA('')
+                    }}
                     className="w-full bg-green-500 hover:bg-green-600 text-white text-sm font-semibold py-2 rounded-xl transition-colors">
                     Usar esta resposta
                   </button>
@@ -1107,6 +1135,43 @@ export default function InboxWhatsApp({ contaId }) {
           <div className="text-center">
             <p className="text-4xl mb-3">💬</p>
             <p className="text-sm">Selecione uma conversa para começar</p>
+          </div>
+        </div>
+      )}
+
+      {modalConfigIA && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold text-gray-900">✨ Configurar Assistente IA</h3>
+                <p className="text-xs text-gray-400 mt-0.5">Informações que a IA sempre vai conhecer</p>
+              </div>
+              <button onClick={() => setModalConfigIA(false)} className="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 mb-1 block">Conhecimento da clínica</label>
+              <textarea
+                value={conhecimentoIA}
+                onChange={e => setConhecimentoIA(e.target.value)}
+                rows={10}
+                placeholder={`Ex:\n- Botox: a partir de R$800 por área\n- Preenchimento labial: R$1.200\n- Skinbooster: R$900\n- Horários: seg a sex 9h–18h, sáb 9h–13h\n- Promoção junho: 10% off na primeira consulta\n- WhatsApp agendamento: (11) 99999-9999`}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300 resize-none"
+              />
+              <p className="text-xs text-gray-400 mt-1">Adicione preços, horários, procedimentos, promoções, dúvidas frequentes — quanto mais detalhes, melhor a IA vai responder.</p>
+            </div>
+            <div className="flex justify-end gap-3 pt-1">
+              <button onClick={() => setModalConfigIA(false)}
+                className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
+              <button
+                onClick={() => {
+                  try { localStorage.setItem('ia_conhecimento', conhecimentoIA) } catch {}
+                  setModalConfigIA(false)
+                }}
+                className="px-5 py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl">
+                Salvar
+              </button>
+            </div>
           </div>
         </div>
       )}
