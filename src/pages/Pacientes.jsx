@@ -2,6 +2,274 @@ import { useState, useRef, useEffect } from 'react'
 import { usePacientes } from '../context/PacientesContext'
 import { useVendas } from '../context/VendasContext'
 
+const FORMAS_PGT = ['PIX', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Transferência', 'Boleto']
+const TIPOS_LANC = ['Consulta', 'Recorrência', 'Pacote', 'Avaliação', 'Retorno', 'Procedimento']
+
+function ModalPerfilPaciente({ paciente, onClose, onSalvar, onExcluir, lancamentosPaciente, onAddLancamento }) {
+  const [aba, setAba] = useState('perfil')
+
+  // Dados do paciente
+  const [nome, setNome] = useState(paciente.nome)
+  const [whatsapp, setWhatsapp] = useState(paciente.whatsapp || '')
+  const [nascimento, setNascimento] = useState(paciente.nascimento || '')
+  const [sexo, setSexo] = useState(paciente.sexo || '')
+  const [status, setStatus] = useState(paciente.status || 'Ativo')
+  const [anotacoes, setAnotacoes] = useState(paciente.anotacoes || '')
+  const [confirmando, setConfirmando] = useState(false)
+
+  // Campos do lançamento
+  const hoje = new Date().toISOString().split('T')[0]
+  const [lData, setLData] = useState(hoje)
+  const [lTipo, setLTipo] = useState('Consulta')
+  const [lResp, setLResp] = useState('')
+  const [lProc, setLProc] = useState('')
+  const [lTaxa, setLTaxa] = useState('')
+  const [lValor, setLValor] = useState('')
+  const [lFormas, setLFormas] = useState([])
+  const [lParcelas, setLParcelas] = useState({})
+  const [lObs, setLObs] = useState('')
+
+  function toggleForma(f) {
+    setLFormas(prev => prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f])
+  }
+
+  function salvarLancamento() {
+    onAddLancamento({
+      paciente: nome,
+      data: lData,
+      tipo: lTipo,
+      responsavel: lResp,
+      procedimentos: lProc,
+      valorTaxa: parseFloat(String(lTaxa).replace(',', '.')) || 0,
+      valorTratamento: parseFloat(String(lValor).replace(',', '.')) || 0,
+      formasPagamento: lFormas,
+      parcelas: lParcelas,
+      obs: lObs,
+      mes: parseInt(lData.split('-')[1]) - 1,
+      ano: parseInt(lData.split('-')[0]),
+    })
+    setLData(hoje); setLTipo('Consulta'); setLResp(''); setLProc('')
+    setLTaxa(''); setLValor(''); setLFormas([]); setLParcelas({}); setLObs('')
+    setAba('historico')
+  }
+
+  const fmt = v => v?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) || '—'
+
+  const corStatus = status === 'Ativo' ? 'bg-green-100 text-green-700' : status === 'Inativo' ? 'bg-red-100 text-red-500' : 'bg-yellow-100 text-yellow-700'
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col" style={{ maxHeight: '90vh' }}>
+
+        {/* Header */}
+        <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 font-bold text-lg flex-shrink-0">
+              {(nome || '?').charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <p className="text-base font-bold text-gray-900 leading-tight">{nome}</p>
+              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${corStatus}`}>{status}</span>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex border-b border-gray-100 flex-shrink-0">
+          {[['perfil','👤 Dados'], ['lancamento','➕ Lançamento'], ['historico','📋 Histórico']].map(([k, label]) => (
+            <button key={k} onClick={() => setAba(k)}
+              className={`flex-1 py-2.5 text-xs font-semibold transition-colors ${aba === k ? 'border-b-2 border-brand-400 text-brand-600' : 'text-gray-400 hover:text-gray-600'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Conteúdo */}
+        <div className="flex-1 overflow-y-auto">
+
+          {aba === 'perfil' && (
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Nome *</label>
+                  <input value={nome} onChange={e => setNome(e.target.value)}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">WhatsApp</label>
+                  <input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="(00) 00000-0000"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Nascimento</label>
+                  <input type="date" value={nascimento} onChange={e => setNascimento(e.target.value)}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Sexo</label>
+                  <select value={sexo} onChange={e => setSexo(e.target.value)}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300 bg-white">
+                    <option value="">Selecione</option>
+                    <option>Feminino</option>
+                    <option>Masculino</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Status</label>
+                  <select value={status} onChange={e => setStatus(e.target.value)}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300 bg-white">
+                    <option>Ativo</option>
+                    <option>Inativo</option>
+                    <option>Pendente</option>
+                  </select>
+                </div>
+                <div className="col-span-2">
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Anotações</label>
+                  <textarea value={anotacoes} onChange={e => setAnotacoes(e.target.value)} rows={3}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300 resize-none" />
+                </div>
+              </div>
+              <div className="flex items-center justify-between pt-1">
+                {confirmando ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-red-500">Excluir paciente?</span>
+                    <button onClick={() => { onExcluir(paciente.id); onClose() }} className="text-sm font-semibold text-red-500 hover:text-red-700 px-3 py-1 rounded-lg hover:bg-red-50">Sim</button>
+                    <button onClick={() => setConfirmando(false)} className="text-sm text-gray-400 px-3 py-1 rounded-lg hover:bg-gray-50">Não</button>
+                  </div>
+                ) : (
+                  <button onClick={() => setConfirmando(true)} className="text-sm text-red-400 hover:text-red-600 font-semibold">Excluir</button>
+                )}
+                <div className="flex gap-3">
+                  <button onClick={onClose} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
+                  <button onClick={() => { onSalvar(paciente.id, { nome, whatsapp, nascimento, sexo, status, anotacoes }); onClose() }}
+                    disabled={!nome.trim()}
+                    className="px-5 py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl disabled:opacity-40">Salvar</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {aba === 'lancamento' && (
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Data</label>
+                  <input type="date" value={lData} onChange={e => setLData(e.target.value)}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Tipo</label>
+                  <select value={lTipo} onChange={e => setLTipo(e.target.value)}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300 bg-white">
+                    {TIPOS_LANC.map(t => <option key={t}>{t}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Responsável</label>
+                <select value={lResp} onChange={e => setLResp(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300 bg-white">
+                  <option value="">Selecione</option>
+                  <option>Dra. Amanda</option>
+                  <option>Fernanda</option>
+                  <option>Adriele</option>
+                  <option>Recepção</option>
+                  <option>Equipe</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Procedimentos</label>
+                <input value={lProc} onChange={e => setLProc(e.target.value)} placeholder="Ex: Botox, Preenchimento..."
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Valor Taxa (R$)</label>
+                  <input type="number" value={lTaxa} onChange={e => setLTaxa(e.target.value)} placeholder="0,00" min="0" step="0.01"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Valor Tratamento (R$)</label>
+                  <input type="number" value={lValor} onChange={e => setLValor(e.target.value)} placeholder="0,00" min="0" step="0.01"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300" />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-2 block">Formas de Pagamento</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {FORMAS_PGT.map(f => (
+                    <label key={f} className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={lFormas.includes(f)} onChange={() => toggleForma(f)} className="accent-brand-400 w-4 h-4" />
+                      <span className="text-sm text-gray-700">{f}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              {lFormas.includes('Cartão de Crédito') && (
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Parcelas — Cartão de Crédito</label>
+                  <select value={lParcelas['Cartão de Crédito'] || '1x'} onChange={e => setLParcelas(p => ({ ...p, 'Cartão de Crédito': e.target.value }))}
+                    className="w-40 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 bg-white">
+                    {['1x','2x','3x','4x','5x','6x','7x','8x','9x','10x','11x','12x'].map(p => <option key={p}>{p}</option>)}
+                  </select>
+                </div>
+              )}
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Observações</label>
+                <textarea value={lObs} onChange={e => setLObs(e.target.value)} rows={2} placeholder="Observações adicionais"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300 resize-none" />
+              </div>
+              <div className="flex justify-end gap-3 pt-1">
+                <button onClick={onClose} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
+                <button onClick={salvarLancamento} disabled={!lProc.trim() && !lValor}
+                  className="px-5 py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl disabled:opacity-40">Registrar</button>
+              </div>
+            </div>
+          )}
+
+          {aba === 'historico' && (
+            <div className="p-6">
+              {lancamentosPaciente.length === 0 ? (
+                <div className="text-center py-10">
+                  <p className="text-3xl mb-2">📋</p>
+                  <p className="text-sm text-gray-400">Nenhum lançamento registrado</p>
+                  <button onClick={() => setAba('lancamento')} className="mt-3 text-sm text-brand-500 hover:text-brand-700 font-semibold">+ Registrar primeiro lançamento</button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {[...lancamentosPaciente].sort((a, b) => b.data?.localeCompare(a.data)).map(l => (
+                    <div key={l.id} className="border border-gray-100 rounded-xl p-4 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-sm font-semibold text-gray-800">{l.procedimentos || l.tipo || '—'}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {l.data ? new Date(l.data + 'T12:00').toLocaleDateString('pt-BR') : '—'}
+                            {l.responsavel ? ` · ${l.responsavel}` : ''}
+                          </p>
+                          {l.formasPagamento?.length > 0 && (
+                            <p className="text-xs text-gray-400 mt-0.5">{l.formasPagamento.join(', ')}</p>
+                          )}
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-sm font-bold text-gray-800">{fmt(l.valorTratamento)}</p>
+                          {l.valorTaxa > 0 && <p className="text-xs text-gray-400">Taxa: {fmt(l.valorTaxa)}</p>}
+                          {l.tipo && <span className="text-[10px] bg-brand-100 text-brand-700 font-semibold px-2 py-0.5 rounded-full">{l.tipo}</span>}
+                        </div>
+                      </div>
+                      {l.obs && <p className="text-xs text-gray-400 italic mt-2 border-t border-gray-50 pt-2">{l.obs}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ModalNovoPaciente({ onClose, onSalvar }) {
   const [nome, setNome] = useState('')
   const [sexo, setSexo] = useState('')
@@ -118,8 +386,8 @@ function ModalNovoPaciente({ onClose, onSalvar }) {
 }
 
 export default function Pacientes() {
-  const { pacientes, addPaciente } = usePacientes()
-  const { lancamentos } = useVendas()
+  const { pacientes, addPaciente, updatePaciente, removePaciente } = usePacientes()
+  const { lancamentos, addLancamento } = useVendas()
 
   // LTV por paciente: soma de todos os lançamentos de cada paciente (histórico completo)
   const ltvPorPaciente = {}
@@ -133,6 +401,7 @@ export default function Pacientes() {
   const ltvMedio = ltvValues.length > 0 ? ltvValues.reduce((a, b) => a + b, 0) / ltvValues.length : 0
   const fmtLTV = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
   const [modal, setModal] = useState(false)
+  const [modalPerfil, setModalPerfil] = useState(null)
   const [busca, setBusca] = useState('')
   const [filtro, setFiltro] = useState('Todos')
   const [sugestoes, setSugestoes] = useState([])
@@ -307,8 +576,8 @@ export default function Pacientes() {
           </thead>
           <tbody>
             {filtrados.map(p => (
-              <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer">
-                <td className="py-3 font-medium text-gray-800">{p.nome}</td>
+              <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setModalPerfil(p)}>
+                <td className="py-3 font-medium text-gray-800 hover:text-brand-600 transition-colors">{p.nome}</td>
                 <td className="py-3 text-gray-500">{p.whatsapp || '—'}</td>
                 <td className="py-3 text-gray-500">{p.nascimento ? new Date(p.nascimento).toLocaleDateString('pt-BR') : '—'}</td>
                 <td className="py-3 text-gray-500">{getLTV(p.nome) > 0 ? fmtLTV(getLTV(p.nome)) : '—'}</td>
@@ -322,6 +591,16 @@ export default function Pacientes() {
       </div>
 
       {modal && <ModalNovoPaciente onClose={() => setModal(false)} onSalvar={addPaciente} />}
+      {modalPerfil && (
+        <ModalPerfilPaciente
+          paciente={modalPerfil}
+          onClose={() => setModalPerfil(null)}
+          onSalvar={updatePaciente}
+          onExcluir={removePaciente}
+          lancamentosPaciente={lancamentos.filter(l => l.paciente === modalPerfil.nome)}
+          onAddLancamento={addLancamento}
+        />
+      )}
     </div>
   )
 }
