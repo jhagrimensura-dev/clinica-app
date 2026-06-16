@@ -362,6 +362,8 @@ export default function InboxWhatsApp({ contaId }) {
   const [novaResposta, setNovaResposta] = useState('')
   const [showEmoji, setShowEmoji] = useState(false)
   const [menuOpcoes, setMenuOpcoes] = useState(null)
+  const [menuMsg, setMenuMsg] = useState(null)
+  const [editandoMsg, setEditandoMsg] = useState(null)
   const inputFotoRef = useRef(null)
   const inputArquivoRef = useRef(null)
   const textareaRef = useRef(null)
@@ -410,6 +412,13 @@ export default function InboxWhatsApp({ contaId }) {
     document.addEventListener('click', handler)
     return () => document.removeEventListener('click', handler)
   }, [menuOpcoes])
+
+  useEffect(() => {
+    if (!menuMsg) return
+    const handler = () => setMenuMsg(null)
+    document.addEventListener('click', handler)
+    return () => document.removeEventListener('click', handler)
+  }, [menuMsg])
 
   function notificar(nome, texto) {
     if (!notifPermissao.current || document.visibilityState === 'visible') return
@@ -845,6 +854,24 @@ export default function InboxWhatsApp({ contaId }) {
     setConversas(prev => prev.map(c => c.id === convId ? { ...c, naoLidas: Math.max(c.naoLidas || 0, 1) } : c))
     setMenuOpcoes(null)
   }
+  const apagarMensagem = async (msgId) => {
+    setMenuMsg(null)
+    const remover = (prev) => prev ? { ...prev, mensagens: (prev.mensagens || []).filter(m => m.id !== msgId) } : prev
+    setSelecionada(remover)
+    setConversas(prev => prev.map(c => c.id === selecionada?.id ? remover(c) : c))
+    await supabase.from('whatsapp_mensagens').delete().eq('message_id', msgId)
+  }
+
+  const salvarEdicaoMensagem = async () => {
+    if (!editandoMsg) return
+    const { id, texto } = editandoMsg
+    const atualizar = (prev) => prev ? { ...prev, mensagens: (prev.mensagens || []).map(m => m.id === id ? { ...m, texto } : m) } : prev
+    setSelecionada(atualizar)
+    setConversas(prev => prev.map(c => c.id === selecionada?.id ? atualizar(c) : c))
+    await supabase.from('whatsapp_mensagens').update({ texto }).eq('message_id', id)
+    setEditandoMsg(null)
+  }
+
   const STATUS_NORMALIZE = {
     'Em aberto': 'em_aberto', 'Conversando': 'conversando',
     'Follow #1': 'follow1', 'Follow #2': 'follow2', 'Follow #3': 'follow3',
@@ -1119,11 +1146,39 @@ export default function InboxWhatsApp({ contaId }) {
                       <div className="flex-1 h-px bg-gray-200" />
                     </div>
                   )}
-                  <div className={`flex ${msg.minha ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`flex items-end gap-1 ${msg.minha ? 'justify-end' : 'justify-start'} group`}>
+                    {/* ⋮ menu — só para mensagens próprias, à esquerda da bolha */}
+                    {msg.minha && (
+                      <div className="relative self-end mb-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                        <button onClick={() => setMenuMsg(menuMsg === msg.id ? null : msg.id)}
+                          className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-200 text-base leading-none">
+                          ⋮
+                        </button>
+                        {menuMsg === msg.id && (
+                          <div className="absolute bottom-7 right-0 bg-white rounded-xl shadow-lg border border-gray-100 py-1 w-36 z-20">
+                            <button onClick={() => { setEditandoMsg({ id: msg.id, texto: msg.texto }); setMenuMsg(null) }}
+                              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">✏️ Editar</button>
+                            <button onClick={() => apagarMensagem(msg.id)}
+                              className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50">🗑️ Apagar</button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <div className={`max-w-xs lg:max-w-md rounded-2xl text-sm shadow-sm overflow-hidden ${
                       msg.minha ? 'bg-green-100 text-gray-800 rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm'
                     }`}>
-                      {msg.mediaUrl && (msg.tipo === 'image' || msg.mediaUrl.match(/\.(jpg|jpeg|png|gif|webp)/i)) ? (
+                      {editandoMsg?.id === msg.id ? (
+                        <div className="px-3 py-2 min-w-[200px]">
+                          <textarea autoFocus value={editandoMsg.texto}
+                            onChange={e => setEditandoMsg(p => ({ ...p, texto: e.target.value }))}
+                            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); salvarEdicaoMensagem() } if (e.key === 'Escape') setEditandoMsg(null) }}
+                            rows={3} className="w-full text-sm outline-none resize-none bg-transparent border-b border-green-300 pb-1" />
+                          <div className="flex gap-2 mt-2 justify-end">
+                            <button onClick={() => setEditandoMsg(null)} className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1">Cancelar</button>
+                            <button onClick={salvarEdicaoMensagem} className="text-xs bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600">Salvar</button>
+                          </div>
+                        </div>
+                      ) : msg.mediaUrl && (msg.tipo === 'image' || msg.mediaUrl.match(/\.(jpg|jpeg|png|gif|webp)/i)) ? (
                         <div>
                           <a href={msg.mediaUrl} target="_blank" rel="noreferrer">
                             <img src={msg.mediaUrl} alt="imagem" className="max-w-full rounded-xl block cursor-pointer hover:opacity-90 transition-opacity" style={{ maxHeight: 280 }} />
@@ -1156,7 +1211,9 @@ export default function InboxWhatsApp({ contaId }) {
                       ) : (
                         <p className="px-4 py-2.5 leading-relaxed break-words whitespace-pre-wrap">{msg.texto}</p>
                       )}
-                      <p className={`text-xs px-4 pb-2 ${msg.minha ? 'text-green-600' : 'text-gray-400'} text-right`}>{msg.hora}</p>
+                      {editandoMsg?.id !== msg.id && (
+                        <p className={`text-xs px-4 pb-2 ${msg.minha ? 'text-green-600' : 'text-gray-400'} text-right`}>{msg.hora}</p>
+                      )}
                     </div>
                   </div>
                 </div>
