@@ -512,7 +512,11 @@ export default function InboxWhatsApp({ contaId }) {
             notificar(c?.contato?.nome || selecionada.id, m.texto)
             return prev
           })
-          setSelecionada(prev => ({ ...prev, mensagens: [...(prev?.mensagens || []), novaMsg] }))
+          setSelecionada(prev => {
+            const msgs = prev?.mensagens || []
+            if (msgs.some(x => x.id === novaMsg.id)) return prev
+            return { ...prev, mensagens: [...msgs, novaMsg] }
+          })
         } else if (pendingMsgs.current.has(m.texto)) {
           // Substitui a mensagem local otimista pela confirmada do Supabase
           pendingMsgs.current.delete(m.texto)
