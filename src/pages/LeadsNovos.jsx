@@ -276,7 +276,11 @@ export default function LeadsNovos() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-800 truncate">{lead.nome}</p>
-                    <p className="text-xs text-gray-400">Follow {dataFormatada(lead.data)}</p>
+                    {lead.status === 'agendado' && lead.agendadoPara ? (
+                      <p className="text-xs text-blue-500 font-semibold">📅 {dataFormatada(lead.agendadoPara)}</p>
+                    ) : (
+                      <p className="text-xs text-gray-400">Lead {dataFormatada(lead.data)}</p>
+                    )}
                   </div>
                   {lead.obs && <p className="text-xs text-gray-400 italic truncate max-w-[180px] hidden md:block">{lead.obs}</p>}
                   <select
@@ -316,7 +320,11 @@ export default function LeadsNovos() {
                     ) : colLeads.map(lead => (
                       <div key={lead.id} className="bg-white rounded-xl p-3 shadow-sm border border-gray-100">
                         <p className="text-sm font-semibold text-gray-800 truncate">{lead.nome}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">Follow {dataFormatada(lead.data)}</p>
+                        {lead.status === 'agendado' && lead.agendadoPara ? (
+                          <p className="text-xs text-blue-500 font-semibold mt-0.5">📅 {dataFormatada(lead.agendadoPara)}</p>
+                        ) : (
+                          <p className="text-xs text-gray-400 mt-0.5">Lead {dataFormatada(lead.data)}</p>
+                        )}
                         <div className="flex items-center justify-between mt-2">
                           <select
                             value={lead.status}

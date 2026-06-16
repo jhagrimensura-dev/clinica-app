@@ -98,6 +98,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar }) {
   const [origemCustom, setOrigemCustom] = useState('WhatsApp')
   const [status, setStatus] = useState('Em aberto')
   const [data, setData] = useState(hoje)
+  const [agendadoPara, setAgendadoPara] = useState('')
   const [lembrete, setLembrete] = useState('')
   const [lembreteHora, setLembreteHora] = useState('')
   const [obs, setObs] = useState('')
@@ -261,6 +262,14 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar }) {
           </div>
         </div>
 
+        {status === 'Agendou' && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+            <label className="text-xs font-semibold text-blue-700 mb-1 block">📅 Agendado para *</label>
+            <input type="date" value={agendadoPara} onChange={e => setAgendadoPara(e.target.value)}
+              className="w-full border border-blue-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-400 bg-white" />
+          </div>
+        )}
+
         <div>
           <label className="text-xs font-semibold text-gray-500 mb-1 block">Próximo Lembrete</label>
           <div className="flex gap-2">
@@ -281,8 +290,8 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar }) {
         <div className="flex justify-end gap-3 pt-1">
           <button onClick={onFechar} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
           <button
-            onClick={() => nome.trim() && onSalvar({ nome: nome.trim(), telefone, responsavel, obs, origem: tipo, origemCustom, data, status, lembrete: lembrete || null, lembreteHora: lembreteHora || null, fonte: 'WhatsApp' })}
-            disabled={!nome.trim()}
+            onClick={() => nome.trim() && onSalvar({ nome: nome.trim(), telefone, responsavel, obs, origem: tipo, origemCustom, data, status, agendadoPara: agendadoPara || null, lembrete: lembrete || null, lembreteHora: lembreteHora || null, fonte: 'WhatsApp' })}
+            disabled={!nome.trim() || (status === 'Agendou' && !agendadoPara)}
             className="px-5 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded-xl disabled:opacity-40">
             Registrar
           </button>
@@ -834,9 +843,15 @@ export default function InboxWhatsApp({ contaId }) {
     setConversas(prev => prev.map(c => c.id === convId ? { ...c, naoLidas: Math.max(c.naoLidas || 0, 1) } : c))
     setMenuOpcoes(null)
   }
+  const STATUS_NORMALIZE = {
+    'Em aberto': 'em_aberto', 'Conversando': 'conversando',
+    'Follow #1': 'follow1', 'Follow #2': 'follow2', 'Follow #3': 'follow3',
+    'Agendou': 'agendado', 'Perdido': 'perdido',
+  }
+
   const registrarLead = (tipo) => { setMenuLead(false); setModalLead(tipo) }
   const confirmarLead = (dados) => {
-    addLead(dados)
+    addLead({ ...dados, status: STATUS_NORMALIZE[dados.status] || dados.status })
     if (dados.lembrete) {
       const lista = loadLembretes()
       lista.push({
