@@ -45,7 +45,7 @@ export default async function handler(req, res) {
     if (!texto) return res.status(200).json({ ok: true, skipped: true })
 
     const SUPABASE_URL = process.env.VITE_SUPABASE_URL
-    const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY
+    const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY
 
     // Para mensagens enviadas pelo celular (@lid), busca o telefone real pelo nome do chat
     if (deMin && isLidPhone && nomeContato && nomeContato !== phone) {
