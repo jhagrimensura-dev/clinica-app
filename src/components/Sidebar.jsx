@@ -1,207 +1,208 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 
 function loadContas() {
   try { const s = localStorage.getItem('config_whatsapp_contas'); return s ? JSON.parse(s) : [] } catch { return [] }
 }
 
+/* ── SVG Icons ── */
+const icons = {
+  dashboard: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>,
+  agenda:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>,
+  metas:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>,
+  social:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>,
+  comercial: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+  faturamento:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>,
+  financeiro:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
+  pacientes: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+  relatorios:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
+  config:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+  sair:      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
+  lembretes: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
+  leads:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+  indicacao: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>,
+  contas:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>,
+}
+
 const menuItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
-  { id: 'agenda', label: 'Agenda', icon: '📅' },
-  { id: 'metas', label: 'Metas', icon: '🎯' },
-  { id: 'social', label: 'Social Media', icon: '📱' },
+  { id: 'dashboard',   label: 'Dashboard',        icon: 'dashboard'    },
+  { id: 'agenda',      label: 'Agenda',            icon: 'agenda'       },
+  { id: 'metas',       label: 'Metas',             icon: 'metas'        },
+  { id: 'social',      label: 'Social Media',      icon: 'social'       },
   {
-    id: 'comercial', label: 'WhatsApp', icon: '💬',
+    id: 'comercial', label: 'WhatsApp', icon: 'comercial',
     sub: [
-      { id: 'agenda_lembretes', label: 'Lembretes', icon: '🔔' },
-      { id: 'leads_novos', label: 'Leads Novos', icon: '🆕' },
-      { id: 'leads_recorrentes', label: 'Leads Recorrentes', icon: '🔄' },
-      { id: 'indicacao', label: 'Indicação', icon: '🤝' },
+      { id: 'agenda_lembretes',  label: 'Lembretes',        icon: 'lembretes' },
+      { id: 'leads_novos',       label: 'Leads Novos',      icon: 'leads'     },
+      { id: 'leads_recorrentes', label: 'Leads Recorrentes',icon: 'leads'     },
+      { id: 'indicacao',         label: 'Indicação',        icon: 'indicacao' },
     ],
   },
-  { id: 'faturamento', label: 'Vendas', icon: '📋' },
+  { id: 'faturamento', label: 'Vendas',            icon: 'faturamento'  },
   {
-    id: 'financeiro', label: 'Financeiro', icon: '💹',
+    id: 'financeiro', label: 'Financeiro', icon: 'financeiro',
     sub: [
-      { id: 'contas', label: 'Contas a Pagar', icon: '📌' },
+      { id: 'contas', label: 'Contas a Pagar', icon: 'contas' },
     ],
   },
-  { id: 'pacientes', label: 'Pacientes', icon: '👤' },
-  { id: 'relatorios', label: 'Relatórios', icon: '📄' },
+  { id: 'pacientes',   label: 'Pacientes',         icon: 'pacientes'    },
+  { id: 'relatorios',  label: 'Relatórios',        icon: 'relatorios'   },
 ]
 
-export default function Sidebar({ active, setActive, collapsed, setCollapsed }) {
-  const { signOut, userRole } = useAuth()
-  const isFuncionario = userRole === 'Funcionário'
-  const [waAberto, setWaAberto] = useState(false)
-  const [contasWA, setContasWA] = useState(loadContas)
+function FlyoutItem({ item, active, setActive, isFuncionario }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+  const timerRef = useRef(null)
 
-  useEffect(() => {
-    const atualizar = () => setContasWA(loadContas())
-    window.addEventListener('storage', atualizar)
-    // atualiza ao montar caso localStorage já tenha dados
-    setContasWA(loadContas())
-    return () => window.removeEventListener('storage', atualizar)
-  }, [])
-  const [financeiroAberto, setFinanceiroAberto] = useState(
-    active === 'financeiro' || active === 'contas'
-  )
-  const [whatsappAberto, setWhatsappAberto] = useState(
-    ['comercial','leads_novos','leads_recorrentes','indicacao'].includes(active)
-  )
+  const isActive = active === item.id || item.sub?.some(s => s.id === active)
 
-  const subStates = {
-    financeiro: [financeiroAberto, setFinanceiroAberto],
-    comercial: [whatsappAberto, setWhatsappAberto],
+  const handleEnter = () => {
+    clearTimeout(timerRef.current)
+    setOpen(true)
+  }
+  const handleLeave = () => {
+    timerRef.current = setTimeout(() => setOpen(false), 150)
   }
 
-  const handleClick = (item) => {
-    if (collapsed) { setCollapsed(false); return }
+  const handleClick = () => {
     if (item.sub) {
-      const [, setter] = subStates[item.id] || [false, () => {}]
-      setter(v => !v)
-      setActive(item.id)
+      setActive(item.sub[0].id)
     } else {
       setActive(item.id)
     }
   }
 
+  if (isFuncionario && item.id === 'financeiro') return null
+
   return (
-    <div className={`${collapsed ? 'w-14' : 'w-52'} min-h-screen bg-white border-r border-brand-100 flex flex-col fixed left-0 top-0 bottom-0 transition-all duration-200 z-50`}>
-
-      {/* Header */}
-      <div className={`p-3 flex items-center border-b border-brand-100 ${collapsed ? 'justify-center' : 'gap-3'}`}>
-        <div className="w-9 h-9 bg-brand-200 rounded-xl flex items-center justify-center text-brand-600 font-bold text-sm flex-shrink-0">A</div>
-        {!collapsed && (
-          <div className="min-w-0">
-            <p className="font-bold text-gray-800 text-xs leading-tight truncate">Dra. Amanda Lima</p>
-          </div>
-        )}
-      </div>
-
-      {/* Botão recolher */}
+    <div ref={ref} className="relative" onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
       <button
-        onClick={() => setCollapsed(v => !v)}
-        className="absolute -right-4 top-6 w-8 h-8 bg-brand-400 hover:bg-brand-500 border-2 border-white rounded-full flex items-center justify-center text-white transition-colors shadow-md z-50"
-        title={collapsed ? 'Expandir menu' : 'Recolher menu'}
+        onClick={handleClick}
+        className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all ${
+          isActive
+            ? 'bg-brand-400/30 text-brand-200'
+            : 'text-brand-400/60 hover:text-brand-200 hover:bg-brand-400/15'
+        }`}
       >
-        <svg className={`w-4 h-4 transition-transform duration-200 ${collapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-        </svg>
+        {icons[item.icon]}
       </button>
 
-      <div className="pt-3" />
-
-      {/* Menu */}
-      <nav className="flex-1 px-2">
-        {menuItems.filter(item => !(isFuncionario && item.id === 'financeiro')).map(item => (
-          <div key={item.id}>
-            <button
-              onClick={() => handleClick(item)}
-              title={collapsed ? item.label : ''}
-              className={`w-full text-left px-2 py-2 rounded-lg mb-1 text-sm flex items-center transition-all ${collapsed ? 'justify-center' : 'gap-3'} ${
-                active === item.id
-                  ? 'bg-brand-100 text-brand-600 font-semibold'
-                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-              }`}
-            >
-              <span className="text-base flex-shrink-0">{item.icon}</span>
-              {!collapsed && <span className="flex-1">{item.label}</span>}
-              {!collapsed && item.sub && (
-                <span className="text-xs text-gray-300">{(subStates[item.id]?.[0]) ? '▲' : '▼'}</span>
-              )}
+      {/* Flyout */}
+      {open && (
+        <div className="absolute left-14 top-0 z-50 bg-[#3D1A0A] border border-brand-600/40 rounded-xl shadow-2xl min-w-[180px] py-2 overflow-hidden">
+          <p className="px-4 py-1.5 text-[10px] font-bold text-brand-400/50 uppercase tracking-widest">{item.label}</p>
+          {item.sub ? item.sub.map(sub => (
+            <button key={sub.id} onClick={() => { setActive(sub.id); setOpen(false) }}
+              className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors ${
+                active === sub.id ? 'text-brand-100 bg-brand-400/20' : 'text-brand-300/70 hover:text-brand-100 hover:bg-brand-400/10'
+              }`}>
+              {icons[sub.icon]}
+              <span>{sub.label}</span>
             </button>
-
-            {!collapsed && item.sub && subStates[item.id]?.[0] && (
-              <div className="ml-4 mb-1">
-                {item.sub.map(sub => (
-                  <button
-                    key={sub.id}
-                    onClick={() => setActive(sub.id)}
-                    className={`w-full text-left px-3 py-1.5 rounded-lg mb-0.5 text-xs flex items-center gap-2 transition-all border-l-2 ${
-                      active === sub.id
-                        ? 'border-brand-400 bg-brand-50 text-brand-600 font-semibold'
-                        : 'border-gray-100 text-gray-400 hover:bg-gray-50 hover:text-gray-600'
-                    }`}
-                  >
-                    <span>{sub.icon}</span>
-                    <span>{sub.label}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-      </nav>
-
-      {/* Footer */}
-      <div className={`px-2 pb-4 border-t border-gray-100 pt-3 space-y-0.5`}>
-        {!isFuncionario && (
-          <button onClick={() => setActive('configuracoes')} title={collapsed ? 'Configurações' : ''} className={`w-full text-left px-2 py-2 rounded-lg text-sm flex items-center transition-colors ${collapsed ? 'justify-center' : 'gap-3'} ${active === 'configuracoes' ? 'bg-brand-50 text-brand-600 font-semibold' : 'text-gray-500 hover:bg-gray-50'}`}>
-            <span>⚙️</span>{!collapsed && <span>Configurações</span>}
-          </button>
-        )}
-        <button onClick={() => setActive('ajuda')} title={collapsed ? 'Ajuda' : ''} className={`w-full text-left px-2 py-2 rounded-lg text-sm flex items-center transition-colors ${collapsed ? 'justify-center' : 'gap-3'} ${active === 'ajuda' ? 'bg-brand-50 text-brand-600 font-semibold' : 'text-gray-500 hover:bg-gray-50'}`}>
-          <span>❓</span>{!collapsed && <span>Ajuda</span>}
-        </button>
-        {/* WhatsApp Inboxes */}
-        <div>
-          <button onClick={() => setWaAberto(v => !v)} title={collapsed ? 'WhatsApp' : ''}
-            className={`w-full text-left px-2 py-2 rounded-lg text-sm flex items-center text-gray-500 hover:bg-gray-50 ${collapsed ? 'justify-center' : 'gap-3'}`}>
-            <span>💬</span>
-            {!collapsed && (
-              <>
-                <span className="flex-1">WhatsApp</span>
-                <span className="text-xs text-gray-300">{waAberto ? '▲' : '▼'}</span>
-              </>
-            )}
-          </button>
-          {!collapsed && waAberto && (
-            <div className="ml-4 space-y-0.5 mb-1">
-              {contasWA.length === 0 ? (
-                <button onClick={() => setActive('configuracoes')}
-                  className="w-full text-left px-3 py-1.5 rounded-lg text-xs text-gray-400 hover:bg-gray-50 border-l-2 border-gray-100">
-                  + Adicionar conta
-                </button>
-              ) : (
-                <>
-                  {contasWA.map(conta => {
-                    const tipoColor = {
-                      'Leads Novos':       'bg-brand-100 text-brand-700',
-                      'Leads Recorrentes': 'bg-blue-100 text-blue-700',
-                      'Indicação':         'bg-purple-100 text-purple-700',
-                      'Suporte':           'bg-yellow-100 text-yellow-700',
-                    }[conta.tipo] || 'bg-gray-100 text-gray-500'
-                    return (
-                      <button key={conta.id} onClick={() => setActive(`inbox_${conta.id}`)}
-                        className={`w-full text-left px-3 py-2 rounded-lg text-xs flex flex-col gap-0.5 transition-all border-l-2 ${
-                          active === `inbox_${conta.id}`
-                            ? 'border-green-400 bg-green-50 text-green-700 font-semibold'
-                            : 'border-gray-100 text-gray-500 hover:bg-gray-50'
-                        }`}>
-                        <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0"></span>
-                          <span className="truncate">{conta.nome}</span>
-                        </div>
-                        {conta.tipo && (
-                          <span className={`ml-4 self-start text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${tipoColor}`}>
-                            {conta.tipo}
-                          </span>
-                        )}
-                      </button>
-                    )
-                  })}
-                  <button onClick={() => setActive('configuracoes')}
-                    className="w-full text-left px-3 py-1.5 rounded-lg text-xs text-gray-400 hover:bg-gray-50 border-l-2 border-gray-100">
-                    + Adicionar
-                  </button>
-                </>
-              )}
-            </div>
+          )) : (
+            <button onClick={() => { setActive(item.id); setOpen(false) }}
+              className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors ${
+                active === item.id ? 'text-brand-100 bg-brand-400/20' : 'text-brand-300/70 hover:text-brand-100 hover:bg-brand-400/10'
+              }`}>
+              {icons[item.icon]}
+              <span>{item.label}</span>
+            </button>
           )}
         </div>
-        <button onClick={signOut} title={collapsed ? 'Sair' : ''} className={`w-full text-left px-2 py-2 rounded-lg text-sm flex items-center text-red-400 hover:bg-red-50 ${collapsed ? 'justify-center' : 'gap-3'}`}>
-          <span>🚪</span>{!collapsed && <span>Sair</span>}
+      )}
+    </div>
+  )
+}
+
+function WhatsAppFlyout({ active, setActive }) {
+  const [open, setOpen] = useState(false)
+  const [contasWA, setContasWA] = useState(loadContas)
+  const timerRef = useRef(null)
+
+  useEffect(() => {
+    const atualizar = () => setContasWA(loadContas())
+    window.addEventListener('storage', atualizar)
+    setContasWA(loadContas())
+    return () => window.removeEventListener('storage', atualizar)
+  }, [])
+
+  if (contasWA.length === 0) return null
+
+  const isActive = contasWA.some(c => active === `inbox_${c.id}`)
+
+  const handleEnter = () => { clearTimeout(timerRef.current); setOpen(true) }
+  const handleLeave = () => { timerRef.current = setTimeout(() => setOpen(false), 150) }
+
+  return (
+    <div className="relative" onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
+      <button className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all ${
+        isActive ? 'bg-brand-400/30 text-brand-200' : 'text-brand-400/60 hover:text-brand-200 hover:bg-brand-400/15'
+      }`}>
+        <svg viewBox="0 0 24 24" className="w-5 h-5" fill={isActive ? '#25D366' : 'currentColor'} opacity={isActive ? 1 : 0.5}>
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute left-14 bottom-0 z-50 bg-[#3D1A0A] border border-brand-600/40 rounded-xl shadow-2xl min-w-[200px] py-2">
+          <p className="px-4 py-1.5 text-[10px] font-bold text-brand-400/50 uppercase tracking-widest">Inbox WhatsApp</p>
+          {contasWA.map(conta => (
+            <button key={conta.id} onClick={() => { setActive(`inbox_${conta.id}`); setOpen(false) }}
+              className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors ${
+                active === `inbox_${conta.id}` ? 'text-brand-100 bg-brand-400/20' : 'text-brand-300/70 hover:text-brand-100 hover:bg-brand-400/10'
+              }`}>
+              <span className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0" />
+              <span className="truncate">{conta.nome}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function Sidebar({ active, setActive }) {
+  const { signOut, userRole, user } = useAuth()
+  const isFuncionario = userRole === 'Funcionário'
+  const inicial = (user?.user_metadata?.nome || user?.email || 'A').charAt(0).toUpperCase()
+
+  return (
+    <div className="w-16 min-h-screen bg-[#2D1409] flex flex-col fixed left-0 top-0 bottom-0 z-50 items-center py-4 gap-1">
+
+      {/* Logo */}
+      <div className="w-10 h-10 bg-brand-300/30 rounded-xl flex items-center justify-center text-brand-200 font-bold text-base mb-3 flex-shrink-0">
+        {inicial}
+      </div>
+
+      {/* Divisor */}
+      <div className="w-8 h-px bg-brand-600/40 mb-2" />
+
+      {/* Nav principal */}
+      <nav className="flex flex-col gap-1 flex-1 items-center">
+        {menuItems.map(item => (
+          <FlyoutItem key={item.id} item={item} active={active} setActive={setActive} isFuncionario={isFuncionario} />
+        ))}
+
+        {/* WhatsApp inbox accounts */}
+        <WhatsAppFlyout active={active} setActive={setActive} />
+      </nav>
+
+      {/* Divisor */}
+      <div className="w-8 h-px bg-brand-600/40 mb-2" />
+
+      {/* Footer */}
+      <div className="flex flex-col gap-1 items-center">
+        {!isFuncionario && (
+          <button onClick={() => setActive('configuracoes')}
+            className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all ${
+              active === 'configuracoes' ? 'bg-brand-400/30 text-brand-200' : 'text-brand-400/60 hover:text-brand-200 hover:bg-brand-400/15'
+            }`} title="Configurações">
+            {icons.config}
+          </button>
+        )}
+        <button onClick={signOut}
+          className="w-10 h-10 flex items-center justify-center rounded-xl text-brand-500/50 hover:text-red-400 hover:bg-red-400/10 transition-all"
+          title="Sair">
+          {icons.sair}
         </button>
       </div>
     </div>

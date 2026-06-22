@@ -197,7 +197,7 @@ function AppContent() {
   }, [])
   const [view, setView] = useState('mensal')
   const [mesIndex, setMesIndex] = useState(4)
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed] = useState(false)
   const ano = 2026
 
   const renderPage = () => {
@@ -235,8 +235,8 @@ case 'whatsapp_canal': return <PagePlaceholder title="WhatsApp" />
     <PacientesProvider>
     <VendasProvider>
       <div className="flex min-h-screen" style={{ background: 'linear-gradient(135deg, #F5EDE0 0%, #EDD9C0 50%, #E8D4BE 100%)' }}>
-        <Sidebar active={active} setActive={setActive} collapsed={collapsed} setCollapsed={setCollapsed} />
-        <div className={`flex-1 ${collapsed ? 'ml-14' : 'ml-52'} flex flex-col transition-all duration-200`}>
+        <Sidebar active={active} setActive={setActive} />
+        <div className="flex-1 ml-16 flex flex-col">
           {active === 'dashboard' && <Header view={view} setView={setView} />}
           <main className="flex-1">{renderPage()}</main>
         </div>
