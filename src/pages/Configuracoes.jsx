@@ -953,9 +953,9 @@ function autoMapear(headers, campos) {
 }
 
 function TabImportar() {
-  const { addLead }      = useLeads()
-  const { addPaciente }  = usePacientes()
-  const { addLancamento } = useVendas()
+  const { addLead, leads }           = useLeads()
+  const { addPaciente, pacientes }   = usePacientes()
+  const { addLancamento, lancamentos } = useVendas()
   const inputRef = useRef(null)
   const [tipo, setTipo]         = useState('leads')
   const [headers, setHeaders]   = useState([])
@@ -964,6 +964,7 @@ function TabImportar() {
   const [resultado, setResultado] = useState(null)
   const [importando, setImportando] = useState(false)
   const [drag, setDrag]         = useState(false)
+  const [podeDesfazer, setPodeDesfazer] = useState(false)
 
   const campos = CAMPOS_TIPO[tipo]
 
@@ -1000,8 +1001,15 @@ function TabImportar() {
 
   const get = (row, campo) => { const col = mapa[campo]; return col ? (row[col] ?? '') : '' }
 
+  const CHAVES = { leads: 'clinica_leads', pacientes: 'clinica_pacientes', agendamentos: 'agenda_agendamentos', vendas: 'clinica_vendas' }
+
   const importar = () => {
     setImportando(true)
+    // Salva backup antes de importar
+    const backupKey = `backup_import_${tipo}`
+    const chave = CHAVES[tipo]
+    localStorage.setItem(backupKey, localStorage.getItem(chave) || '[]')
+
     let ok = 0, err = 0
     const hoje = new Date().toISOString().split('T')[0]
     rows.forEach(row => {
@@ -1030,6 +1038,18 @@ function TabImportar() {
     })
     setResultado({ ok, err })
     setImportando(false)
+    setPodeDesfazer(true)
+  }
+
+  const desfazer = () => {
+    const backupKey = `backup_import_${tipo}`
+    const backup = localStorage.getItem(backupKey)
+    if (backup === null) return
+    localStorage.setItem(CHAVES[tipo], backup)
+    localStorage.removeItem(backupKey)
+    setPodeDesfazer(false)
+    setResultado(null)
+    window.location.reload()
   }
 
   const TIPOS = [
@@ -1139,12 +1159,20 @@ function TabImportar() {
 
       {/* Resultado */}
       {resultado && (
-        <div className={`rounded-2xl px-5 py-4 flex items-center gap-4 ${resultado.err === 0 ? 'bg-green-50 border border-green-200' : 'bg-amber-50 border border-amber-200'}`}>
-          <span className="text-2xl">{resultado.err === 0 ? '✅' : '⚠️'}</span>
-          <div>
-            <p className="text-sm font-bold text-gray-800">{resultado.ok} registro{resultado.ok !== 1 ? 's' : ''} importado{resultado.ok !== 1 ? 's' : ''} com sucesso</p>
-            {resultado.err > 0 && <p className="text-xs text-amber-700 mt-0.5">{resultado.err} linha{resultado.err !== 1 ? 's' : ''} ignorada{resultado.err !== 1 ? 's' : ''} (campos obrigatórios ausentes)</p>}
+        <div className={`rounded-2xl px-5 py-4 flex items-center justify-between gap-4 ${resultado.err === 0 ? 'bg-green-50 border border-green-200' : 'bg-amber-50 border border-amber-200'}`}>
+          <div className="flex items-center gap-4">
+            <span className="text-2xl">{resultado.err === 0 ? '✅' : '⚠️'}</span>
+            <div>
+              <p className="text-sm font-bold text-gray-800">{resultado.ok} registro{resultado.ok !== 1 ? 's' : ''} importado{resultado.ok !== 1 ? 's' : ''} com sucesso</p>
+              {resultado.err > 0 && <p className="text-xs text-amber-700 mt-0.5">{resultado.err} linha{resultado.err !== 1 ? 's' : ''} ignorada{resultado.err !== 1 ? 's' : ''} (campos obrigatórios ausentes)</p>}
+            </div>
           </div>
+          {podeDesfazer && (
+            <button onClick={desfazer}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 transition-colors flex-shrink-0">
+              ↩ Desfazer importação
+            </button>
+          )}
         </div>
       )}
 
