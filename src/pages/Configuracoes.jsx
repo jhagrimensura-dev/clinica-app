@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { useLeads } from '../context/LeadsContext'
 import { usePacientes } from '../context/PacientesContext'
 import { useVendas } from '../context/VendasContext'
+import * as XLSX from 'xlsx'
 
 function load(key, fallback) {
   try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : fallback } catch { return fallback }
@@ -967,16 +968,30 @@ function TabImportar() {
   const campos = CAMPOS_TIPO[tipo]
 
   const carregarArquivo = (file) => {
-    if (!file || !file.name.match(/\.(csv|txt)$/i)) return
+    if (!file || !file.name.match(/\.(csv|txt|xls|xlsx)$/i)) return
     setResultado(null)
     const reader = new FileReader()
-    reader.onload = e => {
-      const { headers: hdrs, rows: rs } = parseCSV(e.target.result)
-      setHeaders(hdrs)
-      setRows(rs)
-      setMapa(autoMapear(hdrs, CAMPOS_TIPO[tipo]))
+    if (file.name.match(/\.(xls|xlsx)$/i)) {
+      reader.onload = e => {
+        const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' })
+        const ws = wb.Sheets[wb.SheetNames[0]]
+        const json = XLSX.utils.sheet_to_json(ws, { defval: '' })
+        if (!json.length) return
+        const hdrs = Object.keys(json[0])
+        setHeaders(hdrs)
+        setRows(json.map(row => Object.fromEntries(hdrs.map(h => [h, String(row[h] ?? '')]))))
+        setMapa(autoMapear(hdrs, CAMPOS_TIPO[tipo]))
+      }
+      reader.readAsArrayBuffer(file)
+    } else {
+      reader.onload = e => {
+        const { headers: hdrs, rows: rs } = parseCSV(e.target.result)
+        setHeaders(hdrs)
+        setRows(rs)
+        setMapa(autoMapear(hdrs, CAMPOS_TIPO[tipo]))
+      }
+      reader.readAsText(file, 'UTF-8')
     }
-    reader.readAsText(file, 'UTF-8')
   }
 
   useEffect(() => {
@@ -1054,10 +1069,10 @@ function TabImportar() {
         className={`border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-colors ${
           drag ? 'border-amber-400 bg-amber-50' : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/50'
         }`}>
-        <input ref={inputRef} type="file" accept=".csv,.txt" className="hidden" onChange={e => carregarArquivo(e.target.files[0])} />
+        <input ref={inputRef} type="file" accept=".csv,.txt,.xls,.xlsx" className="hidden" onChange={e => carregarArquivo(e.target.files[0])} />
         <p className="text-3xl mb-2">📂</p>
-        <p className="text-sm font-semibold text-gray-600">Arraste o arquivo CSV aqui ou clique para selecionar</p>
-        <p className="text-xs text-gray-400 mt-1">Formato: .csv ou .txt — separador vírgula ou ponto-e-vírgula</p>
+        <p className="text-sm font-semibold text-gray-600">Arraste o arquivo aqui ou clique para selecionar</p>
+        <p className="text-xs text-gray-400 mt-1">Formatos aceitos: .csv, .xls, .xlsx</p>
         {rows.length > 0 && <p className="text-xs text-green-600 font-semibold mt-2">{rows.length} linhas carregadas</p>}
       </div>
 
