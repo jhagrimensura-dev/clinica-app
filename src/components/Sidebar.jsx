@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { supabase } from '../lib/supabase'
 
 function loadContas() {
   try { const s = localStorage.getItem('config_whatsapp_contas'); return s ? JSON.parse(s) : [] } catch { return [] }
@@ -120,7 +121,14 @@ function WhatsAppFlyout({ active, setActive }) {
   useEffect(() => {
     const atualizar = () => setContasWA(loadContas())
     window.addEventListener('storage', atualizar)
-    setContasWA(loadContas())
+    // Sincroniza do Supabase ao montar
+    supabase.from('configuracoes').select('valor').eq('chave', 'config_whatsapp_contas').single()
+      .then(({ data, error }) => {
+        if (!error && Array.isArray(data?.valor)) {
+          localStorage.setItem('config_whatsapp_contas', JSON.stringify(data.valor))
+          setContasWA(data.valor)
+        }
+      })
     return () => window.removeEventListener('storage', atualizar)
   }, [])
 

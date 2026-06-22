@@ -319,12 +319,11 @@ export default function InboxWhatsApp({ contaId }) {
     ? todasContas.find(c => c.id === contaId)
     : todasContas[0] || null
 
-  // Carrega do Supabase se localStorage estiver vazio (novo computador)
+  // Sempre sincroniza do Supabase ao montar (fonte da verdade)
   useEffect(() => {
-    if (todasContas.length > 0) return
     supabase.from('configuracoes').select('valor').eq('chave', 'config_whatsapp_contas').single()
-      .then(({ data }) => {
-        if (data?.valor?.length) {
+      .then(({ data, error }) => {
+        if (!error && Array.isArray(data?.valor)) {
           setTodasContas(data.valor)
           localStorage.setItem('config_whatsapp_contas', JSON.stringify(data.valor))
         }

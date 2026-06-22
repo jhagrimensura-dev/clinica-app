@@ -119,16 +119,16 @@ function TabWhatsApp() {
   const defaultContas = []
   const [contas, setContas] = useState(() => load('config_whatsapp_contas', defaultContas))
 
-  // Sincroniza com Supabase ao abrir
+  // Supabase é a fonte da verdade — sempre sincroniza ao abrir
   useEffect(() => {
     supabase.from('configuracoes').select('valor').eq('chave', 'config_whatsapp_contas').single()
-      .then(({ data }) => {
-        if (data?.valor?.length) {
-          // Supabase tem dados → carrega no localStorage
+      .then(({ data, error }) => {
+        if (!error && Array.isArray(data?.valor)) {
+          // Supabase tem registro (mesmo array vazio) → ele manda
           setContas(data.valor)
           localStorage.setItem('config_whatsapp_contas', JSON.stringify(data.valor))
-        } else {
-          // Supabase vazio → envia o localStorage para o Supabase
+        } else if (error?.code === 'PGRST116') {
+          // Sem registro no Supabase ainda → sobe o localStorage
           const local = load('config_whatsapp_contas', [])
           if (local.length > 0) {
             supabase.from('configuracoes').upsert({
