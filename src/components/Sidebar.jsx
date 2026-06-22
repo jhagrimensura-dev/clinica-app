@@ -169,7 +169,8 @@ function WhatsAppFlyout({ active, setActive }) {
 export default function Sidebar({ active, setActive }) {
   const { signOut, userRole, user, permissoes } = useAuth()
   const isFuncionario = userRole === 'Funcionário'
-  const inicial = (user?.user_metadata?.nome || user?.email || 'A').charAt(0).toUpperCase()
+  const clinicaNome = (() => { try { return JSON.parse(localStorage.getItem('config_clinica') || '{}').nome || '' } catch { return '' } })()
+  const inicial = (clinicaNome || user?.user_metadata?.nome || user?.email || 'A').charAt(0).toUpperCase()
 
   const podeVerItem = (item) => {
     if (!isFuncionario) return true
