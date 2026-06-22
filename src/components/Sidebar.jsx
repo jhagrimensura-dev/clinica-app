@@ -170,7 +170,7 @@ export default function Sidebar({ active, setActive }) {
   const { signOut, userRole, user, permissoes } = useAuth()
   const isFuncionario = userRole === 'Funcionário'
   const clinicaNome = (() => { try { return JSON.parse(localStorage.getItem('config_clinica') || '{}').nome || '' } catch { return '' } })()
-  const inicial = (clinicaNome || user?.user_metadata?.nome || user?.email || 'A').charAt(0).toUpperCase()
+  const inicial = (clinicaNome || user?.user_metadata?.nome || 'A').charAt(0).toUpperCase()
 
   const podeVerItem = (item) => {
     if (!isFuncionario) return true
