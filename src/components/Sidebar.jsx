@@ -89,12 +89,12 @@ function FlyoutItem({ item, active, setActive, isFuncionario }) {
 
       {/* Flyout */}
       {open && (
-        <div className="absolute left-14 top-0 z-50 bg-[#3D1A0A] border border-brand-600/40 rounded-xl shadow-2xl min-w-[180px] py-2 overflow-hidden">
-          <p className="px-4 py-1.5 text-[10px] font-bold text-brand-400/50 uppercase tracking-widest">{item.label}</p>
+        <div className="absolute left-14 top-0 z-50 bg-white border border-brand-100 rounded-xl shadow-2xl min-w-[180px] py-2 overflow-hidden">
+          <p className="px-4 py-1.5 text-[10px] font-bold text-brand-400 uppercase tracking-widest">{item.label}</p>
           {item.sub ? item.sub.map(sub => (
             <button key={sub.id} onClick={() => { setActive(sub.id); setOpen(false) }}
               className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors ${
-                active === sub.id ? 'text-brand-100 bg-brand-400/20' : 'text-brand-300/70 hover:text-brand-100 hover:bg-brand-400/10'
+                active === sub.id ? 'text-brand-600 bg-brand-100 font-semibold' : 'text-gray-600 hover:text-brand-600 hover:bg-brand-50'
               }`}>
               {icons[sub.icon]}
               <span>{sub.label}</span>
@@ -102,7 +102,7 @@ function FlyoutItem({ item, active, setActive, isFuncionario }) {
           )) : (
             <button onClick={() => { setActive(item.id); setOpen(false) }}
               className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors ${
-                active === item.id ? 'text-brand-100 bg-brand-400/20' : 'text-brand-300/70 hover:text-brand-100 hover:bg-brand-400/10'
+                active === item.id ? 'text-brand-600 bg-brand-100 font-semibold' : 'text-gray-600 hover:text-brand-600 hover:bg-brand-50'
               }`}>
               {icons[item.icon]}
               <span>{item.label}</span>
@@ -143,12 +143,12 @@ function WhatsAppFlyout({ active, setActive }) {
         </svg>
       </button>
       {open && (
-        <div className="absolute left-14 bottom-0 z-50 bg-[#3D1A0A] border border-brand-600/40 rounded-xl shadow-2xl min-w-[200px] py-2">
-          <p className="px-4 py-1.5 text-[10px] font-bold text-brand-400/50 uppercase tracking-widest">Inbox WhatsApp</p>
+        <div className="absolute left-14 bottom-0 z-50 bg-white border border-brand-100 rounded-xl shadow-2xl min-w-[200px] py-2">
+          <p className="px-4 py-1.5 text-[10px] font-bold text-brand-400 uppercase tracking-widest">Inbox WhatsApp</p>
           {contasWA.map(conta => (
             <button key={conta.id} onClick={() => { setActive(`inbox_${conta.id}`); setOpen(false) }}
               className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors ${
-                active === `inbox_${conta.id}` ? 'text-brand-100 bg-brand-400/20' : 'text-brand-300/70 hover:text-brand-100 hover:bg-brand-400/10'
+                active === `inbox_${conta.id}` ? 'text-brand-600 bg-brand-100 font-semibold' : 'text-gray-600 hover:text-brand-600 hover:bg-brand-50'
               }`}>
               <span className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0" />
               <span className="truncate">{conta.nome}</span>
