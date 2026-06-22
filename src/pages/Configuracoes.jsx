@@ -1,7 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { QRCodeSVG } from 'qrcode.react'
 import { supabase } from '../lib/supabase'
+import { useLeads } from '../context/LeadsContext'
+import { usePacientes } from '../context/PacientesContext'
+import { useVendas } from '../context/VendasContext'
 
 function load(key, fallback) {
   try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : fallback } catch { return fallback }
@@ -12,6 +15,7 @@ const TABS = [
   { key: 'whatsapp',  label: 'WhatsApp',   icon: '💬' },
   { key: 'perfil',    label: 'Meu Perfil', icon: '👤' },
   { key: 'equipe',    label: 'Equipe',     icon: '👥' },
+  { key: 'importar',  label: 'Importar',   icon: '📥' },
 ]
 
 /* ── ABA CLÍNICA ── */
@@ -866,6 +870,291 @@ function TabEquipe() {
   )
 }
 
+/* ── ABA IMPORTAR CSV ── */
+const CAMPOS_TIPO = {
+  leads: [
+    { id: 'nome',        label: 'Nome',                required: true  },
+    { id: 'telefone',    label: 'Telefone',            required: false },
+    { id: 'data',        label: 'Data',                required: false },
+    { id: 'status',      label: 'Status',              required: false },
+    { id: 'responsavel', label: 'Responsável',         required: false },
+    { id: 'obs',         label: 'Observações',         required: false },
+  ],
+  pacientes: [
+    { id: 'nome',           label: 'Nome',              required: true  },
+    { id: 'telefone',       label: 'Telefone',          required: false },
+    { id: 'email',          label: 'E-mail',            required: false },
+    { id: 'dataNascimento', label: 'Data de Nascimento',required: false },
+    { id: 'obs',            label: 'Observações',       required: false },
+  ],
+  agendamentos: [
+    { id: 'paciente',    label: 'Nome do Paciente',    required: true  },
+    { id: 'date',        label: 'Data',                required: true  },
+    { id: 'time',        label: 'Horário (HH:MM)',     required: false },
+    { id: 'procedimento',label: 'Procedimento',        required: false },
+    { id: 'status',      label: 'Status',              required: false },
+    { id: 'telefone',    label: 'Telefone',            required: false },
+  ],
+  vendas: [
+    { id: 'paciente',       label: 'Paciente',          required: true  },
+    { id: 'data',           label: 'Data',              required: true  },
+    { id: 'valor',          label: 'Valor (R$)',        required: true  },
+    { id: 'tipo',           label: 'Tipo',              required: false },
+    { id: 'procedimento',   label: 'Procedimento',      required: false },
+    { id: 'forma_pagamento',label: 'Forma de Pagamento',required: false },
+  ],
+}
+
+function parseCSV(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim())
+  if (!lines.length) return { headers: [], rows: [] }
+  const sep = (lines[0].match(/;/g) || []).length > (lines[0].match(/,/g) || []).length ? ';' : ','
+  function splitLine(line) {
+    const res = []; let f = '', q = false
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i]
+      if (c === '"') q = !q
+      else if (c === sep && !q) { res.push(f.trim().replace(/^"|"$/g, '')); f = '' }
+      else f += c
+    }
+    res.push(f.trim().replace(/^"|"$/g, ''))
+    return res
+  }
+  const hdrs = splitLine(lines[0])
+  const rows = lines.slice(1).map(l => {
+    const vals = splitLine(l)
+    return Object.fromEntries(hdrs.map((h, i) => [h, vals[i] ?? '']))
+  }).filter(r => Object.values(r).some(v => v))
+  return { headers: hdrs, rows }
+}
+
+function parseData(val) {
+  if (!val) return new Date().toISOString().split('T')[0]
+  const m = val.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/)
+  if (m) return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`
+  if (/^\d{4}-\d{2}-\d{2}/.test(val)) return val.slice(0, 10)
+  return new Date().toISOString().split('T')[0]
+}
+
+function parseValor(val) {
+  if (!val) return 0
+  return parseFloat(String(val).replace(/[R$\s.]/g, '').replace(',', '.')) || 0
+}
+
+function autoMapear(headers, campos) {
+  const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '')
+  const mapa = {}
+  campos.forEach(c => {
+    const match = headers.find(h => norm(h).includes(norm(c.label)) || norm(c.label).includes(norm(h)) || norm(h) === norm(c.id))
+    if (match) mapa[c.id] = match
+  })
+  return mapa
+}
+
+function TabImportar() {
+  const { addLead }      = useLeads()
+  const { addPaciente }  = usePacientes()
+  const { addLancamento } = useVendas()
+  const inputRef = useRef(null)
+  const [tipo, setTipo]         = useState('leads')
+  const [headers, setHeaders]   = useState([])
+  const [rows, setRows]         = useState([])
+  const [mapa, setMapa]         = useState({})
+  const [resultado, setResultado] = useState(null)
+  const [importando, setImportando] = useState(false)
+  const [drag, setDrag]         = useState(false)
+
+  const campos = CAMPOS_TIPO[tipo]
+
+  const carregarArquivo = (file) => {
+    if (!file || !file.name.match(/\.(csv|txt)$/i)) return
+    setResultado(null)
+    const reader = new FileReader()
+    reader.onload = e => {
+      const { headers: hdrs, rows: rs } = parseCSV(e.target.result)
+      setHeaders(hdrs)
+      setRows(rs)
+      setMapa(autoMapear(hdrs, CAMPOS_TIPO[tipo]))
+    }
+    reader.readAsText(file, 'UTF-8')
+  }
+
+  useEffect(() => {
+    if (headers.length) setMapa(autoMapear(headers, CAMPOS_TIPO[tipo]))
+  }, [tipo])
+
+  const get = (row, campo) => { const col = mapa[campo]; return col ? (row[col] ?? '') : '' }
+
+  const importar = () => {
+    setImportando(true)
+    let ok = 0, err = 0
+    const hoje = new Date().toISOString().split('T')[0]
+    rows.forEach(row => {
+      try {
+        if (tipo === 'leads') {
+          const nome = get(row, 'nome'); if (!nome) { err++; return }
+          addLead({ nome, telefone: get(row, 'telefone'), data: parseData(get(row, 'data')) || hoje, status: 'em_aberto', responsavel: get(row, 'responsavel'), obs: get(row, 'obs'), origem: 'leads_novos', origemCustom: 'Importação CSV' })
+          ok++
+        } else if (tipo === 'pacientes') {
+          const nome = get(row, 'nome'); if (!nome) { err++; return }
+          addPaciente({ nome, telefone: get(row, 'telefone'), email: get(row, 'email'), dataNascimento: get(row, 'dataNascimento'), obs: get(row, 'obs') })
+          ok++
+        } else if (tipo === 'agendamentos') {
+          const paciente = get(row, 'paciente'); const date = parseData(get(row, 'date'))
+          if (!paciente || !date) { err++; return }
+          const lista = JSON.parse(localStorage.getItem('agenda_agendamentos') || '[]')
+          lista.push({ id: `imp_${Date.now()}_${Math.random().toString(36).slice(2,6)}`, paciente, date, time: get(row, 'time') || '08:00', procedimento: get(row, 'procedimento'), status: get(row, 'status') || 'agendado', telefone: get(row, 'telefone'), tipo: 'consulta' })
+          localStorage.setItem('agenda_agendamentos', JSON.stringify(lista))
+          ok++
+        } else if (tipo === 'vendas') {
+          const paciente = get(row, 'paciente'); if (!paciente) { err++; return }
+          addLancamento({ paciente, data: parseData(get(row, 'data')) || hoje, valor: parseValor(get(row, 'valor')), tipo: get(row, 'tipo') || 'Consulta', procedimento: get(row, 'procedimento'), forma_pagamento: get(row, 'forma_pagamento') || '' })
+          ok++
+        }
+      } catch { err++ }
+    })
+    setResultado({ ok, err })
+    setImportando(false)
+  }
+
+  const TIPOS = [
+    { id: 'leads',        label: 'Leads',        icon: '🔗' },
+    { id: 'pacientes',    label: 'Pacientes',    icon: '👤' },
+    { id: 'agendamentos', label: 'Agendamentos', icon: '📅' },
+    { id: 'vendas',       label: 'Vendas',       icon: '💰' },
+  ]
+
+  const temObrigatorios = campos.filter(c => c.required).every(c => mapa[c.id])
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-bold text-gray-800">Importar CSV</h2>
+        <p className="text-sm text-gray-400 mt-0.5">Exporte do Favo (ou qualquer sistema) e importe aqui em segundos</p>
+      </div>
+
+      {/* Tipo */}
+      <div className="flex gap-2 flex-wrap">
+        {TIPOS.map(t => (
+          <button key={t.id} onClick={() => { setTipo(t.id); setResultado(null) }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-colors ${
+              tipo === t.id ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-gray-600 border-gray-200 hover:bg-amber-50'
+            }`}>
+            <span>{t.icon}</span>{t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Upload */}
+      <div
+        onDragOver={e => { e.preventDefault(); setDrag(true) }}
+        onDragLeave={() => setDrag(false)}
+        onDrop={e => { e.preventDefault(); setDrag(false); carregarArquivo(e.dataTransfer.files[0]) }}
+        onClick={() => inputRef.current?.click()}
+        className={`border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-colors ${
+          drag ? 'border-amber-400 bg-amber-50' : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/50'
+        }`}>
+        <input ref={inputRef} type="file" accept=".csv,.txt" className="hidden" onChange={e => carregarArquivo(e.target.files[0])} />
+        <p className="text-3xl mb-2">📂</p>
+        <p className="text-sm font-semibold text-gray-600">Arraste o arquivo CSV aqui ou clique para selecionar</p>
+        <p className="text-xs text-gray-400 mt-1">Formato: .csv ou .txt — separador vírgula ou ponto-e-vírgula</p>
+        {rows.length > 0 && <p className="text-xs text-green-600 font-semibold mt-2">{rows.length} linhas carregadas</p>}
+      </div>
+
+      {/* Mapeamento */}
+      {headers.length > 0 && (
+        <div className="border border-gray-100 rounded-2xl overflow-hidden">
+          <div className="bg-gray-50 px-5 py-3 border-b border-gray-100">
+            <p className="text-sm font-bold text-gray-700">Mapeamento de colunas</p>
+            <p className="text-xs text-gray-400 mt-0.5">Para cada campo, selecione qual coluna do seu CSV corresponde</p>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {campos.map(c => (
+              <div key={c.id} className="flex items-center gap-4 px-5 py-3">
+                <div className="w-44 flex-shrink-0">
+                  <span className="text-sm text-gray-700 font-medium">{c.label}</span>
+                  {c.required && <span className="text-red-400 ml-1 text-xs">*</span>}
+                </div>
+                <svg className="w-4 h-4 text-gray-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+                <select value={mapa[c.id] || ''}
+                  onChange={e => setMapa(m => ({ ...m, [c.id]: e.target.value || undefined }))}
+                  className={`flex-1 border rounded-xl px-3 py-2 text-sm outline-none bg-white transition-colors ${
+                    c.required && !mapa[c.id] ? 'border-red-300 focus:border-red-400' : 'border-gray-200 focus:border-amber-400'
+                  }`}>
+                  <option value="">— não importar —</option>
+                  {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                </select>
+                {mapa[c.id] && (
+                  <span className="text-xs text-gray-400 w-32 truncate hidden lg:block">
+                    ex: {rows[0]?.[mapa[c.id]] || '—'}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Preview */}
+      {rows.length > 0 && (
+        <div className="border border-gray-100 rounded-2xl overflow-hidden">
+          <div className="bg-gray-50 px-5 py-3 border-b border-gray-100">
+            <p className="text-sm font-bold text-gray-700">Pré-visualização — primeiras 3 linhas</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-gray-50">
+                  {headers.map(h => <th key={h} className="px-4 py-2 text-left text-gray-500 font-semibold whitespace-nowrap">{h}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.slice(0, 3).map((row, i) => (
+                  <tr key={i} className="border-t border-gray-50">
+                    {headers.map(h => <td key={h} className="px-4 py-2 text-gray-700 whitespace-nowrap max-w-[200px] truncate">{row[h]}</td>)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Resultado */}
+      {resultado && (
+        <div className={`rounded-2xl px-5 py-4 flex items-center gap-4 ${resultado.err === 0 ? 'bg-green-50 border border-green-200' : 'bg-amber-50 border border-amber-200'}`}>
+          <span className="text-2xl">{resultado.err === 0 ? '✅' : '⚠️'}</span>
+          <div>
+            <p className="text-sm font-bold text-gray-800">{resultado.ok} registro{resultado.ok !== 1 ? 's' : ''} importado{resultado.ok !== 1 ? 's' : ''} com sucesso</p>
+            {resultado.err > 0 && <p className="text-xs text-amber-700 mt-0.5">{resultado.err} linha{resultado.err !== 1 ? 's' : ''} ignorada{resultado.err !== 1 ? 's' : ''} (campos obrigatórios ausentes)</p>}
+          </div>
+        </div>
+      )}
+
+      {/* Botão */}
+      {rows.length > 0 && (
+        <div className="flex items-center gap-4">
+          <button
+            onClick={importar}
+            disabled={importando || !temObrigatorios}
+            className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-200 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors">
+            {importando ? (
+              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+              </svg>
+            ) : '📥'}
+            {importando ? 'Importando...' : `Importar ${rows.length} linhas`}
+          </button>
+          {!temObrigatorios && <p className="text-xs text-red-400">Mapeie todos os campos obrigatórios (*) para continuar</p>}
+        </div>
+      )}
+    </div>
+  )
+}
+
 /* ── PÁGINA PRINCIPAL ── */
 export default function Configuracoes() {
   const [aba, setAba] = useState('clinica')
@@ -896,10 +1185,11 @@ export default function Configuracoes() {
 
       {/* Conteúdo */}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        {aba === 'clinica'  && <TabClinica />}
-        {aba === 'whatsapp' && <TabWhatsApp />}
-        {aba === 'perfil'   && <TabPerfil />}
-        {aba === 'equipe'   && <TabEquipe />}
+        {aba === 'clinica'   && <TabClinica />}
+        {aba === 'whatsapp'  && <TabWhatsApp />}
+        {aba === 'perfil'    && <TabPerfil />}
+        {aba === 'equipe'    && <TabEquipe />}
+        {aba === 'importar'  && <TabImportar />}
       </div>
     </div>
   )
