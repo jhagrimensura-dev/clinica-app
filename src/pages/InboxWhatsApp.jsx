@@ -579,8 +579,17 @@ export default function InboxWhatsApp({ contaId }) {
       let msgs = [...(byPhone || []), ...byNome]
         .filter(m => { const k = m.message_id || m.id; const ok = !seen.has(k); seen.add(k); return ok })
         .map(toMap)
+        .sort((a, b) => a.tsMs - b.tsMs)
 
-      msgs.sort((a, b) => a.tsMs - b.tsMs)
+      // Dedup mensagens próprias duplicadas (insert do frontend + insert do webhook Z-API)
+      const seenOwn = new Map()
+      msgs = msgs.filter(m => {
+        if (!m.minha) return true
+        const prev = seenOwn.get(m.texto)
+        if (prev !== undefined && Math.abs(prev - m.tsMs) < 30000) return false
+        seenOwn.set(m.texto, m.tsMs)
+        return true
+      })
 
       // Detecta mensagens novas e notifica
       const anteriorCount = msgCountRef.current[phone] ?? -1
@@ -733,6 +742,8 @@ export default function InboxWhatsApp({ contaId }) {
           setSelecionada(prev => {
             const msgs = prev?.mensagens || []
             if (msgs.some(x => x.id === novaMsg.id)) return prev
+            // Bloqueia duplicata de msg própria (frontend insert + webhook insert chegando como 2 events)
+            if (novaMsg.minha && msgs.some(x => x.minha && x.texto === novaMsg.texto && Math.abs((x.tsMs || 0) - (novaMsg.tsMs || 0)) < 30000)) return prev
             return { ...prev, mensagens: [...msgs, novaMsg] }
           })
         }
