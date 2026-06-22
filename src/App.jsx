@@ -179,14 +179,24 @@ export default function App() {
   )
 }
 
-const PAGINAS_RESTRITAS = ['financeiro', 'contas', 'configuracoes']
+const PAGE_PARENT = { agenda_lembretes: 'comercial', leads_novos: 'comercial', leads_recorrentes: 'comercial', indicacao: 'comercial', contas: 'financeiro' }
 
 function AppContent() {
-  const { userRole } = useAuth()
+  const { userRole, permissoes } = useAuth()
   const [active, setActiveRaw] = useState('dashboard')
 
+  const podeAcessar = (page) => {
+    if (userRole !== 'Funcionário') return true
+    if (page === 'configuracoes') return false
+    if (permissoes) {
+      const check = PAGE_PARENT[page] || page
+      return permissoes.includes(check)
+    }
+    return !['financeiro', 'contas'].includes(page)
+  }
+
   const setActive = (page) => {
-    if (userRole === 'Funcionário' && PAGINAS_RESTRITAS.includes(page)) return
+    if (!podeAcessar(page)) return
     setActiveRaw(page)
   }
 

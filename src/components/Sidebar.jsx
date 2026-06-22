@@ -72,8 +72,6 @@ function FlyoutItem({ item, active, setActive, isFuncionario }) {
     }
   }
 
-  if (isFuncionario && item.id === 'financeiro') return null
-
   return (
     <div ref={ref} className="relative" onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
       <button
@@ -161,9 +159,15 @@ function WhatsAppFlyout({ active, setActive }) {
 }
 
 export default function Sidebar({ active, setActive }) {
-  const { signOut, userRole, user } = useAuth()
+  const { signOut, userRole, user, permissoes } = useAuth()
   const isFuncionario = userRole === 'Funcionário'
   const inicial = (user?.user_metadata?.nome || user?.email || 'A').charAt(0).toUpperCase()
+
+  const podeVerItem = (item) => {
+    if (!isFuncionario) return true
+    if (permissoes) return permissoes.includes(item.id)
+    return item.id !== 'financeiro'
+  }
 
   return (
     <div className="w-16 min-h-screen bg-[#2D1409] flex flex-col fixed left-0 top-0 bottom-0 z-50 items-center py-4 gap-1">
@@ -178,7 +182,7 @@ export default function Sidebar({ active, setActive }) {
 
       {/* Nav principal */}
       <nav className="flex flex-col gap-1 flex-1 items-center">
-        {menuItems.map(item => (
+        {menuItems.filter(podeVerItem).map(item => (
           <FlyoutItem key={item.id} item={item} active={active} setActive={setActive} isFuncionario={isFuncionario} />
         ))}
 

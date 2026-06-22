@@ -631,15 +631,33 @@ function TabPerfil() {
 /* ── ABA EQUIPE ── */
 const MEMBROS_DEFAULT = []
 
-const EMPTY_MEMBRO = { nome: '', apelido: '', funcao: 'Funcionário', email: '', cargo: '' }
+const TODAS_PAGINAS = [
+  { id: 'dashboard',   label: 'Dashboard'      },
+  { id: 'agenda',      label: 'Agenda'         },
+  { id: 'metas',       label: 'Metas'          },
+  { id: 'social',      label: 'Social Media'   },
+  { id: 'comercial',   label: 'WhatsApp/Leads' },
+  { id: 'faturamento', label: 'Vendas'         },
+  { id: 'financeiro',  label: 'Financeiro'     },
+  { id: 'pacientes',   label: 'Pacientes'      },
+  { id: 'relatorios',  label: 'Relatórios'     },
+]
+const PERMISSOES_PADRAO = ['dashboard', 'agenda', 'metas', 'social', 'comercial', 'faturamento', 'pacientes', 'relatorios']
+
+const EMPTY_MEMBRO = { nome: '', apelido: '', funcao: 'Funcionário', email: '', cargo: '', permissoes: PERMISSOES_PADRAO }
 
 function ModalMembro({ membro, onSalvar, onFechar }) {
-  const [form, setForm] = useState(membro || EMPTY_MEMBRO)
+  const [form, setForm] = useState(() => membro ? { ...EMPTY_MEMBRO, ...membro, permissoes: membro.permissoes || PERMISSOES_PADRAO } : EMPTY_MEMBRO)
   const set = (campo, val) => setForm(f => ({ ...f, [campo]: val }))
+
+  const togglePerm = (id, checked) => {
+    const atual = form.permissoes || PERMISSOES_PADRAO
+    set('permissoes', checked ? [...atual, id] : atual.filter(x => x !== id))
+  }
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h3 className="text-base font-bold text-gray-900">{membro ? 'Editar Membro' : 'Adicionar Membro'}</h3>
           <button onClick={onFechar} className="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
@@ -676,13 +694,32 @@ function ModalMembro({ membro, onSalvar, onFechar }) {
           </div>
           <div>
             <label className="text-xs font-medium text-gray-600 mb-1 block">Função no Sistema</label>
-            <select value={form.funcao} onChange={e => set('funcao', e.target.value)}
+            <select value={form.funcao}
+              onChange={e => { set('funcao', e.target.value); if (e.target.value === 'Administrador') set('permissoes', null) }}
               className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400 bg-white">
               <option>Administrador</option>
               <option>Funcionário</option>
             </select>
           </div>
         </div>
+
+        {form.funcao === 'Funcionário' && (
+          <div className="border border-gray-100 rounded-xl p-4 bg-gray-50">
+            <p className="text-xs font-semibold text-gray-600 mb-3">Telas que ela pode acessar</p>
+            <div className="grid grid-cols-2 gap-y-2 gap-x-4">
+              {TODAS_PAGINAS.map(p => {
+                const checked = (form.permissoes || PERMISSOES_PADRAO).includes(p.id)
+                return (
+                  <label key={p.id} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
+                    <input type="checkbox" checked={checked} onChange={e => togglePerm(p.id, e.target.checked)}
+                      className="w-4 h-4 rounded accent-amber-500 flex-shrink-0" />
+                    {p.label}
+                  </label>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         <div className="flex justify-end gap-3 pt-1">
           <button onClick={onFechar} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
@@ -724,7 +761,8 @@ function TabEquipe() {
   const enviarConvite = async (membro) => {
     if (!membro.email) return
     setConvidando(membro.id)
-    const { error } = await inviteUser(membro.email, membro.funcao)
+    const perms = membro.funcao === 'Funcionário' ? (membro.permissoes || PERMISSOES_PADRAO) : null
+    const { error } = await inviteUser(membro.email, membro.funcao, perms)
     setConvidando(null)
     if (error) {
       setFeedbackConvite(f => ({ ...f, [membro.id]: 'erro' }))
