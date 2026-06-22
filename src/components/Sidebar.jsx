@@ -97,7 +97,7 @@ function FlyoutItem({ item, active, setActive, isFuncionario }) {
                 active === sub.id ? 'text-brand-600 bg-brand-100 font-semibold' : 'text-gray-600 hover:text-brand-600 hover:bg-brand-50'
               }`}>
               {icons[sub.icon]}
-              <span>{sub.label}</span>
+              <span className="whitespace-nowrap">{sub.label}</span>
             </button>
           )) : (
             <button onClick={() => { setActive(item.id); setOpen(false) }}
@@ -105,7 +105,7 @@ function FlyoutItem({ item, active, setActive, isFuncionario }) {
                 active === item.id ? 'text-brand-600 bg-brand-100 font-semibold' : 'text-gray-600 hover:text-brand-600 hover:bg-brand-50'
               }`}>
               {icons[item.icon]}
-              <span>{item.label}</span>
+              <span className="whitespace-nowrap">{item.label}</span>
             </button>
           )}
         </div>

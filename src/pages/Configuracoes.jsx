@@ -730,6 +730,8 @@ function TabEquipe() {
       setFeedbackConvite(f => ({ ...f, [membro.id]: 'erro' }))
     } else {
       setFeedbackConvite(f => ({ ...f, [membro.id]: 'ok' }))
+      const agora = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+      salvarLista(membros.map(m => m.id === membro.id ? { ...m, convidadoEm: agora } : m))
     }
     setTimeout(() => setFeedbackConvite(f => ({ ...f, [membro.id]: null })), 4000)
   }
@@ -739,7 +741,7 @@ function TabEquipe() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">👥 Equipe</h2>
-          <p className="text-sm text-gray-400 mt-0.5">Gerencie os membros da sua equipe</p>
+          <p className="text-sm text-gray-400 mt-0.5">Adicione colaboradoras e envie o link de acesso por e-mail</p>
         </div>
         <button onClick={() => setModal(true)}
           className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors">
@@ -767,28 +769,32 @@ function TabEquipe() {
               {m.email && <p className="text-xs text-gray-400 mt-0.5">{m.email}</p>}
               {m.cargo && <p className="text-xs text-gray-500 mt-0.5">{m.cargo}</p>}
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-3 flex-shrink-0">
               {m.email && (
                 feedbackConvite[m.id] === 'ok' ? (
-                  <span className="text-xs text-green-500 font-semibold px-2">Enviado!</span>
+                  <span className="flex items-center gap-1.5 text-xs text-green-600 font-semibold bg-green-50 px-3 py-1.5 rounded-lg">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
+                    Link enviado!
+                  </span>
                 ) : feedbackConvite[m.id] === 'erro' ? (
-                  <span className="text-xs text-red-400 font-semibold px-2">Erro</span>
+                  <span className="text-xs text-red-400 font-semibold bg-red-50 px-3 py-1.5 rounded-lg">Erro ao enviar</span>
                 ) : (
                   <button
                     onClick={() => enviarConvite(m)}
                     disabled={convidando === m.id}
-                    title="Enviar convite de acesso"
-                    className="text-gray-300 hover:text-amber-500 transition-colors p-1 disabled:opacity-40">
+                    className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors disabled:opacity-40
+                      border-amber-300 text-amber-600 hover:bg-amber-50">
                     {convidando === m.id ? (
-                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                       </svg>
                     ) : (
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
                     )}
+                    {convidando === m.id ? 'Enviando...' : m.convidadoEm ? `Reenviar (${m.convidadoEm})` : 'Enviar Convite'}
                   </button>
                 )
               )}
