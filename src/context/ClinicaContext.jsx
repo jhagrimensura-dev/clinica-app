@@ -47,6 +47,37 @@ export function ClinicaProvider({ children }) {
     })
   }, [clinicaId, mesKey])
 
+  // Realtime subscriptions
+  useEffect(() => {
+    if (!clinicaId) return
+    const channel = supabase
+      .channel(`clinica:${clinicaId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'clinica_metas', filter: `clinica_id=eq.${clinicaId}` }, ({ eventType, new: n }) => {
+        if (eventType === 'INSERT' || eventType === 'UPDATE') {
+          const key = `${n.ano}-${n.mes}`
+          setDadosPorMes(prev => ({
+            ...prev,
+            [key]: {
+              diasSelecionados: desSet(n.dias_selecionados),
+              diasValores: n.dias_valores || {},
+              metaValor: n.meta_valor ?? undefined,
+              superMetaValor: n.super_meta_valor ?? undefined,
+              recordeValor: n.recorde_valor ?? undefined,
+            }
+          }))
+          setLoadedMonths(prev => new Set([...prev, key]))
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'clinica_posts', filter: `clinica_id=eq.${clinicaId}` }, ({ eventType, new: n }) => {
+        if (eventType === 'INSERT' || eventType === 'UPDATE') {
+          const key = `${n.ano}-${n.mes}`
+          setPostsPorMes(prev => ({ ...prev, [key]: n.posts || [] }))
+        }
+      })
+      .subscribe()
+    return () => supabase.removeChannel(channel)
+  }, [clinicaId])
+
   // Debounced save for current month's meta data
   const scheduleSave = (key, anof, mesf, dados) => {
     if (!clinicaId) return

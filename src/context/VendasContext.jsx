@@ -67,6 +67,17 @@ export function VendasProvider({ children }) {
         }
         setLoading(false)
       })
+
+    const channel = supabase
+      .channel(`lancamentos:${clinicaId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'lancamentos', filter: `clinica_id=eq.${clinicaId}` }, ({ eventType, new: n, old: o }) => {
+        if (eventType === 'INSERT') setLancamentos(prev => prev.find(l => l.id === n.id) ? prev : [...prev, fromDB(n)])
+        else if (eventType === 'UPDATE') setLancamentos(prev => prev.map(l => l.id === n.id ? fromDB(n) : l))
+        else if (eventType === 'DELETE') setLancamentos(prev => prev.filter(l => l.id !== o.id))
+      })
+      .subscribe()
+
+    return () => supabase.removeChannel(channel)
   }, [clinicaId])
 
   const addLancamento = async (l) => {

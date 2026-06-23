@@ -134,6 +134,34 @@ export function FinanceiroProvider({ children }) {
       })
   }, [clinicaId, ano])
 
+  // Realtime subscriptions
+  useEffect(() => {
+    if (!clinicaId) return
+    const channel = supabase
+      .channel(`financeiro:${clinicaId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'financeiro_dados', filter: `clinica_id=eq.${clinicaId}` }, ({ eventType, new: n }) => {
+        if (eventType === 'INSERT' || eventType === 'UPDATE') {
+          const key = `${n.ano}-${n.mes}`
+          setDados(prev => ({
+            ...prev,
+            [key]: {
+              receitas: n.receitas || {},
+              custos: n.custos || {},
+              despesas: n.despesas || {},
+              investimentos: n.investimentos || {},
+              emprestimos: n.emprestimos || {},
+            }
+          }))
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'financeiro_config', filter: `clinica_id=eq.${clinicaId}` }, ({ new: n }) => {
+        if (n?.categorias) setCategorias(n.categorias)
+        if (n?.ocultos) setOcultos(n.ocultos)
+      })
+      .subscribe()
+    return () => supabase.removeChannel(channel)
+  }, [clinicaId])
+
   const saveConfig = (cats, ocu) => {
     if (!clinicaId) return
     supabase.from('financeiro_config').upsert(
