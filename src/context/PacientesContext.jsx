@@ -26,6 +26,10 @@ const toDB = (p, clinicaId) => ({
   anotacoes: p.anotacoes || '',
 })
 
+function loadLocal() {
+  try { return JSON.parse(localStorage.getItem('clinica_pacientes') || '[]') } catch { return [] }
+}
+
 export function PacientesProvider({ children }) {
   const { clinicaId } = useAuth()
   const [pacientes, setPacientes] = useState([])
@@ -39,8 +43,21 @@ export function PacientesProvider({ children }) {
       .select('*')
       .eq('clinica_id', clinicaId)
       .order('nome', { ascending: true })
-      .then(({ data }) => {
-        if (data) setPacientes(data.map(fromDB))
+      .then(async ({ data }) => {
+        if (data && data.length > 0) {
+          setPacientes(data.map(fromDB))
+        } else {
+          // Migra localStorage → Supabase na primeira vez
+          const local = loadLocal()
+          if (local.length > 0) {
+            const rows = local.map(p => toDB(
+              { ...p, id: p.id || `pac_${Date.now()}_${Math.random().toString(36).slice(2,6)}` },
+              clinicaId
+            ))
+            await supabase.from('pacientes').upsert(rows, { onConflict: 'id' })
+            setPacientes(local)
+          }
+        }
         setLoading(false)
       })
   }, [clinicaId])

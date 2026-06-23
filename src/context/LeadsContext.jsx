@@ -36,6 +36,10 @@ const toDB = (l, clinicaId) => ({
   obs: l.obs || '',
 })
 
+function loadLocal() {
+  try { return JSON.parse(localStorage.getItem('clinica_leads') || '[]') } catch { return [] }
+}
+
 export function LeadsProvider({ children }) {
   const { clinicaId } = useAuth()
   const [leads, setLeads] = useState([])
@@ -49,8 +53,20 @@ export function LeadsProvider({ children }) {
       .select('*')
       .eq('clinica_id', clinicaId)
       .order('criado_em', { ascending: true })
-      .then(({ data }) => {
-        if (data) setLeads(data.map(fromDB))
+      .then(async ({ data }) => {
+        if (data && data.length > 0) {
+          setLeads(data.map(fromDB))
+        } else {
+          const local = loadLocal()
+          if (local.length > 0) {
+            const rows = local.map(l => toDB(
+              { ...l, id: l.id || `lead_${Date.now()}_${Math.random().toString(36).slice(2,6)}` },
+              clinicaId
+            ))
+            await supabase.from('leads').upsert(rows, { onConflict: 'id' })
+            setLeads(local)
+          }
+        }
         setLoading(false)
       })
   }, [clinicaId])

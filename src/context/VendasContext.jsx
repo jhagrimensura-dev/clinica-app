@@ -34,6 +34,10 @@ const toDB = (l, clinicaId) => ({
   obs: l.obs || '',
 })
 
+function loadLocal() {
+  try { return JSON.parse(localStorage.getItem('clinica_vendas') || '[]') } catch { return [] }
+}
+
 export function VendasProvider({ children }) {
   const { clinicaId } = useAuth()
   const [lancamentos, setLancamentos] = useState([])
@@ -47,8 +51,20 @@ export function VendasProvider({ children }) {
       .select('*')
       .eq('clinica_id', clinicaId)
       .order('data', { ascending: true })
-      .then(({ data }) => {
-        if (data) setLancamentos(data.map(fromDB))
+      .then(async ({ data }) => {
+        if (data && data.length > 0) {
+          setLancamentos(data.map(fromDB))
+        } else {
+          const local = loadLocal()
+          if (local.length > 0) {
+            const rows = local.map(l => toDB(
+              { ...l, id: l.id || `venda_${Date.now()}_${Math.random().toString(36).slice(2,6)}` },
+              clinicaId
+            ))
+            await supabase.from('lancamentos').upsert(rows, { onConflict: 'id' })
+            setLancamentos(local)
+          }
+        }
         setLoading(false)
       })
   }, [clinicaId])

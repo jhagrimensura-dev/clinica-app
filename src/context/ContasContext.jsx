@@ -27,6 +27,10 @@ const toDB = (c, clinicaId) => ({
   campo_key: c.campoKey || '',
 })
 
+function loadLocal() {
+  try { return JSON.parse(localStorage.getItem('contas_pagar') || '[]') } catch { return [] }
+}
+
 export function ContasProvider({ children }) {
   const { clinicaId } = useAuth()
   const [contas, setContas] = useState([])
@@ -40,8 +44,20 @@ export function ContasProvider({ children }) {
       .select('*')
       .eq('clinica_id', clinicaId)
       .order('vencimento', { ascending: true })
-      .then(({ data }) => {
-        if (data) setContas(data.map(fromDB))
+      .then(async ({ data }) => {
+        if (data && data.length > 0) {
+          setContas(data.map(fromDB))
+        } else {
+          const local = loadLocal()
+          if (local.length > 0) {
+            const rows = local.map(c => toDB(
+              { ...c, id: c.id || `c_${Date.now()}_${Math.random().toString(36).slice(2,7)}` },
+              clinicaId
+            ))
+            await supabase.from('contas_pagar').upsert(rows, { onConflict: 'id' })
+            setContas(local)
+          }
+        }
         setLoading(false)
       })
   }, [clinicaId])
