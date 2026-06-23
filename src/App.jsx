@@ -1,5 +1,13 @@
 import { useState, useEffect } from 'react'
 import { AuthProvider, useAuth } from './context/AuthContext'
+
+// Limpa todos os dados antes de qualquer contexto carregar
+;(function resetAllIfRequested() {
+  if (new URLSearchParams(window.location.search).get('resetAll') === '1') {
+    ;['clinica_vendas','clinica_leads','clinica_pacientes','agenda_agendamentos'].forEach(k => localStorage.setItem(k,'[]'))
+    window.history.replaceState({}, '', window.location.pathname)
+  }
+})()
 import Login from './pages/Login'
 import { ClinicaProvider } from './context/ClinicaContext'
 import { FinanceiroProvider } from './context/FinanceiroContext'
