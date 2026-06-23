@@ -977,7 +977,7 @@ function TabImportar() {
   const { addPaciente, pacientes }   = usePacientes()
   const { addLancamento, lancamentos } = useVendas()
   const inputRef = useRef(null)
-  const [tipo, setTipo]         = useState('leads')
+  const [tipo, setTipo]         = useState('vendas')
   const [headers, setHeaders]   = useState([])
   const [rows, setRows]         = useState([])
   const [mapa, setMapa]         = useState({})
