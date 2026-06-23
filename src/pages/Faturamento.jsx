@@ -414,7 +414,7 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
 
 export default function Faturamento() {
   const { ano, setAno, mes, setMes } = useFinanceiro()
-  const { lancamentos, addLancamento, removeLancamento, updateLancamento } = useVendas()
+  const { lancamentos, addLancamento, removeLancamento, updateLancamento, clearLancamentos } = useVendas()
   const { pacientes } = usePacientes()
   const [modal, setModal] = useState(false)
   const [editando, setEditando] = useState(null)
@@ -460,6 +460,16 @@ export default function Faturamento() {
             <span className="text-sm font-semibold text-gray-700 w-24 text-center">{MESES_FULL[mes].slice(0,3)} {ano}</span>
             <button onClick={() => navMes(1)} className="text-gray-400 hover:text-gray-600 px-1">›</button>
           </div>
+          {lancamentos.length > 0 && (
+            <button
+              onClick={() => {
+                if (!window.confirm(`Apagar todos os ${lancamentos.length} lançamentos? Não pode ser desfeito.`)) return
+                clearLancamentos()
+              }}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-red-200 text-red-500 hover:bg-red-50 transition-colors">
+              🗑 Zerar tudo
+            </button>
+          )}
           <button onClick={() => setModal(true)} className="flex items-center gap-2 bg-brand-400 hover:bg-brand-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">
             + Novo Lançamento
           </button>
