@@ -941,8 +941,22 @@ function parseData(val) {
 }
 
 function parseValor(val) {
-  if (!val) return 0
-  return parseFloat(String(val).replace(/[R$\s.]/g, '').replace(',', '.')) || 0
+  if (!val && val !== 0) return 0
+  // XLSX retorna células numéricas como JS number — usa direto
+  if (typeof val === 'number') return val
+  const s = String(val).replace(/[R$\s]/g, '')
+  if (!s) return 0
+  if (s.includes(',')) {
+    // Formato brasileiro: ponto = milhar, vírgula = decimal
+    return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0
+  }
+  // Sem vírgula: ponto pode ser decimal (US) ou milhar (BR)
+  // Se há um único ponto seguido de 1-2 dígitos no final → ponto decimal
+  if (/\.\d{1,2}$/.test(s) && (s.match(/\./g) || []).length === 1) {
+    return parseFloat(s) || 0
+  }
+  // Caso contrário: ponto(s) são separadores de milhar → remove
+  return parseFloat(s.replace(/\./g, '')) || 0
 }
 
 const normPhone = (v) => String(v || '').replace(/\D/g, '')
