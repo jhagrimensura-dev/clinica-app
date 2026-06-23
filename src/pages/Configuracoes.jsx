@@ -897,12 +897,13 @@ const CAMPOS_TIPO = {
     { id: 'telefone',    label: 'Telefone',            required: false },
   ],
   vendas: [
-    { id: 'paciente',       label: 'Paciente',          required: true  },
-    { id: 'data',           label: 'Data',              required: true  },
-    { id: 'valor',          label: 'Valor (R$)',        required: true  },
-    { id: 'tipo',           label: 'Tipo',              required: false },
-    { id: 'procedimento',   label: 'Procedimento',      required: false },
-    { id: 'forma_pagamento',label: 'Forma de Pagamento',required: false },
+    { id: 'paciente',        label: 'Paciente',          required: true  },
+    { id: 'data',            label: 'Data',              required: true  },
+    { id: 'valorTaxa',       label: 'Consultas (R$)',    required: false },
+    { id: 'valorTratamento', label: 'Tratamentos (R$)',  required: false },
+    { id: 'tipo',            label: 'Tipo',              required: false },
+    { id: 'procedimentos',   label: 'Procedimento',      required: false },
+    { id: 'formasPgto',      label: 'Forma de Pagamento',required: false },
   ],
 }
 
@@ -1031,7 +1032,15 @@ function TabImportar() {
           ok++
         } else if (tipo === 'vendas') {
           const paciente = get(row, 'paciente'); if (!paciente) { err++; return }
-          addLancamento({ paciente, data: parseData(get(row, 'data')) || hoje, valor: parseValor(get(row, 'valor')), tipo: get(row, 'tipo') || 'Consulta', procedimento: get(row, 'procedimento'), forma_pagamento: get(row, 'forma_pagamento') || '' })
+          addLancamento({
+            paciente,
+            data: parseData(get(row, 'data')) || hoje,
+            valorTaxa: parseValor(get(row, 'valorTaxa')),
+            valorTratamento: parseValor(get(row, 'valorTratamento')),
+            tipo: get(row, 'tipo') || 'Novo',
+            procedimentos: get(row, 'procedimentos'),
+            formasPgto: get(row, 'formasPgto') ? [get(row, 'formasPgto')] : [],
+          })
           ok++
         }
       } catch { err++ }
