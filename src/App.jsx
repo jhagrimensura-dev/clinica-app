@@ -1,10 +1,26 @@
 import { useState, useEffect } from 'react'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { PACIENTES_IMPORT } from './data/pacientesImport'
 
 // Limpa todos os dados antes de qualquer contexto carregar
 ;(function resetAllIfRequested() {
-  if (new URLSearchParams(window.location.search).get('resetAll') === '1') {
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('resetAll') === '1') {
     ;['clinica_vendas','clinica_leads','clinica_pacientes','agenda_agendamentos'].forEach(k => localStorage.setItem(k,'[]'))
+    window.history.replaceState({}, '', window.location.pathname)
+  }
+  if (params.get('importarPacientes') === '1') {
+    const existing = JSON.parse(localStorage.getItem('clinica_pacientes') || '[]')
+    const existingPhones = new Set(existing.map(p => (p.whatsapp||'').replace(/\D/g,'')))
+    const existingNames = new Set(existing.map(p => (p.nome||'').toLowerCase().trim()))
+    const novos = PACIENTES_IMPORT.filter(p => {
+      const phone = (p.whatsapp||'').replace(/\D/g,'')
+      const nome = (p.nome||'').toLowerCase().trim()
+      if (phone && existingPhones.has(phone)) return false
+      if (existingNames.has(nome)) return false
+      return true
+    })
+    localStorage.setItem('clinica_pacientes', JSON.stringify([...existing, ...novos]))
     window.history.replaceState({}, '', window.location.pathname)
   }
 })()
