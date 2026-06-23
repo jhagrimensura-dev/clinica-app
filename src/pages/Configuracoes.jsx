@@ -897,13 +897,15 @@ const CAMPOS_TIPO = {
     { id: 'telefone',    label: 'Telefone',            required: false },
   ],
   vendas: [
-    { id: 'paciente',        label: 'Paciente',          required: true  },
-    { id: 'data',            label: 'Data',              required: true  },
-    { id: 'valorTaxa',       label: 'Consultas (R$)',    required: false },
-    { id: 'valorTratamento', label: 'Tratamentos (R$)',  required: false },
-    { id: 'tipo',            label: 'Tipo',              required: false },
-    { id: 'procedimentos',   label: 'Procedimento',      required: false },
-    { id: 'formasPgto',      label: 'Forma de Pagamento',required: false },
+    { id: 'paciente',        label: 'Paciente',        required: true  },
+    { id: 'data',            label: 'Data',            required: true  },
+    { id: 'tipo',            label: 'Tipo',            required: false },
+    { id: 'responsavel',     label: 'Agendado por',    required: false },
+    { id: 'procedimentos',   label: 'Procedimentos',   required: false },
+    { id: 'valorTaxa',       label: 'Taxa (R$)',       required: false },
+    { id: 'valorTratamento', label: 'Tratamento (R$)', required: false },
+    { id: 'formasPgto',      label: 'Pagamento',       required: false },
+    { id: 'obs',             label: 'Observações',     required: false },
   ],
 }
 
@@ -1035,11 +1037,13 @@ function TabImportar() {
           addLancamento({
             paciente,
             data: parseData(get(row, 'data')) || hoje,
+            tipo: get(row, 'tipo') || 'Novo',
+            responsavel: get(row, 'responsavel'),
+            procedimentos: get(row, 'procedimentos'),
             valorTaxa: parseValor(get(row, 'valorTaxa')),
             valorTratamento: parseValor(get(row, 'valorTratamento')),
-            tipo: get(row, 'tipo') || 'Novo',
-            procedimentos: get(row, 'procedimentos'),
             formasPgto: get(row, 'formasPgto') ? [get(row, 'formasPgto')] : [],
+            obs: get(row, 'obs'),
           })
           ok++
         }
