@@ -1269,6 +1269,30 @@ function TabImportar() {
           {!temObrigatorios && <p className="text-xs text-red-400">Mapeie todos os campos obrigatórios (*) para continuar</p>}
         </div>
       )}
+
+      {/* Zerar dados */}
+      <div className="border-t border-gray-100 pt-6">
+        <p className="text-sm font-bold text-gray-700 mb-1">Zerar dados</p>
+        <p className="text-xs text-gray-400 mb-4">Remove permanentemente todos os registros de cada categoria. Não pode ser desfeito.</p>
+        <div className="flex flex-wrap gap-3">
+          {[
+            { label: 'Leads',        chave: 'clinica_leads',           icone: '🔗' },
+            { label: 'Pacientes',    chave: 'clinica_pacientes',        icone: '👤' },
+            { label: 'Agendamentos', chave: 'agenda_agendamentos',      icone: '📅' },
+            { label: 'Vendas',       chave: 'clinica_vendas',           icone: '💰' },
+          ].map(({ label, chave, icone }) => (
+            <button key={chave}
+              onClick={() => {
+                if (!window.confirm(`Tem certeza que quer apagar TODOS os ${label}? Essa ação não pode ser desfeita.`)) return
+                localStorage.setItem(chave, '[]')
+                window.location.reload()
+              }}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold border border-red-200 text-red-500 rounded-xl hover:bg-red-50 transition-colors">
+              {icone} Zerar {label}
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
