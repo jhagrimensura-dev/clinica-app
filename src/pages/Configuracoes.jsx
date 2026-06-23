@@ -945,6 +945,9 @@ function parseValor(val) {
   return parseFloat(String(val).replace(/[R$\s.]/g, '').replace(',', '.')) || 0
 }
 
+const normPhone = (v) => String(v || '').replace(/\D/g, '')
+const normStr   = (v) => String(v || '').toLowerCase().trim()
+
 function autoMapear(headers, campos) {
   const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '')
   const mapa = {}
@@ -1008,15 +1011,59 @@ function TabImportar() {
 
   const importar = () => {
     setImportando(true)
-    // Salva backup antes de importar
     const backupKey = `backup_import_${tipo}`
     const chave = CHAVES[tipo]
     localStorage.setItem(backupKey, localStorage.getItem(chave) || '[]')
 
-    let ok = 0, err = 0
+    // Monta fingerprints dos registros já existentes
+    const dupeSet = new Set()
+    if (tipo === 'leads') {
+      leads.forEach(l => {
+        const tel = normPhone(l.telefone)
+        if (tel) dupeSet.add('tel:' + tel)
+        dupeSet.add('nome:' + normStr(l.nome))
+      })
+    } else if (tipo === 'pacientes') {
+      pacientes.forEach(p => {
+        const tel = normPhone(p.telefone)
+        if (tel) dupeSet.add('tel:' + tel)
+        dupeSet.add('nome:' + normStr(p.nome))
+      })
+    } else if (tipo === 'agendamentos') {
+      JSON.parse(localStorage.getItem('agenda_agendamentos') || '[]').forEach(a => {
+        dupeSet.add(normStr(a.paciente) + '|' + (a.date || ''))
+      })
+    } else if (tipo === 'vendas') {
+      lancamentos.forEach(l => {
+        dupeSet.add(normStr(l.paciente) + '|' + (l.data || '') + '|' + String(l.valorTratamento ?? 0))
+      })
+    }
+
+    const isDupe = (row) => {
+      if (tipo === 'leads') {
+        const tel = normPhone(get(row, 'telefone'))
+        if (tel && dupeSet.has('tel:' + tel)) return true
+        return dupeSet.has('nome:' + normStr(get(row, 'nome')))
+      }
+      if (tipo === 'pacientes') {
+        const tel = normPhone(get(row, 'telefone'))
+        if (tel && dupeSet.has('tel:' + tel)) return true
+        return dupeSet.has('nome:' + normStr(get(row, 'nome')))
+      }
+      if (tipo === 'agendamentos') {
+        return dupeSet.has(normStr(get(row, 'paciente')) + '|' + parseData(get(row, 'date')))
+      }
+      if (tipo === 'vendas') {
+        return dupeSet.has(normStr(get(row, 'paciente')) + '|' + parseData(get(row, 'data')) + '|' + String(parseValor(get(row, 'valorTratamento'))))
+      }
+      return false
+    }
+
+    let ok = 0, err = 0, dup = 0
     const hoje = new Date().toISOString().split('T')[0]
     rows.forEach(row => {
       try {
+        if (isDupe(row)) { dup++; return }
         if (tipo === 'leads') {
           const nome = get(row, 'nome'); if (!nome) { err++; return }
           addLead({ nome, telefone: get(row, 'telefone'), data: parseData(get(row, 'data')) || hoje, status: 'em_aberto', responsavel: get(row, 'responsavel'), obs: get(row, 'obs'), origem: 'leads_novos', origemCustom: 'Importação CSV' })
@@ -1049,7 +1096,7 @@ function TabImportar() {
         }
       } catch { err++ }
     })
-    setResultado({ ok, err })
+    setResultado({ ok, err, dup })
     setImportando(false)
     setPodeDesfazer(true)
   }
@@ -1177,6 +1224,7 @@ function TabImportar() {
             <span className="text-2xl">{resultado.err === 0 ? '✅' : '⚠️'}</span>
             <div>
               <p className="text-sm font-bold text-gray-800">{resultado.ok} registro{resultado.ok !== 1 ? 's' : ''} importado{resultado.ok !== 1 ? 's' : ''} com sucesso</p>
+              {resultado.dup > 0 && <p className="text-xs text-blue-600 mt-0.5">{resultado.dup} duplicado{resultado.dup !== 1 ? 's' : ''} ignorado{resultado.dup !== 1 ? 's' : ''} (já existia no sistema)</p>}
               {resultado.err > 0 && <p className="text-xs text-amber-700 mt-0.5">{resultado.err} linha{resultado.err !== 1 ? 's' : ''} ignorada{resultado.err !== 1 ? 's' : ''} (campos obrigatórios ausentes)</p>}
             </div>
           </div>
