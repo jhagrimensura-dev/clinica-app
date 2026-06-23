@@ -1,94 +1,77 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useState, useEffect, useRef } from 'react'
+import { supabase } from '../lib/supabase'
+import { useAuth } from './AuthContext'
 
 const ClinicaContext = createContext()
 
 const DEFAULTS = { metaValor: 200000, superMetaValor: null, recordeValor: 142500 }
 
-function serializeDados(dadosPorMes) {
-  const result = {}
-  for (const [key, value] of Object.entries(dadosPorMes)) {
-    result[key] = {
-      diasSelecionados: [...value.diasSelecionados],
-      diasValores: value.diasValores,
-      metaValor: value.metaValor,
-      superMetaValor: value.superMetaValor,
-      recordeValor: value.recordeValor,
-    }
-  }
-  return result
-}
-
-function deserializeDados(data) {
-  if (!data) return {}
-  const result = {}
-  for (const [key, value] of Object.entries(data)) {
-    result[key] = {
-      diasSelecionados: new Set(value.diasSelecionados || []),
-      diasValores: value.diasValores || {},
-      metaValor: value.metaValor,
-      superMetaValor: value.superMetaValor,
-      recordeValor: value.recordeValor,
-    }
-  }
-  return result
-}
-
-function load(key, fallback, deserialize) {
-  try {
-    const stored = localStorage.getItem(key)
-    if (stored === null) return fallback
-    const parsed = JSON.parse(stored)
-    return deserialize ? deserialize(parsed) : parsed
-  } catch {
-    return fallback
-  }
-}
-
-function saveDados(dadosPorMes) {
-  localStorage.setItem('clinica_dadosPorMes', JSON.stringify(serializeDados(dadosPorMes)))
-}
+// Serialize Set → array for Supabase storage
+const serSet = (s) => [...(s instanceof Set ? s : new Set())]
+const desSet = (a) => new Set(Array.isArray(a) ? a : [])
 
 export function ClinicaProvider({ children }) {
+  const { clinicaId } = useAuth()
   const hoje = new Date()
   const [ano, setAno] = useState(hoje.getFullYear())
   const [mes, setMes] = useState(hoje.getMonth())
 
-  const [dadosPorMes, setDadosPorMes] = useState(() => {
-    const dados = load('clinica_dadosPorMes', {}, deserializeDados)
-    // migrate old global values into current month if not yet migrated
-    const mesKey = `${hoje.getFullYear()}-${hoje.getMonth()}`
-    const oldMeta = load('clinica_metaValor', null, null)
-    const oldSuper = load('clinica_superMetaValor', null, null)
-    const oldRecorde = load('clinica_recordeValor', null, null)
-    if (oldMeta !== null && !dados[mesKey]?.metaValor) {
-      dados[mesKey] = {
-        ...(dados[mesKey] || { diasSelecionados: new Set(), diasValores: {} }),
-        metaValor: oldMeta,
-        superMetaValor: oldSuper,
-        recordeValor: oldRecorde,
-      }
-    }
-    return dados
-  })
-
-  const [postsPorMes, setPostsPorMes] = useState(() => load('clinica_postsPorMes', {}, null))
+  // dadosPorMes: { '2026-4': { diasSelecionados: Set, diasValores: {}, metaValor, superMetaValor, recordeValor } }
+  const [dadosPorMes, setDadosPorMes] = useState({})
+  const [postsPorMes, setPostsPorMes] = useState({})
+  const [loadedMonths, setLoadedMonths] = useState(new Set())
+  const saveTimers = useRef({})
 
   const mesKey = `${ano}-${mes}`
 
-  const dadosAtual = dadosPorMes[mesKey] || { diasSelecionados: new Set(), diasValores: {} }
-  const diasSelecionados = dadosAtual.diasSelecionados
-  const diasValores = dadosAtual.diasValores
-  const metaValor = dadosAtual.metaValor ?? DEFAULTS.metaValor
-  const superMetaValorRaw = dadosAtual.superMetaValor
-  const recordeValor = dadosAtual.recordeValor ?? DEFAULTS.recordeValor
-  const posts = postsPorMes[mesKey] || []
+  // Load current month from Supabase when month or clinicaId changes
+  useEffect(() => {
+    if (!clinicaId || loadedMonths.has(mesKey)) return
+
+    Promise.all([
+      supabase.from('clinica_metas').select('*').eq('clinica_id', clinicaId).eq('ano', ano).eq('mes', mes).maybeSingle(),
+      supabase.from('clinica_posts').select('*').eq('clinica_id', clinicaId).eq('ano', ano).eq('mes', mes).maybeSingle(),
+    ]).then(([{ data: meta }, { data: posts }]) => {
+      setDadosPorMes(prev => ({
+        ...prev,
+        [mesKey]: {
+          diasSelecionados: desSet(meta?.dias_selecionados),
+          diasValores: meta?.dias_valores || {},
+          metaValor: meta?.meta_valor ?? undefined,
+          superMetaValor: meta?.super_meta_valor ?? undefined,
+          recordeValor: meta?.recorde_valor ?? undefined,
+        },
+      }))
+      setPostsPorMes(prev => ({ ...prev, [mesKey]: posts?.posts || [] }))
+      setLoadedMonths(prev => new Set([...prev, mesKey]))
+    })
+  }, [clinicaId, mesKey])
+
+  // Debounced save for current month's meta data
+  const scheduleSave = (key, anof, mesf, dados) => {
+    if (!clinicaId) return
+    if (saveTimers.current[key]) clearTimeout(saveTimers.current[key])
+    saveTimers.current[key] = setTimeout(() => {
+      supabase.from('clinica_metas').upsert({
+        clinica_id: clinicaId,
+        ano: anof,
+        mes: mesf,
+        meta_valor: dados.metaValor ?? DEFAULTS.metaValor,
+        super_meta_valor: dados.superMetaValor ?? null,
+        recorde_valor: dados.recordeValor ?? DEFAULTS.recordeValor,
+        dias_selecionados: serSet(dados.diasSelecionados),
+        dias_valores: dados.diasValores || {},
+      }, { onConflict: 'clinica_id,ano,mes' })
+    }, 400)
+  }
 
   const updateMes = (updater) => {
     setDadosPorMes(prev => {
       const atual = prev[mesKey] || { diasSelecionados: new Set(), diasValores: {} }
-      const next = { ...prev, [mesKey]: { ...atual, ...updater(atual) } }
-      saveDados(next)
-      return next
+      const next = { ...atual, ...updater(atual) }
+      const updated = { ...prev, [mesKey]: next }
+      scheduleSave(mesKey, ano, mes, next)
+      return updated
     })
   }
 
@@ -107,11 +90,25 @@ export function ClinicaProvider({ children }) {
   const setPosts = (updater) => {
     setPostsPorMes(prev => {
       const atual = prev[mesKey] || []
-      const next = { ...prev, [mesKey]: typeof updater === 'function' ? updater(atual) : updater }
-      localStorage.setItem('clinica_postsPorMes', JSON.stringify(next))
-      return next
+      const next = typeof updater === 'function' ? updater(atual) : updater
+      const updated = { ...prev, [mesKey]: next }
+      if (clinicaId) {
+        supabase.from('clinica_posts').upsert(
+          { clinica_id: clinicaId, ano, mes, posts: next },
+          { onConflict: 'clinica_id,ano,mes' }
+        )
+      }
+      return updated
     })
   }
+
+  const dadosAtual = dadosPorMes[mesKey] || { diasSelecionados: new Set(), diasValores: {} }
+  const diasSelecionados = dadosAtual.diasSelecionados instanceof Set ? dadosAtual.diasSelecionados : new Set()
+  const diasValores = dadosAtual.diasValores || {}
+  const metaValor = dadosAtual.metaValor ?? DEFAULTS.metaValor
+  const superMetaValorRaw = dadosAtual.superMetaValor
+  const recordeValor = dadosAtual.recordeValor ?? DEFAULTS.recordeValor
+  const posts = postsPorMes[mesKey] || []
 
   const superMeta = superMetaValorRaw ?? metaValor * 1.1
   const diasAtendimento = diasSelecionados.size

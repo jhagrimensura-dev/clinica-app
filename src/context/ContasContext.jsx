@@ -1,24 +1,59 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
+import { useAuth } from './AuthContext'
 
 const ContasContext = createContext()
 
-function load(key, fallback) {
-  try {
-    const s = localStorage.getItem(key)
-    return s ? JSON.parse(s) : fallback
-  } catch { return fallback }
-}
+const fromDB = (r) => ({
+  id: r.id,
+  nome: r.nome || '',
+  valor: r.valor || 0,
+  vencimento: r.vencimento || '',
+  pago: r.pago || false,
+  pagoEm: r.pago_em || null,
+  categoria: r.categoria || '',
+  campoKey: r.campo_key || '',
+})
+
+const toDB = (c, clinicaId) => ({
+  id: c.id,
+  clinica_id: clinicaId,
+  nome: c.nome || '',
+  valor: c.valor || 0,
+  vencimento: c.vencimento || '',
+  pago: c.pago || false,
+  pago_em: c.pagoEm || null,
+  categoria: c.categoria || '',
+  campo_key: c.campoKey || '',
+})
 
 export function ContasProvider({ children }) {
-  const [contas, setContas] = useState(() => load('contas_pagar', []))
+  const { clinicaId } = useAuth()
+  const [contas, setContas] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  useEffect(() => { localStorage.setItem('contas_pagar', JSON.stringify(contas)) }, [contas])
+  useEffect(() => {
+    if (!clinicaId) return
+    setLoading(true)
+    supabase
+      .from('contas_pagar')
+      .select('*')
+      .eq('clinica_id', clinicaId)
+      .order('vencimento', { ascending: true })
+      .then(({ data }) => {
+        if (data) setContas(data.map(fromDB))
+        setLoading(false)
+      })
+  }, [clinicaId])
 
-  const addConta = (conta) => {
-    setContas(prev => [...prev, { ...conta, id: `c_${Date.now()}_${Math.random().toString(36).slice(2, 7)}` }])
+  const addConta = async (conta) => {
+    const nova = { ...conta, id: `c_${Date.now()}_${Math.random().toString(36).slice(2, 7)}` }
+    setContas(prev => [...prev, nova])
+    await supabase.from('contas_pagar').insert(toDB(nova, clinicaId))
+    return nova
   }
 
-  const addContasRecorrentes = (base, meses) => {
+  const addContasRecorrentes = async (base, meses) => {
     const novas = meses.map((vencimento) => ({
       ...base,
       id: `c_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
@@ -27,18 +62,18 @@ export function ContasProvider({ children }) {
       pagoEm: null,
     }))
     setContas(prev => [...prev, ...novas])
+    await supabase.from('contas_pagar').insert(novas.map(c => toDB(c, clinicaId)))
   }
 
-  const marcarPago = (id, pago = true) => {
-    setContas(prev => prev.map(c =>
-      c.id === id
-        ? { ...c, pago, pagoEm: pago ? new Date().toISOString().split('T')[0] : null }
-        : c
-    ))
+  const marcarPago = async (id, pago = true) => {
+    const pagoEm = pago ? new Date().toISOString().split('T')[0] : null
+    setContas(prev => prev.map(c => c.id === id ? { ...c, pago, pagoEm } : c))
+    await supabase.from('contas_pagar').update({ pago, pago_em: pagoEm }).eq('id', id)
   }
 
-  const removeConta = (id) => {
+  const removeConta = async (id) => {
     setContas(prev => prev.filter(c => c.id !== id))
+    await supabase.from('contas_pagar').delete().eq('id', id)
   }
 
   const getContasMes = (ano, mes) => {
@@ -47,7 +82,7 @@ export function ContasProvider({ children }) {
   }
 
   return (
-    <ContasContext.Provider value={{ contas, addConta, addContasRecorrentes, marcarPago, removeConta, getContasMes }}>
+    <ContasContext.Provider value={{ contas, addConta, addContasRecorrentes, marcarPago, removeConta, getContasMes, loading }}>
       {children}
     </ContasContext.Provider>
   )

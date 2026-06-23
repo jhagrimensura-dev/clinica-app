@@ -1,4 +1,6 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useRef } from 'react'
+import { supabase } from '../lib/supabase'
+import { useAuth } from './AuthContext'
 
 const FinanceiroContext = createContext()
 
@@ -60,7 +62,6 @@ const CATEGORIAS_DEFAULT = {
   ],
 }
 
-// Keep exporting CATEGORIAS for backwards compatibility
 export const CATEGORIAS = {
   RECEITAS_KEYS: CATEGORIAS_DEFAULT.receitas,
   CUSTOS_KEYS: CATEGORIAS_DEFAULT.custos,
@@ -71,30 +72,86 @@ export const CATEGORIAS = {
 
 const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
 
-function load(key, fallback) {
-  try {
-    const s = localStorage.getItem(key)
-    return s ? JSON.parse(s) : fallback
-  } catch { return fallback }
-}
-
 function soma(obj) {
   return Object.values(obj || {}).reduce((acc, v) => acc + (Number(v) || 0), 0)
 }
 
 export function FinanceiroProvider({ children }) {
+  const { clinicaId } = useAuth()
   const hoje = new Date()
   const [ano, setAno] = useState(hoje.getFullYear())
   const [mes, setMes] = useState(hoje.getMonth())
-  const [dados, setDados] = useState(() => load('fin_dados', {}))
-  const [categorias, setCategorias] = useState(() => load('fin_categorias', CATEGORIAS_DEFAULT))
-  const [ocultos, setOcultos] = useState(() => load('fin_ocultos', { receitas: [], custos: [], despesas: [], investimentos: [], emprestimos: [] }))
 
-  useEffect(() => { localStorage.setItem('fin_dados', JSON.stringify(dados)) }, [dados])
-  useEffect(() => { localStorage.setItem('fin_categorias', JSON.stringify(categorias)) }, [categorias])
-  useEffect(() => { localStorage.setItem('fin_ocultos', JSON.stringify(ocultos)) }, [ocultos])
+  const [dados, setDados] = useState({})
+  const [categorias, setCategorias] = useState(CATEGORIAS_DEFAULT)
+  const [ocultos, setOcultos] = useState({ receitas: [], custos: [], despesas: [], investimentos: [], emprestimos: [] })
+  const [configLoaded, setConfigLoaded] = useState(false)
+  const [loadedMonths, setLoadedMonths] = useState(new Set())
+  const saveTimers = useRef({})
 
   const mesKey = `${ano}-${mes}`
+
+  // Load financeiro config (categorias + ocultos) once
+  useEffect(() => {
+    if (!clinicaId || configLoaded) return
+    supabase
+      .from('financeiro_config')
+      .select('*')
+      .eq('clinica_id', clinicaId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          if (data.categorias) setCategorias(data.categorias)
+          if (data.ocultos) setOcultos(data.ocultos)
+        }
+        setConfigLoaded(true)
+      })
+  }, [clinicaId, configLoaded])
+
+  // Load dados for all months of current year on mount
+  useEffect(() => {
+    if (!clinicaId) return
+    supabase
+      .from('financeiro_dados')
+      .select('*')
+      .eq('clinica_id', clinicaId)
+      .eq('ano', ano)
+      .then(({ data }) => {
+        if (data) {
+          const map = {}
+          data.forEach(r => {
+            map[`${r.ano}-${r.mes}`] = {
+              receitas: r.receitas || {},
+              custos: r.custos || {},
+              despesas: r.despesas || {},
+              investimentos: r.investimentos || {},
+              emprestimos: r.emprestimos || {},
+            }
+          })
+          setDados(prev => ({ ...prev, ...map }))
+          setLoadedMonths(prev => new Set([...prev, ...data.map(r => `${r.ano}-${r.mes}`)]))
+        }
+      })
+  }, [clinicaId, ano])
+
+  const saveConfig = (cats, ocu) => {
+    if (!clinicaId) return
+    supabase.from('financeiro_config').upsert(
+      { clinica_id: clinicaId, categorias: cats, ocultos: ocu },
+      { onConflict: 'clinica_id' }
+    )
+  }
+
+  const scheduleSaveDados = (key, anof, mesf, dadosMesf) => {
+    if (!clinicaId) return
+    if (saveTimers.current[key]) clearTimeout(saveTimers.current[key])
+    saveTimers.current[key] = setTimeout(() => {
+      supabase.from('financeiro_dados').upsert(
+        { clinica_id: clinicaId, ano: anof, mes: mesf, ...dadosMesf },
+        { onConflict: 'clinica_id,ano,mes' }
+      )
+    }, 400)
+  }
 
   const emptyMes = () => {
     const build = (keys) => Object.fromEntries(keys.map(k => [k.key, 0]))
@@ -112,37 +169,44 @@ export function FinanceiroProvider({ children }) {
   const setValor = (categoria, campo, valor) => {
     setDados(prev => {
       const atual = prev[mesKey] || emptyMes()
-      return {
-        ...prev,
-        [mesKey]: {
-          ...atual,
-          [categoria]: { ...atual[categoria], [campo]: Number(valor) || 0 },
-        },
+      const next = {
+        ...atual,
+        [categoria]: { ...atual[categoria], [campo]: Number(valor) || 0 },
       }
+      const updated = { ...prev, [mesKey]: next }
+      scheduleSaveDados(mesKey, ano, mes, next)
+      return updated
     })
   }
 
   const addItem = (categoria, label) => {
     const key = `custom_${Date.now()}`
-    setCategorias(prev => ({
-      ...prev,
-      [categoria]: [...prev[categoria], { key, label }],
-    }))
+    setCategorias(prev => {
+      const next = { ...prev, [categoria]: [...prev[categoria], { key, label }] }
+      saveConfig(next, ocultos)
+      return next
+    })
   }
 
   const removeItem = (categoria, key) => {
-    setCategorias(prev => ({
-      ...prev,
-      [categoria]: prev[categoria].filter(item => item.key !== key),
-    }))
-    setOcultos(prev => ({ ...prev, [categoria]: (prev[categoria] || []).filter(k => k !== key) }))
+    setCategorias(prev => {
+      const next = { ...prev, [categoria]: prev[categoria].filter(item => item.key !== key) }
+      saveConfig(next, ocultos)
+      return next
+    })
+    setOcultos(prev => {
+      const next = { ...prev, [categoria]: (prev[categoria] || []).filter(k => k !== key) }
+      return next
+    })
   }
 
   const toggleOculto = (categoria, key) => {
     setOcultos(prev => {
       const lista = prev[categoria] || []
       const jaOculto = lista.includes(key)
-      return { ...prev, [categoria]: jaOculto ? lista.filter(k => k !== key) : [...lista, key] }
+      const next = { ...prev, [categoria]: jaOculto ? lista.filter(k => k !== key) : [...lista, key] }
+      saveConfig(categorias, next)
+      return next
     })
   }
 

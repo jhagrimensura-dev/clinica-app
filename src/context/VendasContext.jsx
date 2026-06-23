@@ -1,36 +1,87 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
+import { useAuth } from './AuthContext'
 
 const VendasContext = createContext()
 
-function load(key, fallback) {
-  try {
-    const s = localStorage.getItem(key)
-    return s ? JSON.parse(s) : fallback
-  } catch { return fallback }
-}
+const fromDB = (r) => ({
+  id: r.id,
+  paciente: r.paciente || '',
+  data: r.data || '',
+  tipo: r.tipo || '',
+  responsavel: r.responsavel || '',
+  procedimentos: r.procedimentos || '',
+  valorTaxa: r.valor_taxa || 0,
+  valorTratamento: r.valor_tratamento || 0,
+  formasPgto: r.formas_pgto || [],
+  agendado: r.agendado || false,
+  obs: r.obs || '',
+  criadoEm: r.criado_em,
+})
+
+const toDB = (l, clinicaId) => ({
+  id: l.id,
+  clinica_id: clinicaId,
+  paciente: l.paciente || '',
+  data: l.data || '',
+  tipo: l.tipo || '',
+  responsavel: l.responsavel || '',
+  procedimentos: l.procedimentos || '',
+  valor_taxa: l.valorTaxa || 0,
+  valor_tratamento: l.valorTratamento || 0,
+  formas_pgto: l.formasPgto || [],
+  agendado: l.agendado || false,
+  obs: l.obs || '',
+})
 
 export function VendasProvider({ children }) {
-  const [lancamentos, setLancamentos] = useState(() => load('clinica_vendas', []))
+  const { clinicaId } = useAuth()
+  const [lancamentos, setLancamentos] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  useEffect(() => { localStorage.setItem('clinica_vendas', JSON.stringify(lancamentos)) }, [lancamentos])
+  useEffect(() => {
+    if (!clinicaId) return
+    setLoading(true)
+    supabase
+      .from('lancamentos')
+      .select('*')
+      .eq('clinica_id', clinicaId)
+      .order('data', { ascending: true })
+      .then(({ data }) => {
+        if (data) setLancamentos(data.map(fromDB))
+        setLoading(false)
+      })
+  }, [clinicaId])
 
-  const addLancamento = (l) => {
-    setLancamentos(prev => [...prev, {
+  const addLancamento = async (l) => {
+    const novo = {
       ...l,
       id: `venda_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
       criadoEm: new Date().toISOString(),
-    }])
+    }
+    setLancamentos(prev => [...prev, novo])
+    await supabase.from('lancamentos').insert(toDB(novo, clinicaId))
+    return novo
   }
 
-  const removeLancamento = (id) => setLancamentos(prev => prev.filter(l => l.id !== id))
+  const removeLancamento = async (id) => {
+    setLancamentos(prev => prev.filter(l => l.id !== id))
+    await supabase.from('lancamentos').delete().eq('id', id)
+  }
 
-  const updateLancamento = (id, dados) =>
+  const updateLancamento = async (id, dados) => {
     setLancamentos(prev => prev.map(l => l.id === id ? { ...l, ...dados } : l))
+    const updated = lancamentos.find(l => l.id === id)
+    if (updated) await supabase.from('lancamentos').update(toDB({ ...updated, ...dados }, clinicaId)).eq('id', id)
+  }
 
-  const clearLancamentos = () => setLancamentos([])
+  const clearLancamentos = async () => {
+    setLancamentos([])
+    if (clinicaId) await supabase.from('lancamentos').delete().eq('clinica_id', clinicaId)
+  }
 
   return (
-    <VendasContext.Provider value={{ lancamentos, addLancamento, removeLancamento, updateLancamento, clearLancamentos }}>
+    <VendasContext.Provider value={{ lancamentos, addLancamento, removeLancamento, updateLancamento, clearLancamentos, loading }}>
       {children}
     </VendasContext.Provider>
   )
