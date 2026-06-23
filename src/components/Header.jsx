@@ -1,11 +1,11 @@
-import { useClinica } from '../context/ClinicaContext'
+import { useFinanceiro } from '../context/FinanceiroContext'
 
 const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']
 const mesesNome = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro']
 const diasSemana = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado']
 
 export default function Header({ view, setView }) {
-  const { mes, setMes, ano, setAno } = useClinica()
+  const { mes, setMes, ano, setAno } = useFinanceiro()
   const hoje = new Date()
   const dataFormatada = `${diasSemana[hoje.getDay()]}, ${hoje.getDate()} de ${mesesNome[hoje.getMonth()]} de ${hoje.getFullYear()}`
 
