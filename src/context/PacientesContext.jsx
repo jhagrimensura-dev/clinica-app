@@ -31,8 +31,10 @@ export function PacientesProvider({ children }) {
     setPacientes(prev => prev.filter(p => p.id !== id))
   }
 
+  const clearPacientes = () => setPacientes([])
+
   return (
-    <PacientesContext.Provider value={{ pacientes, addPaciente, updatePaciente, removePaciente }}>
+    <PacientesContext.Provider value={{ pacientes, addPaciente, updatePaciente, removePaciente, clearPacientes }}>
       {children}
     </PacientesContext.Provider>
   )

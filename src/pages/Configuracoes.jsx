@@ -973,9 +973,9 @@ function autoMapear(headers, campos) {
 }
 
 function TabImportar() {
-  const { addLead, leads }           = useLeads()
-  const { addPaciente, pacientes }   = usePacientes()
-  const { addLancamento, lancamentos } = useVendas()
+  const { addLead, leads, clearLeads }                     = useLeads()
+  const { addPaciente, pacientes, clearPacientes }         = usePacientes()
+  const { addLancamento, lancamentos, clearLancamentos }   = useVendas()
   const inputRef = useRef(null)
   const [tipo, setTipo]         = useState('leads')
   const [headers, setHeaders]   = useState([])
@@ -1276,16 +1276,15 @@ function TabImportar() {
         <p className="text-xs text-gray-400 mb-4">Remove permanentemente todos os registros de cada categoria. Não pode ser desfeito.</p>
         <div className="flex flex-wrap gap-3">
           {[
-            { label: 'Leads',        chave: 'clinica_leads',           icone: '🔗' },
-            { label: 'Pacientes',    chave: 'clinica_pacientes',        icone: '👤' },
-            { label: 'Agendamentos', chave: 'agenda_agendamentos',      icone: '📅' },
-            { label: 'Vendas',       chave: 'clinica_vendas',           icone: '💰' },
-          ].map(({ label, chave, icone }) => (
-            <button key={chave}
+            { label: 'Leads',        icone: '🔗', fn: clearLeads },
+            { label: 'Pacientes',    icone: '👤', fn: clearPacientes },
+            { label: 'Agendamentos', icone: '📅', fn: () => { localStorage.setItem('agenda_agendamentos', '[]'); window.location.reload() } },
+            { label: 'Vendas',       icone: '💰', fn: clearLancamentos },
+          ].map(({ label, icone, fn }) => (
+            <button key={label}
               onClick={() => {
                 if (!window.confirm(`Tem certeza que quer apagar TODOS os ${label}? Essa ação não pode ser desfeita.`)) return
-                localStorage.setItem(chave, '[]')
-                window.location.reload()
+                fn()
               }}
               className="flex items-center gap-2 px-4 py-2 text-sm font-semibold border border-red-200 text-red-500 rounded-xl hover:bg-red-50 transition-colors">
               {icone} Zerar {label}

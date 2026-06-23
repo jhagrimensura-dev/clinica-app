@@ -30,13 +30,15 @@ export function LeadsProvider({ children }) {
     setLeads(prev => prev.filter(l => l.id !== id))
   }
 
+  const clearLeads = () => setLeads([])
+
   const getLeadsPorOrigem = (origem, ano, mes) => {
     const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
     return leads.filter(l => l.origem === origem && l.data.startsWith(prefix))
   }
 
   return (
-    <LeadsContext.Provider value={{ leads, addLead, updateLead, removeLead, getLeadsPorOrigem }}>
+    <LeadsContext.Provider value={{ leads, addLead, updateLead, removeLead, clearLeads, getLeadsPorOrigem }}>
       {children}
     </LeadsContext.Provider>
   )
