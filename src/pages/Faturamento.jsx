@@ -480,7 +480,7 @@ export default function Faturamento() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 font-medium mb-1">Consultas (R$)</p>
           <p className="text-2xl font-bold text-yellow-500">R$ {fmt(totalTaxas)}</p>
-          <p className="text-xs text-gray-400 mt-1">Total de consultas</p>
+          <p className="text-xs text-gray-400 mt-1">{lancamentosMes.filter(l => (l.valorTaxa || 0) > 0).length} consulta(s) paga(s)</p>
         </div>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 font-medium mb-1">Ticket Médio</p>
