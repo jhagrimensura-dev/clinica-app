@@ -94,6 +94,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar }) {
   const [agendadoPara, setAgendadoPara] = useState('')
   const [lembrete, setLembrete] = useState('')
   const [lembreteHora, setLembreteHora] = useState('')
+  const [aniversario, setAniversario] = useState('')
   const [obs, setObs] = useState('')
   const [origens, setOrigens] = useState(leadOrigens || ORIGENS_PADRAO)
   const [editandoOrigens, setEditandoOrigens] = useState(false)
@@ -277,6 +278,15 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar }) {
         </div>
 
         <div>
+          <label className="text-xs font-semibold text-gray-500 mb-1 block">🎂 Aniversário</label>
+          <input type="date" value={aniversario} onChange={e => setAniversario(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300" />
+          {aniversario && (
+            <p className="text-xs text-brand-500 mt-1">Um lembrete será criado automaticamente no dia do aniversário.</p>
+          )}
+        </div>
+
+        <div>
           <label className="text-xs font-semibold text-gray-500 mb-1 block">Observações</label>
           <textarea value={obs} onChange={e => setObs(e.target.value)} rows={3}
             placeholder="Ex: Interesse em preenchimento labial"
@@ -286,7 +296,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar }) {
         <div className="flex justify-end gap-3 pt-1">
           <button onClick={onFechar} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
           <button
-            onClick={() => nome.trim() && onSalvar({ nome: nome.trim(), telefone, responsavel, obs, origem: tipo, origemCustom, data, status, agendadoPara: agendadoPara || null, lembrete: lembrete || null, lembreteHora: lembreteHora || null, fonte: 'WhatsApp' })}
+            onClick={() => nome.trim() && onSalvar({ nome: nome.trim(), telefone, responsavel, obs, origem: tipo, origemCustom, data, status, agendadoPara: agendadoPara || null, lembrete: lembrete || null, lembreteHora: lembreteHora || null, aniversario: aniversario || null, fonte: 'WhatsApp' })}
             disabled={!nome.trim() || (status === 'Agendou' && !agendadoPara)}
             className="px-5 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded-xl disabled:opacity-40">
             Registrar
@@ -896,6 +906,24 @@ export default function InboxWhatsApp({ contaId }) {
         data: dados.lembrete,
         hora: dados.lembreteHora || '',
         cor: 'blue',
+        concluido: false,
+        criadoEm: Date.now(),
+      })
+    }
+    if (dados.aniversario) {
+      const [, mes, dia] = dados.aniversario.split('-')
+      const hoje = new Date()
+      let anoAniv = hoje.getFullYear()
+      const dataAniv = new Date(`${anoAniv}-${mes}-${dia}`)
+      if (dataAniv <= hoje) anoAniv += 1
+      addLembrete({
+        id: Date.now() + 1,
+        leadNome: dados.nome,
+        leadTelefone: dados.telefone || '',
+        descricao: `🎂 Aniversário de ${dados.nome}`,
+        data: `${anoAniv}-${mes}-${dia}`,
+        hora: '09:00',
+        cor: 'pink',
         concluido: false,
         criadoEm: Date.now(),
       })
