@@ -1,13 +1,18 @@
+import { useEffect } from 'react'
 import { useClinica } from '../context/ClinicaContext'
 import { useVendas } from '../context/VendasContext'
 import { useFinanceiro } from '../context/FinanceiroContext'
 import { useLeads } from '../context/LeadsContext'
+import { useSocial } from '../context/SocialContext'
 
 export default function Dashboard() {
   const { metaValor, diasAtendimento, metaDiaria, posts } = useClinica()
   const { lancamentos } = useVendas()
   const { mes, ano } = useFinanceiro()
   const { getLeadsPorOrigem } = useLeads()
+  const { getMes, carregarMes } = useSocial()
+
+  useEffect(() => { carregarMes(ano, mes) }, [ano, mes])
 
   const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
@@ -43,9 +48,7 @@ export default function Dashboard() {
   const convComercial = totalLeads > 0 ? ((totalAgend / totalLeads) * 100).toFixed(1) : '0.0'
   const convRecorrencia = leadsRecorrentes.length > 0 ? ((agendRecorrentes / leadsRecorrentes.length) * 100).toFixed(1) : '0.0'
 
-  // Social Media (localStorage)
-  const seguidores = parseInt(localStorage.getItem(`social_seguidores_${ano}_${mes}`) || '0')
-  const trafegoInvestido = parseFloat(localStorage.getItem(`social_trafego_${ano}_${mes}`) || '0')
+  const { trafego: trafegoInvestido, seguidores } = getMes(ano, mes)
   const totalPosts = posts.length
   const totalImpulsionados = posts.filter(p => p.impulsionado).length
   const custoLead = totalLeads > 0 && trafegoInvestido > 0 ? trafegoInvestido / totalLeads : 0
