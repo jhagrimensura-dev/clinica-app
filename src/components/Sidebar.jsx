@@ -204,14 +204,12 @@ export default function Sidebar({ active, setActive }) {
 
       {/* Footer */}
       <div className="flex flex-col gap-1 items-center">
-        {!isFuncionario && (
-          <button onClick={() => setActive('configuracoes')}
-            className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all ${
-              active === 'configuracoes' ? 'bg-brand-400/30 text-brand-200' : 'text-brand-400/60 hover:text-brand-200 hover:bg-brand-400/15'
-            }`} title="Configurações">
-            {icons.config}
-          </button>
-        )}
+        <button onClick={() => setActive('configuracoes')}
+          className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all ${
+            active === 'configuracoes' ? 'bg-brand-400/30 text-brand-200' : 'text-brand-400/60 hover:text-brand-200 hover:bg-brand-400/15'
+          }`} title="Configurações">
+          {icons.config}
+        </button>
         <button onClick={signOut}
           className="w-10 h-10 flex items-center justify-center rounded-xl text-brand-500/50 hover:text-red-400 hover:bg-red-400/10 transition-all"
           title="Sair">
