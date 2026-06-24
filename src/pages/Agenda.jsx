@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { usePacientes } from '../context/PacientesContext'
+import { useAgenda } from '../context/AgendaContext'
 
 // Slots de 15 em 15 minutos, das 7:00 às 19:00
 const HORARIOS = []
@@ -414,20 +415,13 @@ export default function Agenda() {
   const today = new Date()
   const [refDate, setRefDate] = useState(today)
   const [modal, setModal] = useState(null)
-  const [agendamentos, setAgendamentos] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('agenda_agendamentos') || '[]') } catch { return [] }
-  })
+  const { agendamentos, saveAgendamento, deleteAgendamento } = useAgenda()
 
   const weekDays = getWeekDays(refDate)
   const todayKey = dateKey(today)
 
   const navWeek = (n) => {
     const d = new Date(refDate); d.setDate(d.getDate() + n * 7); setRefDate(d)
-  }
-
-  const save = (list) => {
-    setAgendamentos(list)
-    localStorage.setItem('agenda_agendamentos', JSON.stringify(list))
   }
 
   const getAppt = (day, time) => {
@@ -454,14 +448,14 @@ export default function Agenda() {
 
   const handleSave = ({ paciente, procedimento, status, duracao, telefone }) => {
     if (modal.existing) {
-      save(agendamentos.map(a => a.id === modal.existing.id ? { ...a, paciente, procedimento, status, duracao, telefone } : a))
+      saveAgendamento({ ...modal.existing, paciente, procedimento, status, duracao, telefone })
     } else {
-      save([...agendamentos, { id: Date.now().toString(), date: modal.date, time: modal.time, paciente, procedimento, status, duracao, telefone }])
+      saveAgendamento({ id: Date.now().toString(), date: modal.date, time: modal.time, paciente, procedimento, status, duracao, telefone })
     }
     setModal(null)
   }
 
-  const handleDelete = (id) => { save(agendamentos.filter(a => a.id !== id)); setModal(null) }
+  const handleDelete = (id) => { deleteAgendamento(id); setModal(null) }
 
   // Label da semana
   const dom = weekDays[0], sab = weekDays[6]

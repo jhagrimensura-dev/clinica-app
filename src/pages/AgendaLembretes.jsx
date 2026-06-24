@@ -1,12 +1,6 @@
 import { useState } from 'react'
+import { useAgenda } from '../context/AgendaContext'
 
-export function loadLembretes() {
-  try { return JSON.parse(localStorage.getItem('agenda_lembretes') || '[]') } catch { return [] }
-}
-export function saveLembretes(lista) {
-  localStorage.setItem('agenda_lembretes', JSON.stringify(lista))
-  window.dispatchEvent(new Event('storage'))
-}
 export function gerarIdLembrete() {
   return `lem_${Date.now()}_${Math.random().toString(36).slice(2)}`
 }
@@ -49,7 +43,7 @@ function toDateStr(ano, mes, dia) {
 
 export default function AgendaLembretes() {
   const hoje = new Date().toISOString().split('T')[0]
-  const [lembretes, setLembretes] = useState(loadLembretes)
+  const { lembretes, addLembrete, updateLembrete, deleteLembrete } = useAgenda()
   const [mesRef, setMesRef] = useState(() => ({ ano: new Date().getFullYear(), mes: new Date().getMonth() }))
   const [diaSel, setDiaSel] = useState(hoje)
   const [modal, setModal] = useState(null)
@@ -73,22 +67,15 @@ export default function AgendaLembretes() {
   }
   function salvar() {
     if (!fNome.trim()) return
-    let nova
     if (modal.modo === 'novo') {
-      nova = [...lembretes, { id: gerarIdLembrete(), leadNome: fNome.trim(), leadTelefone: fTel.trim(), descricao: fDesc.trim(), data: fData, hora: fHora, cor: fCor, concluido: false, criadoEm: Date.now() }]
+      addLembrete({ id: gerarIdLembrete(), leadNome: fNome.trim(), leadTelefone: fTel.trim(), descricao: fDesc.trim(), data: fData, hora: fHora, cor: fCor, concluido: false, criadoEm: Date.now() })
     } else {
-      nova = lembretes.map(l => l.id === modal.lembrete.id ? { ...l, leadNome: fNome.trim(), leadTelefone: fTel.trim(), descricao: fDesc.trim(), data: fData, hora: fHora, cor: fCor } : l)
+      updateLembrete(modal.lembrete.id, { leadNome: fNome.trim(), leadTelefone: fTel.trim(), descricao: fDesc.trim(), data: fData, hora: fHora, cor: fCor })
     }
-    setLembretes(nova); saveLembretes(nova); setModal(null)
+    setModal(null)
   }
-  function excluir(id) {
-    const nova = lembretes.filter(l => l.id !== id)
-    setLembretes(nova); saveLembretes(nova); setModal(null)
-  }
-  function toggleConcluido(id) {
-    const nova = lembretes.map(l => l.id === id ? { ...l, concluido: !l.concluido } : l)
-    setLembretes(nova); saveLembretes(nova)
-  }
+  function excluir(id) { deleteLembrete(id); setModal(null) }
+  function toggleConcluido(id) { updateLembrete(id, { concluido: !lembretes.find(l => l.id === id)?.concluido }) }
 
   const dias = getDias(mesRef.ano, mesRef.mes)
   const diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
