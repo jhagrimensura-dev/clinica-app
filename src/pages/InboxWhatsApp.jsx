@@ -1118,7 +1118,12 @@ export default function InboxWhatsApp({ contaId }) {
 
             <div className="relative">
               {leadRegistrado[conversa.id] ? (
-                <span className="text-xs text-green-600 font-semibold bg-green-50 px-3 py-1.5 rounded-xl">✓ Lead registrado</span>
+                <span className="text-xs text-green-600 font-semibold bg-green-50 px-3 py-1.5 rounded-xl">
+                  ✓ {leadRegistrado[conversa.id] === 'leads_recorrentes' ? 'Lead Recorrente registrado'
+                    : leadRegistrado[conversa.id] === 'leads_novos' ? 'Lead Novo registrado'
+                    : leadRegistrado[conversa.id] === 'indicacao' ? 'Indicação registrada'
+                    : 'Lead registrado'}
+                </span>
               ) : TIPO_PARA_ORIGEM[contaAtiva?.tipo] ? (
                 <button onClick={() => registrarLead(TIPO_PARA_ORIGEM[contaAtiva.tipo])}
                   className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
