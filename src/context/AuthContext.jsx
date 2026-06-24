@@ -6,6 +6,7 @@ const AuthContext = createContext(null)
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(undefined)
   const [recoveryMode, setRecoveryMode] = useState(false)
+  const [clinicaId, setClinicaId] = useState(null)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -32,16 +33,24 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe()
   }, [])
 
+  // Busca o ID master da clínica — todos os usuários usam o mesmo
+  useEffect(() => {
+    if (!session?.user) return
+    supabase.from('clinica_master').select('admin_id').single()
+      .then(({ data }) => {
+        if (data?.admin_id) setClinicaId(data.admin_id)
+        else setClinicaId(session.user.id)
+      })
+  }, [session?.user?.id])
+
   const user = session?.user
   const userRole = user?.user_metadata?.funcao === 'Funcionário' ? 'Funcionário' : 'Administrador'
   const primeiroAcesso = user?.user_metadata?.needsPassword === true
   const permissoes = userRole === 'Funcionário' ? (user?.user_metadata?.permissoes || null) : null
-  // clinicaId: admin uses own id; funcionário uses the id stored in their metadata
-  const clinicaId = user?.user_metadata?.clinica_id || user?.id || null
 
   const signIn = (email, password) => supabase.auth.signInWithPassword({ email, password })
   const signInWithMagicLink = (email) => supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } })
-  const inviteUser = (email, funcao = 'Funcionário', perms = null) => supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: window.location.origin, data: { funcao, needsPassword: true, clinica_id: user?.id, ...(perms ? { permissoes: perms } : {}) } } })
+  const inviteUser = (email, funcao = 'Funcionário', perms = null) => supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: window.location.origin, data: { funcao, needsPassword: true, ...(perms ? { permissoes: perms } : {}) } } })
   const signOut = () => supabase.auth.signOut()
   const updatePassword = (password) => supabase.auth.updateUser({ password })
 
