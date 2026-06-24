@@ -32,6 +32,8 @@ import { LeadsProvider } from './context/LeadsContext'
 import { PacientesProvider } from './context/PacientesContext'
 import { VendasProvider } from './context/VendasContext'
 import { SocialProvider } from './context/SocialContext'
+import { AgendaProvider } from './context/AgendaContext'
+import { ConfigProvider } from './context/ConfigContext'
 import LeadsNovos from './pages/LeadsNovos'
 import LeadsRecorrentes from './pages/LeadsRecorrentes'
 import Indicacao from './pages/Indicacao'
@@ -263,6 +265,8 @@ case 'whatsapp_canal': return <PagePlaceholder title="WhatsApp" />
   }
 
   return (
+    <ConfigProvider>
+    <AgendaProvider>
     <ClinicaProvider>
     <FinanceiroProvider>
     <ContasProvider>
@@ -287,5 +291,7 @@ case 'whatsapp_canal': return <PagePlaceholder title="WhatsApp" />
     </ContasProvider>
     </FinanceiroProvider>
     </ClinicaProvider>
+    </AgendaProvider>
+    </ConfigProvider>
   )
 }

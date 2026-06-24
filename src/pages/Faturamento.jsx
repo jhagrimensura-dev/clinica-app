@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useFinanceiro } from '../context/FinanceiroContext'
 import { useVendas } from '../context/VendasContext'
 import { usePacientes } from '../context/PacientesContext'
+import { useConfig } from '../context/ConfigContext'
 
 const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 const FORMAS_PGTO = ['PIX', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Transferência', 'Boleto']
@@ -13,12 +14,10 @@ const PROCS_DEFAULT = [
   { nome: 'Fio de PDO', preco: 0 },
 ]
 
-function getProcedimentos() {
+function getProcedimentos(fromContext) {
+  if (fromContext) return fromContext
   try { return JSON.parse(localStorage.getItem('procedimentos_cadastro')) || PROCS_DEFAULT }
   catch { return PROCS_DEFAULT }
-}
-function saveProcedimentos(procs) {
-  localStorage.setItem('procedimentos_cadastro', JSON.stringify(procs))
 }
 
 function mascaraMoeda(valor) {
@@ -41,7 +40,6 @@ function SelectProcedimento({ value, onChange, procs, onProcsChange }) {
     if (!novoNome.trim()) return
     const preco = parseMoeda(novoPreco)
     const novos = [...procs, { nome: novoNome.trim(), preco }]
-    saveProcedimentos(novos)
     onProcsChange(novos)
     onChange(novoNome.trim(), preco)
     setAdicionando(false)
@@ -416,11 +414,12 @@ export default function Faturamento() {
   const { ano, setAno, mes, setMes } = useFinanceiro()
   const { lancamentos, addLancamento, removeLancamento, updateLancamento } = useVendas()
   const { pacientes } = usePacientes()
+  const { procedimentos: procsFromDB, setProcedimentos } = useConfig()
+  const procs = procsFromDB || PROCS_DEFAULT
   const [modal, setModal] = useState(false)
   const [editando, setEditando] = useState(null)
-  const [procs, setProcs] = useState(() => getProcedimentos())
 
-  const handleProcsChange = (novos) => setProcs(novos)
+  const handleProcsChange = (novos) => setProcedimentos(novos)
 
   const navMes = (delta) => {
     const novo = mes + delta

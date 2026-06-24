@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useLeads } from '../context/LeadsContext'
+import { useConfig } from '../context/ConfigContext'
+import { useAgenda } from '../context/AgendaContext'
 import { supabase } from '../lib/supabase'
 import Picker from '@emoji-mart/react'
 import data from '@emoji-mart/data'
-import { loadLembretes, saveLembretes, gerarIdLembrete } from './AgendaLembretes'
 
 // ── Proxy helper (evita CORS) ─────────────────────────────────────
 async function zapiFetch(conta, path, method = 'GET', body = null) {
@@ -79,18 +80,10 @@ function normalizeChats(data, instancia) {
 
 // ── Modal registrar lead ──────────────────────────────────────────
 const ORIGENS_PADRAO = ['WhatsApp', 'Instagram', 'Tráfego', 'Indicação', 'Retorno', 'Resgate']
-function loadOrigens() {
-  try { return JSON.parse(localStorage.getItem('lead_origens') || 'null') || ORIGENS_PADRAO } catch { return ORIGENS_PADRAO }
-}
-function saveOrigens(lista) { localStorage.setItem('lead_origens', JSON.stringify(lista)) }
-
 const STATUS_PADRAO = ['Em aberto', 'Conversando', 'Follow #1', 'Follow #2', 'Follow #3', 'Agendou', 'Perdido']
-function loadStatus() {
-  try { return JSON.parse(localStorage.getItem('lead_status') || 'null') || STATUS_PADRAO } catch { return STATUS_PADRAO }
-}
-function saveStatus(lista) { localStorage.setItem('lead_status', JSON.stringify(lista)) }
 
 function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar }) {
+  const { leadOrigens, setLeadOrigens, leadStatus, setLeadStatus } = useConfig()
   const hoje = new Date().toISOString().split('T')[0]
   const [nome, setNome] = useState(contato.nome)
   const [telefone, setTelefone] = useState(contato.telefone || '')
@@ -102,33 +95,36 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar }) {
   const [lembrete, setLembrete] = useState('')
   const [lembreteHora, setLembreteHora] = useState('')
   const [obs, setObs] = useState('')
-  const [origens, setOrigens] = useState(loadOrigens)
+  const [origens, setOrigens] = useState(leadOrigens || ORIGENS_PADRAO)
   const [editandoOrigens, setEditandoOrigens] = useState(false)
   const [novaOrigem, setNovaOrigem] = useState('')
-  const [statusLista, setStatusLista] = useState(loadStatus)
+  const [statusLista, setStatusLista] = useState(leadStatus || STATUS_PADRAO)
   const [editandoStatus, setEditandoStatus] = useState(false)
   const [novoStatus, setNovoStatus] = useState('')
+
+  useEffect(() => { if (leadOrigens) setOrigens(leadOrigens) }, [leadOrigens])
+  useEffect(() => { if (leadStatus) setStatusLista(leadStatus) }, [leadStatus])
 
   function adicionarOrigem() {
     const v = novaOrigem.trim()
     if (!v || origens.includes(v)) return
     const nova = [...origens, v]
-    setOrigens(nova); saveOrigens(nova); setNovaOrigem('')
+    setOrigens(nova); setLeadOrigens(nova); setNovaOrigem('')
   }
   function removerOrigem(o) {
     const nova = origens.filter(x => x !== o)
-    setOrigens(nova); saveOrigens(nova)
+    setOrigens(nova); setLeadOrigens(nova)
     if (origemCustom === o) setOrigemCustom(nova[0] || '')
   }
   function adicionarStatus() {
     const v = novoStatus.trim()
     if (!v || statusLista.includes(v)) return
     const nova = [...statusLista, v]
-    setStatusLista(nova); saveStatus(nova); setNovoStatus('')
+    setStatusLista(nova); setLeadStatus(nova); setNovoStatus('')
   }
   function removerStatus(s) {
     const nova = statusLista.filter(x => x !== s)
-    setStatusLista(nova); saveStatus(nova)
+    setStatusLista(nova); setLeadStatus(nova)
     if (status === s) setStatus(nova[0] || '')
   }
 
@@ -195,9 +191,9 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar }) {
                 {origens.map((o, i) => (
                   <div key={o} className="flex items-center gap-1">
                     <div className="flex flex-col gap-0.5 flex-shrink-0">
-                      <button onClick={() => { if (i === 0) return; const n = [...origens]; [n[i-1],n[i]]=[n[i],n[i-1]]; setOrigens(n); saveOrigens(n) }}
+                      <button onClick={() => { if (i === 0) return; const n = [...origens]; [n[i-1],n[i]]=[n[i],n[i-1]]; setOrigens(n); setLeadOrigens(n) }}
                         disabled={i === 0} className="text-gray-300 hover:text-gray-500 disabled:opacity-20 leading-none text-[10px]">▲</button>
-                      <button onClick={() => { if (i === origens.length-1) return; const n = [...origens]; [n[i],n[i+1]]=[n[i+1],n[i]]; setOrigens(n); saveOrigens(n) }}
+                      <button onClick={() => { if (i === origens.length-1) return; const n = [...origens]; [n[i],n[i+1]]=[n[i+1],n[i]]; setOrigens(n); setLeadOrigens(n) }}
                         disabled={i === origens.length-1} className="text-gray-300 hover:text-gray-500 disabled:opacity-20 leading-none text-[10px]">▼</button>
                     </div>
                     <span className="flex-1 text-sm text-gray-700">{o}</span>
@@ -234,9 +230,9 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar }) {
                 {statusLista.map((s, i) => (
                   <div key={s} className="flex items-center gap-1">
                     <div className="flex flex-col gap-0.5 flex-shrink-0">
-                      <button onClick={() => { if (i === 0) return; const n = [...statusLista]; [n[i-1],n[i]]=[n[i],n[i-1]]; setStatusLista(n); saveStatus(n) }}
+                      <button onClick={() => { if (i === 0) return; const n = [...statusLista]; [n[i-1],n[i]]=[n[i],n[i-1]]; setStatusLista(n); setLeadStatus(n) }}
                         disabled={i === 0} className="text-gray-300 hover:text-gray-500 disabled:opacity-20 leading-none text-[10px]">▲</button>
-                      <button onClick={() => { if (i === statusLista.length-1) return; const n = [...statusLista]; [n[i],n[i+1]]=[n[i+1],n[i]]; setStatusLista(n); saveStatus(n) }}
+                      <button onClick={() => { if (i === statusLista.length-1) return; const n = [...statusLista]; [n[i],n[i+1]]=[n[i+1],n[i]]; setStatusLista(n); setLeadStatus(n) }}
                         disabled={i === statusLista.length-1} className="text-gray-300 hover:text-gray-500 disabled:opacity-20 leading-none text-[10px]">▼</button>
                     </div>
                     <span className="flex-1 text-sm text-gray-700">{s}</span>
@@ -314,6 +310,8 @@ const TIPO_PARA_ORIGEM = {
 // ── Página principal ──────────────────────────────────────────────
 export default function InboxWhatsApp({ contaId }) {
   const { addLead } = useLeads()
+  const { addLembrete } = useAgenda()
+  const { iaConhecimento, setIaConhecimento, iaExemplos, setIaExemplos, respostasRapidas: respostasConfig, setRespostasRapidas: setRespostasConfig } = useConfig()
   const [todasContas, setTodasContas] = useState(loadContas)
   const contaAtiva = contaId
     ? todasContas.find(c => c.id === contaId)
@@ -350,14 +348,12 @@ export default function InboxWhatsApp({ contaId }) {
   const [loadingIA, setLoadingIA]     = useState(false)
   const [erroIA, setErroIA]           = useState('')
   const [modalConfigIA, setModalConfigIA] = useState(false)
-  const [conhecimentoIA, setConhecimentoIA] = useState(() => {
-    try { return localStorage.getItem('ia_conhecimento') || '' } catch { return '' }
-  })
+  const [conhecimentoIA, setConhecimentoIA] = useState('')
+  useEffect(() => { if (iaConhecimento !== undefined) setConhecimentoIA(iaConhecimento) }, [iaConhecimento])
   const [menuAnexo, setMenuAnexo]     = useState(false)
   const [modalRespostas, setModalRespostas] = useState(false)
-  const [respostasRapidas, setRespostasRapidas] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('respostas_rapidas') || '[]') } catch { return [] }
-  })
+  const [respostasRapidas, setRespostasRapidas] = useState([])
+  useEffect(() => { if (Array.isArray(respostasConfig)) setRespostasRapidas(respostasConfig) }, [respostasConfig])
   const [novaResposta, setNovaResposta] = useState('')
   const [showEmoji, setShowEmoji] = useState(false)
   const [menuOpcoes, setMenuOpcoes] = useState(null)
@@ -653,8 +649,8 @@ export default function InboxWhatsApp({ contaId }) {
     }
     try {
       const conversaTexto = msgs.map(m => `${m.minha ? 'Atendente' : nomeContato || 'Lead'}: ${m.texto}`).join('\n')
-      const exemplos = (() => { try { return JSON.parse(localStorage.getItem('ia_exemplos') || '[]').slice(0, 6) } catch { return [] } })()
-      const conhecimento = (() => { try { return localStorage.getItem('ia_conhecimento') || '' } catch { return '' } })()
+      const exemplos = (Array.isArray(iaExemplos) ? iaExemplos : []).slice(0, 6)
+      const conhecimento = iaConhecimento || ''
       const res = await fetch('/api/claude-assist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -785,7 +781,7 @@ export default function InboxWhatsApp({ contaId }) {
 
   function salvarRespostas(lista) {
     setRespostasRapidas(lista)
-    localStorage.setItem('respostas_rapidas', JSON.stringify(lista))
+    setRespostasConfig(lista)
   }
 
   async function enviarArquivo(file, tipo) {
@@ -892,9 +888,8 @@ export default function InboxWhatsApp({ contaId }) {
   const confirmarLead = (dados) => {
     addLead({ ...dados, status: STATUS_NORMALIZE[dados.status] || dados.status })
     if (dados.lembrete) {
-      const lista = loadLembretes()
-      lista.push({
-        id: gerarIdLembrete(),
+      addLembrete({
+        id: Date.now(),
         leadNome: dados.nome,
         leadTelefone: dados.telefone || '',
         descricao: dados.obs || '',
@@ -904,7 +899,6 @@ export default function InboxWhatsApp({ contaId }) {
         concluido: false,
         criadoEm: Date.now(),
       })
-      saveLembretes(lista)
     }
     setLeadRegistrado(prev => ({ ...prev, [conversa.id]: dados.origem }))
     setModalLead(null)
@@ -1382,14 +1376,12 @@ export default function InboxWhatsApp({ contaId }) {
                     onClick={() => {
                       const ultimaMsgLead = conversa.mensagens?.filter(m => !m.minha).at(-1)?.texto
                       if (ultimaMsgLead) {
-                        try {
-                          const exemplos = JSON.parse(localStorage.getItem('ia_exemplos') || '[]')
-                          const atualizados = [
-                            { lead: ultimaMsgLead, resposta: sugestaoIA },
-                            ...exemplos.filter(e => e.lead !== ultimaMsgLead),
-                          ].slice(0, 15)
-                          localStorage.setItem('ia_exemplos', JSON.stringify(atualizados))
-                        } catch {}
+                        const exemplos = Array.isArray(iaExemplos) ? iaExemplos : []
+                        const atualizados = [
+                          { lead: ultimaMsgLead, resposta: sugestaoIA },
+                          ...exemplos.filter(e => e.lead !== ultimaMsgLead),
+                        ].slice(0, 15)
+                        setIaExemplos(atualizados)
                       }
                       setMensagem(sugestaoIA)
                       setSugestaoIA('')
@@ -1470,7 +1462,7 @@ export default function InboxWhatsApp({ contaId }) {
                 className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
               <button
                 onClick={() => {
-                  try { localStorage.setItem('ia_conhecimento', conhecimentoIA) } catch {}
+                  setIaConhecimento(conhecimentoIA)
                   setModalConfigIA(false)
                 }}
                 className="px-5 py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl">

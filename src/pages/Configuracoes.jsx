@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { useLeads } from '../context/LeadsContext'
 import { usePacientes } from '../context/PacientesContext'
 import { useVendas } from '../context/VendasContext'
+import { useConfig } from '../context/ConfigContext'
 import * as XLSX from 'xlsx'
 
 function load(key, fallback) {
@@ -21,15 +22,18 @@ const TABS = [
 
 /* ── ABA CLÍNICA ── */
 function TabClinica() {
-  const [dados, setDados] = useState(() => load('config_clinica', {
-    nome: 'Dra. Amanda Lima', cep: '75800-138',
-    endereco: 'Rua Benjamim Constant, 1970', cidade: 'Jataí', estado: 'Goiás',
-  }))
+  const { clinicaDados, setClinicaDados } = useConfig()
+  const DEFAULT_CLINICA = { nome: 'Dra. Amanda Lima', cep: '75800-138', endereco: 'Rua Benjamim Constant, 1970', cidade: 'Jataí', estado: 'Goiás' }
+  const [dados, setDados] = useState(DEFAULT_CLINICA)
   const [salvo, setSalvo] = useState(false)
+
+  useEffect(() => {
+    if (clinicaDados && Object.keys(clinicaDados).length > 0) setDados(clinicaDados)
+  }, [clinicaDados])
 
   const set = (campo, val) => setDados(d => ({ ...d, [campo]: val }))
   const salvar = () => {
-    localStorage.setItem('config_clinica', JSON.stringify(dados))
+    setClinicaDados(dados)
     setSalvo(true)
     setTimeout(() => setSalvo(false), 2000)
   }
@@ -504,8 +508,9 @@ function EditarConta({ conta, onSalvar, onCancelar }) {
 /* ── ABA MEU PERFIL ── */
 function TabPerfil() {
   const { session, updatePassword } = useAuth()
+  const { perfilDados, setPerfilDados } = useConfig()
   const emailReal = session?.user?.email || ''
-  const [dados, setDados] = useState(() => load('config_perfil', { nome: '', apelido: '', cargo: '' }))
+  const [dados, setDados] = useState({ nome: '', apelido: '', cargo: '' })
   const [salvo, setSalvo] = useState(false)
   const [senha, setSenha] = useState('')
   const [confirma, setConfirma] = useState('')
@@ -514,10 +519,14 @@ function TabPerfil() {
   const [senhaMsg, setSenhaMsg] = useState('')
   const [senhaLoading, setSenhaLoading] = useState(false)
 
+  useEffect(() => {
+    if (perfilDados && Object.keys(perfilDados).length > 0) setDados(perfilDados)
+  }, [perfilDados])
+
   const set = (campo, val) => setDados(d => ({ ...d, [campo]: val }))
 
   const salvar = () => {
-    localStorage.setItem('config_perfil', JSON.stringify(dados))
+    setPerfilDados(dados)
     setSalvo(true)
     setTimeout(() => setSalvo(false), 2000)
   }
@@ -740,14 +749,19 @@ function ModalMembro({ membro, onSalvar, onFechar }) {
 
 function TabEquipe() {
   const { inviteUser } = useAuth()
-  const [membros, setMembros] = useState(() => load('config_equipe', MEMBROS_DEFAULT))
+  const { equipeDados, setEquipeDados } = useConfig()
+  const [membros, setMembros] = useState(MEMBROS_DEFAULT)
   const [modal, setModal] = useState(false)
   const [editando, setEditando] = useState(null)
   const [convidando, setConvidando] = useState(null)
   const [feedbackConvite, setFeedbackConvite] = useState({})
 
+  useEffect(() => {
+    if (Array.isArray(equipeDados) && equipeDados.length > 0) setMembros(equipeDados)
+  }, [equipeDados])
+
   const salvarLista = (lista) => {
-    localStorage.setItem('config_equipe', JSON.stringify(lista))
+    setEquipeDados(lista)
     setMembros(lista)
   }
 
