@@ -578,7 +578,7 @@ export default function Faturamento() {
                     className="border-b border-gray-50 hover:bg-brand-50 cursor-pointer transition-colors">
                     <td className="py-3 px-3 text-gray-500 whitespace-nowrap">{new Date(l.data).toLocaleDateString('pt-BR')}</td>
                     <td className="py-3 px-3 font-medium text-gray-800">{l.paciente}</td>
-                    <td className="py-3 px-3"><span className="px-2 py-1 rounded-full text-xs font-semibold bg-brand-100 text-brand-600">{l.tipo}</span></td>
+                    <td className="py-3 px-3"><span className={`px-2 py-1 rounded-full text-xs font-semibold ${l.tipo === 'Novo' ? 'bg-green-100 text-green-600' : l.tipo === 'Recorrente' ? 'bg-blue-100 text-blue-600' : 'bg-brand-100 text-brand-600'}`}>{l.tipo}</span></td>
                     <td className="py-3 px-3 text-gray-600 text-sm">{l.responsavel || '—'}</td>
                     <td className="py-3 px-3 text-gray-500 max-w-[180px] truncate">{l.procedimentos || '—'}</td>
                     <td className="py-3 px-3 text-gray-600 text-right whitespace-nowrap">R$ {fmt(l.valorTaxa || 0)}</td>
