@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useLeads } from '../context/LeadsContext'
 import { useFinanceiro } from '../context/FinanceiroContext'
+import { useAuth } from '../context/AuthContext'
 
 const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
@@ -273,6 +274,7 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
 }
 
 export default function LeadsNovos() {
+  const { userRole } = useAuth()
   const { ano, setAno, mes, setMes, MESES } = useFinanceiro()
   const { getLeadsPorOrigem, addLead, updateLead, removeLead } = useLeads()
   const [modal, setModal] = useState(false)
@@ -423,14 +425,14 @@ export default function LeadsNovos() {
                   <button onClick={e => abrirInboxContato(lead.telefone, e)} disabled={!lead.telefone} title={lead.telefone ? `Abrir conversa: ${lead.telefone}` : 'Sem telefone'} className="flex-shrink-0 cursor-pointer disabled:cursor-not-allowed">
                     <IconeWpp ativo={!!lead.telefone} />
                   </button>
-                  {confirmDelete === lead.id ? (
+                  {userRole !== 'Funcionário' && (confirmDelete === lead.id ? (
                     <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                       <button onClick={() => { removeLead(lead.id); setConfirmDelete(null) }} className="text-xs text-red-500 font-semibold px-2 py-1 rounded hover:bg-red-50">Sim</button>
                       <button onClick={() => setConfirmDelete(null)} className="text-xs text-gray-400 px-2 py-1 rounded hover:bg-gray-100">Não</button>
                     </div>
                   ) : (
                     <button onClick={e => { e.stopPropagation(); setConfirmDelete(lead.id) }} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 text-xs transition-all">✕</button>
-                  )}
+                  ))}
                 </div>
               )
             })}
