@@ -12,12 +12,16 @@ function load(key, fallback) {
   try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : fallback } catch { return fallback }
 }
 
-const TABS = [
+const TABS_ADMIN = [
   { key: 'clinica',   label: 'Clínica',    icon: '🏢' },
   { key: 'whatsapp',  label: 'WhatsApp',   icon: '💬' },
   { key: 'perfil',    label: 'Meu Perfil', icon: '👤' },
   { key: 'equipe',    label: 'Equipe',     icon: '👥' },
   { key: 'importar',  label: 'Importar',   icon: '📥' },
+]
+const TABS_FUNCIONARIO = [
+  { key: 'whatsapp',  label: 'WhatsApp',   icon: '💬' },
+  { key: 'perfil',    label: 'Meu Perfil', icon: '👤' },
 ]
 
 /* ── ABA CLÍNICA ── */
@@ -1290,7 +1294,10 @@ function TabImportar() {
 
 /* ── PÁGINA PRINCIPAL ── */
 export default function Configuracoes() {
-  const [aba, setAba] = useState('clinica')
+  const { userRole } = useAuth()
+  const isFuncionario = userRole === 'Funcionário'
+  const TABS = isFuncionario ? TABS_FUNCIONARIO : TABS_ADMIN
+  const [aba, setAba] = useState(isFuncionario ? 'whatsapp' : 'clinica')
 
   return (
     <div className="p-6 space-y-6">

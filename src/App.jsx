@@ -214,7 +214,6 @@ function AppContent() {
 
   const podeAcessar = (page) => {
     if (userRole !== 'Funcionário') return true
-    if (page === 'configuracoes') return false
     if (permissoes) {
       const check = PAGE_PARENT[page] || page
       return permissoes.includes(check)
