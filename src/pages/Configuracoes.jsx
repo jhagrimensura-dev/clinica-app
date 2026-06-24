@@ -185,8 +185,8 @@ function TabWhatsApp() {
 
   const remover = (id) => salvarContas(contas.filter(c => c.id !== id))
 
-  const salvarEdicao = (id, nome, tipo, clientToken) => {
-    salvarContas(contas.map(c => c.id === id ? { ...c, nome, tipo, clientToken } : c))
+  const salvarEdicao = (id, nome, tipo, clientToken, instanciaId, instanciaToken) => {
+    salvarContas(contas.map(c => c.id === id ? { ...c, nome, tipo, clientToken, instanciaId, instanciaToken } : c))
     setEditando(null)
   }
 
@@ -479,7 +479,10 @@ function EditarConta({ conta, onSalvar, onCancelar }) {
   const [nome, setNome] = useState(conta.nome)
   const [tipo, setTipo] = useState(conta.tipo)
   const [clientToken, setClientToken] = useState(conta.clientToken || '')
+  const [instanciaId, setInstanciaId] = useState(conta.instanciaId || '')
+  const [instanciaToken, setInstanciaToken] = useState(conta.instanciaToken || '')
   const [showToken, setShowToken] = useState(false)
+  const [showInstToken, setShowInstToken] = useState(false)
   return (
     <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl space-y-3">
       <div className="grid grid-cols-2 gap-3">
@@ -490,6 +493,18 @@ function EditarConta({ conta, onSalvar, onCancelar }) {
           className="border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400 bg-white">
           {TIPOS_WA.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
+      </div>
+      <input value={instanciaId} onChange={e => setInstanciaId(e.target.value)}
+        placeholder="ID da Instância Z-API"
+        className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400 bg-white font-mono" />
+      <div className="relative">
+        <input type={showInstToken ? 'text' : 'password'} value={instanciaToken} onChange={e => setInstanciaToken(e.target.value)}
+          placeholder="Token da Instância Z-API"
+          className="w-full border border-gray-200 rounded-xl px-3 py-2 pr-10 text-sm outline-none focus:border-amber-400 bg-white font-mono" />
+        <button type="button" onClick={() => setShowInstToken(v => !v)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs">
+          {showInstToken ? '🙈' : '👁️'}
+        </button>
       </div>
       <div className="relative">
         <input type={showToken ? 'text' : 'password'} value={clientToken} onChange={e => setClientToken(e.target.value)}
@@ -502,7 +517,7 @@ function EditarConta({ conta, onSalvar, onCancelar }) {
       </div>
       <div className="flex justify-end gap-3">
         <button onClick={onCancelar} className="text-xs text-gray-400 hover:text-gray-600">Cancelar</button>
-        <button onClick={() => onSalvar(conta.id, nome, tipo, clientToken)}
+        <button onClick={() => onSalvar(conta.id, nome, tipo, clientToken, instanciaId, instanciaToken)}
           className="text-xs bg-amber-500 text-white font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-600">Salvar</button>
       </div>
     </div>
