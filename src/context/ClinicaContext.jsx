@@ -131,7 +131,6 @@ export function ClinicaProvider({ children }) {
 
   // Debounced save for current month's meta data
   const scheduleSave = (key, anof, mesf, dados) => {
-    console.log('scheduleSave chamado, clinicaId:', clinicaId)
     if (!clinicaId) return
     if (saveTimers.current[key]) clearTimeout(saveTimers.current[key])
     saveTimers.current[key] = setTimeout(async () => {
@@ -145,8 +144,6 @@ export function ClinicaProvider({ children }) {
         dias_selecionados: serSet(dados.diasSelecionados),
         dias_valores: dados.diasValores || {},
       }, { onConflict: 'clinica_id,ano,mes' })
-      if (error) console.error('ERRO AO SALVAR METAS:', error)
-      else console.log('Metas salvas com sucesso, clinica_id:', clinicaId)
     }, 400)
   }
 
