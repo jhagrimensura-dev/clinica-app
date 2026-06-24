@@ -133,8 +133,8 @@ export function ClinicaProvider({ children }) {
   const scheduleSave = (key, anof, mesf, dados) => {
     if (!clinicaId) return
     if (saveTimers.current[key]) clearTimeout(saveTimers.current[key])
-    saveTimers.current[key] = setTimeout(() => {
-      supabase.from('clinica_metas').upsert({
+    saveTimers.current[key] = setTimeout(async () => {
+      const { error } = await supabase.from('clinica_metas').upsert({
         clinica_id: clinicaId,
         ano: anof,
         mes: mesf,
@@ -144,6 +144,8 @@ export function ClinicaProvider({ children }) {
         dias_selecionados: serSet(dados.diasSelecionados),
         dias_valores: dados.diasValores || {},
       }, { onConflict: 'clinica_id,ano,mes' })
+      if (error) console.error('ERRO AO SALVAR METAS:', error)
+      else console.log('Metas salvas com sucesso, clinica_id:', clinicaId)
     }, 400)
   }
 
