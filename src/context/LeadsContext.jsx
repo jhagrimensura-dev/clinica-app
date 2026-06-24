@@ -17,6 +17,7 @@ const fromDB = (r) => ({
   agendadoPara: r.agendado_para || null,
   proximoFollowup: r.proximo_followup || '',
   obs: r.obs || '',
+  aniversario: r.aniversario || null,
   criadoEm: r.criado_em,
 })
 
@@ -34,6 +35,7 @@ const toDB = (l, clinicaId) => ({
   agendado_para: l.agendadoPara || null,
   proximo_followup: l.proximoFollowup || '',
   obs: l.obs || '',
+  aniversario: l.aniversario || null,
 })
 
 function loadLocal() {
