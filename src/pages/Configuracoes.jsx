@@ -125,7 +125,10 @@ async function testarConexao(conta) {
   const res = await fetch(`/api/zapi-status?i=${conta.instanciaId}&t=${conta.instanciaToken}${ctParam}`)
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   const data = await res.json()
-  return data?.value === 'connected' ? 'open' : (data?.value || 'desconhecido')
+  const v = (data?.value || '').toLowerCase()
+  if (v === 'connected' || v === 'open' || data?.connected === true) return 'open'
+  if (v === 'disconnected' || v === 'qrcode') return v
+  return data?.value || JSON.stringify(data).slice(0, 60)
 }
 
 function TabWhatsApp() {
