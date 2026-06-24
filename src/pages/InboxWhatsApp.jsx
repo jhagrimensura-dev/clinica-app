@@ -321,7 +321,7 @@ const TIPO_PARA_ORIGEM = {
 
 // ── Página principal ──────────────────────────────────────────────
 export default function InboxWhatsApp({ contaId }) {
-  const { addLead, updateLead } = useLeads()
+  const { leads, addLead, updateLead } = useLeads()
   const { addLembrete } = useAgenda()
   const { iaConhecimento, setIaConhecimento, iaExemplos, setIaExemplos, respostasRapidas: respostasConfig, setRespostasRapidas: setRespostasConfig } = useConfig()
   const [todasContas, setTodasContas] = useState(loadContas)
@@ -791,6 +791,18 @@ export default function InboxWhatsApp({ contaId }) {
   }, [contaAtiva?.instanciaId, selecionada?.id, fetchMensagens])
 
   const conversa = selecionada ? conversas.find(c => c.id === selecionada.id) || selecionada : null
+
+  // Quando troca de conversa, verifica se já há lead cadastrado com esse telefone
+  useEffect(() => {
+    if (!conversa) return
+    setLeadRegistrado(prev => {
+      if (prev[conversa.id]) return prev
+      const tel = (conversa.contato?.telefone || conversa.id || '').replace(/\D/g, '')
+      const leadExistente = leads.find(l => (l.telefone || '').replace(/\D/g, '') === tel && tel.length > 5)
+      if (!leadExistente) return prev
+      return { ...prev, [conversa.id]: { tipo: leadExistente.origem || 'leads_recorrentes', lead: leadExistente } }
+    })
+  }, [conversa?.id])
 
   function salvarRespostas(lista) {
     setRespostasRapidas(lista)
