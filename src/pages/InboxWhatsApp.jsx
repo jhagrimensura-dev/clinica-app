@@ -911,7 +911,15 @@ export default function InboxWhatsApp({ contaId }) {
 
   const registrarLead = (tipo) => { setMenuLead(false); setModalLead(tipo) }
   const confirmarLead = async (dados) => {
-    const novoLead = await addLead({ ...dados, status: STATUS_NORMALIZE[dados.status] || dados.status })
+    const telLimpo = (dados.telefone || '').replace(/\D/g, '')
+    const leadDuplicado = telLimpo.length > 5 && leads.find(l => (l.telefone || '').replace(/\D/g, '') === telLimpo)
+    let novoLead
+    if (leadDuplicado) {
+      await updateLead(leadDuplicado.id, { ...dados, status: STATUS_NORMALIZE[dados.status] || dados.status })
+      novoLead = { ...leadDuplicado, ...dados, status: STATUS_NORMALIZE[dados.status] || dados.status }
+    } else {
+      novoLead = await addLead({ ...dados, status: STATUS_NORMALIZE[dados.status] || dados.status })
+    }
     if (dados.lembrete) {
       addLembrete({
         id: Date.now(),
