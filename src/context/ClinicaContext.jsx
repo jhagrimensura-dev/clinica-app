@@ -24,6 +24,57 @@ export function ClinicaProvider({ children }) {
 
   const mesKey = `${ano}-${mes}`
 
+  // Migração única: localStorage → Supabase (roda uma vez por clinicaId)
+  useEffect(() => {
+    if (!clinicaId) return
+    supabase.from('clinica_metas').select('id').eq('clinica_id', clinicaId).limit(1).then(async ({ data }) => {
+      if (data && data.length > 0) return // já tem dados no Supabase
+      try {
+        const raw = localStorage.getItem('clinica_dadosPorMes')
+        if (!raw) return
+        const localDados = JSON.parse(raw)
+        if (Object.keys(localDados).length === 0) return
+
+        const localPosts = JSON.parse(localStorage.getItem('clinica_postsPorMes') || '{}')
+
+        const metasRows = Object.entries(localDados).map(([key, v]) => {
+          const [anoStr, mesStr] = key.split('-')
+          return {
+            clinica_id: clinicaId,
+            ano: parseInt(anoStr),
+            mes: parseInt(mesStr),
+            meta_valor: v.metaValor ?? null,
+            super_meta_valor: v.superMetaValor ?? null,
+            recorde_valor: v.recordeValor ?? null,
+            dias_selecionados: v.diasSelecionados || [],
+            dias_valores: v.diasValores || {},
+          }
+        })
+        const postsRows = Object.entries(localPosts).map(([key, posts]) => {
+          const [anoStr, mesStr] = key.split('-')
+          return { clinica_id: clinicaId, ano: parseInt(anoStr), mes: parseInt(mesStr), posts: posts || [] }
+        })
+
+        if (metasRows.length > 0) await supabase.from('clinica_metas').upsert(metasRows, { onConflict: 'clinica_id,ano,mes' })
+        if (postsRows.length > 0) await supabase.from('clinica_posts').upsert(postsRows, { onConflict: 'clinica_id,ano,mes' })
+
+        const newDados = {}
+        Object.entries(localDados).forEach(([key, v]) => {
+          newDados[key] = {
+            diasSelecionados: new Set(v.diasSelecionados || []),
+            diasValores: v.diasValores || {},
+            metaValor: v.metaValor,
+            superMetaValor: v.superMetaValor,
+            recordeValor: v.recordeValor,
+          }
+        })
+        setDadosPorMes(newDados)
+        setPostsPorMes(localPosts)
+        setLoadedMonths(new Set(Object.keys(localDados)))
+      } catch (e) { console.error('Migração metas:', e) }
+    })
+  }, [clinicaId])
+
   // Load current month from Supabase when month or clinicaId changes
   useEffect(() => {
     if (!clinicaId || loadedMonths.has(mesKey)) return

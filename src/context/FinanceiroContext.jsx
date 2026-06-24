@@ -91,6 +91,51 @@ export function FinanceiroProvider({ children }) {
 
   const mesKey = `${ano}-${mes}`
 
+  // Migração única: localStorage → Supabase (roda uma vez por clinicaId)
+  useEffect(() => {
+    if (!clinicaId) return
+    supabase.from('financeiro_dados').select('id').eq('clinica_id', clinicaId).limit(1).then(async ({ data }) => {
+      if (data && data.length > 0) return // já tem dados no Supabase
+      try {
+        const rawDados = localStorage.getItem('fin_dados')
+        if (!rawDados) return
+        const localDados = JSON.parse(rawDados)
+        if (Object.keys(localDados).length === 0) return
+
+        const dadosRows = Object.entries(localDados).map(([key, v]) => {
+          const [anoStr, mesStr] = key.split('-')
+          return {
+            clinica_id: clinicaId,
+            ano: parseInt(anoStr),
+            mes: parseInt(mesStr),
+            receitas: v.receitas || {},
+            custos: v.custos || {},
+            despesas: v.despesas || {},
+            investimentos: v.investimentos || {},
+            emprestimos: v.emprestimos || {},
+          }
+        })
+        await supabase.from('financeiro_dados').upsert(dadosRows, { onConflict: 'clinica_id,ano,mes' })
+
+        const localCats = JSON.parse(localStorage.getItem('fin_categorias') || 'null')
+        const localOcultos = JSON.parse(localStorage.getItem('fin_ocultos') || 'null')
+        if (localCats || localOcultos) {
+          await supabase.from('financeiro_config').upsert(
+            { clinica_id: clinicaId, categorias: localCats || CATEGORIAS_DEFAULT, ocultos: localOcultos || { receitas: [], custos: [], despesas: [], investimentos: [], emprestimos: [] } },
+            { onConflict: 'clinica_id' }
+          )
+          if (localCats) setCategorias(localCats)
+          if (localOcultos) setOcultos(localOcultos)
+        }
+
+        const newMap = {}
+        Object.entries(localDados).forEach(([key, v]) => { newMap[key] = v })
+        setDados(prev => ({ ...prev, ...newMap }))
+        setLoadedMonths(prev => new Set([...prev, ...Object.keys(localDados)]))
+      } catch (e) { console.error('Migração financeiro:', e) }
+    })
+  }, [clinicaId])
+
   // Load financeiro config (categorias + ocultos) once
   useEffect(() => {
     if (!clinicaId || configLoaded) return
