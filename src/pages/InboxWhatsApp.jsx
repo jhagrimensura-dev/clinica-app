@@ -94,8 +94,11 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, leadInicial }) 
   const [status, setStatus] = useState(STATUS_DENORMALIZE[leadInicial?.status] || leadInicial?.status || 'Em aberto')
   const [data, setData] = useState(leadInicial?.data || hoje)
   const [agendadoPara, setAgendadoPara] = useState(leadInicial?.agendadoPara || '')
-  const [lembrete, setLembrete] = useState(leadInicial?.lembrete || '')
-  const [lembreteHora, setLembreteHora] = useState(leadInicial?.lembreteHora || '')
+  const [lembretes, setLembretes] = useState(() => {
+    if (leadInicial?.lembretes?.length) return leadInicial.lembretes
+    if (leadInicial?.lembrete) return [{ data: leadInicial.lembrete, hora: leadInicial.lembreteHora || '' }]
+    return [{ data: '', hora: '' }]
+  })
   const [aniversario, setAniversario] = useState(leadInicial?.aniversario || '')
   const [obs, setObs] = useState(leadInicial?.obs || '')
   const [origens, setOrigens] = useState(leadOrigens || ORIGENS_PADRAO)
@@ -270,12 +273,24 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, leadInicial }) 
         )}
 
         <div>
-          <label className="text-xs font-semibold text-gray-500 mb-1 block">Próximo Lembrete</label>
-          <div className="flex gap-2">
-            <input type="date" value={lembrete} onChange={e => setLembrete(e.target.value)}
-              className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300" />
-            <input type="time" value={lembreteHora} onChange={e => setLembreteHora(e.target.value)}
-              className="w-28 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300" />
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-xs font-semibold text-gray-500">Lembretes</label>
+            <button type="button" onClick={() => setLembretes(l => [...l, { data: '', hora: '' }])}
+              className="text-brand-500 hover:text-brand-700 text-sm font-bold leading-none px-1">+</button>
+          </div>
+          <div className="space-y-2">
+            {lembretes.map((l, i) => (
+              <div key={i} className="flex gap-2 items-center">
+                <input type="date" value={l.data} onChange={e => setLembretes(prev => prev.map((x, j) => j === i ? { ...x, data: e.target.value } : x))}
+                  className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300" />
+                <input type="time" value={l.hora} onChange={e => setLembretes(prev => prev.map((x, j) => j === i ? { ...x, hora: e.target.value } : x))}
+                  className="w-28 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300" />
+                {lembretes.length > 1 && (
+                  <button type="button" onClick={() => setLembretes(prev => prev.filter((_, j) => j !== i))}
+                    className="text-gray-300 hover:text-red-400 text-xs font-bold">✕</button>
+                )}
+              </div>
+            ))}
           </div>
         </div>
 
@@ -298,7 +313,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, leadInicial }) 
         <div className="flex justify-end gap-3 pt-1">
           <button onClick={onFechar} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
           <button
-            onClick={() => nome.trim() && onSalvar({ nome: nome.trim(), telefone, responsavel, obs, origem: tipo, origemCustom, data, status, agendadoPara: agendadoPara || null, lembrete: lembrete || null, lembreteHora: lembreteHora || null, aniversario: aniversario || null, fonte: 'WhatsApp' })}
+            onClick={() => nome.trim() && onSalvar({ nome: nome.trim(), telefone, responsavel, obs, origem: tipo, origemCustom, data, status, agendadoPara: agendadoPara || null, lembretes: lembretes.filter(l => l.data), lembrete: lembretes.find(l => l.data)?.data || null, lembreteHora: lembretes.find(l => l.data)?.hora || null, aniversario: aniversario || null, fonte: 'WhatsApp' })}
             disabled={!nome.trim() || (status === 'Agendou' && !agendadoPara)}
             className="px-5 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded-xl disabled:opacity-40">
             {leadInicial ? 'Salvar alterações' : 'Registrar'}
@@ -920,19 +935,20 @@ export default function InboxWhatsApp({ contaId }) {
     } else {
       novoLead = await addLead({ ...dados, status: STATUS_NORMALIZE[dados.status] || dados.status })
     }
-    if (dados.lembrete) {
+    const todosLembretes = dados.lembretes?.length ? dados.lembretes : (dados.lembrete ? [{ data: dados.lembrete, hora: dados.lembreteHora || '' }] : [])
+    todosLembretes.filter(l => l.data).forEach((l, i) => {
       addLembrete({
-        id: Date.now(),
+        id: Date.now() + i,
         leadNome: dados.nome,
         leadTelefone: dados.telefone || '',
         descricao: dados.obs || '',
-        data: dados.lembrete,
-        hora: dados.lembreteHora || '',
+        data: l.data,
+        hora: l.hora || '',
         cor: 'blue',
         concluido: false,
         criadoEm: Date.now(),
       })
-    }
+    })
     if (dados.aniversario) {
       const [, mes, dia] = dados.aniversario.split('-')
       const hoje = new Date()
