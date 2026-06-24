@@ -131,6 +131,7 @@ export function ClinicaProvider({ children }) {
 
   // Debounced save for current month's meta data
   const scheduleSave = (key, anof, mesf, dados) => {
+    console.log('scheduleSave chamado, clinicaId:', clinicaId)
     if (!clinicaId) return
     if (saveTimers.current[key]) clearTimeout(saveTimers.current[key])
     saveTimers.current[key] = setTimeout(async () => {
