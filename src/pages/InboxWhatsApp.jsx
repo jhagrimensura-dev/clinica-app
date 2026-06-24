@@ -1565,6 +1565,18 @@ export default function InboxWhatsApp({ contaId }) {
               updateLead(editarLeadRegistrado.lead.id, { ...dados, status: STATUS_NORMALIZE[dados.status] || dados.status })
               setLeadRegistrado(prev => ({ ...prev, [conversa.id]: { ...prev[conversa.id], lead: { ...editarLeadRegistrado.lead, ...dados } } }))
             }
+            const todosLembretes = dados.lembretes?.length ? dados.lembretes : (dados.lembrete ? [{ data: dados.lembrete, hora: dados.lembreteHora || '' }] : [])
+            todosLembretes.filter(l => l.data).forEach((l, i) => {
+              addLembrete({ id: Date.now() + i, leadNome: dados.nome, leadTelefone: dados.telefone || '', descricao: dados.obs || '', data: l.data, hora: l.hora || '', cor: 'blue', concluido: false, criadoEm: Date.now() })
+            })
+            if (dados.aniversario) {
+              const [, mes, dia] = dados.aniversario.split('-')
+              const hoje = new Date()
+              let anoAniv = hoje.getFullYear()
+              const dataAniv = new Date(`${anoAniv}-${mes}-${dia}`)
+              if (dataAniv <= hoje) anoAniv += 1
+              addLembrete({ id: Date.now() + 99, leadNome: dados.nome, leadTelefone: dados.telefone || '', descricao: `🎂 Aniversário de ${dados.nome}`, data: `${anoAniv}-${mes}-${dia}`, hora: '09:00', cor: 'pink', concluido: false, criadoEm: Date.now() })
+            }
             setEditarLeadRegistrado(null)
           }}
           onFechar={() => setEditarLeadRegistrado(null)}
