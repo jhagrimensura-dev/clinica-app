@@ -13,7 +13,7 @@ export function AgendaProvider({ children }) {
     if (!clinicaId) return
 
     // Carrega agendamentos
-    supabase.from('agendamentos').select('*').eq('clinica_id', clinicaId).then(async ({ data }) => {
+    supabase.from('agendamentos').select('*').then(async ({ data }) => {
       if (data && data.length > 0) {
         setAgendamentos(data)
       } else {
@@ -39,7 +39,7 @@ export function AgendaProvider({ children }) {
     })
 
     // Carrega lembretes
-    supabase.from('agenda_lembretes').select('*').eq('clinica_id', clinicaId).then(async ({ data }) => {
+    supabase.from('agenda_lembretes').select('*').then(async ({ data }) => {
       if (data && data.length > 0) {
         setLembretes(data.map(r => r.dados))
       } else {
@@ -56,13 +56,13 @@ export function AgendaProvider({ children }) {
 
     // Realtime
     const channel = supabase
-      .channel(`agenda:${clinicaId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'agendamentos', filter: `clinica_id=eq.${clinicaId}` }, ({ eventType, new: n, old: o }) => {
+      .channel(`agenda:all`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'agendamentos' }, ({ eventType, new: n, old: o }) => {
         if (eventType === 'INSERT') setAgendamentos(prev => prev.find(a => a.id === n.id) ? prev : [...prev, n])
         else if (eventType === 'UPDATE') setAgendamentos(prev => prev.map(a => a.id === n.id ? n : a))
         else if (eventType === 'DELETE') setAgendamentos(prev => prev.filter(a => a.id !== o.id))
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'agenda_lembretes', filter: `clinica_id=eq.${clinicaId}` }, ({ eventType, new: n, old: o }) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'agenda_lembretes' }, ({ eventType, new: n, old: o }) => {
         if (eventType === 'INSERT') setLembretes(prev => prev.find(l => l.id === n.dados?.id) ? prev : [...prev, n.dados])
         else if (eventType === 'UPDATE') setLembretes(prev => prev.map(l => l.id === n.dados?.id ? n.dados : l))
         else if (eventType === 'DELETE') setLembretes(prev => prev.filter(l => l.id !== o.dados?.id))

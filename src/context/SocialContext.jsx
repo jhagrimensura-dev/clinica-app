@@ -15,7 +15,7 @@ export function SocialProvider({ children }) {
   // Migração única: localStorage → Supabase
   useEffect(() => {
     if (!clinicaId) return
-    supabase.from('social_metricas').select('id').eq('clinica_id', clinicaId).limit(1).then(async ({ data }) => {
+    supabase.from('social_metricas').select('id').limit(1).then(async ({ data }) => {
       if (data && data.length > 0) return
 
       try {
@@ -48,7 +48,7 @@ export function SocialProvider({ children }) {
     })
 
     // Migra rotina
-    supabase.from('social_rotina').select('id').eq('clinica_id', clinicaId).limit(1).then(async ({ data }) => {
+    supabase.from('social_rotina').select('id').limit(1).then(async ({ data }) => {
       if (data && data.length > 0) return
       try {
         const raw = localStorage.getItem('social_rotina')
@@ -67,7 +67,7 @@ export function SocialProvider({ children }) {
     const key = `${ano}-${mes}`
     if (loadedMonths.has(key)) return
     setLoadedMonths(prev => new Set([...prev, key])) // mark immediately to avoid duplicate fetches
-    supabase.from('social_metricas').select('*').eq('clinica_id', clinicaId).eq('ano', ano).eq('mes', mes).maybeSingle()
+    supabase.from('social_metricas').select('*').eq('ano', ano).eq('mes', mes).maybeSingle()
       .then(({ data }) => {
         const val = { trafego: data?.trafego ?? 0, seguidores: data?.seguidores ?? 0 }
         metricasRef.current = { ...metricasRef.current, [key]: val }
@@ -78,7 +78,7 @@ export function SocialProvider({ children }) {
   // Carrega rotina uma vez
   useEffect(() => {
     if (!clinicaId) return
-    supabase.from('social_rotina').select('*').eq('clinica_id', clinicaId).maybeSingle()
+    supabase.from('social_rotina').select('*').maybeSingle()
       .then(({ data }) => { if (data?.dados) setRotina(data.dados) })
   }, [clinicaId])
 
@@ -86,8 +86,8 @@ export function SocialProvider({ children }) {
   useEffect(() => {
     if (!clinicaId) return
     const channel = supabase
-      .channel(`social:${clinicaId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'social_metricas', filter: `clinica_id=eq.${clinicaId}` }, ({ new: n }) => {
+      .channel(`social:all`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'social_metricas' }, ({ new: n }) => {
         if (n) {
           const key = `${n.ano}-${n.mes}`
           const val = { trafego: n.trafego ?? 0, seguidores: n.seguidores ?? 0 }
@@ -95,7 +95,7 @@ export function SocialProvider({ children }) {
           setMetricas(prev => ({ ...prev, [key]: val }))
         }
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'social_rotina', filter: `clinica_id=eq.${clinicaId}` }, ({ new: n }) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'social_rotina' }, ({ new: n }) => {
         if (n?.dados) setRotina(n.dados)
       })
       .subscribe()

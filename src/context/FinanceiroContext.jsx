@@ -94,7 +94,7 @@ export function FinanceiroProvider({ children }) {
   // Migração única: localStorage → Supabase (roda uma vez por clinicaId)
   useEffect(() => {
     if (!clinicaId) return
-    supabase.from('financeiro_dados').select('id').eq('clinica_id', clinicaId).limit(1).then(async ({ data }) => {
+    supabase.from('financeiro_dados').select('id').limit(1).then(async ({ data }) => {
       if (data && data.length > 0) return // já tem dados no Supabase
       try {
         const rawDados = localStorage.getItem('fin_dados')
@@ -142,7 +142,6 @@ export function FinanceiroProvider({ children }) {
     supabase
       .from('financeiro_config')
       .select('*')
-      .eq('clinica_id', clinicaId)
       .maybeSingle()
       .then(({ data }) => {
         if (data) {
@@ -159,7 +158,6 @@ export function FinanceiroProvider({ children }) {
     supabase
       .from('financeiro_dados')
       .select('*')
-      .eq('clinica_id', clinicaId)
       .eq('ano', ano)
       .then(({ data }) => {
         if (data) {

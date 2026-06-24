@@ -49,7 +49,6 @@ export function VendasProvider({ children }) {
     supabase
       .from('lancamentos')
       .select('*')
-      .eq('clinica_id', clinicaId)
       .order('data', { ascending: true })
       .then(async ({ data }) => {
         if (data && data.length > 0) {
@@ -69,8 +68,8 @@ export function VendasProvider({ children }) {
       })
 
     const channel = supabase
-      .channel(`lancamentos:${clinicaId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'lancamentos', filter: `clinica_id=eq.${clinicaId}` }, ({ eventType, new: n, old: o }) => {
+      .channel(`lancamentos:all`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'lancamentos' }, ({ eventType, new: n, old: o }) => {
         if (eventType === 'INSERT') setLancamentos(prev => prev.find(l => l.id === n.id) ? prev : [...prev, fromDB(n)])
         else if (eventType === 'UPDATE') setLancamentos(prev => prev.map(l => l.id === n.id ? fromDB(n) : l))
         else if (eventType === 'DELETE') setLancamentos(prev => prev.filter(l => l.id !== o.id))

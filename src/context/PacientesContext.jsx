@@ -41,7 +41,6 @@ export function PacientesProvider({ children }) {
     supabase
       .from('pacientes')
       .select('*')
-      .eq('clinica_id', clinicaId)
       .order('nome', { ascending: true })
       .then(async ({ data }) => {
         if (data && data.length > 0) {
@@ -62,8 +61,8 @@ export function PacientesProvider({ children }) {
       })
 
     const channel = supabase
-      .channel(`pacientes:${clinicaId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'pacientes', filter: `clinica_id=eq.${clinicaId}` }, ({ eventType, new: n, old: o }) => {
+      .channel(`pacientes:all`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pacientes' }, ({ eventType, new: n, old: o }) => {
         if (eventType === 'INSERT') setPacientes(prev => prev.find(p => p.id === n.id) ? prev : [...prev, fromDB(n)])
         else if (eventType === 'UPDATE') setPacientes(prev => prev.map(p => p.id === n.id ? fromDB(n) : p))
         else if (eventType === 'DELETE') setPacientes(prev => prev.filter(p => p.id !== o.id))
