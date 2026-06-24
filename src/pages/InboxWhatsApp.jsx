@@ -905,6 +905,12 @@ export default function InboxWhatsApp({ contaId }) {
     setConversas(prev => prev.map(c => c.id === convId ? { ...c, naoLidas: Math.max(c.naoLidas || 0, 1) } : c))
     setMenuOpcoes(null)
   }
+
+  const arquivarConversa = (convId) => {
+    setConversas(prev => prev.map(c => c.id === convId ? { ...c, arquivada: !c.arquivada } : c))
+    if (selecionada?.id === convId) setSelecionada(null)
+    setMenuOpcoes(null)
+  }
   const apagarMensagem = async (msgId) => {
     setMenuMsg(null)
     const remover = (prev) => prev ? { ...prev, mensagens: (prev.mensagens || []).filter(m => m.id !== msgId) } : prev
@@ -1128,6 +1134,11 @@ export default function InboxWhatsApp({ contaId }) {
                             onClick={() => marcarNaoLida(c.id)}
                             className="w-full text-left px-4 py-2.5 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2">
                             <span>📩</span> Marcar como não lida
+                          </button>
+                          <button
+                            onClick={() => arquivarConversa(c.id)}
+                            className="w-full text-left px-4 py-2.5 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                            <span>{c.arquivada ? '📂' : '🗂️'}</span> {c.arquivada ? 'Desarquivar' : 'Arquivar conversa'}
                           </button>
                         </div>
                       )}
