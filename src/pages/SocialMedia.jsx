@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useClinica } from '../context/ClinicaContext'
+import { useSocial } from '../context/SocialContext'
 
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
@@ -68,6 +69,7 @@ const dataHoje = `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMon
 
 export default function SocialMedia() {
   const { mes, ano, setMes, setAno, posts, setPosts } = useClinica()
+  const { getMes, setTrafego: saveTrafego, setSeguidores: saveSeguidores, rotina, salvarRotina, carregarMes } = useSocial()
 
   const mesAnterior = () => {
     if (mes === 0) { setMes(11); setAno(a => a - 1) }
@@ -79,37 +81,24 @@ export default function SocialMedia() {
   }
   const semanas = gerarCalendario(ano, mes)
 
-  const [trafego, setTrafego] = useState(0)
+  const mesMes = getMes(ano, mes)
+  const trafego = mesMes.trafego
+  const seguidores = mesMes.seguidores
+
   const [editandoTrafego, setEditandoTrafego] = useState(false)
   const [inputTrafego, setInputTrafego] = useState('')
 
-  const [seguidores, setSeguidores] = useState(0)
   const [editandoSeguidores, setEditandoSeguidores] = useState(false)
   const [inputSeguidores, setInputSeguidores] = useState('')
 
-  useEffect(() => {
-    try {
-      const t = localStorage.getItem(`social_trafego_${ano}_${mes}`)
-      setTrafego(t !== null ? parseFloat(t) : 0)
-      const s = localStorage.getItem(`social_seguidores_${ano}_${mes}`)
-      setSeguidores(s !== null ? parseInt(s) : 0)
-    } catch {}
-  }, [ano, mes])
+  useEffect(() => { carregarMes(ano, mes) }, [ano, mes])
 
   const [modal, setModal] = useState(null) // null | { dia }
   const [form, setForm] = useState({ data: '', formato: '', tipo: '', link: '', impulsionado: false })
 
-  const [rotina, setRotina] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('social_rotina') || '{}') } catch { return {} }
-  })
   const [modalRotina, setModalRotina] = useState(null) // null | { dateKey, label }
   const FORM_ROTINA_VAZIO = { texto: '', tipo: '', formato: '', etapaFunil: '', status: 'A fazer', paciente: '', inspiracao: '', horario: '', comentario: '' }
   const [formRotina, setFormRotina] = useState(FORM_ROTINA_VAZIO)
-
-  const salvarRotina = (nova) => {
-    setRotina(nova)
-    try { localStorage.setItem('social_rotina', JSON.stringify(nova)) } catch {}
-  }
 
   const adicionarTarefaRotina = () => {
     if (!formRotina.texto.trim() || !formRotina.tipo) return
@@ -141,19 +130,13 @@ export default function SocialMedia() {
 
   const salvarTrafego = () => {
     const v = parseFloat(inputTrafego.replace(/\./g, '').replace(',', '.'))
-    if (!isNaN(v) && v >= 0) {
-      setTrafego(v)
-      try { localStorage.setItem(`social_trafego_${ano}_${mes}`, v) } catch {}
-    }
+    if (!isNaN(v) && v >= 0) saveTrafego(ano, mes, v)
     setEditandoTrafego(false)
   }
 
   const salvarSeguidores = () => {
     const v = parseInt(inputSeguidores.replace(/\D/g, ''))
-    if (!isNaN(v) && v >= 0) {
-      setSeguidores(v)
-      try { localStorage.setItem(`social_seguidores_${ano}_${mes}`, v) } catch {}
-    }
+    if (!isNaN(v) && v >= 0) saveSeguidores(ano, mes, v)
     setEditandoSeguidores(false)
   }
 

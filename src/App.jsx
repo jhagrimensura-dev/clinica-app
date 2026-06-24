@@ -31,6 +31,7 @@ import { ContasProvider } from './context/ContasContext'
 import { LeadsProvider } from './context/LeadsContext'
 import { PacientesProvider } from './context/PacientesContext'
 import { VendasProvider } from './context/VendasContext'
+import { SocialProvider } from './context/SocialContext'
 import LeadsNovos from './pages/LeadsNovos'
 import LeadsRecorrentes from './pages/LeadsRecorrentes'
 import Indicacao from './pages/Indicacao'
@@ -268,6 +269,7 @@ case 'whatsapp_canal': return <PagePlaceholder title="WhatsApp" />
     <LeadsProvider>
     <PacientesProvider>
     <VendasProvider>
+    <SocialProvider>
       <div className="flex min-h-screen" style={{ background: 'linear-gradient(135deg, #F5EDE0 0%, #EDD9C0 50%, #E8D4BE 100%)' }}>
         <Sidebar active={active} setActive={setActive} />
         <div className="flex-1 ml-16 flex flex-col">
@@ -278,6 +280,7 @@ case 'whatsapp_canal': return <PagePlaceholder title="WhatsApp" />
           <WhatsAppFAB onOpen={() => setActive('inbox')} />
         )}
       </div>
+    </SocialProvider>
     </VendasProvider>
     </PacientesProvider>
     </LeadsProvider>
