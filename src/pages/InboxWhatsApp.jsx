@@ -95,9 +95,9 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, leadInicial }) 
   const [data, setData] = useState(leadInicial?.data || hoje)
   const [agendadoPara, setAgendadoPara] = useState(leadInicial?.agendadoPara || '')
   const [lembretes, setLembretes] = useState(() => {
-    if (leadInicial?.lembretes?.length) return leadInicial.lembretes
-    if (leadInicial?.lembrete) return [{ data: leadInicial.lembrete, hora: leadInicial.lembreteHora || '' }]
-    return [{ data: '', hora: '' }]
+    if (leadInicial?.lembretes?.length) return leadInicial.lembretes.map(l => ({ data: l.data || '', hora: l.hora || '', obs: l.obs || '' }))
+    if (leadInicial?.lembrete) return [{ data: leadInicial.lembrete, hora: leadInicial.lembreteHora || '', obs: '' }]
+    return [{ data: '', hora: '', obs: '' }]
   })
   const [aniversario, setAniversario] = useState(leadInicial?.aniversario || '')
   const [obs, setObs] = useState(leadInicial?.obs || '')
@@ -275,20 +275,25 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, leadInicial }) 
         <div>
           <div className="flex items-center justify-between mb-1">
             <label className="text-xs font-semibold text-gray-500">Lembretes</label>
-            <button type="button" onClick={() => setLembretes(l => [...l, { data: '', hora: '' }])}
+            <button type="button" onClick={() => setLembretes(l => [...l, { data: '', hora: '', obs: '' }])}
               className="text-brand-500 hover:text-brand-700 text-sm font-bold leading-none px-1">+</button>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {lembretes.map((l, i) => (
-              <div key={i} className="flex gap-2 items-center">
-                <input type="date" value={l.data} onChange={e => setLembretes(prev => prev.map((x, j) => j === i ? { ...x, data: e.target.value } : x))}
-                  className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300" />
-                <input type="time" value={l.hora} onChange={e => setLembretes(prev => prev.map((x, j) => j === i ? { ...x, hora: e.target.value } : x))}
-                  className="w-28 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300" />
-                {lembretes.length > 1 && (
-                  <button type="button" onClick={() => setLembretes(prev => prev.filter((_, j) => j !== i))}
-                    className="text-gray-300 hover:text-red-400 text-xs font-bold">✕</button>
-                )}
+              <div key={i} className="border border-gray-200 rounded-xl p-2.5 space-y-2 bg-gray-50">
+                <div className="flex gap-2 items-center">
+                  <input type="date" value={l.data} onChange={e => setLembretes(prev => prev.map((x, j) => j === i ? { ...x, data: e.target.value } : x))}
+                    className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-brand-300 bg-white" />
+                  <input type="time" value={l.hora} onChange={e => setLembretes(prev => prev.map((x, j) => j === i ? { ...x, hora: e.target.value } : x))}
+                    className="w-28 border border-gray-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-brand-300 bg-white" />
+                  {lembretes.length > 1 && (
+                    <button type="button" onClick={() => setLembretes(prev => prev.filter((_, j) => j !== i))}
+                      className="text-gray-300 hover:text-red-400 text-xs font-bold flex-shrink-0">✕</button>
+                  )}
+                </div>
+                <input value={l.obs} onChange={e => setLembretes(prev => prev.map((x, j) => j === i ? { ...x, obs: e.target.value } : x))}
+                  placeholder="Observação deste lembrete..."
+                  className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-brand-300 bg-white" />
               </div>
             ))}
           </div>
@@ -935,13 +940,13 @@ export default function InboxWhatsApp({ contaId }) {
     } else {
       novoLead = await addLead({ ...dados, status: STATUS_NORMALIZE[dados.status] || dados.status })
     }
-    const todosLembretes = dados.lembretes?.length ? dados.lembretes : (dados.lembrete ? [{ data: dados.lembrete, hora: dados.lembreteHora || '' }] : [])
+    const todosLembretes = dados.lembretes?.length ? dados.lembretes : (dados.lembrete ? [{ data: dados.lembrete, hora: dados.lembreteHora || '', obs: '' }] : [])
     todosLembretes.filter(l => l.data).forEach((l, i) => {
       addLembrete({
         id: Date.now() + i,
         leadNome: dados.nome,
         leadTelefone: dados.telefone || '',
-        descricao: dados.obs || '',
+        descricao: l.obs || dados.obs || '',
         data: l.data,
         hora: l.hora || '',
         cor: 'blue',
@@ -1565,9 +1570,9 @@ export default function InboxWhatsApp({ contaId }) {
               updateLead(editarLeadRegistrado.lead.id, { ...dados, status: STATUS_NORMALIZE[dados.status] || dados.status })
               setLeadRegistrado(prev => ({ ...prev, [conversa.id]: { ...prev[conversa.id], lead: { ...editarLeadRegistrado.lead, ...dados } } }))
             }
-            const todosLembretes = dados.lembretes?.length ? dados.lembretes : (dados.lembrete ? [{ data: dados.lembrete, hora: dados.lembreteHora || '' }] : [])
+            const todosLembretes = dados.lembretes?.length ? dados.lembretes : (dados.lembrete ? [{ data: dados.lembrete, hora: dados.lembreteHora || '', obs: '' }] : [])
             todosLembretes.filter(l => l.data).forEach((l, i) => {
-              addLembrete({ id: Date.now() + i, leadNome: dados.nome, leadTelefone: dados.telefone || '', descricao: dados.obs || '', data: l.data, hora: l.hora || '', cor: 'blue', concluido: false, criadoEm: Date.now() })
+              addLembrete({ id: Date.now() + i, leadNome: dados.nome, leadTelefone: dados.telefone || '', descricao: l.obs || dados.obs || '', data: l.data, hora: l.hora || '', cor: 'blue', concluido: false, criadoEm: Date.now() })
             })
             if (dados.aniversario) {
               const [, mes, dia] = dados.aniversario.split('-')
