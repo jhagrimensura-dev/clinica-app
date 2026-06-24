@@ -475,7 +475,10 @@ export default function Faturamento() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 font-medium mb-1">Tratamentos</p>
           <p className="text-2xl font-bold text-green-500">R$ {fmt(totalTratamentos)}</p>
-          <p className="text-xs text-gray-400 mt-1">Valor dos procedimentos</p>
+          <p className="text-xs text-gray-400 mt-1">
+            {lancamentosMes.filter(l => l.tipo === 'Novo' && (l.valorTratamento || 0) > 0).length} novos ·{' '}
+            {lancamentosMes.filter(l => l.tipo === 'Recorrente' && (l.valorTratamento || 0) > 0).length} recorrentes
+          </p>
         </div>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 font-medium mb-1">Consultas (R$)</p>
