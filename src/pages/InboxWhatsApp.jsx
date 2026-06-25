@@ -518,6 +518,12 @@ export default function InboxWhatsApp({ contaId }) {
       } else {
         setErro(null)
       }
+      // Carrega arquivadas do Supabase para garantir sincronização
+      const { data: cfgArq } = await supabase.from('configuracoes').select('valor').eq('chave', arquivadasKey).single()
+      if (cfgArq?.valor && Array.isArray(cfgArq.valor)) {
+        arquivadasRef.current = new Set(cfgArq.valor)
+      }
+
       // Calcula não lidas via Supabase (comparando com última abertura de cada conversa)
       const phones = novaLista.map(c => c.id)
       const minTs = Math.min(...phones.map(p => lastReadRef.current[p] || (Date.now() - 7 * 86400000)))
@@ -598,7 +604,7 @@ export default function InboxWhatsApp({ contaId }) {
       }
     }
     if (inicial) setLoadingConversas(false)
-  }, [contaAtiva?.instanciaId])
+  }, [contaAtiva?.instanciaId, arquivadasKey])
 
   // Normaliza mensagens do Z-API para o formato interno
   function normalizarMsgsZapi(data) {
