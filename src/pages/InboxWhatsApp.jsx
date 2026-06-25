@@ -79,7 +79,7 @@ function normalizeChats(data, instancia) {
 }
 
 // ── Modal registrar lead ──────────────────────────────────────────
-const ORIGENS_PADRAO = ['WhatsApp', 'Instagram', 'Tráfego', 'Indicação', 'Retorno', 'Resgate']
+const ORIGENS_PADRAO = ['WhatsApp', 'Instagram Anúncio', 'Instagram Orgânico', 'Tráfego', 'Indicação', 'Retorno', 'Resgate']
 const STATUS_PADRAO = ['Em aberto', 'Conversando', 'Follow #1', 'Follow #2', 'Follow #3', 'Agendou', 'Perdido']
 
 const STATUS_DENORMALIZE = { 'em_aberto': 'Em aberto', 'conversando': 'Conversando', 'follow1': 'Follow #1', 'follow2': 'Follow #2', 'follow3': 'Follow #3', 'agendado': 'Agendou', 'perdido': 'Perdido' }

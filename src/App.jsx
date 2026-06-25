@@ -43,6 +43,7 @@ import Dashboard from './pages/Dashboard'
 import Agenda from './pages/Agenda'
 import Metas from './pages/Metas'
 import SocialMedia from './pages/SocialMedia'
+import InstagramAnalytics from './pages/InstagramAnalytics'
 import Comercial from './pages/Comercial'
 import Recorrencia from './pages/Recorrencia'
 import Faturamento from './pages/Faturamento'
@@ -244,6 +245,7 @@ function AppContent() {
       case 'agenda': return <Agenda />
       case 'metas': return <Metas />
       case 'social': return <SocialMedia />
+      case 'instagram': return <InstagramAnalytics />
       case 'inbox': return <InboxWhatsApp />
       case 'comercial': return <Comercial />
       case 'agenda_lembretes': return <AgendaLembretes />

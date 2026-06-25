@@ -93,7 +93,8 @@ function ModalNovoLead({ onClose, onSalvar, ano, mes }) {
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400 bg-white"
             >
               <option value="">Selecione a origem</option>
-              <option value="instagram">Instagram</option>
+              <option value="Instagram Anúncio">Instagram Anúncio</option>
+              <option value="Instagram Orgânico">Instagram Orgânico</option>
               <option value="facebook">Facebook</option>
               <option value="google">Google</option>
               <option value="indicacao">Indicação</option>
@@ -210,7 +211,8 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
             <select value={fonte} onChange={e => setFonte(e.target.value)}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400 bg-white">
               <option value="">Selecione</option>
-              <option value="instagram">Instagram</option>
+              <option value="Instagram Anúncio">Instagram Anúncio</option>
+              <option value="Instagram Orgânico">Instagram Orgânico</option>
               <option value="facebook">Facebook</option>
               <option value="google">Google</option>
               <option value="indicacao">Indicação</option>
