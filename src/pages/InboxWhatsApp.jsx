@@ -406,10 +406,19 @@ export default function InboxWhatsApp({ contaId }) {
   const getArquivadas = () => arquivadasRef.current
 
   useEffect(() => {
+    // Load from localStorage immediately (sync — survives same-device refresh)
+    try {
+      const stored = localStorage.getItem(arquivadasKey)
+      if (stored) arquivadasRef.current = new Set(JSON.parse(stored))
+      else arquivadasRef.current = new Set()
+    } catch { arquivadasRef.current = new Set() }
+    // Merge with Supabase for cross-device sync
     supabase.from('configuracoes').select('valor').eq('chave', arquivadasKey).single()
       .then(({ data }) => {
         if (data?.valor && Array.isArray(data.valor)) {
-          arquivadasRef.current = new Set(data.valor)
+          const merged = new Set([...arquivadasRef.current, ...data.valor])
+          arquivadasRef.current = merged
+          localStorage.setItem(arquivadasKey, JSON.stringify([...merged]))
         }
       })
   }, [arquivadasKey])
@@ -525,12 +534,6 @@ export default function InboxWhatsApp({ contaId }) {
       } else {
         setErro(null)
       }
-      // Carrega arquivadas do Supabase para garantir sincronização
-      const { data: cfgArq } = await supabase.from('configuracoes').select('valor').eq('chave', arquivadasKey).single()
-      if (cfgArq?.valor && Array.isArray(cfgArq.valor)) {
-        arquivadasRef.current = new Set(cfgArq.valor)
-      }
-
       // Calcula não lidas via Supabase (comparando com última abertura de cada conversa)
       const phones = novaLista.map(c => c.id)
       const minTs = Math.min(...phones.map(p => lastReadRef.current[p] || (Date.now() - 7 * 86400000)))
@@ -1001,6 +1004,7 @@ export default function InboxWhatsApp({ contaId }) {
       const arquivadas = new Set(nova.filter(c => c.arquivada).map(c => c.id))
       arquivadasRef.current = arquivadas
       const lista = [...arquivadas]
+      localStorage.setItem(arquivadasKey, JSON.stringify(lista))
       supabase.from('configuracoes').upsert({ chave: arquivadasKey, valor: lista }, { onConflict: 'chave' })
       return nova
     })
@@ -1075,6 +1079,12 @@ export default function InboxWhatsApp({ contaId }) {
       })
     }
     setLeadRegistrado(prev => ({ ...prev, [conversa.id]: { tipo: dados.origem, lead: novoLead || { ...dados, status: STATUS_NORMALIZE[dados.status] || dados.status } } }))
+    // Atualiza nome imediatamente na conversa selecionada e na lista
+    if (dados.nome && conversa?.id) {
+      const updateNome = c => c.id === conversa.id ? { ...c, contato: { ...c.contato, nome: dados.nome } } : c
+      setSelecionada(prev => prev?.id === conversa.id ? { ...prev, contato: { ...prev.contato, nome: dados.nome } } : prev)
+      setConversas(prev => prev.map(updateNome))
+    }
     setModalLead(null)
   }
 

@@ -37,6 +37,7 @@ import { ConfigProvider } from './context/ConfigContext'
 import LeadsNovos from './pages/LeadsNovos'
 import LeadsRecorrentes from './pages/LeadsRecorrentes'
 import Indicacao from './pages/Indicacao'
+import Resgates from './pages/Resgates'
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
 import Dashboard from './pages/Dashboard'
@@ -208,7 +209,7 @@ export default function App() {
   )
 }
 
-const PAGE_PARENT = { agenda_lembretes: 'comercial', leads_novos: 'comercial', leads_recorrentes: 'comercial', indicacao: 'comercial', contas: 'financeiro' }
+const PAGE_PARENT = { agenda_lembretes: 'comercial', leads_novos: 'comercial', leads_recorrentes: 'comercial', indicacao: 'comercial', resgates: 'comercial', contas: 'financeiro' }
 
 function AppContent() {
   const { userRole, permissoes } = useAuth()
@@ -268,6 +269,7 @@ function AppContent() {
       case 'leads_novos': return <LeadsNovos />
       case 'leads_recorrentes': return <LeadsRecorrentes />
       case 'indicacao': return <Indicacao />
+      case 'resgates': return <Resgates />
 case 'whatsapp_canal': return <PagePlaceholder title="WhatsApp" />
       case 'recorrencia': return <Recorrencia />
       case 'faturamento': return <Faturamento />
