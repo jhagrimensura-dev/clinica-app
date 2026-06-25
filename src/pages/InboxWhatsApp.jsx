@@ -381,6 +381,8 @@ const TIPO_PARA_ORIGEM = {
 // ── Página principal ──────────────────────────────────────────────
 export default function InboxWhatsApp({ contaId }) {
   const { leads, addLead, updateLead } = useLeads()
+  const leadsRef = useRef(leads)
+  useEffect(() => { leadsRef.current = leads }, [leads])
   const { addLembrete, lembretes: todosLembretesAgenda, deleteLembrete } = useAgenda()
   const { iaConhecimento, setIaConhecimento, iaExemplos, setIaExemplos, respostasRapidas: respostasConfig, setRespostasRapidas: setRespostasConfig } = useConfig()
   const [todasContas, setTodasContas] = useState(loadContas)
@@ -555,7 +557,16 @@ export default function InboxWhatsApp({ contaId }) {
             ? 0
             : naoLidasMap[nova.id] || 0
           const arquivada = arquivadas.has(nova.id) || existente?.arquivada || false
-          return existente ? { ...nova, mensagens: existente.mensagens, naoLidas, arquivada } : { ...nova, naoLidas, arquivada }
+          // Aplica nome do lead se existir
+          const tel = (nova.contato?.telefone || nova.id || '').replace(/\D/g, '')
+          const lead = tel.length > 5 ? leadsRef.current.find(l => {
+            const lt = (l.telefone || '').replace(/\D/g, '')
+            return lt.length > 5 && (lt.endsWith(tel.slice(-9)) || tel.endsWith(lt.slice(-9)))
+          }) : null
+          const contato = lead?.nome ? { ...nova.contato, nome: lead.nome } : nova.contato
+          return existente
+            ? { ...nova, contato, mensagens: existente.mensagens, naoLidas, arquivada }
+            : { ...nova, contato, naoLidas, arquivada }
         })
       })
       const telefoneAbrir = sessionStorage.getItem('inbox_abrir_telefone')
