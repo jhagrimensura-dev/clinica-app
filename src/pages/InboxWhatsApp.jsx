@@ -84,7 +84,7 @@ const STATUS_PADRAO = ['Em aberto', 'Conversando', 'Follow #1', 'Follow #2', 'Fo
 
 const STATUS_DENORMALIZE = { 'em_aberto': 'Em aberto', 'conversando': 'Conversando', 'follow1': 'Follow #1', 'follow2': 'Follow #2', 'follow3': 'Follow #3', 'agendado': 'Agendou', 'perdido': 'Perdido' }
 
-function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, leadInicial }) {
+function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, leadInicial, lembretesDaAgenda = [], onDeletarLembrete }) {
   const { leadOrigens, setLeadOrigens, leadStatus, setLeadStatus } = useConfig()
   const hoje = new Date().toISOString().split('T')[0]
   const [nome, setNome] = useState(leadInicial?.nome || contato.nome)
@@ -272,6 +272,45 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, leadInicial }) 
           </div>
         )}
 
+        {leadInicial && (() => {
+          const telLead = (leadInicial.telefone || '').replace(/\D/g, '')
+          const existentes = lembretesDaAgenda.filter(l => {
+            if (l.concluido) return false
+            const telLemb = (l.leadTelefone || '').replace(/\D/g, '')
+            return telLead.length > 5 && telLemb.length > 5 && (telLemb.endsWith(telLead.slice(-8)) || telLead.endsWith(telLemb.slice(-8)))
+          })
+          if (existentes.length === 0) return null
+          return (
+            <div className="mb-1">
+              <label className="text-xs font-semibold text-gray-500 mb-1.5 flex items-center gap-1">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3.5 h-3.5 text-amber-500"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                Lembretes na agenda ({existentes.length})
+              </label>
+              <div className="space-y-1.5">
+                {existentes.map(l => (
+                  <div key={l.id} className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-amber-800">
+                        {l.data} {l.hora ? `às ${l.hora}` : ''}
+                      </p>
+                      {l.descricao && <p className="text-xs text-amber-700 truncate">{l.descricao}</p>}
+                    </div>
+                    {onDeletarLembrete && (
+                      <button
+                        type="button"
+                        onClick={() => onDeletarLembrete(l.id)}
+                        className="text-amber-400 hover:text-red-500 flex-shrink-0 transition-colors"
+                        title="Apagar lembrete">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
+
         <div>
           <div className="flex items-center justify-between mb-1">
             <label className="text-xs font-semibold text-gray-500">Lembretes</label>
@@ -342,7 +381,7 @@ const TIPO_PARA_ORIGEM = {
 // ── Página principal ──────────────────────────────────────────────
 export default function InboxWhatsApp({ contaId }) {
   const { leads, addLead, updateLead } = useLeads()
-  const { addLembrete } = useAgenda()
+  const { addLembrete, lembretes: todosLembretesAgenda, deleteLembrete } = useAgenda()
   const { iaConhecimento, setIaConhecimento, iaExemplos, setIaExemplos, respostasRapidas: respostasConfig, setRespostasRapidas: setRespostasConfig } = useConfig()
   const [todasContas, setTodasContas] = useState(loadContas)
   const contaAtiva = contaId
@@ -360,6 +399,8 @@ export default function InboxWhatsApp({ contaId }) {
       })
   }, [])
 
+  const arquivadasKey = `inbox_arquivadas_${contaAtiva?.id || 'default'}`
+  const getArquivadas = () => { try { return new Set(JSON.parse(localStorage.getItem(arquivadasKey) || '[]')) } catch { return new Set() } }
   const [conversas, setConversas]     = useState([])
   const [selecionada, setSelecionada] = useState(null)
   const [mensagem, setMensagem]       = useState('')
@@ -485,12 +526,14 @@ export default function InboxWhatsApp({ contaId }) {
       }
 
       setConversas(prev => {
+        const arquivadas = getArquivadas()
         return novaLista.map(nova => {
           const existente = prev.find(c => c.id === nova.id)
           const naoLidas = selecionadaRef.current?.id === nova.id
             ? 0
             : naoLidasMap[nova.id] || 0
-          return existente ? { ...nova, mensagens: existente.mensagens, naoLidas } : { ...nova, naoLidas }
+          const arquivada = arquivadas.has(nova.id) || existente?.arquivada || false
+          return existente ? { ...nova, mensagens: existente.mensagens, naoLidas, arquivada } : { ...nova, naoLidas, arquivada }
         })
       })
       const telefoneAbrir = sessionStorage.getItem('inbox_abrir_telefone')
@@ -907,7 +950,12 @@ export default function InboxWhatsApp({ contaId }) {
   }
 
   const arquivarConversa = (convId) => {
-    setConversas(prev => prev.map(c => c.id === convId ? { ...c, arquivada: !c.arquivada } : c))
+    setConversas(prev => {
+      const nova = prev.map(c => c.id === convId ? { ...c, arquivada: !c.arquivada } : c)
+      const arquivadas = new Set(nova.filter(c => c.arquivada).map(c => c.id))
+      localStorage.setItem(arquivadasKey, JSON.stringify([...arquivadas]))
+      return nova
+    })
     if (selecionada?.id === convId) setSelecionada(null)
     setMenuOpcoes(null)
   }
@@ -1121,6 +1169,16 @@ export default function InboxWhatsApp({ contaId }) {
                           ⋮
                         </button>
                       </div>
+                      {(() => {
+                        const tel = (c.contato?.telefone || '').replace(/\D/g, '')
+                        const count = tel.length > 5 ? todosLembretesAgenda.filter(l => !l.concluido && (l.leadTelefone || '').replace(/\D/g, '').endsWith(tel.slice(-8))).length : 0
+                        return count > 0 ? (
+                          <span className="flex items-center gap-0.5 text-amber-500" title={`${count} lembrete${count > 1 ? 's' : ''}`}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3.5 h-3.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                            <span className="text-xs font-bold">{count}</span>
+                          </span>
+                        ) : null
+                      })()}
                       {c.naoLidas > 0 && (
                         <span className="bg-green-500 text-white text-xs font-bold rounded-full min-w-[22px] h-[22px] px-1.5 flex items-center justify-center">
                           {c.naoLidas > 99 ? '99+' : c.naoLidas}
@@ -1576,6 +1634,8 @@ export default function InboxWhatsApp({ contaId }) {
           contato={conversa.contato}
           tipo={editarLeadRegistrado.tipo}
           leadInicial={editarLeadRegistrado.lead}
+          lembretesDaAgenda={todosLembretesAgenda}
+          onDeletarLembrete={deleteLembrete}
           onSalvar={(dados) => {
             if (editarLeadRegistrado.lead?.id) {
               updateLead(editarLeadRegistrado.lead.id, { ...dados, status: STATUS_NORMALIZE[dados.status] || dados.status })
