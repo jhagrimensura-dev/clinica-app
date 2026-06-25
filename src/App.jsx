@@ -211,7 +211,10 @@ const PAGE_PARENT = { agenda_lembretes: 'comercial', leads_novos: 'comercial', l
 
 function AppContent() {
   const { userRole, permissoes } = useAuth()
-  const [active, setActiveRaw] = useState('dashboard')
+  const [active, setActiveRaw] = useState(() => {
+    const hash = window.location.hash.replace('#/', '').split('?')[0]
+    return hash || 'dashboard'
+  })
 
   const podeAcessar = (page) => {
     if (userRole !== 'Funcionário') return true
@@ -225,12 +228,24 @@ function AppContent() {
   const setActive = (page) => {
     if (!podeAcessar(page)) return
     setActiveRaw(page)
+    window.history.pushState({ page }, '', `#/${page}`)
   }
 
   useEffect(() => {
-    const handler = () => setActiveRaw('inbox')
+    const onPop = (e) => {
+      const page = e.state?.page || window.location.hash.replace('#/', '') || 'dashboard'
+      setActiveRaw(page)
+    }
+    const handler = () => {
+      setActiveRaw('inbox')
+      window.history.pushState({ page: 'inbox' }, '', '#/inbox')
+    }
+    window.addEventListener('popstate', onPop)
     window.addEventListener('navegarInbox', handler)
-    return () => window.removeEventListener('navegarInbox', handler)
+    return () => {
+      window.removeEventListener('popstate', onPop)
+      window.removeEventListener('navegarInbox', handler)
+    }
   }, [])
   const [view, setView] = useState('mensal')
   const [mesIndex, setMesIndex] = useState(4)
