@@ -56,6 +56,7 @@ import Ajuda from './pages/Ajuda'
 import InboxWhatsApp from './pages/InboxWhatsApp'
 import AgendaLembretes from './pages/AgendaLembretes'
 import WhatsAppFAB from './components/WhatsAppFAB'
+import LembretesFAB from './components/LembretesFAB'
 
 function PagePlaceholder({ title }) {
   return (
@@ -299,6 +300,7 @@ case 'whatsapp_canal': return <PagePlaceholder title="WhatsApp" />
         {active !== 'inbox' && !active.startsWith('inbox_') && (
           <WhatsAppFAB onOpen={() => setActive('inbox')} />
         )}
+        <LembretesFAB onOpen={() => setActive('agenda_lembretes')} />
       </div>
     </SocialProvider>
     </VendasProvider>
