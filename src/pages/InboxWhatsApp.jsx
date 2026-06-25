@@ -560,8 +560,7 @@ export default function InboxWhatsApp({ contaId }) {
           sessionStorage.removeItem('inbox_abrir_telefone')
         }
       }
-      if (!jaTemSelecao.current && novaLista.length > 0) {
-        setSelecionada(novaLista[0])
+      if (!jaTemSelecao.current) {
         jaTemSelecao.current = true
       }
 
