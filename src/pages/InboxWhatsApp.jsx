@@ -735,6 +735,20 @@ export default function InboxWhatsApp({ contaId }) {
     return () => clearInterval(interval)
   }, [desconectado, contaAtiva?.instanciaId])
 
+  useEffect(() => {
+    if (!leads.length) return
+    setConversas(prev => prev.map(c => {
+      const tel = (c.contato?.telefone || c.id || '').replace(/\D/g, '')
+      if (tel.length < 6) return c
+      const lead = leads.find(l => {
+        const lt = (l.telefone || '').replace(/\D/g, '')
+        return lt.length > 5 && (lt.endsWith(tel.slice(-9)) || tel.endsWith(lt.slice(-9)))
+      })
+      if (!lead?.nome || c.contato.nome === lead.nome) return c
+      return { ...c, contato: { ...c.contato, nome: lead.nome } }
+    }))
+  }, [leads])
+
   const pedirSugestaoIA = useCallback(async (msgs, nomeContato, direcao = '') => {
     setLoadingIA(true)
     setSugestaoIA('')
