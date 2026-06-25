@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useLeads } from '../context/LeadsContext'
 import { useAgenda } from '../context/AgendaContext'
+import { useAuth } from '../context/AuthContext'
 import { RESGATES_IMPORT } from '../data/resgatesImport'
 import { RESGATES_IMPORT2 } from '../data/resgatesImport2'
 import { RESGATES_IMPORT3 } from '../data/resgatesImport3'
@@ -167,8 +168,10 @@ function ModalEditar({ lead, onSalvar, onFechar }) {
 }
 
 export default function Resgates() {
-  const { leads, updateLead, importLeads } = useLeads()
+  const { leads, updateLead, removeLead, importLeads } = useLeads()
   const { addLembrete } = useAgenda()
+  const { userRole } = useAuth()
+  const isAdmin = userRole === 'Administrador'
 
   const hoje = new Date().toISOString().slice(0, 10)
 
@@ -416,6 +419,20 @@ export default function Resgates() {
                           className="text-xs px-3 py-1.5 bg-green-100 hover:bg-green-200 text-green-700 font-semibold rounded-lg transition-colors">
                           Reativar
                         </button>
+                        {isAdmin && (
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`Excluir "${lead.nome}" permanentemente?\n\nEssa ação não pode ser desfeita.`)) {
+                                removeLead(lead.id)
+                              }
+                            }}
+                            title="Excluir lead"
+                            className="text-xs px-2 py-1.5 bg-red-50 hover:bg-red-100 text-red-400 hover:text-red-600 rounded-lg transition-colors">
+                            <svg viewBox="0 0 20 20" className="w-3.5 h-3.5" fill="currentColor">
+                              <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd"/>
+                            </svg>
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
