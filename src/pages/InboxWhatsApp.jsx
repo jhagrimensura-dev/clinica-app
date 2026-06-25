@@ -447,6 +447,11 @@ export default function InboxWhatsApp({ contaId }) {
   const inputFotoRef = useRef(null)
   const inputArquivoRef = useRef(null)
   const textareaRef = useRef(null)
+  const cursorPosRef = useRef(null)
+  const saveCursor = () => {
+    const ta = textareaRef.current
+    if (ta) cursorPosRef.current = { start: ta.selectionStart, end: ta.selectionEnd }
+  }
   const messagesEndRef = useRef(null)
   const jaTemSelecao = useRef(false)
   const msgCountRef = useRef({})
@@ -1431,9 +1436,23 @@ export default function InboxWhatsApp({ contaId }) {
                 previewPosition="none"
                 skinTonePosition="none"
                 onEmojiSelect={e => {
-                  setMensagem(prev => prev + e.native)
+                  const pos = cursorPosRef.current
+                  if (pos !== null) {
+                    const antes = mensagem.slice(0, pos.start)
+                    const depois = mensagem.slice(pos.end)
+                    const nova = antes + e.native + depois
+                    setMensagem(nova)
+                    const novaCursor = pos.start + e.native.length
+                    setTimeout(() => {
+                      const ta = textareaRef.current
+                      if (ta) { ta.focus(); ta.setSelectionRange(novaCursor, novaCursor) }
+                      cursorPosRef.current = { start: novaCursor, end: novaCursor }
+                    }, 0)
+                  } else {
+                    setMensagem(prev => prev + e.native)
+                    setTimeout(() => textareaRef.current?.focus(), 50)
+                  }
                   setShowEmoji(false)
-                  setTimeout(() => textareaRef.current?.focus(), 50)
                 }}
               />
             </div>
@@ -1466,7 +1485,7 @@ export default function InboxWhatsApp({ contaId }) {
             </div>
 
             <button
-              onMouseDown={e => { e.preventDefault(); setShowEmoji(v => !v); setMenuAnexo(false); setModalRespostas(false) }}
+              onMouseDown={e => { e.preventDefault(); saveCursor(); setShowEmoji(v => !v); setMenuAnexo(false); setModalRespostas(false) }}
               className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-yellow-50 text-xl transition-colors flex-shrink-0"
               title="Emojis">😊</button>
 
