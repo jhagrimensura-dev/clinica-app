@@ -400,7 +400,18 @@ export default function InboxWhatsApp({ contaId }) {
   }, [])
 
   const arquivadasKey = `inbox_arquivadas_${contaAtiva?.id || 'default'}`
-  const getArquivadas = () => { try { return new Set(JSON.parse(localStorage.getItem(arquivadasKey) || '[]')) } catch { return new Set() } }
+  const arquivadasRef = useRef(new Set())
+  const getArquivadas = () => arquivadasRef.current
+
+  useEffect(() => {
+    supabase.from('configuracoes').select('valor').eq('chave', arquivadasKey).single()
+      .then(({ data }) => {
+        if (data?.valor && Array.isArray(data.valor)) {
+          arquivadasRef.current = new Set(data.valor)
+        }
+      })
+  }, [arquivadasKey])
+
   const [conversas, setConversas]     = useState([])
   const [selecionada, setSelecionada] = useState(null)
   const [mensagem, setMensagem]       = useState('')
@@ -953,7 +964,9 @@ export default function InboxWhatsApp({ contaId }) {
     setConversas(prev => {
       const nova = prev.map(c => c.id === convId ? { ...c, arquivada: !c.arquivada } : c)
       const arquivadas = new Set(nova.filter(c => c.arquivada).map(c => c.id))
-      localStorage.setItem(arquivadasKey, JSON.stringify([...arquivadas]))
+      arquivadasRef.current = arquivadas
+      const lista = [...arquivadas]
+      supabase.from('configuracoes').upsert({ chave: arquivadasKey, valor: lista }, { onConflict: 'chave' })
       return nova
     })
     if (selecionada?.id === convId) setSelecionada(null)
