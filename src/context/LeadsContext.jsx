@@ -100,6 +100,17 @@ export function LeadsProvider({ children }) {
     if (updated) await supabase.from('leads').update(toDB({ ...updated, ...updates }, clinicaId)).eq('id', id)
   }
 
+  const importLeads = async (leadsArray) => {
+    const existingNames = new Set(leads.map(l => (l.nome || '').toLowerCase().trim()))
+    const novos = leadsArray
+      .filter(l => !existingNames.has((l.nome || '').toLowerCase().trim()))
+      .map(l => ({ id: crypto.randomUUID(), criado_em: new Date().toISOString(), status: 'perdido', origem: 'leads_novos', origemCustom: 'WhatsApp', telefone: '', obs: '', responsavel: '', fonte: '', agendadoPara: null, proximoFollowup: '', aniversario: null, ...l }))
+    if (!novos.length) return 0
+    setLeads(prev => [...prev, ...novos])
+    await supabase.from('leads').insert(novos.map(n => toDB(n, clinicaId)))
+    return novos.length
+  }
+
   const removeLead = async (id) => {
     setLeads(prev => prev.filter(l => l.id !== id))
     await supabase.from('leads').delete().eq('id', id)
@@ -116,7 +127,7 @@ export function LeadsProvider({ children }) {
   }
 
   return (
-    <LeadsContext.Provider value={{ leads, addLead, updateLead, removeLead, clearLeads, getLeadsPorOrigem, loading }}>
+    <LeadsContext.Provider value={{ leads, addLead, updateLead, removeLead, clearLeads, getLeadsPorOrigem, importLeads, loading }}>
       {children}
     </LeadsContext.Provider>
   )
