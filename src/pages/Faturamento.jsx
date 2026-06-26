@@ -104,16 +104,16 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes, procs, on
   const [paciente, setPaciente] = useState('')
   const [tipo, setTipo] = useState('Novo')
   const [responsavel, setResponsavel] = useState('')
-  const [procedimentos, setProcedimentos] = useState('')
+  const [listaProcs, setListaProcs] = useState([''])
   const [valorTaxa, setValorTaxa] = useState('')
   const [valorTratamento, setValorTratamento] = useState('')
   const [formasPgto, setFormasPgto] = useState([])
   const [agendado, setAgendado] = useState(false)
   const [obs, setObs] = useState('')
 
-  const handleProcChange = (nome, preco) => {
-    setProcedimentos(nome)
-    if (preco != null && preco > 0) {
+  const handleProcChange = (idx, nome, preco) => {
+    setListaProcs(prev => prev.map((p, i) => i === idx ? nome : p))
+    if (idx === 0 && preco != null && preco > 0) {
       setValorTaxa(mascaraMoeda(String(Math.round(preco * 100))))
     }
   }
@@ -124,6 +124,7 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes, procs, on
 
   const handleCriar = () => {
     if (!paciente) return
+    const procedimentos = listaProcs.filter(Boolean).join(' e ')
     onSalvar({ data, paciente, tipo, responsavel, procedimentos, valorTaxa: parseMoeda(valorTaxa), valorTratamento: parseMoeda(valorTratamento), formasPgto, agendado, obs })
     onClose()
   }
@@ -176,8 +177,24 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes, procs, on
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Procedimento</label>
-            <SelectProcedimento value={procedimentos} onChange={handleProcChange} procs={procs} onProcsChange={onProcsChange} />
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-sm font-medium text-gray-700">Procedimentos</label>
+              <button type="button" onClick={() => setListaProcs(prev => [...prev, ''])}
+                className="text-xs text-brand-400 hover:text-brand-500 font-semibold">+ Adicionar</button>
+            </div>
+            <div className="space-y-2">
+              {listaProcs.map((proc, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <SelectProcedimento value={proc} onChange={(nome, preco) => handleProcChange(idx, nome, preco)} procs={procs} onProcsChange={onProcsChange} />
+                  </div>
+                  {listaProcs.length > 1 && (
+                    <button type="button" onClick={() => setListaProcs(prev => prev.filter((_, i) => i !== idx))}
+                      className="text-gray-300 hover:text-red-400 text-xl leading-none flex-shrink-0 transition-colors">×</button>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -242,7 +259,9 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
   const [paciente, setPaciente] = useState(lancamento.paciente)
   const [tipo, setTipo] = useState(lancamento.tipo)
   const [responsavel, setResponsavel] = useState(lancamento.responsavel || '')
-  const [procedimentos, setProcedimentos] = useState(lancamento.procedimentos || '')
+  const [listaProcs, setListaProcs] = useState(
+    lancamento.procedimentos ? lancamento.procedimentos.split(' e ').filter(Boolean) : ['']
+  )
   const [valorTaxa, setValorTaxa] = useState(lancamento.valorTaxa ? mascaraMoeda(String(Math.round(lancamento.valorTaxa * 100))) : '')
   const [valorTratamento, setValorTratamento] = useState(lancamento.valorTratamento ? mascaraMoeda(String(Math.round(lancamento.valorTratamento * 100))) : '')
   const [formasPgto, setFormasPgto] = useState(lancamento.formasPgto || [])
@@ -250,9 +269,9 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
   const [obs, setObs] = useState(lancamento.obs || '')
   const [confirmarExcluir, setConfirmarExcluir] = useState(false)
 
-  const handleProcChange = (nome, preco) => {
-    setProcedimentos(nome)
-    if (preco != null && preco > 0) {
+  const handleProcChange = (idx, nome, preco) => {
+    setListaProcs(prev => prev.map((p, i) => i === idx ? nome : p))
+    if (idx === 0 && preco != null && preco > 0) {
       setValorTaxa(mascaraMoeda(String(Math.round(preco * 100))))
     }
   }
@@ -262,6 +281,7 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
 
   const handleAtualizar = () => {
     if (!paciente) return
+    const procedimentos = listaProcs.filter(Boolean).join(' e ')
     onAtualizar(lancamento.id, { data, paciente, tipo, responsavel, procedimentos, valorTaxa: parseMoeda(valorTaxa), valorTratamento: parseMoeda(valorTratamento), formasPgto, agendado, obs })
     onClose()
   }
@@ -314,8 +334,24 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Procedimento</label>
-            <SelectProcedimento value={procedimentos} onChange={handleProcChange} procs={procs} onProcsChange={onProcsChange} />
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-sm font-medium text-gray-700">Procedimentos</label>
+              <button type="button" onClick={() => setListaProcs(prev => [...prev, ''])}
+                className="text-xs text-brand-400 hover:text-brand-500 font-semibold">+ Adicionar</button>
+            </div>
+            <div className="space-y-2">
+              {listaProcs.map((proc, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <SelectProcedimento value={proc} onChange={(nome, preco) => handleProcChange(idx, nome, preco)} procs={procs} onProcsChange={onProcsChange} />
+                  </div>
+                  {listaProcs.length > 1 && (
+                    <button type="button" onClick={() => setListaProcs(prev => prev.filter((_, i) => i !== idx))}
+                      className="text-gray-300 hover:text-red-400 text-xl leading-none flex-shrink-0 transition-colors">×</button>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
