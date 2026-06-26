@@ -288,7 +288,6 @@ export const RESGATES_IMPORT5 = [
   { nome: 'Micaeli', data: d(null) },
   { nome: 'Maria Freire', data: d(null) },
   { nome: 'Amanda Sandri', data: d(null) },
-  { nome: 'consegue colocar esses leads que estao com o nome de perdido la dentro de resgates, nao tem problemas eles irem sem o numero de telefone, mas pelo menos sei os nomes dos leads', data: d(null) },
   { nome: 'Edvania Cardim', data: d('01/06') },
   { nome: 'Rafaela Barbosa', data: d('02/06') },
   { nome: 'Lara Jéssica', data: d('02/06') },
