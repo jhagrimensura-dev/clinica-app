@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { RESGATES_IMPORT } from '../data/resgatesImport'
 import { RESGATES_IMPORT2 } from '../data/resgatesImport2'
 import { RESGATES_IMPORT3 } from '../data/resgatesImport3'
+import { RESGATES_IMPORT4 } from '../data/resgatesImport4'
 
 const MOTIVOS = ['Não respondeu', 'Preço alto', 'Não tem interesse agora', 'Escolheu concorrente', 'Sem condições financeiras', 'Outro']
 const ORIGENS = ['WhatsApp', 'Instagram Anúncio', 'Instagram Orgânico', 'Tráfego', 'Indicação', 'Retorno', 'Outro']
@@ -120,31 +121,58 @@ function ModalReativar({ lead, onConfirmar, onFechar }) {
 }
 
 function ModalEditar({ lead, onSalvar, onFechar }) {
-  const [proximoFollowup, setProximoFollowup] = useState(lead.proximoFollowup || '')
-  const [obs, setObs] = useState(lead.obs || '')
+  const [lembretes, setLembretes] = useState([{ data: lead.proximoFollowup || '', hora: '09:00', obs: lead.obs || '' }])
+
+  const setLembrete = (i, field, val) => setLembretes(prev => prev.map((l, idx) => idx === i ? { ...l, [field]: val } : l))
+  const addLembrete = () => setLembretes(prev => [...prev, { data: '', hora: '09:00', obs: '' }])
+  const removeLembrete = (i) => setLembretes(prev => prev.filter((_, idx) => idx !== i))
+  const temData = lembretes.some(l => l.data)
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold text-gray-900">Editar resgate — {lead.nome}</h2>
+          <h2 className="text-base font-bold text-gray-900">Manutenção — {lead.nome}</h2>
           <button onClick={onFechar} className="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
         </div>
-        <div>
-          <label className="text-xs font-semibold text-gray-500 mb-1 block">Quando entrar em contato <span className="text-red-400">*</span></label>
-          <input type="date" value={proximoFollowup} onChange={e => setProximoFollowup(e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300" />
+
+        <div className="space-y-3">
+          {lembretes.map((l, i) => (
+            <div key={i} className="border border-gray-100 rounded-xl p-3 space-y-2 bg-gray-50 relative">
+              {lembretes.length > 1 && (
+                <button onClick={() => removeLembrete(i)}
+                  className="absolute top-2 right-2 text-gray-300 hover:text-red-400 text-lg leading-none">×</button>
+              )}
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">
+                  Data do contato {i === 0 && <span className="text-red-400">*</span>}
+                </label>
+                <div className="flex gap-2">
+                  <input type="date" value={l.data} onChange={e => setLembrete(i, 'data', e.target.value)}
+                    className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300 bg-white" />
+                  <input type="time" value={l.hora} onChange={e => setLembrete(i, 'hora', e.target.value)}
+                    className="w-28 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300 bg-white" />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Observações <span className="text-gray-300">(opcional)</span></label>
+                <textarea value={l.obs} onChange={e => setLembrete(i, 'obs', e.target.value)} rows={2}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 resize-none bg-white"
+                  placeholder="Anotações sobre este contato..." />
+              </div>
+            </div>
+          ))}
         </div>
-        <div>
-          <label className="text-xs font-semibold text-gray-500 mb-1 block">Observações <span className="text-gray-300">(opcional)</span></label>
-          <textarea value={obs} onChange={e => setObs(e.target.value)} rows={3}
-            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 resize-none"
-            placeholder="Anotações sobre o contato..." />
-        </div>
-        <div className="flex justify-end gap-3">
+
+        <button onClick={addLembrete}
+          className="w-full py-2 border border-dashed border-gray-300 rounded-xl text-sm text-gray-400 hover:text-brand-500 hover:border-brand-300 transition-colors">
+          + Adicionar outro lembrete
+        </button>
+
+        <div className="flex justify-end gap-3 pt-1">
           <button onClick={onFechar} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
-          <button onClick={() => onSalvar({ proximoFollowup, obs })}
-            disabled={!proximoFollowup}
+          <button onClick={() => onSalvar({ lembretes })}
+            disabled={!temData}
             className="px-5 py-2 bg-brand-400 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl">Salvar</button>
         </div>
       </div>
@@ -190,6 +218,7 @@ export default function Resgates({ onNavigate }) {
   const jaImportado = leads.some(l => l.nome === 'Glauce' && l.status === 'perdido' && l.data === '2025-05-04')
   const jaImportado2 = leads.some(l => l.nome === 'Edvania Cardim' && l.status === 'perdido')
   const jaImportado3 = leads.some(l => l.nome === 'Eliane Sterchile' && l.status === 'perdido')
+  const jaImportado4 = leads.some(l => l.nome === 'Abalone story (Selma)' && l.status === 'perdido')
 
   const filtrados = perdidos.filter(l => {
     const termo = busca.toLowerCase()
@@ -249,15 +278,20 @@ export default function Resgates({ onNavigate }) {
   }
 
   const handleSalvarEdicao = async (lead, dados) => {
-    await updateLead(lead.id, dados)
-    if (dados.proximoFollowup) {
+    const primeiro = dados.lembretes?.[0]
+    await updateLead(lead.id, {
+      proximoFollowup: primeiro?.data || '',
+      obs: primeiro?.obs || '',
+    })
+    for (const lem of (dados.lembretes || [])) {
+      if (!lem.data) continue
       addLembrete({
-        id: Date.now(),
+        id: Date.now() + Math.random(),
         leadNome: lead.nome,
         leadTelefone: lead.telefone || '',
-        descricao: `Manutenção — ${lead.nome}`,
-        data: dados.proximoFollowup,
-        hora: '09:00',
+        descricao: `Manutenção — ${lead.nome}${lem.obs ? ': ' + lem.obs : ''}`,
+        data: lem.data,
+        hora: lem.hora || '09:00',
         cor: 'green',
         concluido: false,
         criadoEm: Date.now(),
@@ -303,6 +337,18 @@ export default function Resgates({ onNavigate }) {
             }} disabled={importando}
               className="px-4 py-2.5 bg-amber-400 hover:bg-amber-500 disabled:opacity-50 text-white text-sm font-semibold rounded-xl transition-colors">
               {importando ? 'Importando...' : '⬆️ Importar lista 3'}
+            </button>
+          )}
+          {!jaImportado4 && (
+            <button onClick={async () => {
+              if (!window.confirm(`Importar ${RESGATES_IMPORT4.length} leads? Duplicatas serão ignoradas automaticamente.`)) return
+              setImportando(true)
+              const importados = await importLeads(RESGATES_IMPORT4)
+              setImportando(false)
+              alert(`✅ ${importados} leads novos importados!`)
+            }} disabled={importando}
+              className="px-4 py-2.5 bg-amber-400 hover:bg-amber-500 disabled:opacity-50 text-white text-sm font-semibold rounded-xl transition-colors">
+              {importando ? 'Importando...' : '⬆️ Importar lista 4'}
             </button>
           )}
           <button onClick={() => setModalNovo(true)}
