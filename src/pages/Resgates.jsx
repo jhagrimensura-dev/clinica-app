@@ -220,7 +220,7 @@ export default function Resgates({ onNavigate }) {
   const jaImportado2 = leads.some(l => l.nome === 'Edvania Cardim' && l.status === 'perdido')
   const jaImportado3 = leads.some(l => l.nome === 'Eliane Sterchile' && l.status === 'perdido')
   const jaImportado4 = leads.some(l => l.nome === 'Abalone story (Selma)' && l.status === 'perdido')
-  const jaImportado5 = leads.some(l => l.nome === 'Edvania Cardim' && l.status === 'perdido')
+  const jaImportado5 = leads.some(l => l.nome === 'Auxiliadora Somera Ineia' && l.status === 'perdido')
 
   const filtrados = perdidos.filter(l => {
     const termo = busca.toLowerCase()
