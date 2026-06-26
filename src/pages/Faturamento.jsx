@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useFinanceiro } from '../context/FinanceiroContext'
 import { useVendas } from '../context/VendasContext'
 import { usePacientes } from '../context/PacientesContext'
@@ -8,11 +8,26 @@ const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho
 const FORMAS_PGTO = ['PIX', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Transferência', 'Boleto']
 const CORES_PROC = ['bg-brand-400','bg-purple-400','bg-blue-400','bg-cyan-400','bg-teal-400','bg-orange-400','bg-pink-400','bg-indigo-400']
 const PROCS_DEFAULT = [
-  { nome: 'Botox', preco: 0 },
-  { nome: 'Preenchimento', preco: 0 },
-  { nome: 'Skinbooster', preco: 0 },
-  { nome: 'Fio de PDO', preco: 0 },
+  { nome: 'Botox', preco: 0, precoPorMl: 0, unidade: 'ml' },
+  { nome: 'Preenchimento', preco: 0, precoPorMl: 0, unidade: 'ml' },
+  { nome: 'Skinbooster', preco: 0, precoPorMl: 0, unidade: 'ml' },
+  { nome: 'Fio de PDO', preco: 0, precoPorMl: 0, unidade: 'fio' },
 ]
+
+function parseLinhaProc(str, procs) {
+  if (!str) return { nome: '', qtd: '', total: 0, precoPorMl: 0, unidade: 'ml' }
+  const match = str.match(/^(.+?)\s*\((\d+(?:[.,]\d+)?)\s*(\w+)?\)$/)
+  if (match) {
+    const nome = match[1].trim()
+    const qtd = match[2].replace(',', '.')
+    const unidade = match[3]?.trim() || 'ml'
+    const proc = procs.find(p => p.nome === nome)
+    const precoPorMl = proc?.precoPorMl || 0
+    return { nome, qtd, total: precoPorMl > 0 ? precoPorMl * parseFloat(qtd) : 0, precoPorMl, unidade }
+  }
+  const proc = procs.find(p => p.nome === str.trim())
+  return { nome: str.trim(), qtd: '', total: 0, precoPorMl: proc?.precoPorMl || 0, unidade: proc?.unidade || 'ml' }
+}
 
 function getProcedimentos(fromContext) {
   if (fromContext) return fromContext
@@ -34,22 +49,23 @@ function parseMoeda(valor) {
 function SelectProcedimento({ value, onChange, procs, onProcsChange }) {
   const [adicionando, setAdicionando] = useState(false)
   const [novoNome, setNovoNome] = useState('')
-  const [novoPreco, setNovoPreco] = useState('')
+  const [novoPrecoPorMl, setNovoPrecoPorMl] = useState('')
+  const [novoUnidade, setNovoUnidade] = useState('ml')
 
   const salvar = () => {
     if (!novoNome.trim()) return
-    const preco = parseMoeda(novoPreco)
-    const novos = [...procs, { nome: novoNome.trim(), preco }]
+    const precoPorMl = parseMoeda(novoPrecoPorMl)
+    const novos = [...procs, { nome: novoNome.trim(), preco: 0, precoPorMl, unidade: novoUnidade }]
     onProcsChange(novos)
-    onChange(novoNome.trim(), preco)
+    onChange(novoNome.trim(), 0, precoPorMl, novoUnidade)
     setAdicionando(false)
     setNovoNome('')
-    setNovoPreco('')
+    setNovoPrecoPorMl('')
+    setNovoUnidade('ml')
   }
 
-  const cancelar = () => { setAdicionando(false); setNovoNome(''); setNovoPreco('') }
+  const cancelar = () => { setAdicionando(false); setNovoNome(''); setNovoPrecoPorMl(''); setNovoUnidade('ml') }
 
-  // se valor atual não está na lista, mostra como opção extra
   const valorForaDaLista = value && value !== '__novo__' && !procs.find(p => p.nome === value)
 
   if (adicionando) {
@@ -59,9 +75,17 @@ function SelectProcedimento({ value, onChange, procs, onProcsChange }) {
           <input type="text" value={novoNome} onChange={e => setNovoNome(e.target.value)}
             placeholder="Nome do procedimento" autoFocus
             className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400" />
-          <input type="text" inputMode="numeric" value={novoPreco}
-            onChange={e => setNovoPreco(mascaraMoeda(e.target.value))}
-            placeholder="Preço consulta"
+          <select value={novoUnidade} onChange={e => setNovoUnidade(e.target.value)}
+            className="w-24 border border-gray-200 rounded-xl px-2 py-2.5 text-sm outline-none focus:border-brand-400 bg-white">
+            <option value="ml">ml</option>
+            <option value="sessão">sessão</option>
+            <option value="fio">fio</option>
+            <option value="ampola">ampola</option>
+            <option value="unidade">unidade</option>
+          </select>
+          <input type="text" inputMode="numeric" value={novoPrecoPorMl}
+            onChange={e => setNovoPrecoPorMl(mascaraMoeda(e.target.value))}
+            placeholder={`R$ por ${novoUnidade}`}
             className="w-36 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400" />
         </div>
         <div className="flex gap-2">
@@ -83,14 +107,14 @@ function SelectProcedimento({ value, onChange, procs, onProcsChange }) {
       onChange={e => {
         if (e.target.value === '__novo__') { setAdicionando(true); return }
         const proc = procs.find(p => p.nome === e.target.value)
-        onChange(e.target.value, proc?.preco ?? null)
+        onChange(e.target.value, proc?.preco ?? 0, proc?.precoPorMl ?? 0, proc?.unidade ?? 'ml')
       }}
       className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400 bg-white">
       <option value="">Selecione um procedimento</option>
       {valorForaDaLista && <option value={value}>{value}</option>}
       {procs.map(p => (
         <option key={p.nome} value={p.nome}>
-          {p.nome}{p.preco > 0 ? ` — R$ ${p.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : ''}
+          {p.nome}{p.precoPorMl > 0 ? ` — R$ ${p.precoPorMl.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/${p.unidade || 'ml'}` : ''}
         </option>
       ))}
       <option value="__novo__">+ Adicionar novo procedimento...</option>
@@ -104,18 +128,32 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes, procs, on
   const [paciente, setPaciente] = useState('')
   const [tipo, setTipo] = useState('Novo')
   const [responsavel, setResponsavel] = useState('')
-  const [listaProcs, setListaProcs] = useState([''])
+  const [listaProcs, setListaProcs] = useState([{ nome: '', qtd: '', total: 0, precoPorMl: 0, unidade: 'ml' }])
   const [valorTaxa, setValorTaxa] = useState('')
   const [valorTratamento, setValorTratamento] = useState('')
   const [formasPgto, setFormasPgto] = useState([])
   const [agendado, setAgendado] = useState(false)
   const [obs, setObs] = useState('')
 
-  const handleProcChange = (idx, nome, preco) => {
-    setListaProcs(prev => prev.map((p, i) => i === idx ? nome : p))
-    if (idx === 0 && preco != null && preco > 0) {
-      setValorTaxa(mascaraMoeda(String(Math.round(preco * 100))))
-    }
+  useEffect(() => {
+    const soma = listaProcs.reduce((acc, p) => acc + (p.total || 0), 0)
+    if (soma > 0) setValorTratamento(mascaraMoeda(String(Math.round(soma * 100))))
+  }, [listaProcs])
+
+  const handleProcNome = (idx, nome, preco, precoPorMl, unidade) => {
+    setListaProcs(prev => prev.map((p, i) => {
+      if (i !== idx) return p
+      const total = precoPorMl > 0 && p.qtd ? precoPorMl * parseFloat(p.qtd) : 0
+      return { ...p, nome, precoPorMl: precoPorMl || 0, unidade: unidade || 'ml', total }
+    }))
+  }
+
+  const handleProcQtd = (idx, qtd) => {
+    setListaProcs(prev => prev.map((p, i) => {
+      if (i !== idx) return p
+      const total = (p.precoPorMl || 0) > 0 && qtd ? p.precoPorMl * parseFloat(qtd || 0) : 0
+      return { ...p, qtd, total }
+    }))
   }
 
   const toggleForma = (forma) => {
@@ -124,7 +162,10 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes, procs, on
 
   const handleCriar = () => {
     if (!paciente) return
-    const procedimentos = listaProcs.filter(Boolean).join(' e ')
+    const procedimentos = listaProcs
+      .filter(p => p.nome)
+      .map(p => p.qtd ? `${p.nome} (${p.qtd}${p.unidade || 'ml'})` : p.nome)
+      .join(' e ')
     onSalvar({ data, paciente, tipo, responsavel, procedimentos, valorTaxa: parseMoeda(valorTaxa), valorTratamento: parseMoeda(valorTratamento), formasPgto, agendado, obs })
     onClose()
   }
@@ -179,18 +220,31 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes, procs, on
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-sm font-medium text-gray-700">Procedimentos</label>
-              <button type="button" onClick={() => setListaProcs(prev => [...prev, ''])}
+              <button type="button" onClick={() => setListaProcs(prev => [...prev, { nome: '', qtd: '', total: 0, precoPorMl: 0, unidade: 'ml' }])}
                 className="text-xs text-brand-400 hover:text-brand-500 font-semibold">+ Adicionar</button>
             </div>
             <div className="space-y-2">
               {listaProcs.map((proc, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <div className="flex-1">
-                    <SelectProcedimento value={proc} onChange={(nome, preco) => handleProcChange(idx, nome, preco)} procs={procs} onProcsChange={onProcsChange} />
+                <div key={idx} className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <SelectProcedimento value={proc.nome} onChange={(nome, preco, precoPorMl, unidade) => handleProcNome(idx, nome, preco, precoPorMl, unidade)} procs={procs} onProcsChange={onProcsChange} />
+                    </div>
+                    {listaProcs.length > 1 && (
+                      <button type="button" onClick={() => setListaProcs(prev => prev.filter((_, i) => i !== idx))}
+                        className="text-gray-300 hover:text-red-400 text-xl leading-none flex-shrink-0 transition-colors">×</button>
+                    )}
                   </div>
-                  {listaProcs.length > 1 && (
-                    <button type="button" onClick={() => setListaProcs(prev => prev.filter((_, i) => i !== idx))}
-                      className="text-gray-300 hover:text-red-400 text-xl leading-none flex-shrink-0 transition-colors">×</button>
+                  {proc.precoPorMl > 0 && (
+                    <div className="flex items-center gap-2 pl-1">
+                      <input type="number" value={proc.qtd} onChange={e => handleProcQtd(idx, e.target.value)}
+                        placeholder="0" min="0" step="0.5"
+                        className="w-24 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400" />
+                      <span className="text-sm text-gray-400">{proc.unidade || 'ml'}</span>
+                      {proc.total > 0 && (
+                        <span className="text-sm font-semibold text-green-600">= {proc.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                      )}
+                    </div>
                   )}
                 </div>
               ))}
@@ -259,9 +313,10 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
   const [paciente, setPaciente] = useState(lancamento.paciente)
   const [tipo, setTipo] = useState(lancamento.tipo)
   const [responsavel, setResponsavel] = useState(lancamento.responsavel || '')
-  const [listaProcs, setListaProcs] = useState(
-    lancamento.procedimentos ? lancamento.procedimentos.split(' e ').filter(Boolean) : ['']
-  )
+  const [listaProcs, setListaProcs] = useState(() => {
+    if (!lancamento.procedimentos) return [{ nome: '', qtd: '', total: 0, precoPorMl: 0, unidade: 'ml' }]
+    return lancamento.procedimentos.split(' e ').filter(Boolean).map(s => parseLinhaProc(s, procs))
+  })
   const [valorTaxa, setValorTaxa] = useState(lancamento.valorTaxa ? mascaraMoeda(String(Math.round(lancamento.valorTaxa * 100))) : '')
   const [valorTratamento, setValorTratamento] = useState(lancamento.valorTratamento ? mascaraMoeda(String(Math.round(lancamento.valorTratamento * 100))) : '')
   const [formasPgto, setFormasPgto] = useState(lancamento.formasPgto || [])
@@ -269,11 +324,25 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
   const [obs, setObs] = useState(lancamento.obs || '')
   const [confirmarExcluir, setConfirmarExcluir] = useState(false)
 
-  const handleProcChange = (idx, nome, preco) => {
-    setListaProcs(prev => prev.map((p, i) => i === idx ? nome : p))
-    if (idx === 0 && preco != null && preco > 0) {
-      setValorTaxa(mascaraMoeda(String(Math.round(preco * 100))))
-    }
+  useEffect(() => {
+    const soma = listaProcs.reduce((acc, p) => acc + (p.total || 0), 0)
+    if (soma > 0) setValorTratamento(mascaraMoeda(String(Math.round(soma * 100))))
+  }, [listaProcs])
+
+  const handleProcNome = (idx, nome, preco, precoPorMl, unidade) => {
+    setListaProcs(prev => prev.map((p, i) => {
+      if (i !== idx) return p
+      const total = precoPorMl > 0 && p.qtd ? precoPorMl * parseFloat(p.qtd) : 0
+      return { ...p, nome, precoPorMl: precoPorMl || 0, unidade: unidade || 'ml', total }
+    }))
+  }
+
+  const handleProcQtd = (idx, qtd) => {
+    setListaProcs(prev => prev.map((p, i) => {
+      if (i !== idx) return p
+      const total = (p.precoPorMl || 0) > 0 && qtd ? p.precoPorMl * parseFloat(qtd || 0) : 0
+      return { ...p, qtd, total }
+    }))
   }
 
   const toggleForma = (forma) =>
@@ -281,7 +350,10 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
 
   const handleAtualizar = () => {
     if (!paciente) return
-    const procedimentos = listaProcs.filter(Boolean).join(' e ')
+    const procedimentos = listaProcs
+      .filter(p => p.nome)
+      .map(p => p.qtd ? `${p.nome} (${p.qtd}${p.unidade || 'ml'})` : p.nome)
+      .join(' e ')
     onAtualizar(lancamento.id, { data, paciente, tipo, responsavel, procedimentos, valorTaxa: parseMoeda(valorTaxa), valorTratamento: parseMoeda(valorTratamento), formasPgto, agendado, obs })
     onClose()
   }
@@ -336,18 +408,31 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-sm font-medium text-gray-700">Procedimentos</label>
-              <button type="button" onClick={() => setListaProcs(prev => [...prev, ''])}
+              <button type="button" onClick={() => setListaProcs(prev => [...prev, { nome: '', qtd: '', total: 0, precoPorMl: 0, unidade: 'ml' }])}
                 className="text-xs text-brand-400 hover:text-brand-500 font-semibold">+ Adicionar</button>
             </div>
             <div className="space-y-2">
               {listaProcs.map((proc, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <div className="flex-1">
-                    <SelectProcedimento value={proc} onChange={(nome, preco) => handleProcChange(idx, nome, preco)} procs={procs} onProcsChange={onProcsChange} />
+                <div key={idx} className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <SelectProcedimento value={proc.nome} onChange={(nome, preco, precoPorMl, unidade) => handleProcNome(idx, nome, preco, precoPorMl, unidade)} procs={procs} onProcsChange={onProcsChange} />
+                    </div>
+                    {listaProcs.length > 1 && (
+                      <button type="button" onClick={() => setListaProcs(prev => prev.filter((_, i) => i !== idx))}
+                        className="text-gray-300 hover:text-red-400 text-xl leading-none flex-shrink-0 transition-colors">×</button>
+                    )}
                   </div>
-                  {listaProcs.length > 1 && (
-                    <button type="button" onClick={() => setListaProcs(prev => prev.filter((_, i) => i !== idx))}
-                      className="text-gray-300 hover:text-red-400 text-xl leading-none flex-shrink-0 transition-colors">×</button>
+                  {proc.precoPorMl > 0 && (
+                    <div className="flex items-center gap-2 pl-1">
+                      <input type="number" value={proc.qtd} onChange={e => handleProcQtd(idx, e.target.value)}
+                        placeholder="0" min="0" step="0.5"
+                        className="w-24 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400" />
+                      <span className="text-sm text-gray-400">{proc.unidade || 'ml'}</span>
+                      {proc.total > 0 && (
+                        <span className="text-sm font-semibold text-green-600">= {proc.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                      )}
+                    </div>
                   )}
                 </div>
               ))}
