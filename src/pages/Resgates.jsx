@@ -92,6 +92,7 @@ function StatusFollowup({ data, hoje }) {
 
 function ModalReativar({ lead, onConfirmar, onFechar }) {
   const [proximoFollowup, setProximoFollowup] = useState('')
+  const [obs, setObs] = useState('')
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
@@ -101,9 +102,15 @@ function ModalReativar({ lead, onConfirmar, onFechar }) {
           <input type="date" value={proximoFollowup} onChange={e => setProximoFollowup(e.target.value)}
             className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300" />
         </div>
+        <div>
+          <label className="text-xs font-semibold text-gray-500 mb-1 block">Observações <span className="text-gray-300">(opcional)</span></label>
+          <textarea value={obs} onChange={e => setObs(e.target.value)} rows={3}
+            placeholder="Anotações sobre o contato..."
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 resize-none" />
+        </div>
         <div className="flex justify-end gap-3">
           <button onClick={onFechar} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
-          <button onClick={() => onConfirmar('em_aberto', proximoFollowup)}
+          <button onClick={() => onConfirmar('em_aberto', proximoFollowup, obs)}
             disabled={!proximoFollowup}
             className="px-5 py-2 bg-green-500 hover:bg-green-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl">Reativar</button>
         </div>
@@ -222,8 +229,8 @@ export default function Resgates({ onNavigate }) {
     setModalNovo(false)
   }
 
-  const handleReativar = async (lead, status, proximoFollowup) => {
-    await updateLead(lead.id, { status, proximoFollowup: proximoFollowup || '' })
+  const handleReativar = async (lead, status, proximoFollowup, obs) => {
+    await updateLead(lead.id, { status, proximoFollowup: proximoFollowup || '', ...(obs ? { obs } : {}) })
     if (proximoFollowup) {
       addLembrete({
         id: Date.now(),
@@ -444,7 +451,7 @@ export default function Resgates({ onNavigate }) {
       {modalReativar && (
         <ModalReativar
           lead={modalReativar}
-          onConfirmar={(status, proximoFollowup) => handleReativar(modalReativar, status, proximoFollowup)}
+          onConfirmar={(status, proximoFollowup, obs) => handleReativar(modalReativar, status, proximoFollowup, obs)}
           onFechar={() => setModalReativar(null)}
         />
       )}
