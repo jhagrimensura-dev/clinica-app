@@ -269,7 +269,7 @@ function AppContent() {
       case 'leads_novos': return <LeadsNovos />
       case 'leads_recorrentes': return <LeadsRecorrentes />
       case 'indicacao': return <Indicacao />
-      case 'resgates': return <Resgates />
+      case 'resgates': return <Resgates onNavigate={setActive} />
 case 'whatsapp_canal': return <PagePlaceholder title="WhatsApp" />
       case 'recorrencia': return <Recorrencia />
       case 'faturamento': return <Faturamento />

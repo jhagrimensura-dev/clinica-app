@@ -167,7 +167,7 @@ function ModalEditar({ lead, onSalvar, onFechar }) {
   )
 }
 
-export default function Resgates() {
+export default function Resgates({ onNavigate }) {
   const { leads, updateLead, removeLead, importLeads } = useLeads()
   const { addLembrete } = useAgenda()
   const { userRole } = useAuth()
@@ -260,6 +260,7 @@ export default function Resgates() {
       })
     }
     setModalReativar(null)
+    if (onNavigate) onNavigate('agenda_lembretes')
   }
 
   const handleSalvarEdicao = async (lead, dados) => {
