@@ -6,6 +6,7 @@ import { RESGATES_IMPORT } from '../data/resgatesImport'
 import { RESGATES_IMPORT2 } from '../data/resgatesImport2'
 import { RESGATES_IMPORT3 } from '../data/resgatesImport3'
 import { RESGATES_IMPORT4 } from '../data/resgatesImport4'
+import { RESGATES_IMPORT5 } from '../data/resgatesImport5'
 
 const MOTIVOS = ['Não respondeu', 'Preço alto', 'Não tem interesse agora', 'Escolheu concorrente', 'Sem condições financeiras', 'Outro']
 const ORIGENS = ['WhatsApp', 'Instagram Anúncio', 'Instagram Orgânico', 'Tráfego', 'Indicação', 'Retorno', 'Outro']
@@ -219,6 +220,7 @@ export default function Resgates({ onNavigate }) {
   const jaImportado2 = leads.some(l => l.nome === 'Edvania Cardim' && l.status === 'perdido')
   const jaImportado3 = leads.some(l => l.nome === 'Eliane Sterchile' && l.status === 'perdido')
   const jaImportado4 = leads.some(l => l.nome === 'Abalone story (Selma)' && l.status === 'perdido')
+  const jaImportado5 = leads.some(l => l.nome === 'Edvania Cardim' && l.status === 'perdido')
 
   const filtrados = perdidos.filter(l => {
     const termo = busca.toLowerCase()
@@ -349,6 +351,18 @@ export default function Resgates({ onNavigate }) {
             }} disabled={importando}
               className="px-4 py-2.5 bg-amber-400 hover:bg-amber-500 disabled:opacity-50 text-white text-sm font-semibold rounded-xl transition-colors">
               {importando ? 'Importando...' : '⬆️ Importar lista 4'}
+            </button>
+          )}
+          {!jaImportado5 && (
+            <button onClick={async () => {
+              if (!window.confirm(`Importar ${RESGATES_IMPORT5.length} leads? Duplicatas serão ignoradas automaticamente.`)) return
+              setImportando(true)
+              const importados = await importLeads(RESGATES_IMPORT5)
+              setImportando(false)
+              alert(`✅ ${importados} leads novos importados!`)
+            }} disabled={importando}
+              className="px-4 py-2.5 bg-amber-400 hover:bg-amber-500 disabled:opacity-50 text-white text-sm font-semibold rounded-xl transition-colors">
+              {importando ? 'Importando...' : '⬆️ Importar lista 5'}
             </button>
           )}
           <button onClick={() => setModalNovo(true)}
