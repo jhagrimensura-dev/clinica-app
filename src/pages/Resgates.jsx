@@ -92,20 +92,30 @@ function StatusFollowup({ data, hoje }) {
 
 function ModalReativar({ lead, onConfirmar, onFechar }) {
   const [status, setStatus] = useState('em_aberto')
+  const [proximoFollowup, setProximoFollowup] = useState('')
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
-        <h2 className="text-base font-bold text-gray-900">Reativar lead</h2>
-        <p className="text-sm text-gray-500">Mover <strong>{lead.nome}</strong> para qual etapa?</p>
-        <select value={status} onChange={e => setStatus(e.target.value)}
-          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300">
-          <option value="em_aberto">Em aberto</option>
-          <option value="conversando">Conversando</option>
-          <option value="follow1">Follow #1</option>
-        </select>
+        <h2 className="text-base font-bold text-gray-900">Reativar — {lead.nome}</h2>
+        <div>
+          <label className="text-xs font-semibold text-gray-500 mb-1 block">Mover para qual etapa?</label>
+          <select value={status} onChange={e => setStatus(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300">
+            <option value="em_aberto">Em aberto</option>
+            <option value="conversando">Conversando</option>
+            <option value="follow1">Follow #1</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-gray-500 mb-1 block">Quando entrar em contato <span className="text-red-400">*</span></label>
+          <input type="date" value={proximoFollowup} onChange={e => setProximoFollowup(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300" />
+        </div>
         <div className="flex justify-end gap-3">
           <button onClick={onFechar} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
-          <button onClick={() => onConfirmar(status)} className="px-5 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded-xl">Reativar</button>
+          <button onClick={() => onConfirmar(status, proximoFollowup)}
+            disabled={!proximoFollowup}
+            className="px-5 py-2 bg-green-500 hover:bg-green-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl">Reativar</button>
         </div>
       </div>
     </div>
@@ -222,8 +232,21 @@ export default function Resgates() {
     setModalNovo(false)
   }
 
-  const handleReativar = async (lead, status) => {
-    await updateLead(lead.id, { status, proximoFollowup: '' })
+  const handleReativar = async (lead, status, proximoFollowup) => {
+    await updateLead(lead.id, { status, proximoFollowup: proximoFollowup || '' })
+    if (proximoFollowup) {
+      addLembrete({
+        id: Date.now(),
+        leadNome: lead.nome,
+        leadTelefone: lead.telefone || '',
+        descricao: `Contato reativado — ${lead.nome}`,
+        data: proximoFollowup,
+        hora: '09:00',
+        cor: 'green',
+        concluido: false,
+        criadoEm: Date.now(),
+      })
+    }
     setModalReativar(null)
   }
 
@@ -430,7 +453,7 @@ export default function Resgates() {
       {modalReativar && (
         <ModalReativar
           lead={modalReativar}
-          onConfirmar={(status) => handleReativar(modalReativar, status)}
+          onConfirmar={(status, proximoFollowup) => handleReativar(modalReativar, status, proximoFollowup)}
           onFechar={() => setModalReativar(null)}
         />
       )}
