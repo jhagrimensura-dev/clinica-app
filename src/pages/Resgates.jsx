@@ -14,7 +14,6 @@ function ModalNovoResgate({ onSalvar, onFechar }) {
   const [nome, setNome] = useState('')
   const [telefone, setTelefone] = useState('')
   const [origem, setOrigem] = useState('WhatsApp')
-  const [motivo, setMotivo] = useState('')
   const [proximoFollowup, setProximoFollowup] = useState('')
   const [obs, setObs] = useState('')
   const [data, setData] = useState(hoje)
@@ -29,17 +28,13 @@ function ModalNovoResgate({ onSalvar, onFechar }) {
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2">
             <label className="text-xs font-semibold text-gray-500 mb-1 block">Nome <span className="text-red-400">*</span></label>
-            <input value={nome} onChange={e => setNome(e.target.value)} placeholder="Nome do lead"
+            <input value={nome} onChange={e => setNome(e.target.value)} placeholder="Nome da paciente"
+              autoFocus
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300" />
           </div>
           <div>
             <label className="text-xs font-semibold text-gray-500 mb-1 block">Telefone <span className="text-gray-300">(opcional)</span></label>
             <input value={telefone} onChange={e => setTelefone(e.target.value)} placeholder="(11) 99999-9999"
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300" />
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-gray-500 mb-1 block">Data do lead</label>
-            <input type="date" value={data} onChange={e => setData(e.target.value)}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300" />
           </div>
           <div>
@@ -49,31 +44,23 @@ function ModalNovoResgate({ onSalvar, onFechar }) {
               {ORIGENS.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
           </div>
-          <div>
-            <label className="text-xs font-semibold text-gray-500 mb-1 block">Motivo da perda <span className="text-red-400">*</span></label>
-            <select value={motivo} onChange={e => setMotivo(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300">
-              <option value="">Selecionar...</option>
-              {MOTIVOS.map(m => <option key={m} value={m}>{m}</option>)}
-            </select>
-          </div>
           <div className="col-span-2">
-            <label className="text-xs font-semibold text-gray-500 mb-1 block">Próximo contato</label>
+            <label className="text-xs font-semibold text-gray-500 mb-1 block">Quando entrar em contato <span className="text-red-400">*</span></label>
             <input type="date" value={proximoFollowup} onChange={e => setProximoFollowup(e.target.value)}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300" />
           </div>
           <div className="col-span-2">
-            <label className="text-xs font-semibold text-gray-500 mb-1 block">Observações</label>
+            <label className="text-xs font-semibold text-gray-500 mb-1 block">Observações <span className="text-gray-300">(opcional)</span></label>
             <textarea value={obs} onChange={e => setObs(e.target.value)} rows={2}
-              placeholder="Anotações sobre o lead..."
+              placeholder="Ex: demonstrou interesse em Botox, aguardando data..."
               className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 resize-none" />
           </div>
         </div>
         <div className="flex justify-end gap-3 pt-1">
           <button onClick={onFechar} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
           <button
-            disabled={!nome.trim() || !motivo}
-            onClick={() => onSalvar({ nome: nome.trim(), telefone, origemCustom: origem, data, status: 'perdido', obs: motivo ? `[${motivo}] ${obs}`.trim() : obs, proximoFollowup, origem: 'leads_novos' })}
+            disabled={!nome.trim() || !proximoFollowup}
+            onClick={() => onSalvar({ nome: nome.trim(), telefone, origemCustom: origem, data, status: 'perdido', obs, proximoFollowup, origem: 'leads_novos' })}
             className="px-5 py-2 bg-brand-400 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl">
             Salvar
           </button>
