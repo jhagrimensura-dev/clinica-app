@@ -239,7 +239,7 @@ export default function Resgates({ onNavigate }) {
         descricao: `Contato reativado — ${lead.nome}`,
         data: proximoFollowup,
         hora: '09:00',
-        cor: 'green',
+        cor: 'red',
         concluido: false,
         criadoEm: Date.now(),
       })
@@ -255,10 +255,10 @@ export default function Resgates({ onNavigate }) {
         id: Date.now(),
         leadNome: lead.nome,
         leadTelefone: lead.telefone || '',
-        descricao: `Follow-up resgate — ${lead.nome}`,
+        descricao: `Manutenção — ${lead.nome}`,
         data: dados.proximoFollowup,
         hora: '09:00',
-        cor: 'red',
+        cor: 'green',
         concluido: false,
         criadoEm: Date.now(),
       })
