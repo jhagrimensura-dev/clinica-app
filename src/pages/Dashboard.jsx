@@ -21,10 +21,10 @@ export default function Dashboard() {
 
   const totalGeral = lMes.reduce((acc, l) => acc + (l.valorTratamento || 0) + (l.valorTaxa || 0), 0)
   const totalNovos = lMes.filter(l => l.tipo === 'Novo').reduce((acc, l) => acc + (l.valorTratamento || 0) + (l.valorTaxa || 0), 0)
-  const totalRecorrentes = lMes.filter(l => l.tipo === 'Recorrente').reduce((acc, l) => acc + (l.valorTratamento || 0) + (l.valorTaxa || 0), 0)
+  const totalRecorrentes = lMes.filter(l => l.tipo === 'Recorrência').reduce((acc, l) => acc + (l.valorTratamento || 0) + (l.valorTaxa || 0), 0)
   const totalIndicacaoLanc = lMes.filter(l => l.tipo === 'Indicação').reduce((acc, l) => acc + (l.valorTratamento || 0) + (l.valorTaxa || 0), 0)
   const countNovos = lMes.filter(l => l.tipo === 'Novo').length
-  const countRecorrentes = lMes.filter(l => l.tipo === 'Recorrente').length
+  const countRecorrentes = lMes.filter(l => l.tipo === 'Recorrência').length
   const countIndicacaoLanc = lMes.filter(l => l.tipo === 'Indicação').length
   const ticketGeral = lMes.length > 0 ? totalGeral / lMes.length : 0
   const ticketNovos = countNovos > 0 ? totalNovos / countNovos : 0
