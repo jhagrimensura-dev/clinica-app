@@ -114,7 +114,6 @@ function ModalReativar({ lead, onConfirmar, onFechar }) {
 
 function ModalEditar({ lead, onSalvar, onFechar }) {
   const [proximoFollowup, setProximoFollowup] = useState(lead.proximoFollowup || '')
-  const [motivo, setMotivo] = useState('')
   const [obs, setObs] = useState(lead.obs || '')
 
   return (
@@ -125,28 +124,20 @@ function ModalEditar({ lead, onSalvar, onFechar }) {
           <button onClick={onFechar} className="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
         </div>
         <div>
-          <label className="text-xs font-semibold text-gray-500 mb-1 block">Motivo da perda <span className="text-red-400">*</span></label>
-          <select value={motivo} onChange={e => setMotivo(e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300">
-            <option value="">Selecionar motivo...</option>
-            {MOTIVOS.map(m => <option key={m} value={m}>{m}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="text-xs font-semibold text-gray-500 mb-1 block">Próximo contato</label>
+          <label className="text-xs font-semibold text-gray-500 mb-1 block">Quando entrar em contato <span className="text-red-400">*</span></label>
           <input type="date" value={proximoFollowup} onChange={e => setProximoFollowup(e.target.value)}
             className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300" />
         </div>
         <div>
-          <label className="text-xs font-semibold text-gray-500 mb-1 block">Observações</label>
+          <label className="text-xs font-semibold text-gray-500 mb-1 block">Observações <span className="text-gray-300">(opcional)</span></label>
           <textarea value={obs} onChange={e => setObs(e.target.value)} rows={3}
             className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 resize-none"
             placeholder="Anotações sobre o contato..." />
         </div>
         <div className="flex justify-end gap-3">
           <button onClick={onFechar} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
-          <button onClick={() => onSalvar({ proximoFollowup, obs: motivo ? `[${motivo}] ${obs}`.trim() : obs })}
-            disabled={!motivo}
+          <button onClick={() => onSalvar({ proximoFollowup, obs })}
+            disabled={!proximoFollowup}
             className="px-5 py-2 bg-brand-400 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl">Salvar</button>
         </div>
       </div>
