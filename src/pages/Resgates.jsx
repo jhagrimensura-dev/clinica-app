@@ -94,7 +94,7 @@ function ModalReativar({ lead, onConfirmar, onFechar }) {
   const [status, setStatus] = useState('em_aberto')
   const [etapaCustom, setEtapaCustom] = useState('')
   const [proximoFollowup, setProximoFollowup] = useState('')
-  const statusFinal = etapaCustom.trim() || status
+  const statusFinal = status === '__custom__' ? etapaCustom.trim() : status
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
@@ -106,13 +106,17 @@ function ModalReativar({ lead, onConfirmar, onFechar }) {
             <option value="em_aberto">Em aberto</option>
             <option value="conversando">Conversando</option>
             <option value="follow1">Follow #1</option>
+            <option value="__custom__">+ Outra etapa...</option>
           </select>
-          <input
-            value={etapaCustom}
-            onChange={e => setEtapaCustom(e.target.value)}
-            placeholder="Ou digite uma etapa personalizada..."
-            className="mt-2 w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300"
-          />
+          {status === '__custom__' && (
+            <input
+              autoFocus
+              value={etapaCustom}
+              onChange={e => setEtapaCustom(e.target.value)}
+              placeholder="Digite a etapa..."
+              className="mt-2 w-full border border-brand-300 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400"
+            />
+          )}
         </div>
         <div>
           <label className="text-xs font-semibold text-gray-500 mb-1 block">Quando entrar em contato <span className="text-red-400">*</span></label>
@@ -122,7 +126,7 @@ function ModalReativar({ lead, onConfirmar, onFechar }) {
         <div className="flex justify-end gap-3">
           <button onClick={onFechar} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
           <button onClick={() => onConfirmar(statusFinal, proximoFollowup)}
-            disabled={!proximoFollowup}
+            disabled={!proximoFollowup || (status === '__custom__' && !etapaCustom.trim())}
             className="px-5 py-2 bg-green-500 hover:bg-green-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl">Reativar</button>
         </div>
       </div>
