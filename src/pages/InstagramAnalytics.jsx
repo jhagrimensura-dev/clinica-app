@@ -184,17 +184,19 @@ function LeadsOrigem({ leads, periodo }) {
 const MESES_NOME = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
 const CAMPOS_ORGANICO = [
-  { key: 'alcance',           label: 'Alcance',             group: 'distribuicao' },
-  { key: 'impressoes',        label: 'Impressões',           group: 'distribuicao' },
-  { key: 'novos_seguidores',  label: 'Novos seguidores',     group: 'distribuicao' },
-  { key: 'nao_seguidores_pct',label: '% não seguidores',     group: 'distribuicao', pct: true },
-  { key: 'curtidas',          label: 'Curtidas',             group: 'engajamento' },
-  { key: 'comentarios',       label: 'Comentários',          group: 'engajamento' },
-  { key: 'salvamentos',       label: 'Salvamentos',          group: 'engajamento' },
-  { key: 'compartilhamentos', label: 'Compartilhamentos',    group: 'engajamento' },
-  { key: 'cliques_bio',       label: 'Cliques no link bio',  group: 'cliques' },
-  { key: 'cliques_whatsapp',  label: 'Cliques no WhatsApp',  group: 'cliques' },
+  { key: 'alcance',           label: 'Alcance',            group: 'distribuicao', onde: 'Insights → Visão geral → "Contas alcançadas"' },
+  { key: 'impressoes',        label: 'Impressões',          group: 'distribuicao', onde: 'Insights → Visão geral → "Impressões"' },
+  { key: 'novos_seguidores',  label: 'Novos seguidores',    group: 'distribuicao', onde: 'Insights → Público → "Seguidores" (variação do mês)' },
+  { key: 'nao_seguidores_pct',label: '% não seguidores',    group: 'distribuicao', onde: 'Insights → Alcance → "Não seguidores" (%)' },
+  { key: 'curtidas',          label: 'Curtidas',            group: 'engajamento',  onde: 'Insights → Visão geral → "Curtidas"' },
+  { key: 'comentarios',       label: 'Comentários',         group: 'engajamento',  onde: 'Insights → Visão geral → "Comentários"' },
+  { key: 'salvamentos',       label: 'Salvamentos',         group: 'engajamento',  onde: 'Insights → Visão geral → "Salvamentos"' },
+  { key: 'compartilhamentos', label: 'Compartilhamentos',   group: 'engajamento',  onde: 'Insights → Visão geral → "Compartilhamentos"' },
+  { key: 'cliques_bio',       label: 'Cliques no link bio', group: 'cliques',      onde: 'Insights → Visão geral → "Cliques no link do site"' },
+  { key: 'cliques_whatsapp',  label: 'Cliques WhatsApp',    group: 'cliques',      onde: 'Insights → Visão geral → "Cliques no botão de contato"' },
 ]
+
+const FORMATOS_CRIATIVO = ['Reel', 'Carrossel', 'Story', 'Post estático', 'Live']
 
 function loadOrganico(ano, mes) {
   try { return JSON.parse(localStorage.getItem(`instagram_organico_${ano}_${mes}`) || '{}') } catch { return {} }
@@ -202,26 +204,33 @@ function loadOrganico(ano, mes) {
 function saveOrganico(ano, mes, dados) {
   localStorage.setItem(`instagram_organico_${ano}_${mes}`, JSON.stringify(dados))
 }
+function loadCriativos(ano, mes) {
+  try { return JSON.parse(localStorage.getItem(`instagram_criativos_${ano}_${mes}`) || '[]') } catch { return [] }
+}
+function saveCriativos(ano, mes, lista) {
+  localStorage.setItem(`instagram_criativos_${ano}_${mes}`, JSON.stringify(lista))
+}
 
-function PainelOrganico({ leads }) {
-  const hoje = new Date()
-  const [mes, setMes] = useState(hoje.getMonth())
-  const [ano, setAno] = useState(hoje.getFullYear())
+function Tooltip({ texto }) {
+  const [show, setShow] = useState(false)
+  return (
+    <span className="relative inline-flex" onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
+      <span className="w-4 h-4 rounded-full bg-gray-100 text-gray-400 text-[10px] flex items-center justify-center cursor-help font-bold select-none">?</span>
+      {show && (
+        <span className="absolute left-5 top-0 z-50 bg-gray-800 text-white text-xs rounded-lg px-3 py-2 w-56 shadow-lg leading-relaxed whitespace-normal">
+          📍 {texto}
+        </span>
+      )}
+    </span>
+  )
+}
+
+function PainelOrganico({ leads, mes, ano, navMes }) {
   const [editando, setEditando] = useState(false)
-  const [dados, setDados] = useState(() => loadOrganico(hoje.getFullYear(), hoje.getMonth()))
+  const [dados, setDados] = useState(() => loadOrganico(ano, mes))
   const [form, setForm] = useState({})
 
-  useEffect(() => {
-    const d = loadOrganico(ano, mes)
-    setDados(d)
-  }, [ano, mes])
-
-  const navMes = (delta) => {
-    let m = mes + delta, a = ano
-    if (m < 0) { m = 11; a-- }
-    if (m > 11) { m = 0; a++ }
-    setMes(m); setAno(a)
-  }
+  useEffect(() => { setDados(loadOrganico(ano, mes)) }, [ano, mes])
 
   const abrirEdicao = () => { setForm({ ...dados }); setEditando(true) }
   const salvar = () => {
@@ -232,18 +241,12 @@ function PainelOrganico({ leads }) {
     setEditando(false)
   }
 
-  // Leads do mês
   const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
-  const leadsDoMes = leads.filter(l => {
-    const d = l.data || l.criadoEm?.slice(0, 10) || ''
-    return d.startsWith(prefix)
-  })
-  const totalLeads = leadsDoMes.length
+  const totalLeads = leads.filter(l => (l.data || l.criadoEm?.slice(0,10) || '').startsWith(prefix)).length
 
   const num = (k) => dados[k] ?? null
   const engTotal = (num('curtidas') ?? 0) + (num('comentarios') ?? 0) + (num('salvamentos') ?? 0) + (num('compartilhamentos') ?? 0)
-  const taxaEng = num('alcance') > 0 ? ((engTotal / num('alcance')) * 100) : null
-
+  const taxaEng = num('alcance') > 0 ? (engTotal / num('alcance')) * 100 : null
   const trafego = parseFloat(localStorage.getItem(`social_trafego_${ano}_${mes}`)) || 0
   const custoPorLead = trafego > 0 && totalLeads > 0 ? trafego / totalLeads : null
 
@@ -252,40 +255,33 @@ function PainelOrganico({ leads }) {
   const fmtR = (v) => v == null ? '—' : v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
   const secoes = [
-    {
-      title: 'Distribuição', color: 'text-blue-600', cards: [
-        { label: 'Alcance', value: fmtN(num('alcance')), icon: '📡' },
-        { label: 'Impressões', value: fmtN(num('impressoes')), icon: '👁️' },
-        { label: 'Novos seguidores', value: fmtN(num('novos_seguidores')), icon: '➕' },
-        { label: '% não seguidores', value: fmtP(num('nao_seguidores_pct')), icon: '🌍' },
-      ]
-    },
-    {
-      title: 'Engajamento', color: 'text-pink-600', cards: [
-        { label: 'Curtidas', value: fmtN(num('curtidas')), icon: '❤️' },
-        { label: 'Comentários', value: fmtN(num('comentarios')), icon: '💬' },
-        { label: 'Salvamentos', value: fmtN(num('salvamentos')), icon: '🔖' },
-        { label: 'Compartilhamentos', value: fmtN(num('compartilhamentos')), icon: '🔁' },
-        { label: 'Taxa de engajamento', value: fmtP(taxaEng), icon: '📈', highlight: true },
-      ]
-    },
-    {
-      title: 'Cliques & Conversão', color: 'text-green-600', cards: [
-        { label: 'Cliques no link bio', value: fmtN(num('cliques_bio')), icon: '🔗' },
-        { label: 'Cliques WhatsApp', value: fmtN(num('cliques_whatsapp')), icon: '📲' },
-        { label: 'Leads recebidos', value: fmtN(totalLeads), icon: '🎯' },
-        { label: 'Custo por lead', value: fmtR(custoPorLead), icon: '💰' },
-      ]
-    },
+    { title: 'Distribuição', color: 'text-blue-600', cols: 4, cards: [
+      { label: 'Alcance', value: fmtN(num('alcance')), icon: '📡' },
+      { label: 'Impressões', value: fmtN(num('impressoes')), icon: '👁️' },
+      { label: 'Novos seguidores', value: fmtN(num('novos_seguidores')), icon: '➕' },
+      { label: '% não seguidores', value: fmtP(num('nao_seguidores_pct')), icon: '🌍' },
+    ]},
+    { title: 'Engajamento', color: 'text-pink-600', cols: 5, cards: [
+      { label: 'Curtidas', value: fmtN(num('curtidas')), icon: '❤️' },
+      { label: 'Comentários', value: fmtN(num('comentarios')), icon: '💬' },
+      { label: 'Salvamentos', value: fmtN(num('salvamentos')), icon: '🔖' },
+      { label: 'Compartilhamentos', value: fmtN(num('compartilhamentos')), icon: '🔁' },
+      { label: 'Taxa de engajamento', value: fmtP(taxaEng), icon: '📈', highlight: true },
+    ]},
+    { title: 'Cliques & Conversão', color: 'text-green-600', cols: 4, cards: [
+      { label: 'Cliques no link bio', value: fmtN(num('cliques_bio')), icon: '🔗' },
+      { label: 'Cliques WhatsApp', value: fmtN(num('cliques_whatsapp')), icon: '📲' },
+      { label: 'Leads recebidos', value: fmtN(totalLeads), icon: '🎯' },
+      { label: 'Custo por lead', value: fmtR(custoPorLead), icon: '💰' },
+    ]},
   ]
 
   return (
     <div className="mb-8">
-      {/* Header do painel */}
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-base font-bold text-gray-800">Painel Orgânico</h2>
-          <p className="text-xs text-gray-400">Métricas do Instagram — preenchimento manual</p>
+          <p className="text-xs text-gray-400">Métricas mensais — preenchimento manual via Instagram Insights</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => navMes(-1)} className="w-7 h-7 rounded-lg border border-gray-200 bg-white flex items-center justify-center text-gray-400 hover:text-gray-600">‹</button>
@@ -297,11 +293,10 @@ function PainelOrganico({ leads }) {
         </div>
       </div>
 
-      {/* Seções de cards */}
       {secoes.map(sec => (
         <div key={sec.title} className="mb-4">
           <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${sec.color}`}>{sec.title}</p>
-          <div className="grid grid-cols-5 gap-3">
+          <div className={`grid grid-cols-${sec.cols} gap-3`}>
             {sec.cards.map(card => (
               <div key={card.label} className={`bg-white rounded-2xl p-4 shadow-sm border ${card.highlight ? 'border-pink-200 bg-pink-50/40' : 'border-brand-100/60'}`}>
                 <div className="flex items-center gap-1.5 mb-1">
@@ -315,29 +310,243 @@ function PainelOrganico({ leads }) {
         </div>
       ))}
 
-      {/* Modal de edição */}
       {editando && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6">
-            <h2 className="text-base font-bold text-gray-800 mb-1">Editar métricas — {MESES_NOME[mes]} {ano}</h2>
-            <p className="text-xs text-gray-400 mb-5">Preencha com os dados do Instagram Insights</p>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="text-base font-bold text-gray-800">Editar métricas — {MESES_NOME[mes]} {ano}</h2>
+              <button onClick={() => setEditando(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+            </div>
+            <p className="text-xs text-gray-400 mb-1">Abra o Instagram → <strong>Insights</strong> → selecione o período do mês completo</p>
+            <a href="https://www.instagram.com/businessmanager/" target="_blank" rel="noopener noreferrer" className="text-xs text-brand-500 underline mb-5 inline-block">Abrir Instagram Insights ↗</a>
+
+            {['distribuicao','engajamento','cliques'].map(group => {
+              const campos = CAMPOS_ORGANICO.filter(c => c.group === group)
+              const titulo = { distribuicao: 'Distribuição', engajamento: 'Engajamento', cliques: 'Cliques & Conversão' }[group]
+              return (
+                <div key={group} className="mb-5">
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">{titulo}</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {campos.map(c => (
+                      <div key={c.key}>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <label className="text-xs font-semibold text-gray-600">{c.label}</label>
+                          <Tooltip texto={c.onde} />
+                        </div>
+                        <input
+                          type="number"
+                          value={form[c.key] ?? ''}
+                          onChange={e => setForm(prev => ({ ...prev, [c.key]: e.target.value }))}
+                          placeholder="0"
+                          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-brand-400 focus:ring-1 focus:ring-brand-400"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+
+            <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
+              <button onClick={() => setEditando(false)} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
+              <button onClick={salvar} className="px-5 py-2 bg-brand-400 hover:bg-brand-500 text-white text-sm font-semibold rounded-xl">Salvar</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+const CRIATIVO_VAZIO = { nome: '', formato: 'Reel', pago: false, alcance: '', impressoes: '', curtidas: '', comentarios: '', salvamentos: '', compartilhamentos: '' }
+
+function CriativosSection({ mes, ano }) {
+  const [criativos, setCriativos] = useState(() => loadCriativos(ano, mes))
+  const [modalAberto, setModalAberto] = useState(false)
+  const [editIdx, setEditIdx] = useState(null)
+  const [form, setForm] = useState(CRIATIVO_VAZIO)
+
+  useEffect(() => { setCriativos(loadCriativos(ano, mes)) }, [ano, mes])
+
+  const save = (lista) => { saveCriativos(ano, mes, lista); setCriativos(lista) }
+
+  const abrirNovo = () => { setForm({ ...CRIATIVO_VAZIO }); setEditIdx(null); setModalAberto(true) }
+  const abrirEditar = (i) => { setForm({ ...criativos[i] }); setEditIdx(i); setModalAberto(true) }
+
+  const salvar = () => {
+    const c = {
+      ...form,
+      alcance: parseFloat(form.alcance) || 0,
+      impressoes: parseFloat(form.impressoes) || 0,
+      curtidas: parseFloat(form.curtidas) || 0,
+      comentarios: parseFloat(form.comentarios) || 0,
+      salvamentos: parseFloat(form.salvamentos) || 0,
+      compartilhamentos: parseFloat(form.compartilhamentos) || 0,
+    }
+    if (!c.nome.trim()) return
+    const lista = editIdx !== null
+      ? criativos.map((x, i) => i === editIdx ? c : x)
+      : [...criativos, c]
+    save(lista)
+    setModalAberto(false)
+  }
+
+  const excluir = (i) => { if (window.confirm('Excluir este criativo?')) save(criativos.filter((_, idx) => idx !== i)) }
+
+  const eng = (c) => c.curtidas + c.comentarios + c.salvamentos + c.compartilhamentos
+  const taxaEng = (c) => c.alcance > 0 ? ((eng(c) / c.alcance) * 100) : 0
+
+  const sorted = [...criativos].sort((a, b) => taxaEng(b) - taxaEng(a))
+
+  const COR_FORMATO = { Reel: 'bg-purple-100 text-purple-700', Carrossel: 'bg-blue-100 text-blue-700', Story: 'bg-pink-100 text-pink-700', 'Post estático': 'bg-gray-100 text-gray-600', Live: 'bg-red-100 text-red-700' }
+
+  const fmtN = (v) => Number(v || 0).toLocaleString('pt-BR')
+  const fmtP = (v) => v.toFixed(1) + '%'
+
+  const medalha = (i) => i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : ''
+
+  return (
+    <div className="mb-8">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-base font-bold text-gray-800">Criativos</h2>
+          <p className="text-xs text-gray-400">Rastreie cada post e veja qual performa melhor — {MESES_NOME[mes]} {ano}</p>
+        </div>
+        <button onClick={abrirNovo} className="px-3 py-1.5 bg-brand-400 hover:bg-brand-500 text-white rounded-xl text-xs font-semibold transition-colors">
+          + Adicionar criativo
+        </button>
+      </div>
+
+      {criativos.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-brand-100/60 shadow-sm p-10 text-center">
+          <p className="text-2xl mb-2">🎨</p>
+          <p className="text-sm font-medium text-gray-600 mb-1">Nenhum criativo registrado</p>
+          <p className="text-xs text-gray-400">Adicione seus posts, reels e stories para saber qual está gerando mais resultado.</p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-brand-100/60 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-xs text-gray-400 font-semibold uppercase tracking-wide border-b border-gray-100 bg-gray-50">
+                  <th className="px-4 py-3 text-left">#</th>
+                  <th className="px-4 py-3 text-left">Criativo</th>
+                  <th className="px-4 py-3 text-left">Formato</th>
+                  <th className="px-4 py-3 text-right">Alcance</th>
+                  <th className="px-4 py-3 text-right">Curtidas</th>
+                  <th className="px-4 py-3 text-right">Salv.</th>
+                  <th className="px-4 py-3 text-right">Comp.</th>
+                  <th className="px-4 py-3 text-right">Engajamento</th>
+                  <th className="px-4 py-3 text-right">Taxa eng.</th>
+                  <th className="px-4 py-3"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {sorted.map((c, i) => (
+                  <tr key={i} className={`border-b border-gray-50 hover:bg-brand-50/30 transition-colors ${i === 0 ? 'bg-yellow-50/40' : ''}`}>
+                    <td className="px-4 py-3 text-base">{medalha(i) || <span className="text-xs text-gray-400">{i + 1}</span>}</td>
+                    <td className="px-4 py-3">
+                      <p className="font-medium text-gray-800 max-w-[180px] truncate">{c.nome}</p>
+                      {c.pago && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium">pago</span>}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${COR_FORMATO[c.formato] || 'bg-gray-100 text-gray-600'}`}>{c.formato}</span>
+                    </td>
+                    <td className="px-4 py-3 text-right text-gray-600">{fmtN(c.alcance)}</td>
+                    <td className="px-4 py-3 text-right text-gray-600">{fmtN(c.curtidas)}</td>
+                    <td className="px-4 py-3 text-right text-gray-600">{fmtN(c.salvamentos)}</td>
+                    <td className="px-4 py-3 text-right text-gray-600">{fmtN(c.compartilhamentos)}</td>
+                    <td className="px-4 py-3 text-right font-semibold text-gray-800">{fmtN(eng(c))}</td>
+                    <td className="px-4 py-3 text-right">
+                      <span className={`font-bold ${i === 0 ? 'text-green-600' : 'text-gray-700'}`}>{fmtP(taxaEng(c))}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-1 justify-end">
+                        <button onClick={() => abrirEditar(criativos.indexOf(c))} className="text-gray-400 hover:text-gray-600 text-xs px-2 py-1 rounded-lg hover:bg-gray-100">✏️</button>
+                        <button onClick={() => excluir(criativos.indexOf(c))} className="text-gray-400 hover:text-red-500 text-xs px-2 py-1 rounded-lg hover:bg-red-50">🗑️</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Melhor por formato */}
+          {criativos.length >= 2 && (
+            <div className="px-5 py-4 border-t border-gray-100 bg-gray-50/60">
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Melhor por formato</p>
+              <div className="flex flex-wrap gap-2">
+                {FORMATOS_CRIATIVO.map(fmt => {
+                  const grupo = criativos.filter(c => c.formato === fmt)
+                  if (grupo.length === 0) return null
+                  const melhor = grupo.sort((a, b) => taxaEng(b) - taxaEng(a))[0]
+                  return (
+                    <div key={fmt} className="bg-white rounded-xl border border-gray-200 px-3 py-2 flex items-center gap-2">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${COR_FORMATO[fmt] || 'bg-gray-100 text-gray-600'}`}>{fmt}</span>
+                      <span className="text-xs text-gray-700 font-medium truncate max-w-[120px]">{melhor.nome}</span>
+                      <span className="text-xs font-bold text-green-600">{fmtP(taxaEng(melhor))}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {modalAberto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-bold text-gray-800">{editIdx !== null ? 'Editar criativo' : 'Novo criativo'}</h2>
+              <button onClick={() => setModalAberto(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+            </div>
+
+            <div className="space-y-3 mb-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Nome / descrição</label>
+                <input value={form.nome} onChange={e => setForm(p => ({ ...p, nome: e.target.value }))} placeholder="Ex: Reel antes e depois julho" className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-brand-400 focus:ring-1 focus:ring-brand-400" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Formato</label>
+                  <select value={form.formato} onChange={e => setForm(p => ({ ...p, formato: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-brand-400">
+                    {FORMATOS_CRIATIVO.map(f => <option key={f}>{f}</option>)}
+                  </select>
+                </div>
+                <div className="flex items-end pb-1">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={form.pago} onChange={e => setForm(p => ({ ...p, pago: e.target.checked }))} className="w-4 h-4 accent-brand-400" />
+                    <span className="text-sm text-gray-700 font-medium">Conteúdo pago / impulsionado</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Métricas do post</p>
             <div className="grid grid-cols-2 gap-3 mb-5">
-              {CAMPOS_ORGANICO.map(c => (
+              {[
+                { key: 'alcance', label: 'Alcance', onde: 'No post → "Ver insights" → Alcance' },
+                { key: 'impressoes', label: 'Impressões', onde: 'No post → "Ver insights" → Impressões' },
+                { key: 'curtidas', label: 'Curtidas', onde: 'Visível abaixo do post' },
+                { key: 'comentarios', label: 'Comentários', onde: 'Visível abaixo do post' },
+                { key: 'salvamentos', label: 'Salvamentos', onde: 'No post → "Ver insights" → Salvamentos' },
+                { key: 'compartilhamentos', label: 'Compartilhamentos', onde: 'No post → "Ver insights" → Compartilhamentos' },
+              ].map(c => (
                 <div key={c.key}>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1">{c.label}</label>
-                  <input
-                    type="number"
-                    value={form[c.key] ?? ''}
-                    onChange={e => setForm(prev => ({ ...prev, [c.key]: e.target.value }))}
-                    placeholder="0"
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-brand-400 focus:ring-1 focus:ring-brand-400"
-                  />
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <label className="text-xs font-semibold text-gray-600">{c.label}</label>
+                    <Tooltip texto={c.onde} />
+                  </div>
+                  <input type="number" value={form[c.key] ?? ''} onChange={e => setForm(p => ({ ...p, [c.key]: e.target.value }))} placeholder="0" className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-brand-400 focus:ring-1 focus:ring-brand-400" />
                 </div>
               ))}
             </div>
-            <div className="flex justify-end gap-3">
-              <button onClick={() => setEditando(false)} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
-              <button onClick={salvar} className="px-5 py-2 bg-brand-400 hover:bg-brand-500 text-white text-sm font-semibold rounded-xl">Salvar</button>
+
+            <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
+              <button onClick={() => setModalAberto(false)} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
+              <button onClick={salvar} disabled={!form.nome.trim()} className="px-5 py-2 bg-brand-400 hover:bg-brand-500 disabled:opacity-40 text-white text-sm font-semibold rounded-xl">Salvar</button>
             </div>
           </div>
         </div>
@@ -349,6 +558,11 @@ function PainelOrganico({ leads }) {
 export default function InstagramAnalytics() {
   const { leads } = useLeads()
   const { mes: mesFinanceiro, ano: anoFinanceiro } = useFinanceiro()
+  const [mesPainel, setMesPainel] = useState(new Date().getMonth())
+  const [anoPainel, setAnoPainel] = useState(new Date().getFullYear())
+  const navMes = (delta) => {
+    setMesPainel(m => { let nm = m + delta, na = anoPainel; if (nm < 0) { nm = 11; na-- } if (nm > 11) { nm = 0; na++ } setAnoPainel(na); return nm })
+  }
   const [config, setConfig] = useState(() => {
     try { return JSON.parse(localStorage.getItem('instagram_ads_config') || 'null') } catch { return null }
   })
@@ -413,7 +627,8 @@ export default function InstagramAnalytics() {
           </div>
         </div>
 
-        <PainelOrganico leads={leads} />
+        <PainelOrganico leads={leads} mes={mesPainel} ano={anoPainel} navMes={navMes} />
+        <CriativosSection mes={mesPainel} ano={anoPainel} />
         <LeadsOrigem leads={leads} periodo={periodo} />
 
         <div className="bg-white rounded-2xl border border-brand-100 p-8 text-center max-w-md mx-auto shadow-sm">
@@ -489,7 +704,8 @@ export default function InstagramAnalytics() {
       </div>
 
       {/* Painel orgânico — sempre visível */}
-      <PainelOrganico leads={leads} />
+      <PainelOrganico leads={leads} mes={mesPainel} ano={anoPainel} navMes={navMes} />
+      <CriativosSection mes={mesPainel} ano={anoPainel} />
 
       {/* Leads por origem — sempre visível */}
       <LeadsOrigem leads={leads} periodo={periodo} />
