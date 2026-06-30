@@ -198,6 +198,214 @@ const CAMPOS_ORGANICO = [
 
 const FORMATOS_CRIATIVO = ['Reel', 'Carrossel', 'Story', 'Post estático', 'Live']
 
+// ─── Instagram Graph API ─────────────────────────────────────────────────────
+const IG_KEY = 'instagram_graph_config'
+
+function loadIGConfig() { try { return JSON.parse(localStorage.getItem(IG_KEY) || 'null') } catch { return null } }
+function saveIGConfig(cfg) { localStorage.setItem(IG_KEY, JSON.stringify(cfg)) }
+
+async function igFetch(path, token) {
+  const res = await fetch(`${GRAPH_BASE}${path}${path.includes('?') ? '&' : '?'}access_token=${token}`)
+  const json = await res.json()
+  if (json.error) throw new Error(json.error.message)
+  return json
+}
+
+async function fetchIGInsights(userId, token, ano, mes) {
+  const inicio = new Date(ano, mes, 1)
+  const fim = new Date(ano, mes + 1, 1)
+  const since = Math.floor(inicio.getTime() / 1000)
+  const until = Math.floor(fim.getTime() / 1000)
+
+  const [insightsJson, profileJson] = await Promise.all([
+    igFetch(`/${userId}/insights?metric=reach,impressions,profile_views,accounts_engaged,follower_count,website_clicks,email_contacts,get_directions_clicks,phone_call_clicks,text_message_clicks&period=day&since=${since}&until=${until}`, token),
+    igFetch(`/${userId}?fields=followers_count,username,name`, token),
+  ])
+
+  const totals = {}
+  for (const m of (insightsJson.data || [])) {
+    totals[m.name] = (m.values || []).reduce((s, v) => s + (typeof v.value === 'number' ? v.value : 0), 0)
+  }
+
+  return {
+    alcance: totals.reach || 0,
+    impressoes: totals.impressions || 0,
+    novos_seguidores: totals.follower_count || 0,
+    curtidas: totals.accounts_engaged || 0,
+    cliques_bio: (totals.website_clicks || 0) + (totals.email_contacts || 0),
+    cliques_whatsapp: (totals.text_message_clicks || 0) + (totals.phone_call_clicks || 0),
+    visitas_perfil: totals.profile_views || 0,
+    followers_count: profileJson.followers_count || 0,
+    username: profileJson.username || '',
+  }
+}
+
+async function fetchIGPosts(userId, token, ano, mes) {
+  const inicio = new Date(ano, mes, 1)
+  const fim = new Date(ano, mes + 1, 0, 23, 59, 59)
+  const since = Math.floor(inicio.getTime() / 1000)
+  const until = Math.floor(fim.getTime() / 1000)
+
+  const mediaJson = await igFetch(
+    `/${userId}/media?fields=id,caption,media_type,timestamp,like_count,comments_count&since=${since}&until=${until}&limit=50`,
+    token
+  )
+
+  const posts = []
+  for (const media of (mediaJson.data || [])) {
+    let insights = {}
+    try {
+      const insJson = await igFetch(`/${media.id}/insights?metric=reach,impressions,saved,shares`, token)
+      for (const m of (insJson.data || [])) insights[m.name] = m.values?.[0]?.value ?? m.value ?? 0
+    } catch {}
+
+    const tipo = media.media_type === 'VIDEO' ? 'Reel' : media.media_type === 'CAROUSEL_ALBUM' ? 'Carrossel' : 'Post estático'
+    const data = new Date(media.timestamp)
+    posts.push({
+      nome: (media.caption || '').replace(/\n/g, ' ').slice(0, 60) || `${tipo} ${data.toLocaleDateString('pt-BR')}`,
+      formato: tipo,
+      pago: false,
+      alcance: insights.reach || 0,
+      impressoes: insights.impressions || 0,
+      curtidas: media.like_count || 0,
+      comentarios: media.comments_count || 0,
+      salvamentos: insights.saved || 0,
+      compartilhamentos: insights.shares || 0,
+      ig_id: media.id,
+    })
+  }
+  return posts
+}
+
+async function fetchIGAccounts(token) {
+  const pagesJson = await igFetch('/me/accounts?fields=id,name,instagram_business_account', token)
+  const contas = []
+  for (const page of (pagesJson.data || [])) {
+    if (page.instagram_business_account) {
+      const ig = await igFetch(`/${page.instagram_business_account.id}?fields=id,username,followers_count,profile_picture_url`, token)
+      contas.push({ userId: ig.id, username: ig.username, followers: ig.followers_count, pageId: page.id, pageName: page.name })
+    }
+  }
+  return contas
+}
+
+function IGSetupModal({ onSave, onClose, initial }) {
+  const [step, setStep] = useState(initial?.token ? 3 : 1)
+  const [token, setToken] = useState(initial?.token || '')
+  const [carregando, setCarregando] = useState(false)
+  const [contas, setContas] = useState([])
+  const [erro, setErro] = useState('')
+
+  const buscarContas = async () => {
+    if (!token.trim()) return
+    setCarregando(true); setErro('')
+    try {
+      const lista = await fetchIGAccounts(token.trim())
+      if (lista.length === 0) { setErro('Nenhuma conta do Instagram Business encontrada vinculada a este token.'); setCarregando(false); return }
+      setContas(lista); setStep(4)
+    } catch (e) { setErro(e.message) }
+    setCarregando(false)
+  }
+
+  const selecionar = (conta) => {
+    const expiry = new Date(); expiry.setDate(expiry.getDate() + 55)
+    onSave({ token: token.trim(), userId: conta.userId, username: conta.username, expiry: expiry.toISOString() })
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl p-6 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #f9ce34, #ee2a7b, #6228d7)' }}>
+              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+            </div>
+            <h2 className="text-base font-bold text-gray-800">Conectar Instagram Insights</h2>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+        </div>
+
+        {/* Steps */}
+        {step <= 3 && (
+          <div className="space-y-4 mb-6">
+            <div className={`rounded-xl p-4 border ${step === 1 ? 'border-brand-300 bg-brand-50' : 'border-gray-100 bg-gray-50'}`}>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="w-5 h-5 rounded-full bg-brand-400 text-white text-xs flex items-center justify-center font-bold">1</span>
+                <p className="text-sm font-semibold text-gray-700">Criar App gratuito no Meta</p>
+              </div>
+              <p className="text-xs text-gray-500 mb-2">Acesse developers.facebook.com/apps → "Criar app" → "Outro" → "Business" → dê qualquer nome (ex: "Clinica Analytics")</p>
+              <a href="https://developers.facebook.com/apps/creation/" target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-brand-500 underline">Criar app agora ↗</a>
+            </div>
+
+            <div className={`rounded-xl p-4 border ${step === 2 ? 'border-brand-300 bg-brand-50' : 'border-gray-100 bg-gray-50'}`}>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="w-5 h-5 rounded-full bg-brand-400 text-white text-xs flex items-center justify-center font-bold">2</span>
+                <p className="text-sm font-semibold text-gray-700">Gerar token no Graph API Explorer</p>
+              </div>
+              <p className="text-xs text-gray-500 mb-1">1. Abra o Graph API Explorer</p>
+              <p className="text-xs text-gray-500 mb-1">2. Selecione seu app no dropdown "Meta App"</p>
+              <p className="text-xs text-gray-500 mb-1">3. Clique em "Generate Access Token"</p>
+              <p className="text-xs text-gray-500 mb-2">4. Marque as permissões: <strong>instagram_basic</strong>, <strong>instagram_manage_insights</strong>, <strong>pages_show_list</strong>, <strong>pages_read_engagement</strong></p>
+              <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-brand-500 underline">Abrir Graph API Explorer ↗</a>
+            </div>
+
+            <div className={`rounded-xl p-4 border ${step === 3 ? 'border-brand-300 bg-brand-50' : 'border-gray-100 bg-gray-50'}`}>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="w-5 h-5 rounded-full bg-brand-400 text-white text-xs flex items-center justify-center font-bold">3</span>
+                <p className="text-sm font-semibold text-gray-700">Cole o token aqui</p>
+              </div>
+              <textarea value={token} onChange={e => setToken(e.target.value)} placeholder="EAAxxxxxxx..." rows={3} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm font-mono text-gray-700 resize-none focus:outline-none focus:border-brand-400 focus:ring-1 focus:ring-brand-400 mb-2" />
+              <p className="text-xs text-gray-400">O token dura ~60 dias. Te avisamos quando estiver próximo de expirar.</p>
+            </div>
+          </div>
+        )}
+
+        {step === 4 && (
+          <div className="mb-6">
+            <p className="text-sm font-semibold text-gray-700 mb-3">Selecione a conta do Instagram:</p>
+            <div className="space-y-2">
+              {contas.map(c => (
+                <button key={c.userId} onClick={() => selecionar(c)} className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:border-brand-300 hover:bg-brand-50 transition-colors text-left">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-400 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
+                    {c.username?.[0]?.toUpperCase() || 'I'}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">@{c.username}</p>
+                    <p className="text-xs text-gray-400">{c.followers?.toLocaleString('pt-BR')} seguidores · {c.pageName}</p>
+                  </div>
+                  <span className="ml-auto text-brand-400">→</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {erro && <p className="text-xs text-red-500 bg-red-50 rounded-xl px-3 py-2 mb-4">{erro}</p>}
+
+        {step <= 3 && (
+          <div className="flex items-center justify-between">
+            <div className="flex gap-2">
+              {[1,2,3].map(s => (
+                <button key={s} onClick={() => setStep(s)} className={`w-2 h-2 rounded-full transition-colors ${step === s ? 'bg-brand-400' : 'bg-gray-200'}`} />
+              ))}
+            </div>
+            <div className="flex gap-2">
+              {step > 1 && <button onClick={() => setStep(s => s - 1)} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Voltar</button>}
+              {step < 3 && <button onClick={() => setStep(s => s + 1)} className="px-4 py-2 bg-brand-400 hover:bg-brand-500 text-white text-sm font-semibold rounded-xl">Próximo</button>}
+              {step === 3 && (
+                <button onClick={buscarContas} disabled={!token.trim() || carregando} className="px-4 py-2 bg-brand-400 hover:bg-brand-500 disabled:opacity-40 text-white text-sm font-semibold rounded-xl">
+                  {carregando ? 'Buscando...' : 'Conectar →'}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 function loadOrganico(ano, mes) {
   try { return JSON.parse(localStorage.getItem(`instagram_organico_${ano}_${mes}`) || '{}') } catch { return {} }
 }
@@ -225,12 +433,37 @@ function Tooltip({ texto }) {
   )
 }
 
-function PainelOrganico({ leads, mes, ano, navMes }) {
+function PainelOrganico({ leads, mes, ano, navMes, igConfig, onOpenSetup }) {
   const [editando, setEditando] = useState(false)
   const [dados, setDados] = useState(() => loadOrganico(ano, mes))
   const [form, setForm] = useState({})
+  const [sincronizando, setSincronizando] = useState(false)
 
   useEffect(() => { setDados(loadOrganico(ano, mes)) }, [ano, mes])
+
+  const sincronizar = async () => {
+    if (!igConfig) return
+    setSincronizando(true)
+    try {
+      const resultado = await fetchIGInsights(igConfig.userId, igConfig.token, ano, mes)
+      const atual = loadOrganico(ano, mes)
+      const merged = {
+        ...atual,
+        alcance: resultado.alcance || atual.alcance,
+        impressoes: resultado.impressoes || atual.impressoes,
+        novos_seguidores: resultado.novos_seguidores || atual.novos_seguidores,
+        curtidas: resultado.curtidas || atual.curtidas,
+        cliques_bio: resultado.cliques_bio || atual.cliques_bio,
+        cliques_whatsapp: resultado.cliques_whatsapp || atual.cliques_whatsapp,
+      }
+      saveOrganico(ano, mes, merged)
+      setDados(merged)
+      alert(`✅ Dados sincronizados de @${igConfig.username}!\n\nAlcance: ${resultado.alcance?.toLocaleString('pt-BR')}\nImpressões: ${resultado.impressoes?.toLocaleString('pt-BR')}\nNovos seguidores: ${resultado.novos_seguidores?.toLocaleString('pt-BR')}`)
+    } catch (e) {
+      alert('Erro ao sincronizar: ' + e.message)
+    }
+    setSincronizando(false)
+  }
 
   const abrirEdicao = () => { setForm({ ...dados }); setEditando(true) }
   const salvar = () => {
@@ -281,14 +514,25 @@ function PainelOrganico({ leads, mes, ano, navMes }) {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-base font-bold text-gray-800">Painel Orgânico</h2>
-          <p className="text-xs text-gray-400">Métricas mensais — preenchimento manual via Instagram Insights</p>
+          <p className="text-xs text-gray-400">
+            {igConfig ? <span className="text-green-600 font-medium">● Conectado como @{igConfig.username}</span> : 'Preenchimento manual · conecte o Instagram para sincronizar'}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => navMes(-1)} className="w-7 h-7 rounded-lg border border-gray-200 bg-white flex items-center justify-center text-gray-400 hover:text-gray-600">‹</button>
           <span className="text-sm font-semibold text-gray-700 min-w-[110px] text-center">{MESES_NOME[mes]} {ano}</span>
           <button onClick={() => navMes(1)} className="w-7 h-7 rounded-lg border border-gray-200 bg-white flex items-center justify-center text-gray-400 hover:text-gray-600">›</button>
-          <button onClick={abrirEdicao} className="ml-2 px-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
-            ✏️ Editar métricas
+          {igConfig ? (
+            <button onClick={sincronizar} disabled={sincronizando} className="ml-2 px-3 py-1.5 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white rounded-xl text-xs font-semibold transition-colors">
+              {sincronizando ? 'Sincronizando...' : '🔄 Sincronizar'}
+            </button>
+          ) : (
+            <button onClick={onOpenSetup} className="ml-2 px-3 py-1.5 rounded-xl text-xs font-semibold text-white transition-colors" style={{ background: 'linear-gradient(135deg, #ee2a7b, #6228d7)' }}>
+              Conectar Instagram
+            </button>
+          )}
+          <button onClick={abrirEdicao} className="px-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+            ✏️ Editar
           </button>
         </div>
       </div>
@@ -360,11 +604,12 @@ function PainelOrganico({ leads, mes, ano, navMes }) {
 
 const CRIATIVO_VAZIO = { nome: '', formato: 'Reel', pago: false, alcance: '', impressoes: '', curtidas: '', comentarios: '', salvamentos: '', compartilhamentos: '' }
 
-function CriativosSection({ mes, ano }) {
+function CriativosSection({ mes, ano, igConfig, onOpenSetup }) {
   const [criativos, setCriativos] = useState(() => loadCriativos(ano, mes))
   const [modalAberto, setModalAberto] = useState(false)
   const [editIdx, setEditIdx] = useState(null)
   const [form, setForm] = useState(CRIATIVO_VAZIO)
+  const [importando, setImportando] = useState(false)
 
   useEffect(() => { setCriativos(loadCriativos(ano, mes)) }, [ano, mes])
 
@@ -393,6 +638,23 @@ function CriativosSection({ mes, ano }) {
 
   const excluir = (i) => { if (window.confirm('Excluir este criativo?')) save(criativos.filter((_, idx) => idx !== i)) }
 
+  const importarPosts = async () => {
+    if (!igConfig) return
+    setImportando(true)
+    try {
+      const posts = await fetchIGPosts(igConfig.userId, igConfig.token, ano, mes)
+      if (posts.length === 0) { alert('Nenhum post encontrado neste mês.'); setImportando(false); return }
+      const existentesIds = new Set(criativos.map(c => c.ig_id).filter(Boolean))
+      const novos = posts.filter(p => !existentesIds.has(p.ig_id))
+      const merged = [...criativos, ...novos]
+      save(merged)
+      alert(`✅ ${novos.length} post(s) importado(s)!${novos.length < posts.length ? `\n${posts.length - novos.length} já existiam.` : ''}`)
+    } catch (e) {
+      alert('Erro ao importar posts: ' + e.message)
+    }
+    setImportando(false)
+  }
+
   const eng = (c) => c.curtidas + c.comentarios + c.salvamentos + c.compartilhamentos
   const taxaEng = (c) => c.alcance > 0 ? ((eng(c) / c.alcance) * 100) : 0
 
@@ -412,9 +674,20 @@ function CriativosSection({ mes, ano }) {
           <h2 className="text-base font-bold text-gray-800">Criativos</h2>
           <p className="text-xs text-gray-400">Rastreie cada post e veja qual performa melhor — {MESES_NOME[mes]} {ano}</p>
         </div>
-        <button onClick={abrirNovo} className="px-3 py-1.5 bg-brand-400 hover:bg-brand-500 text-white rounded-xl text-xs font-semibold transition-colors">
-          + Adicionar criativo
-        </button>
+        <div className="flex items-center gap-2">
+          {igConfig ? (
+            <button onClick={importarPosts} disabled={importando} className="px-3 py-1.5 rounded-xl text-xs font-semibold text-white disabled:opacity-50 transition-colors" style={{ background: 'linear-gradient(135deg, #ee2a7b, #6228d7)' }}>
+              {importando ? 'Importando...' : '📥 Importar posts do mês'}
+            </button>
+          ) : (
+            <button onClick={onOpenSetup} className="px-3 py-1.5 rounded-xl text-xs font-semibold text-white transition-colors" style={{ background: 'linear-gradient(135deg, #ee2a7b, #6228d7)' }}>
+              Conectar para importar
+            </button>
+          )}
+          <button onClick={abrirNovo} className="px-3 py-1.5 bg-brand-400 hover:bg-brand-500 text-white rounded-xl text-xs font-semibold transition-colors">
+            + Adicionar manual
+          </button>
+        </div>
       </div>
 
       {criativos.length === 0 ? (
@@ -563,6 +836,9 @@ export default function InstagramAnalytics() {
   const navMes = (delta) => {
     setMesPainel(m => { let nm = m + delta, na = anoPainel; if (nm < 0) { nm = 11; na-- } if (nm > 11) { nm = 0; na++ } setAnoPainel(na); return nm })
   }
+  const [igConfig, setIGConfig] = useState(() => loadIGConfig())
+  const [showIGSetup, setShowIGSetup] = useState(false)
+  const salvarIGConfig = (cfg) => { saveIGConfig(cfg); setIGConfig(cfg); setShowIGSetup(false) }
   const [config, setConfig] = useState(() => {
     try { return JSON.parse(localStorage.getItem('instagram_ads_config') || 'null') } catch { return null }
   })
@@ -627,8 +903,8 @@ export default function InstagramAnalytics() {
           </div>
         </div>
 
-        <PainelOrganico leads={leads} mes={mesPainel} ano={anoPainel} navMes={navMes} />
-        <CriativosSection mes={mesPainel} ano={anoPainel} />
+        <PainelOrganico leads={leads} mes={mesPainel} ano={anoPainel} navMes={navMes} igConfig={igConfig} onOpenSetup={() => setShowIGSetup(true)} />
+        <CriativosSection mes={mesPainel} ano={anoPainel} igConfig={igConfig} onOpenSetup={() => setShowIGSetup(true)} />
         <LeadsOrigem leads={leads} periodo={periodo} />
 
         <div className="bg-white rounded-2xl border border-brand-100 p-8 text-center max-w-md mx-auto shadow-sm">
@@ -647,6 +923,7 @@ export default function InstagramAnalytics() {
         </div>
 
         {showConfig && <ConfigModal onSave={saveConfig} />}
+        {showIGSetup && <IGSetupModal onSave={salvarIGConfig} onClose={() => setShowIGSetup(false)} initial={igConfig} />}
       </div>
     )
   }
@@ -704,8 +981,8 @@ export default function InstagramAnalytics() {
       </div>
 
       {/* Painel orgânico — sempre visível */}
-      <PainelOrganico leads={leads} mes={mesPainel} ano={anoPainel} navMes={navMes} />
-      <CriativosSection mes={mesPainel} ano={anoPainel} />
+      <PainelOrganico leads={leads} mes={mesPainel} ano={anoPainel} navMes={navMes} igConfig={igConfig} onOpenSetup={() => setShowIGSetup(true)} />
+      <CriativosSection mes={mesPainel} ano={anoPainel} igConfig={igConfig} onOpenSetup={() => setShowIGSetup(true)} />
 
       {/* Leads por origem — sempre visível */}
       <LeadsOrigem leads={leads} periodo={periodo} />
@@ -791,6 +1068,14 @@ export default function InstagramAnalytics() {
           initialToken={config.token}
           initialAccountId={config.accountId}
           onClose={() => setShowConfig(false)}
+        />
+      )}
+
+      {showIGSetup && (
+        <IGSetupModal
+          onSave={salvarIGConfig}
+          onClose={() => setShowIGSetup(false)}
+          initial={igConfig}
         />
       )}
     </div>
