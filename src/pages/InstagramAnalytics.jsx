@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useLeads } from '../context/LeadsContext'
+import { useFinanceiro } from '../context/FinanceiroContext'
 
 const GRAPH_BASE = 'https://graph.facebook.com/v21.0'
 
@@ -180,8 +181,174 @@ function LeadsOrigem({ leads, periodo }) {
   )
 }
 
+const MESES_NOME = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+
+const CAMPOS_ORGANICO = [
+  { key: 'alcance',           label: 'Alcance',             group: 'distribuicao' },
+  { key: 'impressoes',        label: 'Impressões',           group: 'distribuicao' },
+  { key: 'novos_seguidores',  label: 'Novos seguidores',     group: 'distribuicao' },
+  { key: 'nao_seguidores_pct',label: '% não seguidores',     group: 'distribuicao', pct: true },
+  { key: 'curtidas',          label: 'Curtidas',             group: 'engajamento' },
+  { key: 'comentarios',       label: 'Comentários',          group: 'engajamento' },
+  { key: 'salvamentos',       label: 'Salvamentos',          group: 'engajamento' },
+  { key: 'compartilhamentos', label: 'Compartilhamentos',    group: 'engajamento' },
+  { key: 'cliques_bio',       label: 'Cliques no link bio',  group: 'cliques' },
+  { key: 'cliques_whatsapp',  label: 'Cliques no WhatsApp',  group: 'cliques' },
+]
+
+function loadOrganico(ano, mes) {
+  try { return JSON.parse(localStorage.getItem(`instagram_organico_${ano}_${mes}`) || '{}') } catch { return {} }
+}
+function saveOrganico(ano, mes, dados) {
+  localStorage.setItem(`instagram_organico_${ano}_${mes}`, JSON.stringify(dados))
+}
+
+function PainelOrganico({ leads }) {
+  const hoje = new Date()
+  const [mes, setMes] = useState(hoje.getMonth())
+  const [ano, setAno] = useState(hoje.getFullYear())
+  const [editando, setEditando] = useState(false)
+  const [dados, setDados] = useState(() => loadOrganico(hoje.getFullYear(), hoje.getMonth()))
+  const [form, setForm] = useState({})
+
+  useEffect(() => {
+    const d = loadOrganico(ano, mes)
+    setDados(d)
+  }, [ano, mes])
+
+  const navMes = (delta) => {
+    let m = mes + delta, a = ano
+    if (m < 0) { m = 11; a-- }
+    if (m > 11) { m = 0; a++ }
+    setMes(m); setAno(a)
+  }
+
+  const abrirEdicao = () => { setForm({ ...dados }); setEditando(true) }
+  const salvar = () => {
+    const limpo = {}
+    CAMPOS_ORGANICO.forEach(c => { const v = parseFloat(form[c.key]); if (!isNaN(v)) limpo[c.key] = v })
+    saveOrganico(ano, mes, limpo)
+    setDados(limpo)
+    setEditando(false)
+  }
+
+  // Leads do mês
+  const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
+  const leadsDoMes = leads.filter(l => {
+    const d = l.data || l.criadoEm?.slice(0, 10) || ''
+    return d.startsWith(prefix)
+  })
+  const totalLeads = leadsDoMes.length
+
+  const num = (k) => dados[k] ?? null
+  const engTotal = (num('curtidas') ?? 0) + (num('comentarios') ?? 0) + (num('salvamentos') ?? 0) + (num('compartilhamentos') ?? 0)
+  const taxaEng = num('alcance') > 0 ? ((engTotal / num('alcance')) * 100) : null
+
+  const trafego = parseFloat(localStorage.getItem(`social_trafego_${ano}_${mes}`)) || 0
+  const custoPorLead = trafego > 0 && totalLeads > 0 ? trafego / totalLeads : null
+
+  const fmtN = (v) => v == null ? '—' : Number(v).toLocaleString('pt-BR')
+  const fmtP = (v) => v == null ? '—' : v.toFixed(1) + '%'
+  const fmtR = (v) => v == null ? '—' : v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+
+  const secoes = [
+    {
+      title: 'Distribuição', color: 'text-blue-600', cards: [
+        { label: 'Alcance', value: fmtN(num('alcance')), icon: '📡' },
+        { label: 'Impressões', value: fmtN(num('impressoes')), icon: '👁️' },
+        { label: 'Novos seguidores', value: fmtN(num('novos_seguidores')), icon: '➕' },
+        { label: '% não seguidores', value: fmtP(num('nao_seguidores_pct')), icon: '🌍' },
+      ]
+    },
+    {
+      title: 'Engajamento', color: 'text-pink-600', cards: [
+        { label: 'Curtidas', value: fmtN(num('curtidas')), icon: '❤️' },
+        { label: 'Comentários', value: fmtN(num('comentarios')), icon: '💬' },
+        { label: 'Salvamentos', value: fmtN(num('salvamentos')), icon: '🔖' },
+        { label: 'Compartilhamentos', value: fmtN(num('compartilhamentos')), icon: '🔁' },
+        { label: 'Taxa de engajamento', value: fmtP(taxaEng), icon: '📈', highlight: true },
+      ]
+    },
+    {
+      title: 'Cliques & Conversão', color: 'text-green-600', cards: [
+        { label: 'Cliques no link bio', value: fmtN(num('cliques_bio')), icon: '🔗' },
+        { label: 'Cliques WhatsApp', value: fmtN(num('cliques_whatsapp')), icon: '📲' },
+        { label: 'Leads recebidos', value: fmtN(totalLeads), icon: '🎯' },
+        { label: 'Custo por lead', value: fmtR(custoPorLead), icon: '💰' },
+      ]
+    },
+  ]
+
+  return (
+    <div className="mb-8">
+      {/* Header do painel */}
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-base font-bold text-gray-800">Painel Orgânico</h2>
+          <p className="text-xs text-gray-400">Métricas do Instagram — preenchimento manual</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => navMes(-1)} className="w-7 h-7 rounded-lg border border-gray-200 bg-white flex items-center justify-center text-gray-400 hover:text-gray-600">‹</button>
+          <span className="text-sm font-semibold text-gray-700 min-w-[110px] text-center">{MESES_NOME[mes]} {ano}</span>
+          <button onClick={() => navMes(1)} className="w-7 h-7 rounded-lg border border-gray-200 bg-white flex items-center justify-center text-gray-400 hover:text-gray-600">›</button>
+          <button onClick={abrirEdicao} className="ml-2 px-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+            ✏️ Editar métricas
+          </button>
+        </div>
+      </div>
+
+      {/* Seções de cards */}
+      {secoes.map(sec => (
+        <div key={sec.title} className="mb-4">
+          <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${sec.color}`}>{sec.title}</p>
+          <div className="grid grid-cols-5 gap-3">
+            {sec.cards.map(card => (
+              <div key={card.label} className={`bg-white rounded-2xl p-4 shadow-sm border ${card.highlight ? 'border-pink-200 bg-pink-50/40' : 'border-brand-100/60'}`}>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="text-sm">{card.icon}</span>
+                  <p className="text-xs text-gray-400 font-medium leading-tight">{card.label}</p>
+                </div>
+                <p className={`text-lg font-bold ${card.highlight ? 'text-pink-600' : 'text-gray-800'}`}>{card.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {/* Modal de edição */}
+      {editando && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6">
+            <h2 className="text-base font-bold text-gray-800 mb-1">Editar métricas — {MESES_NOME[mes]} {ano}</h2>
+            <p className="text-xs text-gray-400 mb-5">Preencha com os dados do Instagram Insights</p>
+            <div className="grid grid-cols-2 gap-3 mb-5">
+              {CAMPOS_ORGANICO.map(c => (
+                <div key={c.key}>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">{c.label}</label>
+                  <input
+                    type="number"
+                    value={form[c.key] ?? ''}
+                    onChange={e => setForm(prev => ({ ...prev, [c.key]: e.target.value }))}
+                    placeholder="0"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-brand-400 focus:ring-1 focus:ring-brand-400"
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setEditando(false)} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
+              <button onClick={salvar} className="px-5 py-2 bg-brand-400 hover:bg-brand-500 text-white text-sm font-semibold rounded-xl">Salvar</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function InstagramAnalytics() {
   const { leads } = useLeads()
+  const { mes: mesFinanceiro, ano: anoFinanceiro } = useFinanceiro()
   const [config, setConfig] = useState(() => {
     try { return JSON.parse(localStorage.getItem('instagram_ads_config') || 'null') } catch { return null }
   })
@@ -246,6 +413,7 @@ export default function InstagramAnalytics() {
           </div>
         </div>
 
+        <PainelOrganico leads={leads} />
         <LeadsOrigem leads={leads} periodo={periodo} />
 
         <div className="bg-white rounded-2xl border border-brand-100 p-8 text-center max-w-md mx-auto shadow-sm">
@@ -319,6 +487,9 @@ export default function InstagramAnalytics() {
           </button>
         </div>
       </div>
+
+      {/* Painel orgânico — sempre visível */}
+      <PainelOrganico leads={leads} />
 
       {/* Leads por origem — sempre visível */}
       <LeadsOrigem leads={leads} periodo={periodo} />
