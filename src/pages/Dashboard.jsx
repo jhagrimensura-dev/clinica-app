@@ -29,7 +29,8 @@ export default function Dashboard() {
   const countRecorrentes = lMesSemConsulta.filter(l => l.tipo === 'Recorrência').length
   const countIndicacaoLanc = lMesSemConsulta.filter(l => l.tipo === 'Indicação').length
   const ticketGeral = lMesSemConsulta.length > 0 ? (totalNovos + totalRecorrentes + totalIndicacaoLanc) / lMesSemConsulta.length : 0
-  const ticketNovos = countNovos > 0 ? totalNovos / countNovos : 0
+  const totalConsultasNovos = lMes.filter(l => l.tipo === 'Novo' && isConsulta(l)).reduce((acc, l) => acc + (l.valorTaxa || 0) + (l.valorTratamento || 0), 0)
+  const ticketNovos = countNovos > 0 ? (totalNovos + totalConsultasNovos) / countNovos : 0
   const ticketRecorrentes = countRecorrentes > 0 ? totalRecorrentes / countRecorrentes : 0
   const ticketIndicacao = countIndicacaoLanc > 0 ? totalIndicacaoLanc / countIndicacaoLanc : 0
   const ticketDiario = diasAtendimento > 0 ? totalGeral / diasAtendimento : 0
