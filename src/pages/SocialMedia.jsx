@@ -71,7 +71,7 @@ const dataHoje = `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMon
 export default function SocialMedia() {
   const { mes, ano, setMes, setAno, posts, setPosts } = useClinica()
   const { getMes, setTrafego: saveTrafego, setSeguidores: saveSeguidores, rotina, salvarRotina, carregarMes } = useSocial()
-  const { getLeadsPorOrigem } = useLeads()
+  const { getLeadsPorOrigem, leads } = useLeads()
 
   const mesAnterior = () => {
     if (mes === 0) { setMes(11); setAno(a => a - 1) }
@@ -129,8 +129,15 @@ export default function SocialMedia() {
   const porSeguidor = seguidores > 0 ? (trafego / seguidores).toFixed(2).replace('.', ',') : '—'
   const leadsNovos = getLeadsPorOrigem('leads_novos', ano, mes)
   const leadsIndicacao = getLeadsPorOrigem('indicacao', ano, mes)
-  const leads = leadsNovos.length + leadsIndicacao.length
-  const porLead = leads > 0 && trafego > 0 ? (trafego / leads).toFixed(2).replace('.', ',') : '—'
+  const totalLeads = leadsNovos.length + leadsIndicacao.length
+  const porLead = totalLeads > 0 && trafego > 0 ? (trafego / totalLeads).toFixed(2).replace('.', ',') : '—'
+
+  const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
+  const leadsPorDia = {}
+  leads.filter(l => l.data && l.data.startsWith(prefix)).forEach(l => {
+    const dia = parseInt(l.data.split('-')[2], 10)
+    if (!isNaN(dia)) leadsPorDia[dia] = (leadsPorDia[dia] || 0) + 1
+  })
 
   const salvarTrafego = () => {
     const v = parseFloat(inputTrafego.replace(/\./g, '').replace(',', '.'))
@@ -242,8 +249,8 @@ export default function SocialMedia() {
             <p className="text-sm text-gray-500 font-medium">Leads</p>
             <span className="text-brand-400">🔗</span>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{leads}</p>
-          <p className="text-xs text-gray-400 mt-1">{leads} leads recebidos</p>
+          <p className="text-2xl font-bold text-gray-900">{totalLeads}</p>
+          <p className="text-xs text-gray-400 mt-1">{totalLeads} leads recebidos</p>
           <p className="text-xs text-gray-400">R$ {porLead} por lead</p>
         </div>
 
@@ -305,7 +312,15 @@ export default function SocialMedia() {
                     onClick={() => isMesAtual && abrirModal(celula.dia)}
                     className={`min-h-[80px] p-2 border-r border-blue-50 last:border-r-0 transition-colors ${isMesAtual ? 'cursor-pointer hover:bg-blue-50' : 'bg-gray-50/50'}`}
                   >
-                    <span className={`text-xs font-bold ${isMesAtual ? 'text-gray-700' : 'text-gray-300'}`}>{celula.dia}</span>
+                    <div className="flex items-center justify-between gap-1">
+                      <span className={`text-xs font-bold ${isMesAtual ? 'text-gray-700' : 'text-gray-300'}`}>{celula.dia}</span>
+                      {isMesAtual && leadsPorDia[celula.dia] > 0 && (
+                        <span className="inline-flex items-center gap-0.5 bg-amber-400 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                          <svg viewBox="0 0 24 24" fill="currentColor" className="w-2.5 h-2.5"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                          {leadsPorDia[celula.dia]}
+                        </span>
+                      )}
+                    </div>
                     <div className="space-y-1 mt-1">
                       {postsDoDia.map((post) => (
                         <div key={post.id} className={`text-xs px-1.5 py-0.5 rounded-md font-medium flex items-center justify-between gap-1 ${corDoTipo(post.tipo)}`}>
