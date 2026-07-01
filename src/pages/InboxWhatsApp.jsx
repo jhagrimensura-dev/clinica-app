@@ -355,12 +355,13 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
 
         <div>
           <label className="text-xs font-semibold text-gray-500 mb-1 block">Mídia</label>
-          <select value={midia} onChange={e => { setMidia(e.target.value); if (e.target.value !== 'Tráfego pago') setCriativo('') }}
+          <select value={midia} onChange={e => { setMidia(e.target.value); if (e.target.value !== 'Tráfego pago') setCriativo(''); if (e.target.value !== 'Link da BIO') setLinkBio('') }}
             className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 bg-white">
             <option value="">Não informado</option>
             <option value="Orgânico">Orgânico</option>
             <option value="Impulsionar">Impulsionar</option>
             <option value="Tráfego pago">Tráfego pago</option>
+            <option value="Link da BIO">Link da BIO</option>
           </select>
         </div>
 
@@ -373,7 +374,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
           </div>
         )}
 
-        {tipo === 'leads_novos' && (
+        {midia === 'Link da BIO' && (
           <div>
             <label className="text-xs font-semibold text-gray-500 mb-1 block">Link da BIO</label>
             <input value={linkBio} onChange={e => setLinkBio(e.target.value)}
@@ -399,7 +400,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
           <div className="flex gap-3">
           <button onClick={onFechar} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
           <button
-            onClick={() => nome.trim() && onSalvar({ nome: nome.trim(), telefone, responsavel, obs, origem: tipo, origemCustom, data, status, agendadoPara: agendadoPara || null, lembretes: lembretes.filter(l => l.data), lembrete: lembretes.find(l => l.data)?.data || null, lembreteHora: lembretes.find(l => l.data)?.hora || null, aniversario: aniversario || null, fonte: 'WhatsApp', midia: midia || null, criativo: midia === 'Tráfego pago' ? (criativo || null) : null, linkBio: tipo === 'leads_novos' ? (linkBio || null) : null })}
+            onClick={() => nome.trim() && onSalvar({ nome: nome.trim(), telefone, responsavel, obs, origem: tipo, origemCustom, data, status, agendadoPara: agendadoPara || null, lembretes: lembretes.filter(l => l.data), lembrete: lembretes.find(l => l.data)?.data || null, lembreteHora: lembretes.find(l => l.data)?.hora || null, aniversario: aniversario || null, fonte: 'WhatsApp', midia: midia || null, criativo: midia === 'Tráfego pago' ? (criativo || null) : null, linkBio: midia === 'Link da BIO' ? (linkBio || null) : null })}
             disabled={!nome.trim() || (status === 'Agendou' && !agendadoPara)}
             className="px-5 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded-xl disabled:opacity-40">
             {leadInicial ? 'Salvar alterações' : 'Registrar'}
