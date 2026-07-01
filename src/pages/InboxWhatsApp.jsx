@@ -82,6 +82,7 @@ function normalizeChats(data, instancia) {
 // ── Modal registrar lead ──────────────────────────────────────────
 const ORIGENS_PADRAO = ['WhatsApp', 'Instagram Anúncio', 'Instagram Orgânico', 'Tráfego', 'Indicação', 'Retorno', 'Resgate']
 const STATUS_PADRAO = ['Em aberto', 'Conversando', 'Follow #1', 'Follow #2', 'Follow #3', 'Agendou', 'Perdido']
+const STATUS_KEYS = ['em_aberto', 'conversando', 'follow1', 'follow2', 'follow3', 'agendado', 'perdido']
 
 const STATUS_DENORMALIZE = { 'em_aberto': 'Em aberto', 'conversando': 'Conversando', 'follow1': 'Follow #1', 'follow2': 'Follow #2', 'follow3': 'Follow #3', 'agendado': 'Agendou', 'perdido': 'Perdido' }
 
@@ -475,7 +476,7 @@ export default function InboxWhatsApp({ contaId }) {
   const leadsRef = useRef(leads)
   useEffect(() => { leadsRef.current = leads }, [leads])
   const { addLembrete, lembretes: todosLembretesAgenda, deleteLembrete } = useAgenda()
-  const { iaConhecimento, setIaConhecimento, iaExemplos, setIaExemplos, respostasRapidas: respostasConfig, setRespostasRapidas: setRespostasConfig } = useConfig()
+  const { iaConhecimento, setIaConhecimento, iaExemplos, setIaExemplos, respostasRapidas: respostasConfig, setRespostasRapidas: setRespostasConfig, leadStatus: leadStatusConfig } = useConfig()
   const [todasContas, setTodasContas] = useState(loadContas)
   const contaAtiva = contaId
     ? todasContas.find(c => c.id === contaId)
@@ -603,8 +604,8 @@ export default function InboxWhatsApp({ contaId }) {
   useEffect(() => {
     if (!menuMsg) return
     const handler = () => setMenuMsg(null)
-    document.addEventListener('click', handler)
-    return () => document.removeEventListener('click', handler)
+    const t = setTimeout(() => document.addEventListener('click', handler), 0)
+    return () => { clearTimeout(t); document.removeEventListener('click', handler) }
   }, [menuMsg])
 
   function notificar(nome, texto) {
@@ -1131,6 +1132,13 @@ export default function InboxWhatsApp({ contaId }) {
     'Follow #1': 'follow1', 'Follow #2': 'follow2', 'Follow #3': 'follow3',
     'Agendou': 'agendado', 'Perdido': 'perdido',
   }
+  const normalizeStatus = (label) => {
+    if (STATUS_KEYS.includes(label)) return label
+    const lista = leadStatusConfig || STATUS_PADRAO
+    const idx = lista.indexOf(label)
+    if (idx >= 0 && idx < STATUS_KEYS.length) return STATUS_KEYS[idx]
+    return STATUS_NORMALIZE[label] || 'em_aberto'
+  }
 
   const registrarLead = (tipo) => { setMenuLead(false); setModalLead(tipo) }
   const confirmarLead = async (dados) => {
@@ -1138,10 +1146,10 @@ export default function InboxWhatsApp({ contaId }) {
     const leadDuplicado = telLimpo.length > 5 && leads.find(l => (l.telefone || '').replace(/\D/g, '') === telLimpo)
     let novoLead
     if (leadDuplicado) {
-      await updateLead(leadDuplicado.id, { ...dados, status: STATUS_NORMALIZE[dados.status] || dados.status })
-      novoLead = { ...leadDuplicado, ...dados, status: STATUS_NORMALIZE[dados.status] || dados.status }
+      await updateLead(leadDuplicado.id, { ...dados, status: normalizeStatus(dados.status) })
+      novoLead = { ...leadDuplicado, ...dados, status: normalizeStatus(dados.status) }
     } else {
-      novoLead = await addLead({ ...dados, status: STATUS_NORMALIZE[dados.status] || dados.status })
+      novoLead = await addLead({ ...dados, status: normalizeStatus(dados.status) })
     }
     const todosLembretes = dados.lembretes?.length ? dados.lembretes : (dados.lembrete ? [{ data: dados.lembrete, hora: dados.lembreteHora || '', obs: '' }] : [])
     todosLembretes.filter(l => l.data).forEach((l, i) => {
@@ -1175,7 +1183,7 @@ export default function InboxWhatsApp({ contaId }) {
         criadoEm: Date.now(),
       })
     }
-    setLeadRegistrado(prev => ({ ...prev, [conversa.id]: { tipo: dados.origem, lead: novoLead || { ...dados, status: STATUS_NORMALIZE[dados.status] || dados.status } } }))
+    setLeadRegistrado(prev => ({ ...prev, [conversa.id]: { tipo: dados.origem, lead: novoLead || { ...dados, status: normalizeStatus(dados.status) } } }))
     // Atualiza nome imediatamente na conversa selecionada e na lista
     if (dados.nome && conversa?.id) {
       const updateNome = c => c.id === conversa.id ? { ...c, contato: { ...c.contato, nome: dados.nome } } : c
@@ -1479,7 +1487,7 @@ export default function InboxWhatsApp({ contaId }) {
                   <div className={`flex items-end gap-1 ${msg.minha ? 'justify-end' : 'justify-start'} group`}>
                     {/* ⋮ menu — só para mensagens próprias, à esquerda da bolha */}
                     {msg.minha && (
-                      <div className="relative self-end mb-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                      <div className={`relative self-end mb-2 transition-opacity flex-shrink-0 ${menuMsg === msg.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                         <button onClick={() => setMenuMsg(menuMsg === msg.id ? null : msg.id)}
                           className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-200 text-base leading-none">
                           ⋮
@@ -1831,7 +1839,7 @@ export default function InboxWhatsApp({ contaId }) {
           onDeletarLembrete={deleteLembrete}
           onSalvar={(dados) => {
             if (editarLeadRegistrado.lead?.id) {
-              updateLead(editarLeadRegistrado.lead.id, { ...dados, status: STATUS_NORMALIZE[dados.status] || dados.status })
+              updateLead(editarLeadRegistrado.lead.id, { ...dados, status: normalizeStatus(dados.status) })
               setLeadRegistrado(prev => ({ ...prev, [conversa.id]: { ...prev[conversa.id], lead: { ...editarLeadRegistrado.lead, ...dados } } }))
             }
             const todosLembretes = dados.lembretes?.length ? dados.lembretes : (dados.lembrete ? [{ data: dados.lembrete, hora: dados.lembreteHora || '', obs: '' }] : [])
