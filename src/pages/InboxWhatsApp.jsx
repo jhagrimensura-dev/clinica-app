@@ -547,6 +547,7 @@ export default function InboxWhatsApp({ contaId }) {
   const [menuOpcoes, setMenuOpcoes] = useState(null)
   const [menuMsg, setMenuMsg] = useState(null)
   const [editandoMsg, setEditandoMsg] = useState(null)
+  const [respondendoMsg, setRespondendoMsg] = useState(null)
   const inputFotoRef = useRef(null)
   const inputArquivoRef = useRef(null)
   const textareaRef = useRef(null)
@@ -1056,19 +1057,24 @@ export default function InboxWhatsApp({ contaId }) {
   const enviarMensagem = async () => {
     if (!mensagem.trim() || !conversa || !contaAtiva?.instanciaId) return
     const texto = mensagem.trim()
+    const citando = respondendoMsg
     setMensagem('')
+    setRespondendoMsg(null)
     setEnviando(true)
 
     const localId = `local-${Date.now()}`
     const msgLocal = {
       id: localId, minha: true, texto,
       hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      citandoTexto: citando?.texto,
     }
     pendingMsgs.current.add(texto)
     setSelecionada(prev => ({ ...prev, mensagens: [...(prev?.mensagens || []), msgLocal] }))
 
     try {
-      await zapiFetch(contaAtiva, 'send-text', 'POST', { phone: conversa.id, message: texto })
+      const payload = { phone: conversa.id, message: texto }
+      if (citando?.id) payload.quoted = { messageId: citando.id }
+      await zapiFetch(contaAtiva, 'send-text', 'POST', payload)
 
       // Salva no Supabase também
       await supabase.from('whatsapp_mensagens').insert({
@@ -1491,6 +1497,13 @@ export default function InboxWhatsApp({ contaId }) {
                     </div>
                   )}
                   <div className={`flex items-end gap-1 ${msg.minha ? 'justify-end' : 'justify-start'} group`}>
+                    {/* Botão ↩ responder — mensagens recebidas (esquerda) */}
+                    {!msg.minha && (
+                      <button onClick={() => { setRespondendoMsg({ id: msg.id, texto: msg.texto, minha: false }); setTimeout(() => textareaRef.current?.focus(), 50) }}
+                        className="self-end mb-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-green-600 rounded-full hover:bg-gray-100 text-sm">
+                        ↩
+                      </button>
+                    )}
                     {/* ⋮ menu — só para mensagens próprias, à esquerda da bolha */}
                     {msg.minha && (
                       <div className={`relative self-end mb-2 transition-opacity flex-shrink-0 ${menuMsg === msg.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
@@ -1500,6 +1513,8 @@ export default function InboxWhatsApp({ contaId }) {
                         </button>
                         {menuMsg === msg.id && (
                           <div className="absolute bottom-7 right-0 bg-white rounded-xl shadow-lg border border-gray-100 py-1 w-36 z-20">
+                            <button onClick={() => { setRespondendoMsg({ id: msg.id, texto: msg.texto, minha: true }); setMenuMsg(null); setTimeout(() => textareaRef.current?.focus(), 50) }}
+                              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">↩ Responder</button>
                             <button onClick={() => { setEditandoMsg({ id: msg.id, texto: msg.texto }); setMenuMsg(null) }}
                               className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">✏️ Editar</button>
                             <button onClick={() => apagarMensagem(msg.id)}
@@ -1628,6 +1643,15 @@ export default function InboxWhatsApp({ contaId }) {
             </div>
           )}
 
+          {respondendoMsg && (
+            <div className="bg-green-50 border-t border-green-200 px-4 py-2 flex items-center gap-3 flex-shrink-0">
+              <div className="flex-1 min-w-0 border-l-2 border-green-400 pl-2">
+                <p className="text-[10px] font-semibold text-green-600 mb-0.5">{respondendoMsg.minha ? 'Você' : conversa?.contato?.nome || 'Contato'}</p>
+                <p className="text-xs text-gray-500 truncate">{respondendoMsg.texto}</p>
+              </div>
+              <button onClick={() => setRespondendoMsg(null)} className="text-gray-400 hover:text-gray-600 flex-shrink-0 text-lg leading-none">×</button>
+            </div>
+          )}
           <div className="bg-white border-t border-gray-100 px-4 py-3 flex items-end gap-2 flex-shrink-0 relative">
             {/* Menu + */}
             <div className="relative">
