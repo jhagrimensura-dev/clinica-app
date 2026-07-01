@@ -78,8 +78,8 @@ export function LeadsProvider({ children }) {
       })
 
     const channel = supabase
-      .channel(`leads:all`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, ({ eventType, new: n, old: o }) => {
+      .channel(`leads:${clinicaId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads', filter: `clinica_id=eq.${clinicaId}` }, ({ eventType, new: n, old: o }) => {
         if (eventType === 'INSERT') setLeads(prev => prev.find(l => l.id === n.id) ? prev : [...prev, fromDB(n)])
         else if (eventType === 'UPDATE') setLeads(prev => prev.map(l => l.id === n.id ? fromDB(n) : l))
         else if (eventType === 'DELETE') setLeads(prev => prev.filter(l => l.id !== o.id))

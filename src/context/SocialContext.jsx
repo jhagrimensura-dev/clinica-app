@@ -86,8 +86,8 @@ export function SocialProvider({ children }) {
   useEffect(() => {
     if (!clinicaId) return
     const channel = supabase
-      .channel(`social:all`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'social_metricas' }, ({ new: n }) => {
+      .channel(`social:${clinicaId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'social_metricas', filter: `clinica_id=eq.${clinicaId}` }, ({ new: n }) => {
         if (n) {
           const key = `${n.ano}-${n.mes}`
           const val = { trafego: n.trafego ?? 0, seguidores: n.seguidores ?? 0 }
@@ -95,7 +95,7 @@ export function SocialProvider({ children }) {
           setMetricas(prev => ({ ...prev, [key]: val }))
         }
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'social_rotina' }, ({ new: n }) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'social_rotina', filter: `clinica_id=eq.${clinicaId}` }, ({ new: n }) => {
         if (n?.dados) setRotina(n.dados)
       })
       .subscribe()
