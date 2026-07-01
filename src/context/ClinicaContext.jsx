@@ -82,10 +82,7 @@ export function ClinicaProvider({ children }) {
     Promise.all([
       supabase.from('clinica_metas').select('*').eq('clinica_id', clinicaId).eq('ano', ano).eq('mes', mes).maybeSingle(),
       supabase.from('clinica_posts').select('*').eq('clinica_id', clinicaId).eq('ano', ano).eq('mes', mes).maybeSingle(),
-    ]).then(([{ data: meta, error: metaErr }, { data: posts, error: postsErr }]) => {
-      if (metaErr) console.error('[clinica_metas] load error:', metaErr)
-      if (postsErr) console.error('[clinica_posts] load error:', postsErr)
-      console.log('[clinica_posts] loaded:', posts, 'for', mesKey, 'clinicaId:', clinicaId)
+    ]).then(([{ data: meta }, { data: posts }]) => {
       setDadosPorMes(prev => ({
         ...prev,
         [mesKey]: {
@@ -181,12 +178,7 @@ export function ClinicaProvider({ children }) {
         supabase.from('clinica_posts').upsert(
           { clinica_id: clinicaId, ano, mes, posts: next },
           { onConflict: 'clinica_id,ano,mes' }
-        ).then(({ error }) => {
-          if (error) console.error('[clinica_posts] upsert error:', error)
-          else console.log('[clinica_posts] saved OK, posts:', next.length)
-        })
-      } else {
-        console.warn('[clinica_posts] clinicaId is null, skipping save')
+        )
       }
       return updated
     })
