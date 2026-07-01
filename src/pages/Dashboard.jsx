@@ -77,11 +77,11 @@ export default function Dashboard() {
           <div className="space-y-2 pt-2 border-t border-gray-100">
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Novos</span>
-              <span className="font-medium text-gray-800">{fmt(totalNovos)} <span className="text-brand-400 text-xs ml-1">{countNovos} venda(s)</span></span>
+              <span className="font-medium text-gray-800">{fmt(totalNovos)} <span className="text-brand-400 text-xs ml-1">{countNovos} venda(s)</span> <span className="text-gray-400 text-xs">({totalGeral > 0 ? ((totalNovos / totalGeral) * 100).toFixed(0) : 0}%)</span></span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Recorrência</span>
-              <span className="font-medium text-gray-800">{fmt(totalRecorrentes)} <span className="text-brand-400 text-xs ml-1">{countRecorrentes} venda(s)</span></span>
+              <span className="font-medium text-gray-800">{fmt(totalRecorrentes)} <span className="text-brand-400 text-xs ml-1">{countRecorrentes} venda(s)</span> <span className="text-gray-400 text-xs">({totalGeral > 0 ? ((totalRecorrentes / totalGeral) * 100).toFixed(0) : 0}%)</span></span>
             </div>
           </div>
         </div>
