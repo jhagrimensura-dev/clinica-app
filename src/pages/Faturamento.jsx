@@ -3,6 +3,8 @@ import { useFinanceiro } from '../context/FinanceiroContext'
 import { useVendas } from '../context/VendasContext'
 import { usePacientes } from '../context/PacientesContext'
 import { useConfig } from '../context/ConfigContext'
+import { useAuth } from '../context/AuthContext'
+import { FATURAMENTO_JUN2026 } from '../data/faturamentoImportJun2026'
 
 const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 const FORMAS_PGTO = ['PIX', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Transferência', 'Boleto']
@@ -536,9 +538,21 @@ export default function Faturamento() {
   const { lancamentos, addLancamento, removeLancamento, updateLancamento } = useVendas()
   const { pacientes } = usePacientes()
   const { procedimentos: procsFromDB, setProcedimentos } = useConfig()
+  const { userRole } = useAuth()
   const procs = procsFromDB || PROCS_DEFAULT
   const [modal, setModal] = useState(false)
   const [editando, setEditando] = useState(null)
+  const [importando, setImportando] = useState(false)
+
+  const reimportarJun2026 = async () => {
+    if (!window.confirm('Isso vai apagar todos os lançamentos de junho/2026 e reimportar os 47 do Excel. Confirma?')) return
+    setImportando(true)
+    const deJunho = lancamentos.filter(l => l.data?.startsWith('2026-06'))
+    for (const l of deJunho) await removeLancamento(l.id)
+    for (const entry of FATURAMENTO_JUN2026) await addLancamento(entry)
+    setImportando(false)
+    alert('Importação concluída! 47 lançamentos de junho/2026 importados.')
+  }
 
   const handleProcsChange = (novos) => setProcedimentos(novos)
 
@@ -580,6 +594,12 @@ export default function Faturamento() {
             <span className="text-sm font-semibold text-gray-700 w-24 text-center">{MESES_FULL[mes].slice(0,3)} {ano}</span>
             <button onClick={() => navMes(1)} className="text-gray-400 hover:text-gray-600 px-1">›</button>
           </div>
+          {userRole !== 'Funcionário' && ano === 2026 && mes === 5 && (
+            <button onClick={reimportarJun2026} disabled={importando}
+              className="flex items-center gap-2 bg-amber-400 hover:bg-amber-500 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">
+              {importando ? 'Importando...' : '⬆️ Reimportar Jun/2026'}
+            </button>
+          )}
           <button onClick={() => setModal(true)} className="flex items-center gap-2 bg-brand-400 hover:bg-brand-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">
             + Novo Lançamento
           </button>
