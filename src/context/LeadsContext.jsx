@@ -101,9 +101,13 @@ export function LeadsProvider({ children }) {
   }
 
   const updateLead = async (id, updates) => {
-    setLeads(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l))
-    const updated = leads.find(l => l.id === id)
-    if (updated) await supabase.from('leads').update(toDB({ ...updated, ...updates }, clinicaId)).eq('id', id)
+    let toUpdate
+    setLeads(prev => {
+      const found = prev.find(l => l.id === id)
+      if (found) toUpdate = { ...found, ...updates }
+      return prev.map(l => l.id === id ? { ...l, ...updates } : l)
+    })
+    if (toUpdate) await supabase.from('leads').update(toDB(toUpdate, clinicaId)).eq('id', id)
   }
 
   const importLeads = async (leadsArray) => {
