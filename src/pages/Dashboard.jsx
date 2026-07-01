@@ -29,7 +29,9 @@ export default function Dashboard() {
   const countRecorrentes = lMesSemConsulta.filter(l => l.tipo === 'Recorrência').length
   const countIndicacaoLanc = lMesSemConsulta.filter(l => l.tipo === 'Indicação').length
   const ticketGeral = lMesSemConsulta.length > 0 ? (totalNovos + totalRecorrentes + totalIndicacaoLanc) / lMesSemConsulta.length : 0
-  const ticketNovos = countNovos > 0 ? totalNovos / countNovos : 0
+  const lMesNovosTotal = lMes.filter(l => l.tipo === 'Novo')
+  const totalNovosComConsulta = lMesNovosTotal.reduce((acc, l) => acc + (l.valorTratamento || 0) + (l.valorTaxa || 0), 0)
+  const ticketNovos = lMesNovosTotal.length > 0 ? totalNovosComConsulta / lMesNovosTotal.length : 0
   const ticketRecorrentes = countRecorrentes > 0 ? totalRecorrentes / countRecorrentes : 0
   const ticketIndicacao = countIndicacaoLanc > 0 ? totalIndicacaoLanc / countIndicacaoLanc : 0
   const ticketDiario = diasAtendimento > 0 ? totalGeral / diasAtendimento : 0
@@ -77,11 +79,11 @@ export default function Dashboard() {
           <div className="space-y-2 pt-2 border-t border-gray-100">
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Novos</span>
-              <span className="font-medium text-gray-800">{fmt(totalNovos)} <span className="text-brand-400 text-xs ml-1">{countNovos} venda(s)</span> <span className="text-gray-400 text-xs">({totalGeral > 0 ? ((totalNovos / totalGeral) * 100).toFixed(0) : 0}%)</span></span>
+              <span className="font-medium text-gray-800">{fmt(totalNovos)} <span className="text-brand-400 text-xs ml-1">{countNovos} venda(s)</span> <span className="text-gray-400 text-xs">({totalGeral > 0 ? ((totalNovos / totalGeral) * 100).toFixed(1) : 0}%)</span></span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Recorrência</span>
-              <span className="font-medium text-gray-800">{fmt(totalRecorrentes)} <span className="text-brand-400 text-xs ml-1">{countRecorrentes} venda(s)</span> <span className="text-gray-400 text-xs">({totalGeral > 0 ? ((totalRecorrentes / totalGeral) * 100).toFixed(0) : 0}%)</span></span>
+              <span className="font-medium text-gray-800">{fmt(totalRecorrentes)} <span className="text-brand-400 text-xs ml-1">{countRecorrentes} venda(s)</span> <span className="text-gray-400 text-xs">({totalGeral > 0 ? ((totalRecorrentes / totalGeral) * 100).toFixed(1) : 0}%)</span></span>
             </div>
           </div>
         </div>
