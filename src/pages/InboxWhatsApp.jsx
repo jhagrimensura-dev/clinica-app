@@ -84,7 +84,7 @@ const STATUS_PADRAO = ['Em aberto', 'Conversando', 'Follow #1', 'Follow #2', 'Fo
 
 const STATUS_DENORMALIZE = { 'em_aberto': 'Em aberto', 'conversando': 'Conversando', 'follow1': 'Follow #1', 'follow2': 'Follow #2', 'follow3': 'Follow #3', 'agendado': 'Agendou', 'perdido': 'Perdido' }
 
-function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, leadInicial, lembretesDaAgenda = [], onDeletarLembrete }) {
+function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, leadInicial, lembretesDaAgenda = [], onDeletarLembrete }) {
   const { leadOrigens, setLeadOrigens, leadStatus, setLeadStatus } = useConfig()
   const hoje = new Date().toISOString().split('T')[0]
   const [nome, setNome] = useState(leadInicial?.nome || contato.nome)
@@ -376,7 +376,14 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, leadInicial, le
             className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 resize-none" />
         </div>
 
-        <div className="flex justify-end gap-3 pt-1">
+        <div className="flex justify-between items-center pt-1">
+          {leadInicial && onDeletar ? (
+            <button onClick={() => { if (window.confirm('Excluir este lead?')) onDeletar(leadInicial.id) }}
+              className="px-4 py-2 text-sm text-red-500 border border-red-200 rounded-xl hover:bg-red-50">
+              Excluir lead
+            </button>
+          ) : <div />}
+          <div className="flex gap-3">
           <button onClick={onFechar} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
           <button
             onClick={() => nome.trim() && onSalvar({ nome: nome.trim(), telefone, responsavel, obs, origem: tipo, origemCustom, data, status, agendadoPara: agendadoPara || null, lembretes: lembretes.filter(l => l.data), lembrete: lembretes.find(l => l.data)?.data || null, lembreteHora: lembretes.find(l => l.data)?.hora || null, aniversario: aniversario || null, fonte: 'WhatsApp', midia: midia || null, criativo: midia === 'Tráfego pago' ? (criativo || null) : null })}
@@ -384,6 +391,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, leadInicial, le
             className="px-5 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded-xl disabled:opacity-40">
             {leadInicial ? 'Salvar alterações' : 'Registrar'}
           </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1747,6 +1755,11 @@ export default function InboxWhatsApp({ contaId }) {
               if (dataAniv <= hoje) anoAniv += 1
               addLembrete({ id: Date.now() + 99, leadNome: dados.nome, leadTelefone: dados.telefone || '', descricao: `🎂 Aniversário de ${dados.nome}`, data: `${anoAniv}-${mes}-${dia}`, hora: '09:00', cor: 'pink', concluido: false, criadoEm: Date.now() })
             }
+            setEditarLeadRegistrado(null)
+          }}
+          onDeletar={(id) => {
+            if (id) removeLead(id)
+            setLeadRegistrado(prev => { const n = { ...prev }; delete n[conversa.id]; return n })
             setEditarLeadRegistrado(null)
           }}
           onFechar={() => setEditarLeadRegistrado(null)}
