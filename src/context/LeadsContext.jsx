@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './AuthContext'
 
@@ -51,6 +51,7 @@ function loadLocal() {
 export function LeadsProvider({ children }) {
   const { clinicaId } = useAuth()
   const [leads, setLeads] = useState([])
+  const leadsRef = useRef([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -100,14 +101,18 @@ export function LeadsProvider({ children }) {
     return novo
   }
 
+  useEffect(() => { leadsRef.current = leads }, [leads])
+
   const updateLead = async (id, updates) => {
-    let toUpdate
-    setLeads(prev => {
-      const found = prev.find(l => l.id === id)
-      if (found) toUpdate = { ...found, ...updates }
-      return prev.map(l => l.id === id ? { ...l, ...updates } : l)
-    })
-    if (toUpdate) await supabase.from('leads').update(toDB(toUpdate, clinicaId)).eq('id', id)
+    const found = leadsRef.current.find(l => l.id === id)
+    setLeads(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l))
+    if (found) {
+      const { error } = await supabase.from('leads').update(toDB({ ...found, ...updates }, clinicaId)).eq('id', id)
+      if (error) console.error('updateLead error:', error, id, updates)
+    } else {
+      console.warn('updateLead: lead não encontrado, salvando somente os campos atualizados', id)
+      await supabase.from('leads').update(updates).eq('id', id)
+    }
   }
 
   const importLeads = async (leadsArray) => {
