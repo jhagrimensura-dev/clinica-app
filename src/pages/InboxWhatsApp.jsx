@@ -86,7 +86,7 @@ const STATUS_PADRAO = ['Em aberto', 'Conversando', 'Follow #1', 'Follow #2', 'Fo
 const STATUS_DENORMALIZE = { 'em_aberto': 'Em aberto', 'conversando': 'Conversando', 'follow1': 'Follow #1', 'follow2': 'Follow #2', 'follow3': 'Follow #3', 'agendado': 'Agendou', 'perdido': 'Perdido' }
 
 function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, leadInicial, lembretesDaAgenda = [], onDeletarLembrete }) {
-  const { leadOrigens, setLeadOrigens, leadStatus, setLeadStatus } = useConfig()
+  const { leadOrigens, setLeadOrigens, leadStatus, setLeadStatus, leadMidias, setLeadMidias } = useConfig()
   const { userRole } = useAuth()
   const isAdmin = userRole !== 'Funcionário'
   const hoje = new Date().toISOString().split('T')[0]
@@ -113,9 +113,14 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
   const [statusLista, setStatusLista] = useState(leadStatus || STATUS_PADRAO)
   const [editandoStatus, setEditandoStatus] = useState(false)
   const [novoStatus, setNovoStatus] = useState('')
+  const MIDIAS_PADRAO = ['Orgânico', 'Impulsionar', 'Tráfego pago', 'Link da BIO']
+  const [midiaOpcoes, setMidiaOpcoes] = useState(leadMidias || MIDIAS_PADRAO)
+  const [editandoMidia, setEditandoMidia] = useState(false)
+  const [novaMidia, setNovaMidia] = useState('')
 
   useEffect(() => { if (leadOrigens) setOrigens(leadOrigens) }, [leadOrigens])
   useEffect(() => { if (leadStatus) setStatusLista(leadStatus) }, [leadStatus])
+  useEffect(() => { if (leadMidias) setMidiaOpcoes(leadMidias) }, [leadMidias])
 
   function adicionarOrigem() {
     const v = novaOrigem.trim()
@@ -138,6 +143,17 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
     const nova = statusLista.filter(x => x !== s)
     setStatusLista(nova); setLeadStatus(nova)
     if (status === s) setStatus(nova[0] || '')
+  }
+  function adicionarMidia() {
+    const v = novaMidia.trim()
+    if (!v || midiaOpcoes.includes(v)) return
+    const nova = [...midiaOpcoes, v]
+    setMidiaOpcoes(nova); setLeadMidias(nova); setNovaMidia('')
+  }
+  function removerMidia(m) {
+    const nova = midiaOpcoes.filter(x => x !== m)
+    setMidiaOpcoes(nova); setLeadMidias(nova)
+    if (midia === m) setMidia('')
   }
 
   const ORIGENS = {
@@ -354,15 +370,46 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
         </div>
 
         <div>
-          <label className="text-xs font-semibold text-gray-500 mb-1 block">Mídia</label>
-          <select value={midia} onChange={e => { setMidia(e.target.value); if (e.target.value !== 'Tráfego pago') setCriativo(''); if (e.target.value !== 'Link da BIO') setLinkBio('') }}
-            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 bg-white">
-            <option value="">Não informado</option>
-            <option value="Orgânico">Orgânico</option>
-            <option value="Impulsionar">Impulsionar</option>
-            <option value="Tráfego pago">Tráfego pago</option>
-            <option value="Link da BIO">Link da BIO</option>
-          </select>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-xs font-semibold text-gray-500">Mídia</label>
+            {isAdmin && (
+              <button onClick={() => setEditandoMidia(v => !v)}
+                className="text-[10px] text-brand-500 hover:text-brand-700 font-semibold">
+                {editandoMidia ? 'Fechar' : '✎ Editar lista'}
+              </button>
+            )}
+          </div>
+          {editandoMidia ? (
+            <div className="border border-gray-200 rounded-xl p-3 space-y-1.5 bg-gray-50">
+              {midiaOpcoes.map((m, i) => (
+                <div key={m} className="flex items-center gap-1">
+                  <div className="flex flex-col gap-0.5 flex-shrink-0">
+                    <button onClick={() => { if (i === 0) return; const n = [...midiaOpcoes]; [n[i-1],n[i]]=[n[i],n[i-1]]; setMidiaOpcoes(n); setLeadMidias(n) }}
+                      disabled={i === 0} className="text-gray-300 hover:text-gray-500 disabled:opacity-20 leading-none text-[10px]">▲</button>
+                    <button onClick={() => { if (i === midiaOpcoes.length-1) return; const n = [...midiaOpcoes]; [n[i],n[i+1]]=[n[i+1],n[i]]; setMidiaOpcoes(n); setLeadMidias(n) }}
+                      disabled={i === midiaOpcoes.length-1} className="text-gray-300 hover:text-gray-500 disabled:opacity-20 leading-none text-[10px]">▼</button>
+                  </div>
+                  <span className="flex-1 text-sm text-gray-700">{m}</span>
+                  <button onClick={() => removerMidia(m)}
+                    className="text-gray-300 hover:text-red-400 text-xs font-bold flex-shrink-0">✕</button>
+                </div>
+              ))}
+              <div className="flex gap-2 pt-1 border-t border-gray-200">
+                <input value={novaMidia} onChange={e => setNovaMidia(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && adicionarMidia()}
+                  placeholder="Nova opção..."
+                  className="flex-1 text-sm border border-gray-200 rounded-lg px-2 py-1 outline-none focus:border-brand-300 bg-white" />
+                <button onClick={adicionarMidia}
+                  className="text-xs bg-brand-400 hover:bg-brand-500 text-white px-3 py-1 rounded-lg font-semibold">+ Add</button>
+              </div>
+            </div>
+          ) : (
+            <select value={midia} onChange={e => { setMidia(e.target.value); if (e.target.value !== 'Tráfego pago') setCriativo(''); if (e.target.value !== 'Link da BIO') setLinkBio('') }}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 bg-white">
+              <option value="">Não informado</option>
+              {midiaOpcoes.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          )}
         </div>
 
         {midia === 'Tráfego pago' && (
