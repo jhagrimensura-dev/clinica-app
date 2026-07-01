@@ -101,6 +101,8 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, leadInicial, le
   })
   const [aniversario, setAniversario] = useState(leadInicial?.aniversario || '')
   const [obs, setObs] = useState(leadInicial?.obs || '')
+  const [midia, setMidia] = useState(leadInicial?.midia || '')
+  const [criativo, setCriativo] = useState(leadInicial?.criativo || '')
   const [origens, setOrigens] = useState(leadOrigens || ORIGENS_PADRAO)
   const [editandoOrigens, setEditandoOrigens] = useState(false)
   const [novaOrigem, setNovaOrigem] = useState('')
@@ -348,6 +350,26 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, leadInicial, le
         </div>
 
         <div>
+          <label className="text-xs font-semibold text-gray-500 mb-1 block">Mídia</label>
+          <select value={midia} onChange={e => { setMidia(e.target.value); if (e.target.value !== 'Tráfego pago') setCriativo('') }}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 bg-white">
+            <option value="">Não informado</option>
+            <option value="Orgânico">Orgânico</option>
+            <option value="Impulsionar">Impulsionar</option>
+            <option value="Tráfego pago">Tráfego pago</option>
+          </select>
+        </div>
+
+        {midia === 'Tráfego pago' && (
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1 block">Criativo</label>
+            <input value={criativo} onChange={e => setCriativo(e.target.value)}
+              placeholder="Ex: Reel botox novembro, Story antes/depois..."
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300" />
+          </div>
+        )}
+
+        <div>
           <label className="text-xs font-semibold text-gray-500 mb-1 block">Observações</label>
           <textarea value={obs} onChange={e => setObs(e.target.value)} rows={3}
             placeholder="Ex: Interesse em preenchimento labial"
@@ -357,7 +379,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, leadInicial, le
         <div className="flex justify-end gap-3 pt-1">
           <button onClick={onFechar} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
           <button
-            onClick={() => nome.trim() && onSalvar({ nome: nome.trim(), telefone, responsavel, obs, origem: tipo, origemCustom, data, status, agendadoPara: agendadoPara || null, lembretes: lembretes.filter(l => l.data), lembrete: lembretes.find(l => l.data)?.data || null, lembreteHora: lembretes.find(l => l.data)?.hora || null, aniversario: aniversario || null, fonte: 'WhatsApp' })}
+            onClick={() => nome.trim() && onSalvar({ nome: nome.trim(), telefone, responsavel, obs, origem: tipo, origemCustom, data, status, agendadoPara: agendadoPara || null, lembretes: lembretes.filter(l => l.data), lembrete: lembretes.find(l => l.data)?.data || null, lembreteHora: lembretes.find(l => l.data)?.hora || null, aniversario: aniversario || null, fonte: 'WhatsApp', midia: midia || null, criativo: midia === 'Tráfego pago' ? (criativo || null) : null })}
             disabled={!nome.trim() || (status === 'Agendou' && !agendadoPara)}
             className="px-5 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded-xl disabled:opacity-40">
             {leadInicial ? 'Salvar alterações' : 'Registrar'}
