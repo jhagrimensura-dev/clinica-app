@@ -134,7 +134,7 @@ export default function SocialMedia() {
 
   const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
   const leadsPorDia = {}
-  leads.filter(l => l.data && l.data.startsWith(prefix)).forEach(l => {
+  leads.filter(l => l.origem === 'leads_novos' && l.data && l.data.startsWith(prefix)).forEach(l => {
     const dia = parseInt(l.data.split('-')[2], 10)
     if (!isNaN(dia)) leadsPorDia[dia] = (leadsPorDia[dia] || 0) + 1
   })
