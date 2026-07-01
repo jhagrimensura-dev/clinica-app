@@ -49,7 +49,10 @@ function parseMoeda(valor) {
 }
 
 function SelectProcedimento({ value, onChange, procs, onProcsChange }) {
+  const { userRole } = useAuth()
+  const isAdmin = userRole !== 'Funcionário'
   const [adicionando, setAdicionando] = useState(false)
+  const [editandoLista, setEditandoLista] = useState(false)
   const [novoNome, setNovoNome] = useState('')
   const [novoPrecoPorMl, setNovoPrecoPorMl] = useState('')
   const [novoUnidade, setNovoUnidade] = useState('ml')
@@ -67,6 +70,12 @@ function SelectProcedimento({ value, onChange, procs, onProcsChange }) {
   }
 
   const cancelar = () => { setAdicionando(false); setNovoNome(''); setNovoPrecoPorMl(''); setNovoUnidade('ml') }
+
+  const remover = (nome) => {
+    const novos = procs.filter(p => p.nome !== nome)
+    onProcsChange(novos)
+    if (value === nome) onChange('', 0, 0, 'ml')
+  }
 
   const valorForaDaLista = value && value !== '__novo__' && !procs.find(p => p.nome === value)
 
@@ -105,22 +114,45 @@ function SelectProcedimento({ value, onChange, procs, onProcsChange }) {
   }
 
   return (
-    <select value={value}
-      onChange={e => {
-        if (e.target.value === '__novo__') { setAdicionando(true); return }
-        const proc = procs.find(p => p.nome === e.target.value)
-        onChange(e.target.value, proc?.preco ?? 0, proc?.precoPorMl ?? 0, proc?.unidade ?? 'ml')
-      }}
-      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400 bg-white">
-      <option value="">Selecione um procedimento</option>
-      {valorForaDaLista && <option value={value}>{value}</option>}
-      {procs.map(p => (
-        <option key={p.nome} value={p.nome}>
-          {p.nome}{p.precoPorMl > 0 ? ` — R$ ${p.precoPorMl.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/${p.unidade || 'ml'}` : ''}
-        </option>
-      ))}
-      <option value="__novo__">+ Adicionar novo procedimento...</option>
-    </select>
+    <div className="space-y-1.5">
+      {isAdmin && (
+        <div className="flex justify-end">
+          <button type="button" onClick={() => setEditandoLista(v => !v)}
+            className="text-[11px] text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1">
+            ✎ {editandoLista ? 'Fechar' : 'Editar lista'}
+          </button>
+        </div>
+      )}
+      {editandoLista && isAdmin ? (
+        <div className="border border-gray-200 rounded-xl p-2 space-y-1 bg-gray-50 max-h-40 overflow-y-auto">
+          {procs.map(p => (
+            <div key={p.nome} className="flex items-center justify-between gap-2 px-2 py-1 rounded-lg bg-white border border-gray-100">
+              <span className="text-sm text-gray-700 truncate">{p.nome}</span>
+              <button type="button" onClick={() => remover(p.nome)}
+                className="text-red-400 hover:text-red-600 text-xs font-bold flex-shrink-0">✕</button>
+            </div>
+          ))}
+          {procs.length === 0 && <p className="text-xs text-gray-400 text-center py-1">Nenhum procedimento</p>}
+        </div>
+      ) : (
+        <select value={value}
+          onChange={e => {
+            if (e.target.value === '__novo__') { setAdicionando(true); return }
+            const proc = procs.find(p => p.nome === e.target.value)
+            onChange(e.target.value, proc?.preco ?? 0, proc?.precoPorMl ?? 0, proc?.unidade ?? 'ml')
+          }}
+          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400 bg-white">
+          <option value="">Selecione um procedimento</option>
+          {valorForaDaLista && <option value={value}>{value}</option>}
+          {procs.map(p => (
+            <option key={p.nome} value={p.nome}>
+              {p.nome}{p.precoPorMl > 0 ? ` — R$ ${p.precoPorMl.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/${p.unidade || 'ml'}` : ''}
+            </option>
+          ))}
+          <option value="__novo__">+ Adicionar novo procedimento...</option>
+        </select>
+      )}
+    </div>
   )
 }
 
