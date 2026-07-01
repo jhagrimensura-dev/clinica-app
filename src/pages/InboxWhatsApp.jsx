@@ -1145,11 +1145,20 @@ export default function InboxWhatsApp({ contaId }) {
     'Agendou': 'agendado', 'Perdido': 'perdido',
   }
   const normalizeStatus = (label) => {
+    if (!label) return 'em_aberto'
     if (STATUS_KEYS.includes(label)) return label
+    if (STATUS_NORMALIZE[label]) return STATUS_NORMALIZE[label]
+    const low = label.toLowerCase()
+    if (low.startsWith('follow #1') || low.startsWith('follow 1') || low.includes('#1')) return 'follow1'
+    if (low.startsWith('follow #2') || low.startsWith('follow 2') || low.includes('#2')) return 'follow2'
+    if (low.startsWith('follow #3') || low.startsWith('follow 3') || low.includes('#3')) return 'follow3'
+    if (low.startsWith('agend')) return 'agendado'
+    if (low.startsWith('perd')) return 'perdido'
+    if (low.startsWith('convers')) return 'conversando'
     const lista = leadStatusConfig || STATUS_PADRAO
     const idx = lista.indexOf(label)
     if (idx >= 0 && idx < STATUS_KEYS.length) return STATUS_KEYS[idx]
-    return STATUS_NORMALIZE[label] || 'em_aberto'
+    return 'em_aberto'
   }
 
   const registrarLead = (tipo) => { setMenuLead(false); setModalLead(tipo) }
