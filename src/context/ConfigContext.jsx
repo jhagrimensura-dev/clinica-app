@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 
 const ConfigContext = createContext()
 
-const KEYS = ['config_clinica', 'config_perfil', 'config_equipe', 'procedimentos_cadastro', 'lead_origens', 'lead_status', 'lead_midias', 'ia_conhecimento', 'ia_exemplos', 'respostas_rapidas']
+const KEYS = ['config_clinica', 'config_perfil', 'config_equipe', 'procedimentos_cadastro', 'lead_origens', 'lead_status', 'lead_midias', 'faturamento_responsaveis', 'ia_conhecimento', 'ia_exemplos', 'respostas_rapidas']
 
 const DEFAULTS = {
   config_clinica: {},
@@ -13,6 +13,7 @@ const DEFAULTS = {
   lead_origens: null,
   lead_status: null,
   lead_midias: null,
+  faturamento_responsaveis: null,
   ia_conhecimento: '',
   ia_exemplos: [],
   respostas_rapidas: [],
@@ -87,6 +88,8 @@ export function ConfigProvider({ children }) {
       setLeadStatus: (v) => setKey('lead_status', v),
       leadMidias: cfg.lead_midias,
       setLeadMidias: (v) => setKey('lead_midias', v),
+      faturamentoResponsaveis: cfg.faturamento_responsaveis,
+      setFaturamentoResponsaveis: (v) => setKey('faturamento_responsaveis', v),
       iaConhecimento: cfg.ia_conhecimento,
       setIaConhecimento: (v) => setKey('ia_conhecimento', v),
       iaExemplos: cfg.ia_exemplos,

@@ -124,6 +124,72 @@ function SelectProcedimento({ value, onChange, procs, onProcsChange }) {
   )
 }
 
+const RESPONSAVEIS_PADRAO = ['Dra. Amanda', 'Recepção', 'Equipe']
+
+function ResponsavelSelect({ value, onChange }) {
+  const { faturamentoResponsaveis, setFaturamentoResponsaveis } = useConfig()
+  const [lista, setLista] = useState(faturamentoResponsaveis || RESPONSAVEIS_PADRAO)
+  const [editando, setEditando] = useState(false)
+  const [novoNome, setNovoNome] = useState('')
+
+  useEffect(() => { if (faturamentoResponsaveis) setLista(faturamentoResponsaveis) }, [faturamentoResponsaveis])
+
+  function adicionar() {
+    const v = novoNome.trim()
+    if (!v || lista.includes(v)) return
+    const nova = [...lista, v]
+    setLista(nova); setFaturamentoResponsaveis(nova); setNovoNome('')
+  }
+  function remover(nome) {
+    const nova = lista.filter(x => x !== nome)
+    setLista(nova); setFaturamentoResponsaveis(nova)
+    if (value === nome) onChange('')
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1.5">
+        <label className="text-sm font-medium text-gray-700">Responsável</label>
+        <button type="button" onClick={() => setEditando(v => !v)}
+          className="text-[10px] text-brand-500 hover:text-brand-700 font-semibold">
+          {editando ? 'Fechar' : '✎ Editar lista'}
+        </button>
+      </div>
+      {editando ? (
+        <div className="border border-gray-200 rounded-xl p-3 space-y-1.5 bg-gray-50">
+          {lista.map((nome, i) => (
+            <div key={nome} className="flex items-center gap-1">
+              <div className="flex flex-col gap-0.5 flex-shrink-0">
+                <button type="button" onClick={() => { if (i === 0) return; const n = [...lista]; [n[i-1],n[i]]=[n[i],n[i-1]]; setLista(n); setFaturamentoResponsaveis(n) }}
+                  disabled={i === 0} className="text-gray-300 hover:text-gray-500 disabled:opacity-20 leading-none text-[10px]">▲</button>
+                <button type="button" onClick={() => { if (i === lista.length-1) return; const n = [...lista]; [n[i],n[i+1]]=[n[i+1],n[i]]; setLista(n); setFaturamentoResponsaveis(n) }}
+                  disabled={i === lista.length-1} className="text-gray-300 hover:text-gray-500 disabled:opacity-20 leading-none text-[10px]">▼</button>
+              </div>
+              <span className="flex-1 text-sm text-gray-700">{nome}</span>
+              <button type="button" onClick={() => remover(nome)}
+                className="text-gray-300 hover:text-red-400 text-xs font-bold flex-shrink-0">✕</button>
+            </div>
+          ))}
+          <div className="flex gap-2 pt-1 border-t border-gray-200">
+            <input value={novoNome} onChange={e => setNovoNome(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && adicionar()}
+              placeholder="Novo responsável..."
+              className="flex-1 text-sm border border-gray-200 rounded-lg px-2 py-1 outline-none focus:border-brand-400 bg-white" />
+            <button type="button" onClick={adicionar}
+              className="text-xs bg-brand-400 hover:bg-brand-500 text-white px-3 py-1 rounded-lg font-semibold">+ Add</button>
+          </div>
+        </div>
+      ) : (
+        <select value={value} onChange={e => onChange(e.target.value)}
+          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400 bg-white">
+          <option value="">Selecione o responsável</option>
+          {lista.map(nome => <option key={nome} value={nome}>{nome}</option>)}
+        </select>
+      )}
+    </div>
+  )
+}
+
 function PacienteCombobox({ value, onChange, pacientes, leads }) {
   const [busca, setBusca] = useState(value || '')
   const [aberto, setAberto] = useState(false)
@@ -261,14 +327,7 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes, leads, pr
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Responsável</label>
-              <select value={responsavel} onChange={e => setResponsavel(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400 bg-white">
-                <option value="">Selecione o responsável</option>
-                <option value="Dra. Amanda">Dra. Amanda</option>
-                <option value="Recepção">Recepção</option>
-                <option value="Equipe">Equipe</option>
-              </select>
+              <ResponsavelSelect value={responsavel} onChange={setResponsavel} />
             </div>
           </div>
 
@@ -445,14 +504,7 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Responsável</label>
-              <select value={responsavel} onChange={e => setResponsavel(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400 bg-white">
-                <option value="">Selecione o responsável</option>
-                <option value="Dra. Amanda">Dra. Amanda</option>
-                <option value="Recepção">Recepção</option>
-                <option value="Equipe">Equipe</option>
-              </select>
+              <ResponsavelSelect value={responsavel} onChange={setResponsavel} />
             </div>
           </div>
 
