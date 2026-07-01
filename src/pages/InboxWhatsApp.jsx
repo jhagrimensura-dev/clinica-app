@@ -937,17 +937,20 @@ export default function InboxWhatsApp({ contaId }) {
 
   const conversa = selecionada ? conversas.find(c => c.id === selecionada.id) || selecionada : null
 
-  // Quando troca de conversa, verifica se já há lead cadastrado com esse telefone
+  // Quando troca de conversa ou leads mudam, sincroniza o indicador de lead registrado
   useEffect(() => {
     if (!conversa) return
+    const tel = (conversa.contato?.telefone || conversa.id || '').replace(/\D/g, '')
+    const leadExistente = tel.length > 5 ? leads.find(l => (l.telefone || '').replace(/\D/g, '') === tel) : null
     setLeadRegistrado(prev => {
-      if (prev[conversa.id]) return prev
-      const tel = (conversa.contato?.telefone || conversa.id || '').replace(/\D/g, '')
-      const leadExistente = leads.find(l => (l.telefone || '').replace(/\D/g, '') === tel && tel.length > 5)
-      if (!leadExistente) return prev
+      if (!leadExistente) {
+        if (!prev[conversa.id]) return prev
+        const n = { ...prev }; delete n[conversa.id]; return n
+      }
+      if (prev[conversa.id]?.lead?.id === leadExistente.id) return prev
       return { ...prev, [conversa.id]: { tipo: leadExistente.origem || 'leads_recorrentes', lead: leadExistente } }
     })
-  }, [conversa?.id])
+  }, [conversa?.id, leads])
 
   function salvarRespostas(lista) {
     setRespostasRapidas(lista)
