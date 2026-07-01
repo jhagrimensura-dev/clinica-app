@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useLeads } from '../context/LeadsContext'
 import { useConfig } from '../context/ConfigContext'
 import { useAgenda } from '../context/AgendaContext'
+import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import Picker from '@emoji-mart/react'
 import data from '@emoji-mart/data'
@@ -86,6 +87,8 @@ const STATUS_DENORMALIZE = { 'em_aberto': 'Em aberto', 'conversando': 'Conversan
 
 function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, leadInicial, lembretesDaAgenda = [], onDeletarLembrete }) {
   const { leadOrigens, setLeadOrigens, leadStatus, setLeadStatus } = useConfig()
+  const { userRole } = useAuth()
+  const isAdmin = userRole !== 'Funcionário'
   const hoje = new Date().toISOString().split('T')[0]
   const [nome, setNome] = useState(leadInicial?.nome || contato.nome)
   const [telefone, setTelefone] = useState(leadInicial?.telefone || contato.telefone || '')
@@ -377,7 +380,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
         </div>
 
         <div className="flex justify-between items-center pt-1">
-          {leadInicial && onDeletar ? (
+          {leadInicial && onDeletar && isAdmin ? (
             <button onClick={() => { if (window.confirm('Excluir este lead?')) onDeletar(leadInicial.id) }}
               className="px-4 py-2 text-sm text-red-500 border border-red-200 rounded-xl hover:bg-red-50">
               Excluir lead
