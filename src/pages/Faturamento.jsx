@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useFinanceiro } from '../context/FinanceiroContext'
 import { useVendas } from '../context/VendasContext'
 import { usePacientes } from '../context/PacientesContext'
@@ -123,6 +123,52 @@ function SelectProcedimento({ value, onChange, procs, onProcsChange }) {
   )
 }
 
+function PacienteCombobox({ value, onChange, pacientes }) {
+  const [busca, setBusca] = useState(value || '')
+  const [aberto, setAberto] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => { setBusca(value || '') }, [value])
+
+  useEffect(() => {
+    function handleClick(e) { if (ref.current && !ref.current.contains(e.target)) setAberto(false) }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  const filtrados = busca.trim()
+    ? pacientes.filter(p => p.nome.toLowerCase().includes(busca.toLowerCase()))
+    : pacientes
+
+  const selecionar = (nome) => {
+    onChange(nome)
+    setBusca(nome)
+    setAberto(false)
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <input
+        value={busca}
+        onChange={e => { setBusca(e.target.value); onChange(e.target.value); setAberto(true) }}
+        onFocus={() => setAberto(true)}
+        placeholder="Digite o nome..."
+        className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400"
+      />
+      {aberto && filtrados.length > 0 && (
+        <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+          {filtrados.map(p => (
+            <button key={p.id} type="button" onMouseDown={() => selecionar(p.nome)}
+              className="w-full text-left px-3 py-2 text-sm hover:bg-brand-50 hover:text-brand-700 transition-colors first:rounded-t-xl last:rounded-b-xl">
+              {p.nome}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes, procs, onProcsChange }) {
   const hoje = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`
   const [data, setData] = useState(hoje)
@@ -188,11 +234,7 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes, procs, on
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">Nome do Paciente</label>
-              <select value={paciente} onChange={e => setPaciente(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400 bg-white">
-                <option value="">Selecione um paciente</option>
-                {pacientes.map(p => <option key={p.id} value={p.nome}>{p.nome}</option>)}
-              </select>
+              <PacienteCombobox value={paciente} onChange={setPaciente} pacientes={pacientes} />
             </div>
           </div>
 
@@ -376,11 +418,7 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">Nome do Paciente</label>
-              <select value={paciente} onChange={e => setPaciente(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400 bg-white">
-                <option value="">Selecione um paciente</option>
-                {pacientes.map(p => <option key={p.id} value={p.nome}>{p.nome}</option>)}
-              </select>
+              <PacienteCombobox value={paciente} onChange={setPaciente} pacientes={pacientes} />
             </div>
           </div>
 
