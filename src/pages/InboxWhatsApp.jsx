@@ -960,9 +960,18 @@ export default function InboxWhatsApp({ contaId }) {
           })
         }
         setConversas(prev => {
-          const updated = prev.map(c => c.id === selecionada.id
-            ? { ...c, mensagens: [...(c.mensagens || []), novaMsg], tsRaw: Date.now(), horario: novaMsg.hora }
-            : c)
+          const updated = prev.map(c => {
+            if (c.id !== selecionada.id) return c
+            const msgs = c.mensagens || []
+            // Já existe com mesmo id
+            if (msgs.some(x => x.id === novaMsg.id)) return { ...c, tsRaw: Date.now(), horario: novaMsg.hora }
+            // Msg própria duplicada (insert do frontend + webhook chegando juntos)
+            if (novaMsg.minha && msgs.some(x => x.minha && x.texto === novaMsg.texto && Math.abs((x.tsMs || 0) - (novaMsg.tsMs || 0)) < 30000)) {
+              // Substitui local-xxx pelo id real
+              return { ...c, mensagens: msgs.map(x => (x.id?.startsWith('local-') && x.texto === novaMsg.texto) ? novaMsg : x), tsRaw: Date.now(), horario: novaMsg.hora }
+            }
+            return { ...c, mensagens: [...msgs, novaMsg], tsRaw: Date.now(), horario: novaMsg.hora }
+          })
           return [updated.find(c => c.id === selecionada.id), ...updated.filter(c => c.id !== selecionada.id)]
         })
       })
