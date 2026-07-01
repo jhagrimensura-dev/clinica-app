@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useFinanceiro } from '../context/FinanceiroContext'
 import { useVendas } from '../context/VendasContext'
 import { usePacientes } from '../context/PacientesContext'
+import { useLeads } from '../context/LeadsContext'
 import { useConfig } from '../context/ConfigContext'
 import { useAuth } from '../context/AuthContext'
 
@@ -123,7 +124,7 @@ function SelectProcedimento({ value, onChange, procs, onProcsChange }) {
   )
 }
 
-function PacienteCombobox({ value, onChange, pacientes }) {
+function PacienteCombobox({ value, onChange, pacientes, leads }) {
   const [busca, setBusca] = useState(value || '')
   const [aberto, setAberto] = useState(false)
   const ref = useRef(null)
@@ -136,9 +137,19 @@ function PacienteCombobox({ value, onChange, pacientes }) {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
+  const nomesPackientes = new Set(pacientes.map(p => p.nome.toLowerCase()))
+  const leadsUnicos = (leads || [])
+    .filter(l => l.nome && !nomesPackientes.has(l.nome.toLowerCase()))
+    .reduce((acc, l) => { if (!acc.find(x => x.nome.toLowerCase() === l.nome.toLowerCase())) acc.push(l); return acc }, [])
+
+  const todasSugestoes = [
+    ...pacientes.map(p => ({ nome: p.nome, tipo: 'paciente' })),
+    ...leadsUnicos.map(l => ({ nome: l.nome, tipo: 'lead' })),
+  ].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+
   const filtrados = busca.trim()
-    ? pacientes.filter(p => p.nome.toLowerCase().includes(busca.toLowerCase()))
-    : pacientes
+    ? todasSugestoes.filter(p => p.nome.toLowerCase().includes(busca.toLowerCase()))
+    : todasSugestoes
 
   const selecionar = (nome) => {
     onChange(nome)
@@ -157,10 +168,11 @@ function PacienteCombobox({ value, onChange, pacientes }) {
       />
       {aberto && filtrados.length > 0 && (
         <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
-          {filtrados.map(p => (
-            <button key={p.id} type="button" onMouseDown={() => selecionar(p.nome)}
-              className="w-full text-left px-3 py-2 text-sm hover:bg-brand-50 hover:text-brand-700 transition-colors first:rounded-t-xl last:rounded-b-xl">
-              {p.nome}
+          {filtrados.map((p, i) => (
+            <button key={i} type="button" onMouseDown={() => selecionar(p.nome)}
+              className="w-full text-left px-3 py-2 text-sm hover:bg-brand-50 hover:text-brand-700 transition-colors first:rounded-t-xl last:rounded-b-xl flex items-center justify-between">
+              <span>{p.nome}</span>
+              {p.tipo === 'lead' && <span className="text-[10px] text-gray-400 font-medium ml-2 flex-shrink-0">lead</span>}
             </button>
           ))}
         </div>
@@ -169,7 +181,7 @@ function PacienteCombobox({ value, onChange, pacientes }) {
   )
 }
 
-function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes, procs, onProcsChange }) {
+function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes, leads, procs, onProcsChange }) {
   const hoje = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`
   const [data, setData] = useState(hoje)
   const [paciente, setPaciente] = useState('')
@@ -234,7 +246,7 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes, procs, on
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">Nome do Paciente</label>
-              <PacienteCombobox value={paciente} onChange={setPaciente} pacientes={pacientes} />
+              <PacienteCombobox value={paciente} onChange={setPaciente} pacientes={pacientes} leads={leads} />
             </div>
           </div>
 
@@ -351,7 +363,7 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes, procs, on
   )
 }
 
-function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pacientes, procs, onProcsChange }) {
+function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pacientes, leads, procs, onProcsChange }) {
   const [data, setData] = useState(lancamento.data)
   const [paciente, setPaciente] = useState(lancamento.paciente)
   const [tipo, setTipo] = useState(lancamento.tipo)
@@ -418,7 +430,7 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">Nome do Paciente</label>
-              <PacienteCombobox value={paciente} onChange={setPaciente} pacientes={pacientes} />
+              <PacienteCombobox value={paciente} onChange={setPaciente} pacientes={pacientes} leads={leads} />
             </div>
           </div>
 
@@ -574,6 +586,7 @@ export default function Faturamento() {
   const { ano, setAno, mes, setMes } = useFinanceiro()
   const { lancamentos, addLancamento, removeLancamento, updateLancamento } = useVendas()
   const { pacientes } = usePacientes()
+  const { leads } = useLeads()
   const { procedimentos: procsFromDB, setProcedimentos } = useConfig()
   const { userRole } = useAuth()
   const procs = procsFromDB || PROCS_DEFAULT
@@ -756,8 +769,8 @@ export default function Faturamento() {
         )}
       </div>
 
-      {modal && <ModalNovoLancamento onClose={() => setModal(false)} onSalvar={addLancamento} ano={ano} mes={mes} pacientes={pacientes} procs={procs} onProcsChange={handleProcsChange} />}
-      {editando && <ModalEditarLancamento lancamento={editando} onClose={() => setEditando(null)} onAtualizar={updateLancamento} onExcluir={removeLancamento} pacientes={pacientes} procs={procs} onProcsChange={handleProcsChange} />}
+      {modal && <ModalNovoLancamento onClose={() => setModal(false)} onSalvar={addLancamento} ano={ano} mes={mes} pacientes={pacientes} leads={leads} procs={procs} onProcsChange={handleProcsChange} />}
+      {editando && <ModalEditarLancamento lancamento={editando} onClose={() => setEditando(null)} onAtualizar={updateLancamento} onExcluir={removeLancamento} pacientes={pacientes} leads={leads} procs={procs} onProcsChange={handleProcsChange} />}
     </div>
   )
 }
