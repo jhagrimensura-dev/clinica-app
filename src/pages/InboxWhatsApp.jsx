@@ -106,6 +106,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
   const [obs, setObs] = useState(leadInicial?.obs || '')
   const [midia, setMidia] = useState(leadInicial?.midia || '')
   const [criativo, setCriativo] = useState(leadInicial?.criativo || '')
+  const [linkBio, setLinkBio] = useState(leadInicial?.linkBio || '')
   const [origens, setOrigens] = useState(leadOrigens || ORIGENS_PADRAO)
   const [editandoOrigens, setEditandoOrigens] = useState(false)
   const [novaOrigem, setNovaOrigem] = useState('')
@@ -372,6 +373,15 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
           </div>
         )}
 
+        {tipo === 'leads_novos' && (
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1 block">Link da BIO</label>
+            <input value={linkBio} onChange={e => setLinkBio(e.target.value)}
+              placeholder="Ex: link da bio, campanha, landing page..."
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300" />
+          </div>
+        )}
+
         <div>
           <label className="text-xs font-semibold text-gray-500 mb-1 block">Observações</label>
           <textarea value={obs} onChange={e => setObs(e.target.value)} rows={3}
@@ -389,7 +399,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
           <div className="flex gap-3">
           <button onClick={onFechar} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
           <button
-            onClick={() => nome.trim() && onSalvar({ nome: nome.trim(), telefone, responsavel, obs, origem: tipo, origemCustom, data, status, agendadoPara: agendadoPara || null, lembretes: lembretes.filter(l => l.data), lembrete: lembretes.find(l => l.data)?.data || null, lembreteHora: lembretes.find(l => l.data)?.hora || null, aniversario: aniversario || null, fonte: 'WhatsApp', midia: midia || null, criativo: midia === 'Tráfego pago' ? (criativo || null) : null })}
+            onClick={() => nome.trim() && onSalvar({ nome: nome.trim(), telefone, responsavel, obs, origem: tipo, origemCustom, data, status, agendadoPara: agendadoPara || null, lembretes: lembretes.filter(l => l.data), lembrete: lembretes.find(l => l.data)?.data || null, lembreteHora: lembretes.find(l => l.data)?.hora || null, aniversario: aniversario || null, fonte: 'WhatsApp', midia: midia || null, criativo: midia === 'Tráfego pago' ? (criativo || null) : null, linkBio: tipo === 'leads_novos' ? (linkBio || null) : null })}
             disabled={!nome.trim() || (status === 'Agendou' && !agendadoPara)}
             className="px-5 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded-xl disabled:opacity-40">
             {leadInicial ? 'Salvar alterações' : 'Registrar'}

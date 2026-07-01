@@ -19,6 +19,9 @@ const fromDB = (r) => ({
   obs: r.obs || '',
   aniversario: r.aniversario || null,
   criadoEm: r.criado_em,
+  midia: r.midia || null,
+  criativo: r.criativo || null,
+  linkBio: r.link_bio || null,
 })
 
 const toDB = (l, clinicaId) => ({
@@ -36,6 +39,9 @@ const toDB = (l, clinicaId) => ({
   proximo_followup: l.proximoFollowup || '',
   obs: l.obs || '',
   aniversario: l.aniversario || null,
+  midia: l.midia || null,
+  criativo: l.criativo || null,
+  link_bio: l.linkBio || null,
 })
 
 function loadLocal() {
