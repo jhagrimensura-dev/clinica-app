@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useClinica } from '../context/ClinicaContext'
 import { useSocial } from '../context/SocialContext'
+import { useLeads } from '../context/LeadsContext'
 
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
@@ -70,6 +71,7 @@ const dataHoje = `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMon
 export default function SocialMedia() {
   const { mes, ano, setMes, setAno, posts, setPosts } = useClinica()
   const { getMes, setTrafego: saveTrafego, setSeguidores: saveSeguidores, rotina, salvarRotina, carregarMes } = useSocial()
+  const { getLeadsPorOrigem } = useLeads()
 
   const mesAnterior = () => {
     if (mes === 0) { setMes(11); setAno(a => a - 1) }
@@ -125,8 +127,10 @@ export default function SocialMedia() {
   }
 
   const porSeguidor = seguidores > 0 ? (trafego / seguidores).toFixed(2).replace('.', ',') : '—'
-  const leads = 0
-  const porLead = leads > 0 ? (trafego / leads).toFixed(2).replace('.', ',') : '—'
+  const leadsNovos = getLeadsPorOrigem('leads_novos', ano, mes)
+  const leadsIndicacao = getLeadsPorOrigem('indicacao', ano, mes)
+  const leads = leadsNovos.length + leadsIndicacao.length
+  const porLead = leads > 0 && trafego > 0 ? (trafego / leads).toFixed(2).replace('.', ',') : '—'
 
   const salvarTrafego = () => {
     const v = parseFloat(inputTrafego.replace(/\./g, '').replace(',', '.'))
