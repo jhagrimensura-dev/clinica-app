@@ -44,6 +44,21 @@ const toDB = (l, clinicaId) => ({
   link_bio: l.linkBio || null,
 })
 
+// Converte só os campos que mudaram, sem incluir id/clinica_id (evita conflito com RLS)
+const updatesToDB = (updates) => {
+  const fieldMap = {
+    nome: 'nome', telefone: 'telefone', origem: 'origem', origemCustom: 'origem_custom',
+    data: 'data', responsavel: 'responsavel', fonte: 'fonte', status: 'status',
+    agendadoPara: 'agendado_para', proximoFollowup: 'proximo_followup',
+    obs: 'obs', aniversario: 'aniversario', midia: 'midia', criativo: 'criativo', linkBio: 'link_bio',
+  }
+  const out = {}
+  for (const [jsKey, dbCol] of Object.entries(fieldMap)) {
+    if (jsKey in updates) out[dbCol] = updates[jsKey] ?? null
+  }
+  return out
+}
+
 function loadLocal() {
   try { return JSON.parse(localStorage.getItem('clinica_leads') || '[]') } catch { return [] }
 }
@@ -104,15 +119,11 @@ export function LeadsProvider({ children }) {
   useEffect(() => { leadsRef.current = leads }, [leads])
 
   const updateLead = async (id, updates) => {
-    const found = leadsRef.current.find(l => l.id === id)
     setLeads(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l))
-    if (found) {
-      const { error } = await supabase.from('leads').update(toDB({ ...found, ...updates }, clinicaId)).eq('id', id)
-      if (error) console.error('updateLead error:', error, id, updates)
-    } else {
-      console.warn('updateLead: lead não encontrado, salvando somente os campos atualizados', id)
-      await supabase.from('leads').update(updates).eq('id', id)
-    }
+    const dbUpdates = updatesToDB(updates)
+    if (Object.keys(dbUpdates).length === 0) return
+    const { error } = await supabase.from('leads').update(dbUpdates).eq('id', id).eq('clinica_id', clinicaId)
+    if (error) console.error('updateLead error:', error, id, updates)
   }
 
   const importLeads = async (leadsArray) => {
