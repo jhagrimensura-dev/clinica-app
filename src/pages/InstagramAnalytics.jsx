@@ -181,6 +181,96 @@ function LeadsOrigem({ leads, periodo }) {
   )
 }
 
+const COR_MIDIA = {
+  'Orgânico':     { bg: 'bg-purple-100', text: 'text-purple-700', bar: '#6228d7' },
+  'Impulsionar':  { bg: 'bg-pink-100',   text: 'text-pink-700',   bar: '#ee2a7b' },
+  'Tráfego pago': { bg: 'bg-blue-100',   text: 'text-blue-700',   bar: '#3b82f6' },
+}
+
+function LeadsMidia({ leads, periodo }) {
+  const dias = PERIODO_DIAS[periodo] || 30
+  const corte = new Date()
+  corte.setDate(corte.getDate() - dias)
+  const cutoff = corte.toISOString().slice(0, 10)
+
+  const filtrados = leads.filter(l => {
+    const data = l.data || l.criadoEm?.slice(0, 10) || ''
+    return data >= cutoff && l.midia
+  })
+
+  const porMidia = {}
+  filtrados.forEach(l => {
+    porMidia[l.midia] = (porMidia[l.midia] || 0) + 1
+  })
+  const total = filtrados.length
+  const sorted = Object.entries(porMidia).sort((a, b) => b[1] - a[1])
+
+  const trafegoPago = filtrados.filter(l => l.midia === 'Tráfego pago' && l.criativo)
+  const porCriativo = {}
+  trafegoPago.forEach(l => {
+    porCriativo[l.criativo] = (porCriativo[l.criativo] || 0) + 1
+  })
+  const criativos = Object.entries(porCriativo).sort((a, b) => b[1] - a[1])
+
+  if (total === 0 && criativos.length === 0) return null
+
+  return (
+    <div className="bg-white rounded-2xl border border-brand-100/60 shadow-sm p-5 mb-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-bold text-gray-700">Leads por Mídia</h2>
+        <span className="text-xs text-gray-400">{total} leads com mídia nos últimos {dias} dias</span>
+      </div>
+
+      {total > 0 && (
+        <div className="space-y-3 mb-5">
+          {sorted.map(([midia, count]) => {
+            const cor = COR_MIDIA[midia] || { bg: 'bg-gray-100', text: 'text-gray-600', bar: '#9ca3af' }
+            const pct = total > 0 ? (count / total) * 100 : 0
+            return (
+              <div key={midia}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cor.bg} ${cor.text}`}>{midia}</span>
+                  <span className="text-xs font-bold text-gray-700">{count} <span className="text-gray-400 font-normal">({pct.toFixed(0)}%)</span></span>
+                </div>
+                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: cor.bar }} />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {criativos.length > 0 && (
+        <>
+          <div className="border-t border-gray-100 pt-4">
+            <p className="text-xs font-semibold text-gray-500 mb-3">Criativos — Tráfego pago</p>
+            <div className="space-y-2">
+              {criativos.map(([criativo, count], i) => {
+                const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}.`
+                const pct = trafegoPago.length > 0 ? (count / trafegoPago.length) * 100 : 0
+                return (
+                  <div key={criativo}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-gray-700 flex items-center gap-1.5">
+                        <span>{medal}</span>{criativo}
+                      </span>
+                      <span className="text-xs font-bold text-gray-700">{count} <span className="text-gray-400 font-normal">({pct.toFixed(0)}%)</span></span>
+                    </div>
+                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: '#3b82f6' }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 const MESES_NOME = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
 const CAMPOS_ORGANICO = [
@@ -905,6 +995,7 @@ export default function InstagramAnalytics() {
 
         <PainelOrganico leads={leads} mes={mesPainel} ano={anoPainel} navMes={navMes} igConfig={igConfig} onOpenSetup={() => setShowIGSetup(true)} />
         <CriativosSection mes={mesPainel} ano={anoPainel} igConfig={igConfig} onOpenSetup={() => setShowIGSetup(true)} />
+        <LeadsMidia leads={leads} periodo={periodo} />
         <LeadsOrigem leads={leads} periodo={periodo} />
 
         <div className="bg-white rounded-2xl border border-brand-100 p-8 text-center max-w-md mx-auto shadow-sm">
