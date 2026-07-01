@@ -80,8 +80,8 @@ export function ClinicaProvider({ children }) {
     if (!clinicaId || loadedMonths.has(mesKey)) return
 
     Promise.all([
-      supabase.from('clinica_metas').select('*').eq('ano', ano).eq('mes', mes).maybeSingle(),
-      supabase.from('clinica_posts').select('*').eq('ano', ano).eq('mes', mes).maybeSingle(),
+      supabase.from('clinica_metas').select('*').eq('clinica_id', clinicaId).eq('ano', ano).eq('mes', mes).maybeSingle(),
+      supabase.from('clinica_posts').select('*').eq('clinica_id', clinicaId).eq('ano', ano).eq('mes', mes).maybeSingle(),
     ]).then(([{ data: meta }, { data: posts }]) => {
       setDadosPorMes(prev => ({
         ...prev,
@@ -102,8 +102,8 @@ export function ClinicaProvider({ children }) {
   useEffect(() => {
     if (!clinicaId) return
     const channel = supabase
-      .channel(`clinica:all`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'clinica_metas' }, ({ eventType, new: n }) => {
+      .channel(`clinica:${clinicaId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'clinica_metas', filter: `clinica_id=eq.${clinicaId}` }, ({ eventType, new: n }) => {
         if (eventType === 'INSERT' || eventType === 'UPDATE') {
           const key = `${n.ano}-${n.mes}`
           setDadosPorMes(prev => ({
@@ -119,7 +119,7 @@ export function ClinicaProvider({ children }) {
           setLoadedMonths(prev => new Set([...prev, key]))
         }
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'clinica_posts' }, ({ eventType, new: n }) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'clinica_posts', filter: `clinica_id=eq.${clinicaId}` }, ({ eventType, new: n }) => {
         if (eventType === 'INSERT' || eventType === 'UPDATE') {
           const key = `${n.ano}-${n.mes}`
           setPostsPorMes(prev => ({ ...prev, [key]: n.posts || [] }))
