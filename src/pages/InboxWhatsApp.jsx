@@ -1117,9 +1117,6 @@ export default function InboxWhatsApp({ contaId }) {
   const salvarEdicaoMensagem = async () => {
     if (!editandoMsg) return
     const { id, texto } = editandoMsg
-    try {
-      await zapiFetch(contaAtiva, '/send-text', 'POST', { phone: selecionada.id, message: texto, editedMessageId: id })
-    } catch (_) {}
     const atualizar = (prev) => prev ? { ...prev, mensagens: (prev.mensagens || []).map(m => m.id === id ? { ...m, texto } : m) } : prev
     setSelecionada(atualizar)
     setConversas(prev => prev.map(c => c.id === selecionada?.id ? atualizar(c) : c))
