@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useRef } from 'react'
+import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
 const ConfigContext = createContext()
@@ -21,6 +21,7 @@ const DEFAULTS = {
 
 export function ConfigProvider({ children }) {
   const [cfg, setCfg] = useState(DEFAULTS)
+  const [novaVersao, setNovaVersao] = useState(false)
   const saveTimers = useRef({})
   const loaded = useRef(false)
 
@@ -69,7 +70,7 @@ export function ConfigProvider({ children }) {
         const res = await fetch('/?_v=' + Date.now(), { cache: 'no-store' })
         const html = await res.text()
         const match = html.match(/src="(\/assets\/index-[^"]+\.js)"/)
-        if (match && match[1] !== currentSrc) window.location.reload()
+        if (match && match[1] !== currentSrc) setNovaVersao(true)
       } catch {}
     }, 30000) : null
 
@@ -105,6 +106,17 @@ export function ConfigProvider({ children }) {
   }
 
   return (
+    <>
+    {novaVersao && (
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 bg-brand-600 text-white text-sm font-medium px-5 py-3 rounded-full shadow-lg">
+        <span>Nova versão disponível</span>
+        <button onClick={() => window.location.reload()}
+          className="bg-white text-brand-600 font-semibold text-xs px-3 py-1 rounded-full hover:bg-brand-50 transition-colors">
+          Atualizar agora
+        </button>
+        <button onClick={() => setNovaVersao(false)} className="opacity-60 hover:opacity-100 text-white ml-1">✕</button>
+      </div>
+    )}
     <ConfigContext.Provider value={{
       clinicaDados: cfg.config_clinica,
       setClinicaDados: (v) => setKey('config_clinica', v),
@@ -131,6 +143,7 @@ export function ConfigProvider({ children }) {
     }}>
       {children}
     </ConfigContext.Provider>
+    </>
   )
 }
 
