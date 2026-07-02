@@ -58,7 +58,7 @@ export function ConfigProvider({ children }) {
 
     const onVisible = () => { if (document.visibilityState === 'visible') loadFromDB() }
     document.addEventListener('visibilitychange', onVisible)
-    const interval = setInterval(loadFromDB, 30000)
+    const interval = setInterval(loadFromDB, 10000)
 
     // Realtime como bônus (pode não funcionar em todos os casos)
     const channel = supabase
