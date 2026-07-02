@@ -24,17 +24,27 @@ export function ConfigProvider({ children }) {
   const { clinicaId } = useAuth()
   const [cfg, setCfg] = useState(DEFAULTS)
   const saveTimers = useRef({})
+  const channelRef = useRef(null)
+
+  const reloadFromDB = () =>
+    supabase.from('configuracoes').select('chave,valor').in('chave', KEYS).then(({ data }) => {
+      if (data && data.length > 0) {
+        const map = {}
+        data.forEach(r => { map[r.chave] = r.valor })
+        setCfg(prev => ({ ...prev, ...map }))
+      }
+    })
 
   useEffect(() => {
     if (!clinicaId) return
-    // Carrega todas as chaves do Supabase
+
+    // Carga inicial
     supabase.from('configuracoes').select('chave,valor').in('chave', KEYS).then(async ({ data }) => {
       if (data && data.length > 0) {
         const map = {}
         data.forEach(r => { map[r.chave] = r.valor })
         setCfg(prev => ({ ...prev, ...map }))
       }
-
       // Migra chaves ausentes do localStorage
       const faltando = KEYS.filter(k => !data?.find(r => r.chave === k))
       const rows = []
@@ -48,43 +58,36 @@ export function ConfigProvider({ children }) {
           } catch { }
         }
       }
-      if (rows.length > 0) {
-        await supabase.from('configuracoes').upsert(rows, { onConflict: 'chave' })
-      }
+      if (rows.length > 0) await supabase.from('configuracoes').upsert(rows, { onConflict: 'chave' })
     })
 
-    // Realtime
+    // Broadcast: recebe sinal quando qualquer usuário salva uma config
     const channel = supabase
-      .channel(`configuracoes:${clinicaId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'configuracoes' }, ({ new: n }) => {
-        if (n && KEYS.includes(n.chave)) {
-          setCfg(prev => ({ ...prev, [n.chave]: n.valor }))
+      .channel(`config_sync:${clinicaId}`)
+      .on('broadcast', { event: 'config_updated' }, ({ payload }) => {
+        if (payload?.chave && KEYS.includes(payload.chave)) {
+          setCfg(prev => ({ ...prev, [payload.chave]: payload.valor }))
         }
       })
       .subscribe()
 
-    // Polling a cada 15s como fallback (configuracoes não tem clinica_id para filtro realtime)
-    const poll = setInterval(() => {
-      supabase.from('configuracoes').select('chave,valor').in('chave', KEYS).then(({ data }) => {
-        if (data && data.length > 0) {
-          const map = {}
-          data.forEach(r => { map[r.chave] = r.valor })
-          setCfg(prev => ({ ...prev, ...map }))
-        }
-      })
-    }, 15000)
-
-    return () => { supabase.removeChannel(channel); clearInterval(poll) }
+    channelRef.current = channel
+    return () => { supabase.removeChannel(channel); channelRef.current = null }
   }, [clinicaId])
 
   const setKey = (chave, valor) => {
     setCfg(prev => ({ ...prev, [chave]: valor }))
-    // Listas: salva imediatamente no Supabase para não perder no refresh
+
+    // Envia broadcast para sincronizar outras telas imediatamente
+    if (channelRef.current) {
+      channelRef.current.send({ type: 'broadcast', event: 'config_updated', payload: { chave, valor } })
+    }
+
+    // Salva no Supabase
     if (Array.isArray(valor)) {
       supabase.from('configuracoes').upsert({ chave, valor }, { onConflict: 'chave' })
       return
     }
-    // Textos/objetos: debounce para não sobrecarregar com digitação
     if (saveTimers.current[chave]) clearTimeout(saveTimers.current[chave])
     saveTimers.current[chave] = setTimeout(() => {
       supabase.from('configuracoes').upsert({ chave, valor }, { onConflict: 'chave' })
