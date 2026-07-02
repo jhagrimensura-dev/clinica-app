@@ -797,7 +797,7 @@ export default function Faturamento() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Faturamento</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Vendas</h1>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1 border border-gray-200 rounded-xl px-3 py-1.5 bg-white">
@@ -814,7 +814,7 @@ export default function Faturamento() {
       {/* Cards */}
       <div className="grid grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <p className="text-sm text-gray-500 font-medium mb-1">Faturamento Total</p>
+          <p className="text-sm text-gray-500 font-medium mb-1">Vendas Total</p>
           <p className="text-2xl font-bold text-gray-900">R$ {fmt(totalGeral)}</p>
           <p className="text-xs text-gray-400 mt-1">{lancamentosMes.length} lançamentos</p>
         </div>
@@ -870,7 +870,7 @@ export default function Faturamento() {
       {/* Tabela */}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-bold text-gray-800">Lançamentos de Faturamento</h2>
+          <h2 className="text-base font-bold text-gray-800">Lançamentos de Vendas</h2>
           <button
             onClick={() => {
               const headers = ['Data','Paciente','Tipo','Responsável','Procedimentos','Consultas (R$)','Tratamento','Total','Pagamento']

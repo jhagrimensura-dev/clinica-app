@@ -60,6 +60,19 @@ export function ConfigProvider({ children }) {
     document.addEventListener('visibilitychange', onVisible)
     const interval = setInterval(loadFromDB, 10000)
 
+    // Detecta novo deploy e recarrega automaticamente
+    const currentScript = [...document.querySelectorAll('script[src]')]
+      .find(s => s.src.includes('/assets/index-'))
+    const currentSrc = currentScript ? new URL(currentScript.src).pathname : null
+    const versionInterval = currentSrc ? setInterval(async () => {
+      try {
+        const res = await fetch('/?_v=' + Date.now(), { cache: 'no-store' })
+        const html = await res.text()
+        const match = html.match(/src="(\/assets\/index-[^"]+\.js)"/)
+        if (match && match[1] !== currentSrc) window.location.reload()
+      } catch {}
+    }, 30000) : null
+
     // Realtime como bônus (pode não funcionar em todos os casos)
     const channel = supabase
       .channel('configuracoes_all')
@@ -71,6 +84,7 @@ export function ConfigProvider({ children }) {
     return () => {
       document.removeEventListener('visibilitychange', onVisible)
       clearInterval(interval)
+      if (versionInterval) clearInterval(versionInterval)
       supabase.removeChannel(channel)
     }
   }, [])

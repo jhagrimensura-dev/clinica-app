@@ -28,7 +28,7 @@ const HORARIO_FUNC = {
 }
 
 const STATUS = {
-  agendado:   { label: 'Agendado',   bg: 'bg-blue-400',   text: 'text-white', light: 'bg-blue-100 border-blue-300 text-blue-800' },
+  agendado:   { label: 'Agendado',   bg: 'bg-brand-400',  text: 'text-white', light: 'bg-brand-100 border-brand-300 text-brand-800' },
   confirmado: { label: 'Confirmado', bg: 'bg-green-500',  text: 'text-white', light: 'bg-green-100 border-green-300 text-green-800' },
   atendido:   { label: 'Atendido',   bg: 'bg-gray-400',   text: 'text-white', light: 'bg-gray-100 border-gray-300 text-gray-600' },
   faltou:     { label: 'Faltou',     bg: 'bg-red-400',    text: 'text-white', light: 'bg-red-100 border-red-300 text-red-700' },
@@ -539,13 +539,13 @@ export default function Agenda() {
                   const fechado = !HORARIO_FUNC[dow]
                   return (
                     <th key={i} className={`border-b border-r border-gray-100 py-2 text-center
-                      ${isToday ? 'bg-brand-50' : fechado ? 'bg-blue-50' : 'bg-white'}`}>
+                      ${isToday ? 'bg-brand-50' : fechado ? 'bg-gray-50' : 'bg-white'}`}>
                       <p className={`text-xs font-bold uppercase tracking-wide
-                        ${isToday ? 'text-brand-400' : fechado ? 'text-blue-400' : 'text-gray-400'}`}>
+                        ${isToday ? 'text-brand-400' : fechado ? 'text-gray-400' : 'text-gray-400'}`}>
                         {DIAS_SEMANA[dow]}
                       </p>
                       <p className={`text-base font-bold leading-tight
-                        ${isToday ? 'text-brand-500' : fechado ? 'text-blue-400' : 'text-gray-700'}`}>
+                        ${isToday ? 'text-brand-500' : fechado ? 'text-gray-400' : 'text-gray-700'}`}>
                         {day.getDate()}
                       </p>
                     </th>
@@ -579,11 +579,11 @@ export default function Agenda() {
 
                       if (fechado && !appt) {
                         return (
-                          <td key={di} className={`border-r border-gray-200 bg-blue-50 ${borderClass}`}
+                          <td key={di} className={`border-r border-gray-200 bg-gray-50 ${borderClass}`}
                             style={{ height: '24px' }}>
                             {isHour && time === '07:00' && (
                               <div className="flex items-center justify-center h-full">
-                                <span className="text-xs font-bold text-blue-300 tracking-widest">FECHADO</span>
+                                <span className="text-xs font-bold text-gray-300 tracking-widest">FECHADO</span>
                               </div>
                             )}
                           </td>
