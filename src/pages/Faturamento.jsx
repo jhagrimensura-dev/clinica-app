@@ -774,11 +774,13 @@ export default function Faturamento() {
   const receitaPorProc = procs.map((p, i) => {
     let total = 0
     let totalMl = 0
+    let count = 0
     lancamentosMes.forEach(l => {
       if (!l.procedimentos) return
       const partes = l.procedimentos.split(' e ')
       const temEsse = partes.some(s => parseLinhaProc(s, procs).nome === p.nome)
       if (!temEsse) return
+      count++
       total += (l.valorTaxa || 0) + (l.valorTratamento || 0)
       if (p.mostraQtd) {
         partes.forEach(s => {
@@ -787,7 +789,7 @@ export default function Faturamento() {
         })
       }
     })
-    return { ...p, total, totalMl, cor: CORES_PROC[i % CORES_PROC.length] }
+    return { ...p, total, totalMl, count, cor: CORES_PROC[i % CORES_PROC.length] }
   }).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
   const maxReceita = Math.max(...receitaPorProc.map(p => p.total), 1)
 
@@ -846,6 +848,9 @@ export default function Faturamento() {
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-gray-600 flex items-center gap-1.5">
                     {p.nome}
+                    {p.count > 0 && (
+                      <span className="text-xs font-semibold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-md">{p.count}x</span>
+                    )}
                     {p.mostraQtd && p.totalMl > 0 && (
                       <span className="text-xs font-semibold text-brand-500 bg-brand-50 px-1.5 py-0.5 rounded-md">{p.totalMl}ml</span>
                     )}
