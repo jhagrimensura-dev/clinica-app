@@ -300,7 +300,7 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes, leads, pr
   const [paciente, setPaciente] = useState('')
   const [tipo, setTipo] = useState('Novo')
   const [responsavel, setResponsavel] = useState('')
-  const [listaProcs, setListaProcs] = useState([{ nome: '', qtd: '', total: 0, precoPorMl: 0, unidade: 'ml' }])
+  const [listaProcs, setListaProcs] = useState([{ nome: '', qtd: '', total: 0, precoPorMl: 0, unidade: 'ml', valorStr: '' }])
   const [valorTaxa, setValorTaxa] = useState('')
   const [valorTratamento, setValorTratamento] = useState('')
   const [formasPgto, setFormasPgto] = useState([])
@@ -316,16 +316,23 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes, leads, pr
     setListaProcs(prev => prev.map((p, i) => {
       if (i !== idx) return p
       const total = precoPorMl > 0 && p.qtd ? precoPorMl * parseFloat(p.qtd) : 0
-      return { ...p, nome, precoPorMl: precoPorMl || 0, unidade: unidade || 'ml', mostraQtd: mostraQtd ?? false, total }
+      const valorStr = total > 0 ? mascaraMoeda(String(Math.round(total * 100))) : ''
+      return { ...p, nome, precoPorMl: precoPorMl || 0, unidade: unidade || 'ml', mostraQtd: mostraQtd ?? false, total, valorStr }
     }))
   }
 
   const handleProcQtd = (idx, qtd) => {
     setListaProcs(prev => prev.map((p, i) => {
       if (i !== idx) return p
-      const total = (p.precoPorMl || 0) > 0 && qtd ? p.precoPorMl * parseFloat(qtd || 0) : 0
-      return { ...p, qtd, total }
+      const total = (p.precoPorMl || 0) > 0 && qtd ? p.precoPorMl * parseFloat(qtd || 0) : p.total
+      const valorStr = (p.precoPorMl || 0) > 0 && qtd ? mascaraMoeda(String(Math.round(total * 100))) : p.valorStr
+      return { ...p, qtd, total, valorStr }
     }))
+  }
+
+  const handleProcValor = (idx, valor) => {
+    const formatted = mascaraMoeda(valor)
+    setListaProcs(prev => prev.map((p, i) => i !== idx ? p : { ...p, total: parseMoeda(formatted), valorStr: formatted }))
   }
 
   const toggleForma = (forma) => {
@@ -396,17 +403,21 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes, leads, pr
                         className="text-gray-300 hover:text-red-400 text-xl leading-none flex-shrink-0 transition-colors">×</button>
                     )}
                   </div>
-                  {(proc.mostraQtd || proc.precoPorMl > 0) && (
-                    <div className="flex items-center gap-2 pl-1">
-                      <input type="number" value={proc.qtd} onChange={e => handleProcQtd(idx, e.target.value)}
-                        placeholder="0" min="0" step="0.5"
-                        className="w-24 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400" />
-                      <span className="text-sm text-gray-400">{proc.unidade || 'ml'}</span>
-                      {proc.total > 0 && (
-                        <span className="text-sm font-semibold text-green-600">= {proc.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                      )}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 pl-1">
+                    {(proc.mostraQtd || proc.precoPorMl > 0) && (
+                      <>
+                        <input type="number" value={proc.qtd} onChange={e => handleProcQtd(idx, e.target.value)}
+                          placeholder="0" min="0" step="0.5"
+                          className="w-20 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400" />
+                        <span className="text-sm text-gray-400">{proc.unidade || 'ml'}</span>
+                      </>
+                    )}
+                    <input type="text" inputMode="numeric" value={proc.valorStr}
+                      onChange={e => handleProcValor(idx, e.target.value)}
+                      placeholder="R$ 0,00"
+                      className="w-36 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-green-400" />
+                    <span className="text-xs text-gray-400">valor</span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -420,10 +431,10 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes, leads, pr
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400" />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Valor Tratamento (R$)</label>
-              <input type="text" inputMode="numeric" value={valorTratamento} onChange={e => setValorTratamento(mascaraMoeda(e.target.value))}
+              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Total Tratamento (R$)</label>
+              <input type="text" inputMode="numeric" value={valorTratamento} readOnly
                 placeholder="R$ 0,00"
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400" />
+                className="w-full border border-gray-100 rounded-xl px-3 py-2.5 text-sm bg-gray-50 text-gray-500 cursor-default" />
             </div>
           </div>
 
@@ -475,8 +486,14 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
   const [tipo, setTipo] = useState(lancamento.tipo)
   const [responsavel, setResponsavel] = useState(lancamento.responsavel || '')
   const [listaProcs, setListaProcs] = useState(() => {
-    if (!lancamento.procedimentos) return [{ nome: '', qtd: '', total: 0, precoPorMl: 0, unidade: 'ml' }]
-    return lancamento.procedimentos.split(' e ').filter(Boolean).map(s => parseLinhaProc(s, procs))
+    if (!lancamento.procedimentos) return [{ nome: '', qtd: '', total: 0, precoPorMl: 0, unidade: 'ml', valorStr: '' }]
+    const parsed = lancamento.procedimentos.split(' e ').filter(Boolean).map(s => parseLinhaProc(s, procs))
+    const somaCalc = parsed.reduce((acc, p) => acc + (p.total || 0), 0)
+    return parsed.map(p => {
+      let total = p.total || 0
+      if (somaCalc === 0 && parsed.length === 1 && lancamento.valorTratamento > 0) total = lancamento.valorTratamento
+      return { ...p, total, valorStr: total > 0 ? mascaraMoeda(String(Math.round(total * 100))) : '' }
+    })
   })
   const [valorTaxa, setValorTaxa] = useState(lancamento.valorTaxa ? mascaraMoeda(String(Math.round(lancamento.valorTaxa * 100))) : '')
   const [valorTratamento, setValorTratamento] = useState(lancamento.valorTratamento ? mascaraMoeda(String(Math.round(lancamento.valorTratamento * 100))) : '')
@@ -494,16 +511,23 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
     setListaProcs(prev => prev.map((p, i) => {
       if (i !== idx) return p
       const total = precoPorMl > 0 && p.qtd ? precoPorMl * parseFloat(p.qtd) : 0
-      return { ...p, nome, precoPorMl: precoPorMl || 0, unidade: unidade || 'ml', mostraQtd: mostraQtd ?? false, total }
+      const valorStr = total > 0 ? mascaraMoeda(String(Math.round(total * 100))) : ''
+      return { ...p, nome, precoPorMl: precoPorMl || 0, unidade: unidade || 'ml', mostraQtd: mostraQtd ?? false, total, valorStr }
     }))
   }
 
   const handleProcQtd = (idx, qtd) => {
     setListaProcs(prev => prev.map((p, i) => {
       if (i !== idx) return p
-      const total = (p.precoPorMl || 0) > 0 && qtd ? p.precoPorMl * parseFloat(qtd || 0) : 0
-      return { ...p, qtd, total }
+      const total = (p.precoPorMl || 0) > 0 && qtd ? p.precoPorMl * parseFloat(qtd || 0) : p.total
+      const valorStr = (p.precoPorMl || 0) > 0 && qtd ? mascaraMoeda(String(Math.round(total * 100))) : p.valorStr
+      return { ...p, qtd, total, valorStr }
     }))
+  }
+
+  const handleProcValor = (idx, valor) => {
+    const formatted = mascaraMoeda(valor)
+    setListaProcs(prev => prev.map((p, i) => i !== idx ? p : { ...p, total: parseMoeda(formatted), valorStr: formatted }))
   }
 
   const toggleForma = (forma) =>
@@ -558,7 +582,7 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-sm font-medium text-gray-700">Procedimentos</label>
-              <button type="button" onClick={() => setListaProcs(prev => [...prev, { nome: '', qtd: '', total: 0, precoPorMl: 0, unidade: 'ml' }])}
+              <button type="button" onClick={() => setListaProcs(prev => [...prev, { nome: '', qtd: '', total: 0, precoPorMl: 0, unidade: 'ml', valorStr: '' }])}
                 className="text-xs text-brand-400 hover:text-brand-500 font-semibold">+ Adicionar</button>
             </div>
             <div className="space-y-2">
@@ -573,17 +597,21 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
                         className="text-gray-300 hover:text-red-400 text-xl leading-none flex-shrink-0 transition-colors">×</button>
                     )}
                   </div>
-                  {(proc.mostraQtd || proc.precoPorMl > 0) && (
-                    <div className="flex items-center gap-2 pl-1">
-                      <input type="number" value={proc.qtd} onChange={e => handleProcQtd(idx, e.target.value)}
-                        placeholder="0" min="0" step="0.5"
-                        className="w-24 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400" />
-                      <span className="text-sm text-gray-400">{proc.unidade || 'ml'}</span>
-                      {proc.total > 0 && (
-                        <span className="text-sm font-semibold text-green-600">= {proc.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                      )}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 pl-1">
+                    {(proc.mostraQtd || proc.precoPorMl > 0) && (
+                      <>
+                        <input type="number" value={proc.qtd} onChange={e => handleProcQtd(idx, e.target.value)}
+                          placeholder="0" min="0" step="0.5"
+                          className="w-20 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400" />
+                        <span className="text-sm text-gray-400">{proc.unidade || 'ml'}</span>
+                      </>
+                    )}
+                    <input type="text" inputMode="numeric" value={proc.valorStr}
+                      onChange={e => handleProcValor(idx, e.target.value)}
+                      placeholder="R$ 0,00"
+                      className="w-36 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-green-400" />
+                    <span className="text-xs text-gray-400">valor</span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -597,10 +625,10 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400" />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Valor Tratamento (R$)</label>
-              <input type="text" inputMode="numeric" value={valorTratamento} onChange={e => setValorTratamento(mascaraMoeda(e.target.value))}
+              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Total Tratamento (R$)</label>
+              <input type="text" inputMode="numeric" value={valorTratamento} readOnly
                 placeholder="R$ 0,00"
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400" />
+                className="w-full border border-gray-100 rounded-xl px-3 py-2.5 text-sm bg-gray-50 text-gray-500 cursor-default" />
             </div>
           </div>
 
