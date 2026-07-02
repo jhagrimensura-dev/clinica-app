@@ -61,7 +61,14 @@ export function ConfigProvider({ children }) {
     document.addEventListener('visibilitychange', onVisible)
     const interval = setInterval(loadFromDB, 10000)
 
-    // Detecta novo deploy e recarrega automaticamente
+    // Rastreia última atividade do usuário
+    let ultimaAtividade = Date.now()
+    const registrarAtividade = () => { ultimaAtividade = Date.now() }
+    window.addEventListener('mousemove', registrarAtividade)
+    window.addEventListener('keydown', registrarAtividade)
+    window.addEventListener('click', registrarAtividade)
+
+    // Detecta novo deploy: recarrega se inativo há 3+ min, senão mostra banner
     const currentScript = [...document.querySelectorAll('script[src]')]
       .find(s => s.src.includes('/assets/index-'))
     const currentSrc = currentScript ? new URL(currentScript.src).pathname : null
@@ -70,7 +77,11 @@ export function ConfigProvider({ children }) {
         const res = await fetch('/?_v=' + Date.now(), { cache: 'no-store' })
         const html = await res.text()
         const match = html.match(/src="(\/assets\/index-[^"]+\.js)"/)
-        if (match && match[1] !== currentSrc) setNovaVersao(true)
+        if (match && match[1] !== currentSrc) {
+          const inativo = Date.now() - ultimaAtividade > 3 * 60 * 1000
+          if (inativo) window.location.reload()
+          else setNovaVersao(true)
+        }
       } catch {}
     }, 30000) : null
 
@@ -85,6 +96,9 @@ export function ConfigProvider({ children }) {
 
     return () => {
       document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('mousemove', registrarAtividade)
+      window.removeEventListener('keydown', registrarAtividade)
+      window.removeEventListener('click', registrarAtividade)
       clearInterval(interval)
       if (versionInterval) clearInterval(versionInterval)
       supabase.removeChannel(channel)
