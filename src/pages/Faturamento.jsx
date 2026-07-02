@@ -381,7 +381,7 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes, leads, pr
                         className="text-gray-300 hover:text-red-400 text-xl leading-none flex-shrink-0 transition-colors">×</button>
                     )}
                   </div>
-                  {proc.precoPorMl > 0 && (
+                  {proc.nome && (
                     <div className="flex items-center gap-2 pl-1">
                       <input type="number" value={proc.qtd} onChange={e => handleProcQtd(idx, e.target.value)}
                         placeholder="0" min="0" step="0.5"
@@ -558,7 +558,7 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
                         className="text-gray-300 hover:text-red-400 text-xl leading-none flex-shrink-0 transition-colors">×</button>
                     )}
                   </div>
-                  {proc.precoPorMl > 0 && (
+                  {proc.nome && (
                     <div className="flex items-center gap-2 pl-1">
                       <input type="number" value={proc.qtd} onChange={e => handleProcQtd(idx, e.target.value)}
                         placeholder="0" min="0" step="0.5"
