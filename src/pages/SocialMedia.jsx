@@ -134,10 +134,17 @@ export default function SocialMedia() {
 
   const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
   const leadsPorDia = {}
+  const leadsDetalhadosPorDia = {}
   leads.filter(l => l.origem === 'leads_novos' && l.data && l.data.startsWith(prefix)).forEach(l => {
     const dia = parseInt(l.data.split('-')[2], 10)
-    if (!isNaN(dia)) leadsPorDia[dia] = (leadsPorDia[dia] || 0) + 1
+    if (!isNaN(dia)) {
+      leadsPorDia[dia] = (leadsPorDia[dia] || 0) + 1
+      if (!leadsDetalhadosPorDia[dia]) leadsDetalhadosPorDia[dia] = []
+      leadsDetalhadosPorDia[dia].push(l)
+    }
   })
+
+  const [modalLeadsDia, setModalLeadsDia] = useState(null) // null | { dia, leads[] }
 
   const salvarTrafego = () => {
     const v = parseFloat(inputTrafego.replace(/\./g, '').replace(',', '.'))
@@ -315,7 +322,8 @@ export default function SocialMedia() {
                     <div className="flex items-center justify-between gap-1">
                       <span className={`text-xs font-bold ${isMesAtual ? 'text-gray-700' : 'text-gray-300'}`}>{celula.dia}</span>
                       {isMesAtual && leadsPorDia[celula.dia] > 0 && (
-                        <span className="inline-flex items-center gap-0.5 bg-amber-400 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                        <span onClick={e => { e.stopPropagation(); setModalLeadsDia({ dia: celula.dia, leads: leadsDetalhadosPorDia[celula.dia] || [] }) }}
+                          className="inline-flex items-center gap-0.5 bg-amber-400 hover:bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none cursor-pointer transition-colors">
                           <svg viewBox="0 0 24 24" fill="currentColor" className="w-2.5 h-2.5"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
                           {leadsPorDia[celula.dia]}
                         </span>
@@ -618,6 +626,68 @@ export default function SocialMedia() {
           </div>
         </div>
       )}
+
+      {/* Modal leads do dia */}
+      {modalLeadsDia && (() => {
+        const STATUS_LEAD = [
+          { key: 'pendente',    label: 'Pendente',    bg: 'bg-gray-100',   text: 'text-gray-500' },
+          { key: 'tentativa',   label: 'Tentativa',   bg: 'bg-yellow-100', text: 'text-yellow-600' },
+          { key: 'conversando', label: 'Conversando', bg: 'bg-blue-100',   text: 'text-blue-600' },
+          { key: 'follow1',     label: 'Follow #1',   bg: 'bg-orange-100', text: 'text-orange-500' },
+          { key: 'follow2',     label: 'Follow #2',   bg: 'bg-yellow-100', text: 'text-yellow-600' },
+          { key: 'agendado',    label: 'Agendou',     bg: 'bg-green-100',  text: 'text-green-600' },
+          { key: 'perdido',     label: 'Perdido',     bg: 'bg-red-100',    text: 'text-red-500' },
+        ]
+        const agendados = modalLeadsDia.leads.filter(l => l.status === 'agendado').length
+        const conversao = modalLeadsDia.leads.length > 0 ? Math.round((agendados / modalLeadsDia.leads.length) * 100) : 0
+        return (
+          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setModalLeadsDia(null)}>
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-amber-400 flex-shrink-0"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                  <h2 className="text-base font-bold text-gray-800">
+                    Leads do dia {String(modalLeadsDia.dia).padStart(2,'0')}/{String(mes+1).padStart(2,'0')}
+                  </h2>
+                  <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">
+                    {conversao}% de conversão
+                  </span>
+                </div>
+                <button onClick={() => setModalLeadsDia(null)} className="text-gray-300 hover:text-gray-500 text-2xl leading-none flex-shrink-0">×</button>
+              </div>
+
+              <div className="space-y-2">
+                {modalLeadsDia.leads.map(lead => {
+                  const s = STATUS_LEAD.find(x => x.key === lead.status) || { label: lead.status || '—', bg: 'bg-gray-100', text: 'text-gray-500' }
+                  const temTelefone = !!lead.telefone
+                  return (
+                    <div key={lead.id}
+                      onClick={() => {
+                        if (temTelefone) {
+                          window.dispatchEvent(new CustomEvent('navegarInbox', { detail: { telefone: lead.telefone } }))
+                          setModalLeadsDia(null)
+                        }
+                      }}
+                      className={`border rounded-xl px-4 py-3 flex items-center justify-between gap-3 transition-colors ${temTelefone ? 'border-gray-200 cursor-pointer hover:border-brand-300 hover:bg-brand-50' : 'border-gray-100 opacity-60'}`}>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-gray-800 truncate">{lead.nome}</p>
+                        <p className="text-xs text-gray-400">{lead.fonte || lead.origemCustom || '—'}</p>
+                      </div>
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap flex-shrink-0 ${s.bg} ${s.text}`}>{s.label}</span>
+                    </div>
+                  )
+                })}
+                {modalLeadsDia.leads.length === 0 && (
+                  <p className="text-center text-gray-400 text-sm py-6">Nenhum lead neste dia</p>
+                )}
+              </div>
+              {modalLeadsDia.leads.some(l => l.telefone) && (
+                <p className="text-xs text-gray-400 text-center mt-4">Clique no lead para abrir a conversa no inbox</p>
+              )}
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
