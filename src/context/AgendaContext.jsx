@@ -11,38 +11,31 @@ export function AgendaProvider({ children }) {
 
   useEffect(() => {
     if (!clinicaId) return
+    let migratedAg = false
+    let migratedLem = false
 
-    // Carrega agendamentos
-    supabase.from('agendamentos').select('*').then(async ({ data }) => {
-      if (data && data.length > 0) {
-        setAgendamentos(data)
-      } else {
+    const fetchAll = async () => {
+      const [{ data: ag }, { data: lem }] = await Promise.all([
+        supabase.from('agendamentos').select('*'),
+        supabase.from('agenda_lembretes').select('*'),
+      ])
+      if (ag && ag.length > 0) {
+        setAgendamentos(ag)
+      } else if (!migratedAg) {
+        migratedAg = true
         try {
           const local = JSON.parse(localStorage.getItem('agenda_agendamentos') || '[]')
           if (local.length > 0) {
-            const rows = local.map(a => ({
-              id: String(a.id || Date.now()),
-              clinica_id: clinicaId,
-              date: a.date || '',
-              time: a.time || '',
-              paciente: a.paciente || '',
-              procedimento: a.procedimento || '',
-              status: a.status || 'agendado',
-              duracao: a.duracao || 30,
-              telefone: a.telefone || '',
-            }))
+            const rows = local.map(a => ({ id: String(a.id || Date.now()), clinica_id: clinicaId, date: a.date || '', time: a.time || '', paciente: a.paciente || '', procedimento: a.procedimento || '', status: a.status || 'agendado', duracao: a.duracao || 30, telefone: a.telefone || '' }))
             await supabase.from('agendamentos').upsert(rows, { onConflict: 'id' })
             setAgendamentos(local)
           }
         } catch (e) { console.error('Migração agendamentos:', e) }
       }
-    })
-
-    // Carrega lembretes
-    supabase.from('agenda_lembretes').select('*').then(async ({ data }) => {
-      if (data && data.length > 0) {
-        setLembretes(data.map(r => r.dados))
-      } else {
+      if (lem && lem.length > 0) {
+        setLembretes(lem.map(r => r.dados))
+      } else if (!migratedLem) {
+        migratedLem = true
         try {
           const local = JSON.parse(localStorage.getItem('agenda_lembretes') || '[]')
           if (local.length > 0) {
@@ -52,9 +45,14 @@ export function AgendaProvider({ children }) {
           }
         } catch (e) { console.error('Migração lembretes:', e) }
       }
-    })
+    }
 
-    // Realtime
+    fetchAll()
+
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchAll() }
+    document.addEventListener('visibilitychange', onVisible)
+    const interval = setInterval(fetchAll, 15000)
+
     const channel = supabase
       .channel(`agenda:${clinicaId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'agendamentos', filter: `clinica_id=eq.${clinicaId}` }, ({ eventType, new: n, old: o }) => {
@@ -69,7 +67,11 @@ export function AgendaProvider({ children }) {
       })
       .subscribe()
 
-    return () => supabase.removeChannel(channel)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      clearInterval(interval)
+      supabase.removeChannel(channel)
+    }
   }, [clinicaId])
 
   const saveAgendamento = async (ag) => {

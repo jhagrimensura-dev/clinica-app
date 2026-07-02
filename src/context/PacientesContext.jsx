@@ -38,27 +38,32 @@ export function PacientesProvider({ children }) {
   useEffect(() => {
     if (!clinicaId) return
     setLoading(true)
-    supabase
-      .from('pacientes')
-      .select('*')
-      .order('nome', { ascending: true })
-      .then(async ({ data }) => {
-        if (data && data.length > 0) {
-          setPacientes(data.map(fromDB))
-        } else {
-          // Migra localStorage → Supabase na primeira vez
-          const local = loadLocal()
-          if (local.length > 0) {
-            const rows = local.map(p => toDB(
-              { ...p, id: p.id || `pac_${Date.now()}_${Math.random().toString(36).slice(2,6)}` },
-              clinicaId
-            ))
-            await supabase.from('pacientes').upsert(rows, { onConflict: 'id' })
-            setPacientes(local)
-          }
+    let migrated = false
+
+    const fetchAll = async () => {
+      const { data } = await supabase.from('pacientes').select('*').order('nome', { ascending: true })
+      if (data && data.length > 0) {
+        setPacientes(data.map(fromDB))
+      } else if (!migrated) {
+        migrated = true
+        const local = loadLocal()
+        if (local.length > 0) {
+          const rows = local.map(p => toDB(
+            { ...p, id: p.id || `pac_${Date.now()}_${Math.random().toString(36).slice(2,6)}` },
+            clinicaId
+          ))
+          await supabase.from('pacientes').upsert(rows, { onConflict: 'id' })
+          setPacientes(local)
         }
-        setLoading(false)
-      })
+      }
+      setLoading(false)
+    }
+
+    fetchAll()
+
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchAll() }
+    document.addEventListener('visibilitychange', onVisible)
+    const interval = setInterval(fetchAll, 15000)
 
     const channel = supabase
       .channel(`pacientes:${clinicaId}`)
@@ -69,7 +74,11 @@ export function PacientesProvider({ children }) {
       })
       .subscribe()
 
-    return () => supabase.removeChannel(channel)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      clearInterval(interval)
+      supabase.removeChannel(channel)
+    }
   }, [clinicaId])
 
   const addPaciente = async (p) => {
