@@ -68,11 +68,16 @@ export function ConfigProvider({ children }) {
 
   const setKey = (chave, valor) => {
     setCfg(prev => ({ ...prev, [chave]: valor }))
-    localStorage.setItem(chave, JSON.stringify(valor))
+    // Listas: salva imediatamente no Supabase para não perder no refresh
+    if (Array.isArray(valor)) {
+      supabase.from('configuracoes').upsert({ chave, valor }, { onConflict: 'chave' })
+      return
+    }
+    // Textos/objetos: debounce para não sobrecarregar com digitação
     if (saveTimers.current[chave]) clearTimeout(saveTimers.current[chave])
     saveTimers.current[chave] = setTimeout(() => {
       supabase.from('configuracoes').upsert({ chave, valor }, { onConflict: 'chave' })
-    }, 300)
+    }, 600)
   }
 
   return (
