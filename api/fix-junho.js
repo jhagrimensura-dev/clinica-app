@@ -3,46 +3,28 @@ import { createClient } from '@supabase/supabase-js'
 export default async function handler(req, res) {
   const sb = createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
 
-  const { data, error } = await sb
+  // Deleta os 37 duplicados inseridos hoje às 20:04:09 UTC pelo bug da migração localStorage
+  const { data, error, count } = await sb
     .from('lancamentos')
-    .select('id,data,paciente,tipo,procedimentos,valor_tratamento,valor_taxa,criado_em')
-    .like('data', '2026-06%')
-    .order('criado_em', { ascending: true })
+    .delete({ count: 'exact' })
+    .like('id', 'venda_1782242455408_%')
 
   if (error) return res.status(500).json({ error: error.message })
 
-  const totalTrat = data.reduce((a, l) => a + (l.valor_tratamento || 0), 0)
-  const totalTaxa = data.reduce((a, l) => a + (l.valor_taxa || 0), 0)
+  // Verifica total restante
+  const { data: restante } = await sb
+    .from('lancamentos')
+    .select('id,valor_tratamento,valor_taxa')
+    .like('data', '2026-06%')
 
-  // Detectar duplicatas: mesmo paciente + data + procedimentos
-  const seen = {}
-  const duplicatas = []
-  const unicos = []
-  for (const l of data) {
-    const key = `${l.paciente}|${l.data}|${l.procedimentos}`
-    if (seen[key]) {
-      duplicatas.push(l)
-    } else {
-      seen[key] = true
-      unicos.push(l)
-    }
-  }
+  const totalTrat = restante.reduce((a, l) => a + (l.valor_tratamento || 0), 0)
+  const totalTaxa = restante.reduce((a, l) => a + (l.valor_taxa || 0), 0)
 
   res.json({
-    total: data.length,
+    deletados: count,
+    restantes: restante.length,
     totalTratamento: totalTrat,
     totalTaxa: totalTaxa,
-    totalGeral: totalTrat + totalTaxa,
-    duplicatas: duplicatas.length,
-    lancamentos: data.map(l => ({
-      id: l.id,
-      data: l.data,
-      paciente: l.paciente,
-      tipo: l.tipo,
-      proc: l.procedimentos?.slice(0, 40),
-      trat: l.valor_tratamento,
-      taxa: l.valor_taxa,
-      criado: l.criado_em
-    }))
+    totalGeral: totalTrat + totalTaxa
   })
 }
