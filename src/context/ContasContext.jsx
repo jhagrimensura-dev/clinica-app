@@ -39,26 +39,28 @@ export function ContasProvider({ children }) {
   useEffect(() => {
     if (!clinicaId) return
     setLoading(true)
-    supabase
-      .from('contas_pagar')
-      .select('*')
-      .order('vencimento', { ascending: true })
-      .then(async ({ data }) => {
-        if (data && data.length > 0) {
-          setContas(data.map(fromDB))
-        } else {
-          const local = loadLocal()
-          if (local.length > 0) {
-            const rows = local.map(c => toDB(
-              { ...c, id: c.id || `c_${Date.now()}_${Math.random().toString(36).slice(2,7)}` },
-              clinicaId
-            ))
-            await supabase.from('contas_pagar').upsert(rows, { onConflict: 'id' })
-            setContas(local)
-          }
-        }
-        setLoading(false)
-      })
+
+    const fetchAll = async () => {
+      const { data } = await supabase.from('contas_pagar').select('*').order('vencimento', { ascending: true })
+      if (data) setContas(data.map(fromDB))
+      setLoading(false)
+    }
+
+    fetchAll().then(async () => {
+      const local = loadLocal()
+      if (local.length > 0 && contas.length === 0) {
+        const rows = local.map(c => toDB(
+          { ...c, id: c.id || `c_${Date.now()}_${Math.random().toString(36).slice(2,7)}` },
+          clinicaId
+        ))
+        await supabase.from('contas_pagar').upsert(rows, { onConflict: 'id' })
+        setContas(local)
+      }
+    })
+
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchAll() }
+    document.addEventListener('visibilitychange', onVisible)
+    const interval = setInterval(fetchAll, 15000)
 
     const channel = supabase
       .channel(`contas_pagar:${clinicaId}`)
@@ -69,7 +71,11 @@ export function ContasProvider({ children }) {
       })
       .subscribe()
 
-    return () => supabase.removeChannel(channel)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      clearInterval(interval)
+      supabase.removeChannel(channel)
+    }
   }, [clinicaId])
 
   const addConta = async (conta) => {

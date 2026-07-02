@@ -46,26 +46,28 @@ export function VendasProvider({ children }) {
   useEffect(() => {
     if (!clinicaId) return
     setLoading(true)
-    supabase
-      .from('lancamentos')
-      .select('*')
-      .order('data', { ascending: true })
-      .then(async ({ data }) => {
-        if (data && data.length > 0) {
-          setLancamentos(data.map(fromDB))
-        } else {
-          const local = loadLocal()
-          if (local.length > 0) {
-            const rows = local.map(l => toDB(
-              { ...l, id: l.id || `venda_${Date.now()}_${Math.random().toString(36).slice(2,6)}` },
-              clinicaId
-            ))
-            await supabase.from('lancamentos').upsert(rows, { onConflict: 'id' })
-            setLancamentos(local)
-          }
-        }
-        setLoading(false)
-      })
+
+    const fetchAll = async () => {
+      const { data } = await supabase.from('lancamentos').select('*').order('data', { ascending: true })
+      if (data) setLancamentos(data.map(fromDB))
+      setLoading(false)
+    }
+
+    fetchAll().then(async () => {
+      const local = loadLocal()
+      if (local.length > 0 && lancamentos.length === 0) {
+        const rows = local.map(l => toDB(
+          { ...l, id: l.id || `venda_${Date.now()}_${Math.random().toString(36).slice(2,6)}` },
+          clinicaId
+        ))
+        await supabase.from('lancamentos').upsert(rows, { onConflict: 'id' })
+        setLancamentos(local)
+      }
+    })
+
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchAll() }
+    document.addEventListener('visibilitychange', onVisible)
+    const interval = setInterval(fetchAll, 15000)
 
     const channel = supabase
       .channel(`lancamentos:${clinicaId}`)
@@ -76,7 +78,11 @@ export function VendasProvider({ children }) {
       })
       .subscribe()
 
-    return () => supabase.removeChannel(channel)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      clearInterval(interval)
+      supabase.removeChannel(channel)
+    }
   }, [clinicaId])
 
   const addLancamento = async (l) => {
