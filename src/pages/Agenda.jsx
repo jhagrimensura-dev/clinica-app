@@ -468,15 +468,15 @@ export default function Agenda() {
     <div className="flex h-screen overflow-hidden" style={{ height: 'calc(100vh - 0px)' }}>
 
       {/* Sidebar esquerda */}
-      <div className="w-52 flex-shrink-0 bg-white border-r border-gray-100 flex flex-col overflow-y-auto">
-        <div className="px-3 py-3 border-b border-gray-100">
+      <div className="w-52 flex-shrink-0 bg-brand-50 border-r border-brand-200/50 flex flex-col overflow-y-auto">
+        <div className="px-3 py-3 border-b border-brand-200/50">
           <p className="text-xs font-bold text-gray-700 uppercase tracking-wide">Clínica Amanda Lima</p>
         </div>
 
         <MiniCalendario selected={refDate} onSelect={handleSelectDay} />
 
         {/* Próximos agendamentos */}
-        <div className="px-3 py-2 border-t border-gray-100 flex-1">
+        <div className="px-3 py-2 border-t border-brand-200/50 flex-1">
           <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Próximos</p>
           {agendamentos
             .filter(a => a.date >= dateKey(today))
@@ -485,7 +485,7 @@ export default function Agenda() {
             .map(a => {
               const cfg = STATUS[a.status]
               return (
-                <div key={a.id} className="flex items-center gap-2 py-1.5 border-b border-gray-50 last:border-0">
+                <div key={a.id} className="flex items-center gap-2 py-1.5 border-b border-brand-100 last:border-0">
                   <div className={`w-2 h-2 rounded-full flex-shrink-0 ${cfg.bg}`} />
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-gray-700 truncate">{a.paciente}</p>
@@ -502,16 +502,16 @@ export default function Agenda() {
       </div>
 
       {/* Grade principal */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-white">
+      <div className="flex-1 flex flex-col overflow-hidden bg-brand-50">
 
         {/* Header */}
-        <div className="flex items-center gap-3 px-4 py-2 border-b border-gray-100 flex-shrink-0">
+        <div className="flex items-center gap-3 px-4 py-2 border-b border-brand-200/50 flex-shrink-0 bg-brand-50">
           <button onClick={() => navWeek(-1)}
-            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 font-bold text-lg transition-colors">‹</button>
+            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-brand-100 text-gray-400 font-bold text-lg transition-colors">‹</button>
           <button onClick={() => navWeek(1)}
-            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 font-bold text-lg transition-colors">›</button>
+            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-brand-100 text-gray-400 font-bold text-lg transition-colors">›</button>
           <button onClick={() => setRefDate(new Date())}
-            className="px-3 py-1 rounded-lg border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-colors">Hoje</button>
+            className="px-3 py-1 rounded-lg border border-brand-200 text-xs font-semibold text-brand-600 hover:bg-brand-100 transition-colors">Hoje</button>
           <p className="text-sm font-semibold text-gray-700 flex-1">{semanaLabel}</p>
           <div className="flex items-center gap-1 text-xs text-gray-400">
             {Object.entries(STATUS).map(([k,v]) => (
@@ -530,16 +530,16 @@ export default function Agenda() {
               <col style={{ width: '52px' }} />
               {weekDays.map((_, i) => <col key={i} />)}
             </colgroup>
-            <thead className="sticky top-0 z-20 bg-white">
+            <thead className="sticky top-0 z-20 bg-brand-50">
               <tr>
-                <th className="border-b border-r border-gray-100" />
+                <th className="border-b border-r border-brand-200/40 bg-brand-50" />
                 {weekDays.map((day, i) => {
                   const isToday = dateKey(day) === todayKey
                   const dow = day.getDay()
                   const fechado = !HORARIO_FUNC[dow]
                   return (
-                    <th key={i} className={`border-b border-r border-gray-100 py-2 text-center
-                      ${isToday ? 'bg-brand-50' : fechado ? 'bg-gray-50' : 'bg-white'}`}>
+                    <th key={i} className={`border-b border-r border-brand-200/40 py-2 text-center
+                      ${isToday ? 'bg-brand-100' : fechado ? 'bg-brand-100/30' : 'bg-brand-50'}`}>
                       <p className={`text-xs font-bold uppercase tracking-wide
                         ${isToday ? 'text-brand-400' : fechado ? 'text-gray-400' : 'text-gray-400'}`}>
                         {DIAS_SEMANA[dow]}
@@ -560,11 +560,11 @@ export default function Agenda() {
                 const isQuarter = !isHour && !isHalf
                 return (
                   <tr key={time} style={{ height: '24px' }}>
-                    <td className={`border-r border-gray-200 text-right pr-1.5 align-top
-                      ${isHour ? 'border-t border-gray-300' : isHalf ? 'border-t border-gray-200' : 'border-t border-gray-100'}`}
+                    <td className={`border-r border-brand-200/40 text-right pr-1.5 align-top bg-brand-50
+                      ${isHour ? 'border-t border-brand-200/60' : isHalf ? 'border-t border-brand-200/30' : 'border-t border-brand-100/50'}`}
                       style={{ height: '24px' }}>
-                      {isHour && <span className="text-xs text-gray-400 font-medium">{time}</span>}
-                      {isHalf && <span className="text-xs text-gray-300">{time}</span>}
+                      {isHour && <span className="text-xs text-brand-400 font-medium">{time}</span>}
+                      {isHalf && <span className="text-xs text-brand-300">{time}</span>}
                     </td>
                     {weekDays.map((day, di) => {
                       if (isOccupied(day, time)) return null
@@ -575,15 +575,15 @@ export default function Agenda() {
                       const rowSpan = appt ? appt.duracao / 15 : 1
                       const isToday = dateKey(day) === todayKey
                       const cfg = appt ? STATUS[appt.status] : null
-                      const borderClass = isHour ? 'border-t border-gray-300' : isHalf ? 'border-t border-gray-200' : 'border-t border-gray-100'
+                      const borderClass = isHour ? 'border-t border-brand-200/60' : isHalf ? 'border-t border-brand-200/30' : 'border-t border-brand-100/50'
 
                       if (fechado && !appt) {
                         return (
-                          <td key={di} className={`border-r border-gray-200 bg-gray-50 ${borderClass}`}
+                          <td key={di} className={`border-r border-brand-200/40 bg-brand-100/20 ${borderClass}`}
                             style={{ height: '24px' }}>
                             {isHour && time === '07:00' && (
                               <div className="flex items-center justify-center h-full">
-                                <span className="text-xs font-bold text-gray-300 tracking-widest">FECHADO</span>
+                                <span className="text-xs font-bold text-brand-300 tracking-widest">FECHADO</span>
                               </div>
                             )}
                           </td>
@@ -593,10 +593,10 @@ export default function Agenda() {
                       return (
                         <td key={di} rowSpan={rowSpan}
                           onClick={() => !fechado && openModal(day, time)}
-                          className={`border-r border-gray-200 align-top p-0 transition-colors
+                          className={`border-r border-brand-200/40 align-top p-0 transition-colors
                             ${borderClass}
-                            ${!appt && isToday ? 'bg-brand-50/30 hover:bg-brand-100/40 cursor-pointer' : ''}
-                            ${!appt && !isToday ? 'hover:bg-gray-50 cursor-pointer' : ''}
+                            ${!appt && isToday ? 'bg-brand-100/30 hover:bg-brand-100/60 cursor-pointer' : ''}
+                            ${!appt && !isToday ? 'hover:bg-brand-100/40 cursor-pointer' : ''}
                           `}
                           style={{ height: '24px' }}>
                           {appt && (
