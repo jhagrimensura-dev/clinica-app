@@ -793,7 +793,7 @@ export default function Faturamento() {
 
   const totalTratamentos = lancamentosMes.reduce((acc, l) => acc + (l.valorTratamento || 0), 0)
   const totalTaxas = lancamentosMes.reduce((acc, l) => acc + (l.valorTaxa || 0), 0)
-  const totalGeral = totalTratamentos + totalTaxas
+  const totalGeral = totalTratamentos
   const totalModelo = lancamentosModelo.reduce((acc, l) => acc + (l.valorTratamento || 0) + (l.valorTaxa || 0), 0)
   const mlModelo = lancamentosModelo.reduce((acc, l) => {
     if (!l.procedimentos) return acc
@@ -863,16 +863,12 @@ export default function Faturamento() {
       </div>
 
       {/* Cards */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 font-medium mb-1">Vendas Total</p>
           <p className="text-2xl font-bold text-gray-900">R$ {fmt(totalGeral)}</p>
-          <p className="text-xs text-gray-400 mt-1">{lancamentosMes.length} lançamentos</p>
-        </div>
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <p className="text-sm text-gray-500 font-medium mb-1">Tratamentos</p>
-          <p className="text-2xl font-bold text-green-500">R$ {fmt(totalTratamentos)}</p>
           <p className="text-xs text-gray-400 mt-1">
+            {lancamentosMes.length} lançamentos ·{' '}
             {lancamentosMes.filter(l => l.tipo === 'Novo' && (l.valorTratamento || 0) > 0).length} novos ·{' '}
             {lancamentosMes.filter(l => l.tipo === 'Recorrência' && (l.valorTratamento || 0) > 0).length} recorrentes
           </p>
@@ -880,7 +876,7 @@ export default function Faturamento() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 font-medium mb-1">Consultas (R$)</p>
           <p className="text-2xl font-bold text-yellow-500">R$ {fmt(totalTaxas)}</p>
-          <p className="text-xs text-gray-400 mt-1">{lancamentosMes.filter(l => (l.valorTaxa || 0) > 0).length} consulta(s) paga(s)</p>
+          <p className="text-xs text-gray-400 mt-1">{lancamentosMes.filter(l => (l.valorTaxa || 0) > 0).length} consulta(s) paga(s) — não contabilizado(s)</p>
         </div>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 font-medium mb-1">Paciente Modelo</p>
