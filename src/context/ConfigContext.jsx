@@ -92,7 +92,7 @@ export function ConfigProvider({ children }) {
         if (n && KEYS.includes(n.chave)) setCfg(prev => ({ ...prev, [n.chave]: n.valor }))
         if (n?.chave === 'app_force_reload') window.location.reload()
       })
-      .subscribe()
+      .subscribe((status) => { if (status === 'SUBSCRIBED') loadFromDB() })
 
     return () => {
       document.removeEventListener('visibilitychange', onVisible)

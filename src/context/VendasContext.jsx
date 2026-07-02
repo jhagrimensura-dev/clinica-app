@@ -68,7 +68,7 @@ export function VendasProvider({ children }) {
         else if (eventType === 'UPDATE') setLancamentos(prev => prev.map(l => l.id === n.id ? fromDB(n) : l))
         else if (eventType === 'DELETE') setLancamentos(prev => prev.filter(l => l.id !== o.id))
       })
-      .subscribe()
+      .subscribe((status) => { if (status === 'SUBSCRIBED') fetchAll() })
 
     return () => {
       document.removeEventListener('visibilitychange', onVisible)

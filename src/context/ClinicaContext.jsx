@@ -21,6 +21,7 @@ export function ClinicaProvider({ children }) {
   const [postsPorMes, setPostsPorMes] = useState({})
   const [loadedMonths, setLoadedMonths] = useState(new Set())
   const saveTimers = useRef({})
+  const loadMesRef = useRef(null)
 
   const mesKey = `${ano}-${mes}`
 
@@ -98,6 +99,7 @@ export function ClinicaProvider({ children }) {
       setLoadedMonths(prev => new Set([...prev, mesKey]))
     }
 
+    loadMesRef.current = loadMes
     loadMes()
     const onVisible = () => { if (document.visibilityState === 'visible') loadMes() }
     document.addEventListener('visibilitychange', onVisible)
@@ -135,7 +137,7 @@ export function ClinicaProvider({ children }) {
           setPostsPorMes(prev => ({ ...prev, [key]: n.posts || [] }))
         }
       })
-      .subscribe()
+      .subscribe((status) => { if (status === 'SUBSCRIBED') loadMesRef.current?.() })
     return () => supabase.removeChannel(channel)
   }, [clinicaId])
 

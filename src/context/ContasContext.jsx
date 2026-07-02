@@ -69,7 +69,7 @@ export function ContasProvider({ children }) {
         else if (eventType === 'UPDATE') setContas(prev => prev.map(c => c.id === n.id ? fromDB(n) : c))
         else if (eventType === 'DELETE') setContas(prev => prev.filter(c => c.id !== o.id))
       })
-      .subscribe()
+      .subscribe((status) => { if (status === 'SUBSCRIBED') fetchAll() })
 
     return () => {
       document.removeEventListener('visibilitychange', onVisible)

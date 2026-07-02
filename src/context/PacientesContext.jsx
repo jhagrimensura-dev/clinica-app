@@ -72,7 +72,7 @@ export function PacientesProvider({ children }) {
         else if (eventType === 'UPDATE') setPacientes(prev => prev.map(p => p.id === n.id ? fromDB(n) : p))
         else if (eventType === 'DELETE') setPacientes(prev => prev.filter(p => p.id !== o.id))
       })
-      .subscribe()
+      .subscribe((status) => { if (status === 'SUBSCRIBED') fetchAll() })
 
     return () => {
       document.removeEventListener('visibilitychange', onVisible)

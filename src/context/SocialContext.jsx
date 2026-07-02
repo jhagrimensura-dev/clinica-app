@@ -82,9 +82,33 @@ export function SocialProvider({ children }) {
       .then(({ data }) => { if (data?.dados) setRotina(data.dados) })
   }, [clinicaId])
 
-  // Realtime
+  // Realtime + polling fallback
   useEffect(() => {
     if (!clinicaId) return
+
+    const fetchMetricas = () => {
+      const anoAtual = new Date().getFullYear()
+      supabase.from('social_metricas').select('*').eq('clinica_id', clinicaId).gte('ano', anoAtual - 1).then(({ data }) => {
+        if (data) {
+          const newMap = {}
+          data.forEach(r => { newMap[`${r.ano}-${r.mes}`] = { trafego: r.trafego ?? 0, seguidores: r.seguidores ?? 0 } })
+          metricasRef.current = { ...metricasRef.current, ...newMap }
+          setMetricas(prev => ({ ...prev, ...newMap }))
+          setLoadedMonths(prev => new Set([...prev, ...data.map(r => `${r.ano}-${r.mes}`)]))
+        }
+      })
+    }
+
+    const fetchRotina = () => supabase.from('social_rotina').select('*').maybeSingle().then(({ data }) => {
+      if (data?.dados) setRotina(data.dados)
+    })
+
+    const fetchAll = () => { fetchMetricas(); fetchRotina() }
+
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchAll() }
+    document.addEventListener('visibilitychange', onVisible)
+    const interval = setInterval(fetchAll, 20000)
+
     const channel = supabase
       .channel(`social:${clinicaId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'social_metricas', filter: `clinica_id=eq.${clinicaId}` }, ({ new: n }) => {
@@ -98,8 +122,13 @@ export function SocialProvider({ children }) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'social_rotina', filter: `clinica_id=eq.${clinicaId}` }, ({ new: n }) => {
         if (n?.dados) setRotina(n.dados)
       })
-      .subscribe()
-    return () => supabase.removeChannel(channel)
+      .subscribe((status) => { if (status === 'SUBSCRIBED') fetchAll() })
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      clearInterval(interval)
+      supabase.removeChannel(channel)
+    }
   }, [clinicaId])
 
   const setTrafego = (ano, mes, valor) => {

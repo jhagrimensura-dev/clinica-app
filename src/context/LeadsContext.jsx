@@ -106,7 +106,7 @@ export function LeadsProvider({ children }) {
         else if (eventType === 'UPDATE') setLeads(prev => prev.map(l => l.id === n.id ? fromDB(n) : l))
         else if (eventType === 'DELETE') setLeads(prev => prev.filter(l => l.id !== o.id))
       })
-      .subscribe()
+      .subscribe((status) => { if (status === 'SUBSCRIBED') fetchAll() })
 
     return () => {
       document.removeEventListener('visibilitychange', onVisible)

@@ -65,7 +65,7 @@ export function AgendaProvider({ children }) {
         else if (eventType === 'UPDATE') setLembretes(prev => prev.map(l => l.id === n.dados?.id ? n.dados : l))
         else if (eventType === 'DELETE') setLembretes(prev => prev.filter(l => l.id !== o.dados?.id))
       })
-      .subscribe()
+      .subscribe((status) => { if (status === 'SUBSCRIBED') fetchAll() })
 
     return () => {
       document.removeEventListener('visibilitychange', onVisible)

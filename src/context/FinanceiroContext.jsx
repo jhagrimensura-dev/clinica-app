@@ -177,9 +177,32 @@ export function FinanceiroProvider({ children }) {
       })
   }, [clinicaId, ano])
 
-  // Realtime subscriptions
+  // Realtime subscriptions + polling fallback
   useEffect(() => {
     if (!clinicaId) return
+
+    const fetchDados = () => supabase.from('financeiro_dados').select('*').eq('ano', ano).then(({ data }) => {
+      if (data) {
+        const map = {}
+        data.forEach(r => { map[`${r.ano}-${r.mes}`] = { receitas: r.receitas || {}, custos: r.custos || {}, despesas: r.despesas || {}, investimentos: r.investimentos || {}, emprestimos: r.emprestimos || {} } })
+        setDados(prev => ({ ...prev, ...map }))
+        setLoadedMonths(prev => new Set([...prev, ...data.map(r => `${r.ano}-${r.mes}`)]))
+      }
+    })
+
+    const fetchConfig = () => supabase.from('financeiro_config').select('*').maybeSingle().then(({ data }) => {
+      if (data) {
+        if (data.categorias) setCategorias(data.categorias)
+        if (data.ocultos) setOcultos(data.ocultos)
+      }
+    })
+
+    const fetchAll = () => { fetchDados(); fetchConfig() }
+
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchAll() }
+    document.addEventListener('visibilitychange', onVisible)
+    const interval = setInterval(fetchAll, 20000)
+
     const channel = supabase
       .channel(`financeiro:${clinicaId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'financeiro_dados', filter: `clinica_id=eq.${clinicaId}` }, ({ eventType, new: n }) => {
@@ -201,9 +224,14 @@ export function FinanceiroProvider({ children }) {
         if (n?.categorias) setCategorias(n.categorias)
         if (n?.ocultos) setOcultos(n.ocultos)
       })
-      .subscribe()
-    return () => supabase.removeChannel(channel)
-  }, [clinicaId])
+      .subscribe((status) => { if (status === 'SUBSCRIBED') fetchAll() })
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      clearInterval(interval)
+      supabase.removeChannel(channel)
+    }
+  }, [clinicaId, ano])
 
   const saveConfig = (cats, ocu) => {
     if (!clinicaId) return
