@@ -778,20 +778,8 @@ export default function Faturamento() {
         </div>
       </div>
 
-      {/* Meta + Procedimentos */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <h2 className="text-base font-bold text-gray-800 mb-4">Meta do Mês</h2>
-          <div className="flex justify-between text-sm mb-2">
-            <span className="text-gray-500">R$ {fmt(totalGeral)} de R$ 0</span>
-            <span className="font-semibold text-brand-500">0%</span>
-          </div>
-          <div className="w-full bg-gray-100 rounded-full h-4 mb-4">
-            <div className="bg-brand-400 h-4 rounded-full" style={{ width: '0%' }}></div>
-          </div>
-          <p className="text-xs text-gray-400">{lancamentosMes.length === 0 ? 'Nenhuma transação registrada' : `${lancamentosMes.length} lançamento(s) no mês`}</p>
-        </div>
-
+      {/* Procedimentos */}
+      <div className="grid grid-cols-1 gap-4">
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <h2 className="text-base font-bold text-gray-800 mb-4">Receita por Procedimento</h2>
           <div className="space-y-3">
