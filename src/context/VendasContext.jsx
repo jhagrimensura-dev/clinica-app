@@ -53,16 +53,8 @@ export function VendasProvider({ children }) {
       setLoading(false)
     }
 
-    fetchAll().then(async () => {
-      const local = loadLocal()
-      if (local.length > 0 && lancamentos.length === 0) {
-        const rows = local.map(l => toDB(
-          { ...l, id: l.id || `venda_${Date.now()}_${Math.random().toString(36).slice(2,6)}` },
-          clinicaId
-        ))
-        await supabase.from('lancamentos').upsert(rows, { onConflict: 'id' })
-        setLancamentos(local)
-      }
+    fetchAll().then(() => {
+      localStorage.removeItem('clinica_vendas')
     })
 
     const onVisible = () => { if (document.visibilityState === 'visible') fetchAll() }
