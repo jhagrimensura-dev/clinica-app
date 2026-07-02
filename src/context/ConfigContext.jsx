@@ -56,9 +56,9 @@ export function ConfigProvider({ children }) {
       }
     })
 
-    // Recarrega config quando aba volta ao foco (garante dados frescos para funcionárias)
     const onVisible = () => { if (document.visibilityState === 'visible') loadFromDB() }
     document.addEventListener('visibilitychange', onVisible)
+    const interval = setInterval(loadFromDB, 30000)
 
     // Realtime como bônus (pode não funcionar em todos os casos)
     const channel = supabase
@@ -70,6 +70,7 @@ export function ConfigProvider({ children }) {
 
     return () => {
       document.removeEventListener('visibilitychange', onVisible)
+      clearInterval(interval)
       supabase.removeChannel(channel)
     }
   }, [])

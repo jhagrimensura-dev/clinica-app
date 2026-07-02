@@ -730,7 +730,7 @@ export default function Faturamento() {
       }
     })
     return { ...p, total, totalMl, cor: CORES_PROC[i % CORES_PROC.length] }
-  })
+  }).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
   const maxReceita = Math.max(...receitaPorProc.map(p => p.total), 1)
 
   return (
