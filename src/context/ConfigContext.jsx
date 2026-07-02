@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { useAuth } from './AuthContext'
 
 const ConfigContext = createContext()
 
@@ -20,10 +21,12 @@ const DEFAULTS = {
 }
 
 export function ConfigProvider({ children }) {
+  const { clinicaId } = useAuth()
   const [cfg, setCfg] = useState(DEFAULTS)
   const saveTimers = useRef({})
 
   useEffect(() => {
+    if (!clinicaId) return
     // Carrega todas as chaves do Supabase
     supabase.from('configuracoes').select('chave,valor').in('chave', KEYS).then(async ({ data }) => {
       if (data && data.length > 0) {
@@ -52,7 +55,7 @@ export function ConfigProvider({ children }) {
 
     // Realtime
     const channel = supabase
-      .channel('configuracoes_config')
+      .channel(`configuracoes:${clinicaId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'configuracoes' }, ({ new: n }) => {
         if (n && KEYS.includes(n.chave)) {
           setCfg(prev => ({ ...prev, [n.chave]: n.valor }))
@@ -61,7 +64,7 @@ export function ConfigProvider({ children }) {
       .subscribe()
 
     return () => supabase.removeChannel(channel)
-  }, [])
+  }, [clinicaId])
 
   const setKey = (chave, valor) => {
     setCfg(prev => ({ ...prev, [chave]: valor }))

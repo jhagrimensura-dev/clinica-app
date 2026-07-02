@@ -61,8 +61,8 @@ export function ContasProvider({ children }) {
       })
 
     const channel = supabase
-      .channel(`contas_pagar:all`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'contas_pagar' }, ({ eventType, new: n, old: o }) => {
+      .channel(`contas_pagar:${clinicaId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contas_pagar', filter: `clinica_id=eq.${clinicaId}` }, ({ eventType, new: n, old: o }) => {
         if (eventType === 'INSERT') setContas(prev => prev.find(c => c.id === n.id) ? prev : [...prev, fromDB(n)])
         else if (eventType === 'UPDATE') setContas(prev => prev.map(c => c.id === n.id ? fromDB(n) : c))
         else if (eventType === 'DELETE') setContas(prev => prev.filter(c => c.id !== o.id))
