@@ -60,9 +60,9 @@ function SelectProcedimento({ value, onChange, procs, onProcsChange }) {
   const salvar = () => {
     if (!novoNome.trim()) return
     const precoPorMl = parseMoeda(novoPrecoPorMl)
-    const novos = [...procs, { nome: novoNome.trim(), preco: 0, precoPorMl, unidade: novoUnidade }]
+    const novos = [...procs, { nome: novoNome.trim(), preco: 0, precoPorMl, unidade: novoUnidade, mostraQtd: precoPorMl > 0 }]
     onProcsChange(novos)
-    onChange(novoNome.trim(), 0, precoPorMl, novoUnidade)
+    onChange(novoNome.trim(), 0, precoPorMl, novoUnidade, precoPorMl > 0)
     setAdicionando(false)
     setNovoNome('')
     setNovoPrecoPorMl('')
@@ -75,6 +75,15 @@ function SelectProcedimento({ value, onChange, procs, onProcsChange }) {
     const novos = procs.filter(p => p.nome !== nome)
     onProcsChange(novos)
     if (value === nome) onChange('', 0, 0, 'ml')
+  }
+
+  const toggleMostraQtd = (nome) => {
+    const novos = procs.map(p => p.nome === nome ? { ...p, mostraQtd: !p.mostraQtd } : p)
+    onProcsChange(novos)
+    if (value === nome) {
+      const p = novos.find(x => x.nome === nome)
+      onChange(nome, p.preco ?? 0, p.precoPorMl ?? 0, p.unidade ?? 'ml')
+    }
   }
 
   const valorForaDaLista = value && value !== '__novo__' && !procs.find(p => p.nome === value)
@@ -124,10 +133,16 @@ function SelectProcedimento({ value, onChange, procs, onProcsChange }) {
         </div>
       )}
       {editandoLista && isAdmin ? (
-        <div className="border border-gray-200 rounded-xl p-2 space-y-1 bg-gray-50 max-h-40 overflow-y-auto">
+        <div className="border border-gray-200 rounded-xl p-2 space-y-1 bg-gray-50 max-h-48 overflow-y-auto">
+          <p className="text-[10px] text-gray-400 px-1 pb-0.5">Ative "ml" para mostrar campo de quantidade</p>
           {procs.map(p => (
-            <div key={p.nome} className="flex items-center justify-between gap-2 px-2 py-1 rounded-lg bg-white border border-gray-100">
-              <span className="text-sm text-gray-700 truncate">{p.nome}</span>
+            <div key={p.nome} className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg bg-white border border-gray-100">
+              <span className="text-sm text-gray-700 truncate flex-1">{p.nome}</span>
+              <button type="button" onClick={() => toggleMostraQtd(p.nome)}
+                title="Ativar/desativar campo de ML"
+                className={`text-[11px] font-semibold px-2 py-0.5 rounded-md border transition-colors flex-shrink-0 ${p.mostraQtd ? 'bg-brand-400 text-white border-brand-400' : 'bg-white text-gray-400 border-gray-200 hover:border-brand-300'}`}>
+                ml
+              </button>
               <button type="button" onClick={() => remover(p.nome)}
                 className="text-red-400 hover:text-red-600 text-xs font-bold flex-shrink-0">✕</button>
             </div>
@@ -139,7 +154,7 @@ function SelectProcedimento({ value, onChange, procs, onProcsChange }) {
           onChange={e => {
             if (e.target.value === '__novo__') { setAdicionando(true); return }
             const proc = procs.find(p => p.nome === e.target.value)
-            onChange(e.target.value, proc?.preco ?? 0, proc?.precoPorMl ?? 0, proc?.unidade ?? 'ml')
+            onChange(e.target.value, proc?.preco ?? 0, proc?.precoPorMl ?? 0, proc?.unidade ?? 'ml', proc?.mostraQtd ?? false)
           }}
           className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400 bg-white">
           <option value="">Selecione um procedimento</option>
@@ -297,11 +312,11 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes, leads, pr
     if (soma > 0) setValorTratamento(mascaraMoeda(String(Math.round(soma * 100))))
   }, [listaProcs])
 
-  const handleProcNome = (idx, nome, preco, precoPorMl, unidade) => {
+  const handleProcNome = (idx, nome, preco, precoPorMl, unidade, mostraQtd) => {
     setListaProcs(prev => prev.map((p, i) => {
       if (i !== idx) return p
       const total = precoPorMl > 0 && p.qtd ? precoPorMl * parseFloat(p.qtd) : 0
-      return { ...p, nome, precoPorMl: precoPorMl || 0, unidade: unidade || 'ml', total }
+      return { ...p, nome, precoPorMl: precoPorMl || 0, unidade: unidade || 'ml', mostraQtd: mostraQtd ?? false, total }
     }))
   }
 
@@ -374,14 +389,14 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes, leads, pr
                 <div key={idx} className="space-y-1.5">
                   <div className="flex items-center gap-2">
                     <div className="flex-1">
-                      <SelectProcedimento value={proc.nome} onChange={(nome, preco, precoPorMl, unidade) => handleProcNome(idx, nome, preco, precoPorMl, unidade)} procs={procs} onProcsChange={onProcsChange} />
+                      <SelectProcedimento value={proc.nome} onChange={(nome, preco, precoPorMl, unidade, mostraQtd) => handleProcNome(idx, nome, preco, precoPorMl, unidade, mostraQtd)} procs={procs} onProcsChange={onProcsChange} />
                     </div>
                     {listaProcs.length > 1 && (
                       <button type="button" onClick={() => setListaProcs(prev => prev.filter((_, i) => i !== idx))}
                         className="text-gray-300 hover:text-red-400 text-xl leading-none flex-shrink-0 transition-colors">×</button>
                     )}
                   </div>
-                  {proc.nome && (
+                  {(proc.mostraQtd || proc.precoPorMl > 0) && (
                     <div className="flex items-center gap-2 pl-1">
                       <input type="number" value={proc.qtd} onChange={e => handleProcQtd(idx, e.target.value)}
                         placeholder="0" min="0" step="0.5"
@@ -475,11 +490,11 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
     if (soma > 0) setValorTratamento(mascaraMoeda(String(Math.round(soma * 100))))
   }, [listaProcs])
 
-  const handleProcNome = (idx, nome, preco, precoPorMl, unidade) => {
+  const handleProcNome = (idx, nome, preco, precoPorMl, unidade, mostraQtd) => {
     setListaProcs(prev => prev.map((p, i) => {
       if (i !== idx) return p
       const total = precoPorMl > 0 && p.qtd ? precoPorMl * parseFloat(p.qtd) : 0
-      return { ...p, nome, precoPorMl: precoPorMl || 0, unidade: unidade || 'ml', total }
+      return { ...p, nome, precoPorMl: precoPorMl || 0, unidade: unidade || 'ml', mostraQtd: mostraQtd ?? false, total }
     }))
   }
 
@@ -551,14 +566,14 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
                 <div key={idx} className="space-y-1.5">
                   <div className="flex items-center gap-2">
                     <div className="flex-1">
-                      <SelectProcedimento value={proc.nome} onChange={(nome, preco, precoPorMl, unidade) => handleProcNome(idx, nome, preco, precoPorMl, unidade)} procs={procs} onProcsChange={onProcsChange} />
+                      <SelectProcedimento value={proc.nome} onChange={(nome, preco, precoPorMl, unidade, mostraQtd) => handleProcNome(idx, nome, preco, precoPorMl, unidade, mostraQtd)} procs={procs} onProcsChange={onProcsChange} />
                     </div>
                     {listaProcs.length > 1 && (
                       <button type="button" onClick={() => setListaProcs(prev => prev.filter((_, i) => i !== idx))}
                         className="text-gray-300 hover:text-red-400 text-xl leading-none flex-shrink-0 transition-colors">×</button>
                     )}
                   </div>
-                  {proc.nome && (
+                  {(proc.mostraQtd || proc.precoPorMl > 0) && (
                     <div className="flex items-center gap-2 pl-1">
                       <input type="number" value={proc.qtd} onChange={e => handleProcQtd(idx, e.target.value)}
                         placeholder="0" min="0" step="0.5"
