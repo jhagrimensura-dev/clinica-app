@@ -74,11 +74,12 @@ export function ConfigProvider({ children }) {
       } catch {}
     }, 30000) : null
 
-    // Realtime como bônus (pode não funcionar em todos os casos)
+    // Realtime: configs + canal de reload forçado
     const channel = supabase
       .channel('configuracoes_all')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'configuracoes' }, ({ new: n }) => {
         if (n && KEYS.includes(n.chave)) setCfg(prev => ({ ...prev, [n.chave]: n.valor }))
+        if (n?.chave === 'app_force_reload') window.location.reload()
       })
       .subscribe()
 
