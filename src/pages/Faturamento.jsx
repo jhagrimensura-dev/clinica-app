@@ -714,10 +714,22 @@ export default function Faturamento() {
 
   // Receita agrupada por procedimento
   const receitaPorProc = procs.map((p, i) => {
-    const total = lancamentosMes
-      .filter(l => l.procedimentos === p.nome)
-      .reduce((acc, l) => acc + (l.valorTaxa || 0) + (l.valorTratamento || 0), 0)
-    return { ...p, total, cor: CORES_PROC[i % CORES_PROC.length] }
+    let total = 0
+    let totalMl = 0
+    lancamentosMes.forEach(l => {
+      if (!l.procedimentos) return
+      const partes = l.procedimentos.split(' e ')
+      const temEsse = partes.some(s => parseLinhaProc(s, procs).nome === p.nome)
+      if (!temEsse) return
+      total += (l.valorTaxa || 0) + (l.valorTratamento || 0)
+      if (p.mostraQtd) {
+        partes.forEach(s => {
+          const parsed = parseLinhaProc(s, procs)
+          if (parsed.nome === p.nome && parsed.qtd) totalMl += parseFloat(parsed.qtd) || 0
+        })
+      }
+    })
+    return { ...p, total, totalMl, cor: CORES_PROC[i % CORES_PROC.length] }
   })
   const maxReceita = Math.max(...receitaPorProc.map(p => p.total), 1)
 
@@ -786,7 +798,12 @@ export default function Faturamento() {
             {receitaPorProc.map((p, i) => (
               <div key={i}>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-600">{p.nome}</span>
+                  <span className="text-gray-600 flex items-center gap-1.5">
+                    {p.nome}
+                    {p.mostraQtd && p.totalMl > 0 && (
+                      <span className="text-xs font-semibold text-brand-500 bg-brand-50 px-1.5 py-0.5 rounded-md">{p.totalMl}ml</span>
+                    )}
+                  </span>
                   <span className="font-semibold text-gray-800">R$ {fmt(p.total)}</span>
                 </div>
                 <div className="w-full bg-gray-100 rounded-full h-2">
