@@ -57,16 +57,24 @@ export function ConfigProvider({ children }) {
     const channel = supabase
       .channel(`configuracoes:${clinicaId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'configuracoes' }, ({ new: n }) => {
-        console.log('[ConfigContext] evento recebido:', n?.chave)
         if (n && KEYS.includes(n.chave)) {
           setCfg(prev => ({ ...prev, [n.chave]: n.valor }))
         }
       })
-      .subscribe((status, err) => {
-        console.log('[ConfigContext] realtime status:', status, err || '')
-      })
+      .subscribe()
 
-    return () => supabase.removeChannel(channel)
+    // Polling a cada 15s como fallback (configuracoes não tem clinica_id para filtro realtime)
+    const poll = setInterval(() => {
+      supabase.from('configuracoes').select('chave,valor').in('chave', KEYS).then(({ data }) => {
+        if (data && data.length > 0) {
+          const map = {}
+          data.forEach(r => { map[r.chave] = r.valor })
+          setCfg(prev => ({ ...prev, ...map }))
+        }
+      })
+    }, 15000)
+
+    return () => { supabase.removeChannel(channel); clearInterval(poll) }
   }, [clinicaId])
 
   const setKey = (chave, valor) => {
