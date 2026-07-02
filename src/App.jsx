@@ -238,7 +238,8 @@ function AppContent() {
       const page = e.state?.page || window.location.hash.replace('#/', '') || 'dashboard'
       setActiveRaw(page)
     }
-    const handler = () => {
+    const handler = (e) => {
+      if (e.detail?.telefone) sessionStorage.setItem('inbox_abrir_telefone', e.detail.telefone)
       setActiveRaw('inbox')
       window.history.pushState({ page: 'inbox' }, '', '#/inbox')
     }
