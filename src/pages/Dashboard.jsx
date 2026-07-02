@@ -19,18 +19,17 @@ export default function Dashboard() {
   const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
   const lMes = lancamentos.filter(l => l.data.startsWith(prefix))
   const isConsulta = (l) => (l.procedimentos || '').toLowerCase().trim() === 'consulta'
-  const lMesSemConsulta = lMes.filter(l => !isConsulta(l))
+  const lMesSemConsulta = lMes.filter(l => !isConsulta(l) && l.tipo !== 'Paciente Modelo')
 
-  const totalGeral = lMes.reduce((acc, l) => acc + (l.valorTratamento || 0) + (l.valorTaxa || 0), 0)
-  const totalNovos = lMesSemConsulta.filter(l => l.tipo === 'Novo').reduce((acc, l) => acc + (l.valorTratamento || 0) + (l.valorTaxa || 0), 0)
-  const totalRecorrentes = lMesSemConsulta.filter(l => l.tipo === 'Recorrência').reduce((acc, l) => acc + (l.valorTratamento || 0) + (l.valorTaxa || 0), 0)
-  const totalIndicacaoLanc = lMesSemConsulta.filter(l => l.tipo === 'Indicação').reduce((acc, l) => acc + (l.valorTratamento || 0) + (l.valorTaxa || 0), 0)
+  const totalGeral = lMesSemConsulta.reduce((acc, l) => acc + (l.valorTratamento || 0), 0)
+  const totalNovos = lMesSemConsulta.filter(l => l.tipo === 'Novo').reduce((acc, l) => acc + (l.valorTratamento || 0), 0)
+  const totalRecorrentes = lMesSemConsulta.filter(l => l.tipo === 'Recorrência').reduce((acc, l) => acc + (l.valorTratamento || 0), 0)
+  const totalIndicacaoLanc = lMesSemConsulta.filter(l => l.tipo === 'Indicação').reduce((acc, l) => acc + (l.valorTratamento || 0), 0)
   const countNovos = lMesSemConsulta.filter(l => l.tipo === 'Novo').length
   const countRecorrentes = lMesSemConsulta.filter(l => l.tipo === 'Recorrência').length
   const countIndicacaoLanc = lMesSemConsulta.filter(l => l.tipo === 'Indicação').length
-  const ticketGeral = lMesSemConsulta.length > 0 ? (totalNovos + totalRecorrentes + totalIndicacaoLanc) / lMesSemConsulta.length : 0
-  const totalConsultasNovos = lMes.filter(l => l.tipo === 'Novo' && isConsulta(l)).reduce((acc, l) => acc + (l.valorTaxa || 0) + (l.valorTratamento || 0), 0)
-  const ticketNovos = countNovos > 0 ? (totalNovos + totalConsultasNovos) / countNovos : 0
+  const ticketGeral = lMesSemConsulta.length > 0 ? totalGeral / lMesSemConsulta.length : 0
+  const ticketNovos = countNovos > 0 ? totalNovos / countNovos : 0
   const ticketRecorrentes = countRecorrentes > 0 ? totalRecorrentes / countRecorrentes : 0
   const ticketIndicacao = countIndicacaoLanc > 0 ? totalIndicacaoLanc / countIndicacaoLanc : 0
   const ticketDiario = diasAtendimento > 0 ? totalGeral / diasAtendimento : 0
@@ -103,7 +102,7 @@ export default function Dashboard() {
             <p className="text-sm text-gray-500 font-medium">Vendas</p>
             <span className="text-brand-400 text-lg">👥</span>
           </div>
-          <p className="text-3xl font-bold text-gray-900 mb-3">{lMes.length}</p>
+          <p className="text-3xl font-bold text-gray-900 mb-3">{lMesSemConsulta.length}</p>
           <p className="text-sm text-gray-400">{countNovos} novos · {countRecorrentes} recorrentes</p>
         </div>
       </div>
@@ -113,7 +112,7 @@ export default function Dashboard() {
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Ticket Médio</p>
         <div className="grid grid-cols-5 gap-4">
           {[
-            { label: 'Geral', value: fmt(ticketGeral), sub: `${lMes.length} lançamento(s)` },
+            { label: 'Geral', value: fmt(ticketGeral), sub: `${lMesSemConsulta.length} lançamento(s)` },
             { label: 'Novos', value: fmt(ticketNovos), sub: `${countNovos} novo(s)` },
             { label: 'Recorrência', value: fmt(ticketRecorrentes), sub: `${countRecorrentes} recorrente(s)` },
             { label: 'Indicação', value: fmt(ticketIndicacao), sub: `${countIndicacaoLanc} indicação(ões)` },
@@ -182,7 +181,7 @@ export default function Dashboard() {
             { label: 'Social Media', icon: '🔗', color: 'text-brand-500', value: String(seguidores.toLocaleString('pt-BR')), sub: 'seguidores', extras: [`${totalLeads} leads recebidos`, `${convComercial}% conversão`] },
             { label: 'Leads Novos', icon: '🏢', color: 'text-blue-500', value: String(totalLeads), sub: `leads (${leadsNovos.length} novos · ${leadsIndicacao.length} indicações)`, extras: [`${totalAgend} agendamentos`, `${convComercial}% conversão`] },
             { label: 'Leads Recorrência', icon: '🔄', color: 'text-teal-500', value: String(leadsRecorrentes.length), sub: 'contatos recorrentes', extras: [`${agendRecorrentes} agendamentos`, `${convRecorrencia}% conversão`] },
-            { label: 'Vendas', icon: '📊', color: 'text-green-500', value: String(lMes.length), sub: 'lançamentos no mês', extras: [`${countNovos} novos · ${countRecorrentes} recorrentes`, lMes.length > 0 ? `${fmt(ticketGeral)} ticket médio` : '—'] },
+            { label: 'Vendas', icon: '📊', color: 'text-green-500', value: String(lMesSemConsulta.length), sub: 'lançamentos no mês', extras: [`${countNovos} novos · ${countRecorrentes} recorrentes`, lMesSemConsulta.length > 0 ? `${fmt(ticketGeral)} ticket médio` : '—'] },
           ].map((card, i) => (
             <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
               <div className="flex justify-between items-start mb-1">
