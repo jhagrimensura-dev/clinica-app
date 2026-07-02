@@ -15,6 +15,7 @@ async function zapiFetch(conta, path, method = 'GET', body = null) {
     `/api/zapi-proxy?i=${conta.instanciaId}&t=${conta.instanciaToken}&path=${encodedPath}${ctParam}`,
     {
       method,
+      cache: 'no-store',
       headers: { 'Content-Type': 'application/json' },
       ...(body ? { body: JSON.stringify(body) } : {}),
     }
@@ -23,7 +24,15 @@ async function zapiFetch(conta, path, method = 'GET', body = null) {
     const txt = await res.text().catch(() => '')
     throw new Error(`HTTP ${res.status}: ${txt.slice(0, 100)}`)
   }
-  return res.json()
+  const text = await res.text()
+  if (text.startsWith('export') || text.startsWith('<!')) {
+    throw new Error('Abra o site em draamandaliima.com.br — o inbox não funciona no endereço local')
+  }
+  try {
+    return JSON.parse(text)
+  } catch {
+    throw new Error(`Resposta inválida da API: ${text.slice(0, 80)}`)
+  }
 }
 
 function formatTs(ms) {
