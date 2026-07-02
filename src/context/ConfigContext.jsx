@@ -57,11 +57,14 @@ export function ConfigProvider({ children }) {
     const channel = supabase
       .channel(`configuracoes:${clinicaId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'configuracoes' }, ({ new: n }) => {
+        console.log('[ConfigContext] evento recebido:', n?.chave)
         if (n && KEYS.includes(n.chave)) {
           setCfg(prev => ({ ...prev, [n.chave]: n.valor }))
         }
       })
-      .subscribe()
+      .subscribe((status, err) => {
+        console.log('[ConfigContext] realtime status:', status, err || '')
+      })
 
     return () => supabase.removeChannel(channel)
   }, [clinicaId])
