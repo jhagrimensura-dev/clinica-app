@@ -303,6 +303,7 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes, leads, pr
   const [listaProcs, setListaProcs] = useState([{ nome: '', qtd: '', total: 0, precoPorMl: 0, unidade: 'ml', valorStr: '' }])
   const [valorTaxa, setValorTaxa] = useState('')
   const [valorTratamento, setValorTratamento] = useState('')
+  const [desconto, setDesconto] = useState('')
   const [formasPgto, setFormasPgto] = useState([])
   const [agendado, setAgendado] = useState(false)
   const [obs, setObs] = useState('')
@@ -345,7 +346,8 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes, leads, pr
       .filter(p => p.nome)
       .map(p => p.qtd ? `${p.nome} (${p.qtd}${p.unidade || 'ml'})` : p.nome)
       .join(' e ')
-    onSalvar({ data, paciente, tipo, responsavel, procedimentos, valorTaxa: parseMoeda(valorTaxa), valorTratamento: parseMoeda(valorTratamento), formasPgto, agendado, obs })
+    const valorFinal = Math.max(0, parseMoeda(valorTratamento) - parseMoeda(desconto))
+    onSalvar({ data, paciente, tipo, responsavel, procedimentos, valorTaxa: parseMoeda(valorTaxa), valorTratamento: valorFinal, formasPgto, agendado, obs })
     onClose()
   }
 
@@ -432,9 +434,22 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes, leads, pr
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">Total Tratamento (R$)</label>
-              <input type="text" inputMode="numeric" value={valorTratamento} readOnly
-                placeholder="R$ 0,00"
+              <input type="text" value={valorTratamento} readOnly placeholder="R$ 0,00"
                 className="w-full border border-gray-100 rounded-xl px-3 py-2.5 text-sm bg-gray-50 text-gray-500 cursor-default" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Desconto (R$)</label>
+              <input type="text" inputMode="numeric" value={desconto} onChange={e => setDesconto(mascaraMoeda(e.target.value))}
+                placeholder="R$ 0,00"
+                className="w-full border border-red-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-red-300" />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Valor Final (R$)</label>
+              <input type="text" value={(() => { const v = Math.max(0, parseMoeda(valorTratamento) - parseMoeda(desconto)); return v > 0 ? mascaraMoeda(String(Math.round(v * 100))) : 'R$ 0,00' })()} readOnly
+                className="w-full border border-green-200 rounded-xl px-3 py-2.5 text-sm bg-green-50 text-green-700 font-semibold cursor-default" />
             </div>
           </div>
 
@@ -497,6 +512,7 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
   })
   const [valorTaxa, setValorTaxa] = useState(lancamento.valorTaxa ? mascaraMoeda(String(Math.round(lancamento.valorTaxa * 100))) : '')
   const [valorTratamento, setValorTratamento] = useState(lancamento.valorTratamento ? mascaraMoeda(String(Math.round(lancamento.valorTratamento * 100))) : '')
+  const [desconto, setDesconto] = useState('')
   const [formasPgto, setFormasPgto] = useState(lancamento.formasPgto || [])
   const [agendado, setAgendado] = useState(lancamento.agendado || false)
   const [obs, setObs] = useState(lancamento.obs || '')
@@ -539,7 +555,8 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
       .filter(p => p.nome)
       .map(p => p.qtd ? `${p.nome} (${p.qtd}${p.unidade || 'ml'})` : p.nome)
       .join(' e ')
-    onAtualizar(lancamento.id, { data, paciente, tipo, responsavel, procedimentos, valorTaxa: parseMoeda(valorTaxa), valorTratamento: parseMoeda(valorTratamento), formasPgto, agendado, obs })
+    const valorFinal = Math.max(0, parseMoeda(valorTratamento) - parseMoeda(desconto))
+    onAtualizar(lancamento.id, { data, paciente, tipo, responsavel, procedimentos, valorTaxa: parseMoeda(valorTaxa), valorTratamento: valorFinal, formasPgto, agendado, obs })
     onClose()
   }
 
@@ -626,9 +643,22 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">Total Tratamento (R$)</label>
-              <input type="text" inputMode="numeric" value={valorTratamento} readOnly
-                placeholder="R$ 0,00"
+              <input type="text" value={valorTratamento} readOnly placeholder="R$ 0,00"
                 className="w-full border border-gray-100 rounded-xl px-3 py-2.5 text-sm bg-gray-50 text-gray-500 cursor-default" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Desconto (R$)</label>
+              <input type="text" inputMode="numeric" value={desconto} onChange={e => setDesconto(mascaraMoeda(e.target.value))}
+                placeholder="R$ 0,00"
+                className="w-full border border-red-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-red-300" />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Valor Final (R$)</label>
+              <input type="text" value={(() => { const v = Math.max(0, parseMoeda(valorTratamento) - parseMoeda(desconto)); return v > 0 ? mascaraMoeda(String(Math.round(v * 100))) : 'R$ 0,00' })()} readOnly
+                className="w-full border border-green-200 rounded-xl px-3 py-2.5 text-sm bg-green-50 text-green-700 font-semibold cursor-default" />
             </div>
           </div>
 
