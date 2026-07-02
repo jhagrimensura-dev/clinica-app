@@ -10,10 +10,10 @@ const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho
 const FORMAS_PGTO = ['PIX', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Transferência', 'Boleto']
 const CORES_PROC = ['bg-brand-400','bg-purple-400','bg-blue-400','bg-cyan-400','bg-teal-400','bg-orange-400','bg-pink-400','bg-indigo-400']
 const PROCS_DEFAULT = [
-  { nome: 'Botox', preco: 0, precoPorMl: 0, unidade: 'ml' },
-  { nome: 'Preenchimento', preco: 0, precoPorMl: 0, unidade: 'ml' },
-  { nome: 'Skinbooster', preco: 0, precoPorMl: 0, unidade: 'ml' },
-  { nome: 'Fio de PDO', preco: 0, precoPorMl: 0, unidade: 'fio' },
+  { nome: 'Botox', preco: 0, precoPorMl: 0, unidade: 'ml', mostraQtd: false },
+  { nome: 'Preenchimento', preco: 0, precoPorMl: 0, unidade: 'ml', mostraQtd: true },
+  { nome: 'Skinbooster', preco: 0, precoPorMl: 0, unidade: 'ml', mostraQtd: true },
+  { nome: 'Fio de PDO', preco: 0, precoPorMl: 0, unidade: 'fio', mostraQtd: false },
 ]
 
 function parseLinhaProc(str, procs) {
@@ -688,7 +688,9 @@ export default function Faturamento() {
   const { leads } = useLeads()
   const { procedimentos: procsFromDB, setProcedimentos } = useConfig()
   const { userRole } = useAuth()
-  const procs = procsFromDB || PROCS_DEFAULT
+  const procs = (procsFromDB || PROCS_DEFAULT).map(p =>
+    p.mostraQtd !== undefined ? p : { ...p, mostraQtd: PROCS_DEFAULT.find(d => d.nome === p.nome)?.mostraQtd ?? (p.precoPorMl > 0) }
+  )
   const [modal, setModal] = useState(false)
   const [editando, setEditando] = useState(null)
   const handleProcsChange = (novos) => setProcedimentos(novos)
