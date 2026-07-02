@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
-import { useAuth } from './AuthContext'
 
 const ConfigContext = createContext()
 
@@ -21,76 +20,72 @@ const DEFAULTS = {
 }
 
 export function ConfigProvider({ children }) {
-  const { clinicaId } = useAuth()
   const [cfg, setCfg] = useState(DEFAULTS)
   const saveTimers = useRef({})
-  const channelRef = useRef(null)
+  const loaded = useRef(false)
 
-  const reloadFromDB = () =>
-    supabase.from('configuracoes').select('chave,valor').in('chave', KEYS).then(({ data }) => {
-      if (data && data.length > 0) {
-        const map = {}
-        data.forEach(r => { map[r.chave] = r.valor })
-        setCfg(prev => ({ ...prev, ...map }))
-      }
-    })
+  const loadFromDB = async () => {
+    const { data } = await supabase.from('configuracoes').select('chave,valor').in('chave', KEYS)
+    if (data && data.length > 0) {
+      const map = {}
+      data.forEach(r => { map[r.chave] = r.valor })
+      setCfg(prev => ({ ...prev, ...map }))
+    }
+    return data
+  }
 
   useEffect(() => {
-    if (!clinicaId) return
-
     // Carga inicial
-    supabase.from('configuracoes').select('chave,valor').in('chave', KEYS).then(async ({ data }) => {
-      if (data && data.length > 0) {
-        const map = {}
-        data.forEach(r => { map[r.chave] = r.valor })
-        setCfg(prev => ({ ...prev, ...map }))
-      }
-      // Migra chaves ausentes do localStorage
-      const faltando = KEYS.filter(k => !data?.find(r => r.chave === k))
-      const rows = []
-      for (const key of faltando) {
-        const local = localStorage.getItem(key)
-        if (local) {
-          try {
-            const valor = JSON.parse(local)
-            rows.push({ chave: key, valor })
-            setCfg(prev => ({ ...prev, [key]: valor }))
-          } catch { }
+    loadFromDB().then(async (data) => {
+      if (!loaded.current) {
+        loaded.current = true
+        // Migra do localStorage se não tem dados no Supabase
+        const faltando = KEYS.filter(k => !data?.find(r => r.chave === k))
+        const rows = []
+        for (const key of faltando) {
+          const local = localStorage.getItem(key)
+          if (local) {
+            try {
+              const valor = JSON.parse(local)
+              rows.push({ chave: key, valor })
+              setCfg(prev => ({ ...prev, [key]: valor }))
+            } catch { }
+          }
         }
+        if (rows.length > 0) await supabase.from('configuracoes').upsert(rows, { onConflict: 'chave' })
       }
-      if (rows.length > 0) await supabase.from('configuracoes').upsert(rows, { onConflict: 'chave' })
     })
 
-    // Broadcast: recebe sinal quando qualquer usuário salva uma config
+    // Recarrega config quando aba volta ao foco (garante dados frescos para funcionárias)
+    const onVisible = () => { if (document.visibilityState === 'visible') loadFromDB() }
+    document.addEventListener('visibilitychange', onVisible)
+
+    // Realtime como bônus (pode não funcionar em todos os casos)
     const channel = supabase
-      .channel(`config_sync:${clinicaId}`)
-      .on('broadcast', { event: 'config_updated' }, ({ payload }) => {
-        if (payload?.chave && KEYS.includes(payload.chave)) {
-          setCfg(prev => ({ ...prev, [payload.chave]: payload.valor }))
-        }
+      .channel('configuracoes_all')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'configuracoes' }, ({ new: n }) => {
+        if (n && KEYS.includes(n.chave)) setCfg(prev => ({ ...prev, [n.chave]: n.valor }))
       })
       .subscribe()
 
-    channelRef.current = channel
-    return () => { supabase.removeChannel(channel); channelRef.current = null }
-  }, [clinicaId])
-
-  const setKey = (chave, valor) => {
-    setCfg(prev => ({ ...prev, [chave]: valor }))
-
-    // Envia broadcast para sincronizar outras telas imediatamente
-    if (channelRef.current) {
-      channelRef.current.send({ type: 'broadcast', event: 'config_updated', payload: { chave, valor } })
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      supabase.removeChannel(channel)
     }
+  }, [])
 
-    // Salva no Supabase
+  const setKey = async (chave, valor) => {
+    setCfg(prev => ({ ...prev, [chave]: valor }))
+    // Salva imediatamente (sem debounce para listas)
     if (Array.isArray(valor)) {
-      supabase.from('configuracoes').upsert({ chave, valor }, { onConflict: 'chave' })
+      const { error } = await supabase.from('configuracoes').upsert({ chave, valor }, { onConflict: 'chave' })
+      if (error) console.error('ConfigContext save error:', chave, error)
       return
     }
     if (saveTimers.current[chave]) clearTimeout(saveTimers.current[chave])
-    saveTimers.current[chave] = setTimeout(() => {
-      supabase.from('configuracoes').upsert({ chave, valor }, { onConflict: 'chave' })
+    saveTimers.current[chave] = setTimeout(async () => {
+      const { error } = await supabase.from('configuracoes').upsert({ chave, valor }, { onConflict: 'chave' })
+      if (error) console.error('ConfigContext save error:', chave, error)
     }, 600)
   }
 
