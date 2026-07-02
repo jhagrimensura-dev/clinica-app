@@ -785,12 +785,14 @@ export default function Faturamento() {
   }
 
   const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
-  const lancamentosMes = lancamentos.filter(l => l.data.startsWith(prefix))
+  const lancamentosMesAll = lancamentos.filter(l => l.data.startsWith(prefix))
+  const lancamentosModelo = lancamentosMesAll.filter(l => l.tipo === 'Paciente Modelo')
+  const lancamentosMes = lancamentosMesAll.filter(l => l.tipo !== 'Paciente Modelo')
 
   const totalTratamentos = lancamentosMes.reduce((acc, l) => acc + (l.valorTratamento || 0), 0)
   const totalTaxas = lancamentosMes.reduce((acc, l) => acc + (l.valorTaxa || 0), 0)
   const totalGeral = totalTratamentos + totalTaxas
-  const ticketMedio = lancamentosMes.length > 0 ? totalGeral / lancamentosMes.length : 0
+  const totalModelo = lancamentosModelo.reduce((acc, l) => acc + (l.valorTratamento || 0) + (l.valorTaxa || 0), 0)
 
   const fmt = (v) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
 
@@ -870,9 +872,9 @@ export default function Faturamento() {
           <p className="text-xs text-gray-400 mt-1">{lancamentosMes.filter(l => (l.valorTaxa || 0) > 0).length} consulta(s) paga(s)</p>
         </div>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <p className="text-sm text-gray-500 font-medium mb-1">Ticket Médio</p>
-          <p className="text-2xl font-bold text-brand-500">R$ {fmt(ticketMedio)}</p>
-          <p className="text-xs text-gray-400 mt-1">Por lançamento</p>
+          <p className="text-sm text-gray-500 font-medium mb-1">Paciente Modelo</p>
+          <p className="text-2xl font-bold text-purple-500">R$ {fmt(totalModelo)}</p>
+          <p className="text-xs text-gray-400 mt-1">{lancamentosModelo.length} lançamento(s) — não contabilizado(s)</p>
         </div>
       </div>
 
@@ -912,7 +914,7 @@ export default function Faturamento() {
           <button
             onClick={() => {
               const headers = ['Data','Paciente','Tipo','Responsável','Procedimentos','Consultas (R$)','Tratamento','Total','Pagamento']
-              const rows = lancamentosMes.map(l => [
+              const rows = lancamentosMesAll.map(l => [
                 new Date(l.data).toLocaleDateString('pt-BR'),
                 l.paciente, l.tipo,
                 l.responsavel || '',
@@ -951,7 +953,7 @@ export default function Faturamento() {
               </tr>
             </thead>
             <tbody>
-              {lancamentosMes.map(l => {
+              {lancamentosMesAll.map(l => {
                 const total = (l.valorTaxa || 0) + (l.valorTratamento || 0)
                 return (
                   <tr key={l.id} onClick={() => setEditando(l)}
@@ -971,7 +973,7 @@ export default function Faturamento() {
             </tbody>
           </table>
         </div>
-        {lancamentosMes.length === 0 && (
+        {lancamentosMesAll.length === 0 && (
           <p className="text-center text-gray-400 text-sm py-8">Nenhum lançamento em {MESES_FULL[mes]}</p>
         )}
       </div>
