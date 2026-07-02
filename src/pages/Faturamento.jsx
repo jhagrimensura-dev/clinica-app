@@ -849,7 +849,7 @@ export default function Faturamento() {
                   <span className="text-gray-600 flex items-center gap-1.5">
                     {p.nome}
                     {p.count > 0 && (
-                      <span className="text-xs font-semibold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-md">{p.count}x</span>
+                      <span className="text-xs font-semibold text-brand-500 bg-brand-50 px-1.5 py-0.5 rounded-md">{p.count}x</span>
                     )}
                     {p.mostraQtd && p.totalMl > 0 && (
                       <span className="text-xs font-semibold text-brand-500 bg-brand-50 px-1.5 py-0.5 rounded-md">{p.totalMl}ml</span>
