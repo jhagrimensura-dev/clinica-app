@@ -793,6 +793,15 @@ export default function Faturamento() {
   const totalTaxas = lancamentosMes.reduce((acc, l) => acc + (l.valorTaxa || 0), 0)
   const totalGeral = totalTratamentos + totalTaxas
   const totalModelo = lancamentosModelo.reduce((acc, l) => acc + (l.valorTratamento || 0) + (l.valorTaxa || 0), 0)
+  const mlModelo = lancamentosModelo.reduce((acc, l) => {
+    if (!l.procedimentos) return acc
+    l.procedimentos.split(' e ').forEach(s => {
+      const parsed = parseLinhaProc(s, procs)
+      const proc = procs.find(p => p.nome === parsed.nome)
+      if (proc?.mostraQtd && parsed.qtd) acc += parseFloat(parsed.qtd) || 0
+    })
+    return acc
+  }, 0)
 
   const fmt = (v) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
 
@@ -874,7 +883,9 @@ export default function Faturamento() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 font-medium mb-1">Paciente Modelo</p>
           <p className="text-2xl font-bold text-purple-500">R$ {fmt(totalModelo)}</p>
-          <p className="text-xs text-gray-400 mt-1">{lancamentosModelo.length} lançamento(s) — não contabilizado(s)</p>
+          <p className="text-xs text-gray-400 mt-1">
+            {lancamentosModelo.length} lançamento(s){mlModelo > 0 ? ` · ${mlModelo % 1 === 0 ? mlModelo : mlModelo.toFixed(1)}ml` : ''} — não contabilizado(s)
+          </p>
         </div>
       </div>
 
