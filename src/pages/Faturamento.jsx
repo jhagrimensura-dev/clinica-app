@@ -398,6 +398,7 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes, leads, pr
                 <option value="Novo">Novo</option>
                 <option value="Recorrência">Recorrência</option>
                 <option value="Indicação">Indicação</option>
+                <option value="Paciente Modelo">Paciente Modelo</option>
               </select>
             </div>
             <div>
@@ -611,6 +612,7 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
                 <option value="Novo">Novo</option>
                 <option value="Recorrência">Recorrência</option>
                 <option value="Indicação">Indicação</option>
+                <option value="Paciente Modelo">Paciente Modelo</option>
               </select>
             </div>
             <div>
@@ -956,7 +958,7 @@ export default function Faturamento() {
                     className="border-b border-gray-50 hover:bg-brand-50 cursor-pointer transition-colors">
                     <td className="py-3 px-3 text-gray-500 whitespace-nowrap">{new Date(l.data).toLocaleDateString('pt-BR')}</td>
                     <td className="py-3 px-3 font-medium text-gray-800">{l.paciente}</td>
-                    <td className="py-3 px-3"><span className={`px-2 py-1 rounded-full text-xs font-semibold ${l.tipo === 'Novo' ? 'bg-green-100 text-green-600' : l.tipo === 'Recorrência' ? 'bg-blue-100 text-blue-600' : 'bg-brand-100 text-brand-600'}`}>{l.tipo}</span></td>
+                    <td className="py-3 px-3"><span className={`px-2 py-1 rounded-full text-xs font-semibold ${l.tipo === 'Novo' ? 'bg-green-100 text-green-600' : l.tipo === 'Recorrência' ? 'bg-blue-100 text-blue-600' : l.tipo === 'Paciente Modelo' ? 'bg-purple-100 text-purple-600' : 'bg-brand-100 text-brand-600'}`}>{l.tipo}</span></td>
                     <td className="py-3 px-3 text-gray-600 text-sm">{l.responsavel || '—'}</td>
                     <td className="py-3 px-3 text-gray-500 max-w-[180px] truncate">{displayProc(l.procedimentos) || '—'}</td>
                     <td className="py-3 px-3 text-gray-600 text-right whitespace-nowrap">R$ {fmt(l.valorTaxa || 0)}</td>
