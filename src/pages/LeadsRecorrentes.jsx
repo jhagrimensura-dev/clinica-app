@@ -318,12 +318,16 @@ export default function LeadsRecorrentes() {
                     <IconeWpp ativo={!!lead.telefone} />
                   </button>
                   {userRole !== 'Funcionário' && (confirmDelete === lead.id ? (
-                    <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-                      <button onClick={() => { removeLead(lead.id); setConfirmDelete(null) }} className="text-xs text-red-500 font-semibold px-2 py-1 rounded hover:bg-red-50">Sim</button>
-                      <button onClick={() => setConfirmDelete(null)} className="text-xs text-gray-400 px-2 py-1 rounded hover:bg-gray-100">Não</button>
+                    <div className="flex flex-col items-end gap-1" onClick={e => e.stopPropagation()}>
+                      <p className="text-xs text-gray-400 whitespace-nowrap">Excluir do sistema?</p>
+                      <p className="text-xs text-gray-300 whitespace-nowrap">WhatsApp não é afetado</p>
+                      <div className="flex gap-1">
+                        <button onClick={() => { removeLead(lead.id); setConfirmDelete(null) }} className="text-xs text-red-500 font-semibold px-2 py-1 rounded hover:bg-red-50">Sim</button>
+                        <button onClick={() => setConfirmDelete(null)} className="text-xs text-gray-400 px-2 py-1 rounded hover:bg-gray-100">Não</button>
+                      </div>
                     </div>
                   ) : (
-                    <button onClick={e => { e.stopPropagation(); setConfirmDelete(lead.id) }} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 text-xs transition-all">✕</button>
+                    <button onClick={e => { e.stopPropagation(); setConfirmDelete(lead.id) }} title="Excluir lead do sistema (WhatsApp não é afetado)" className="opacity-20 group-hover:opacity-70 hover:!opacity-100 text-gray-400 hover:text-red-400 text-sm transition-all">✕</button>
                   ))}
                 </div>
               )
