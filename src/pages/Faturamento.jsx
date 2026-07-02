@@ -17,18 +17,32 @@ const PROCS_DEFAULT = [
 ]
 
 function parseLinhaProc(str, procs) {
-  if (!str) return { nome: '', qtd: '', total: 0, precoPorMl: 0, unidade: 'ml' }
-  const match = str.match(/^(.+?)\s*\((\d+(?:[.,]\d+)?)\s*(\w+)?\)$/)
+  if (!str) return { nome: '', qtd: '', total: 0, precoPorMl: 0, unidade: 'ml', storedVal: 0 }
+  // Extract per-procedure value encoded as @{cents}
+  let storedVal = 0
+  let s = str
+  const atIdx = str.lastIndexOf('@')
+  if (atIdx > 0 && /^\d+$/.test(str.slice(atIdx + 1))) {
+    storedVal = parseInt(str.slice(atIdx + 1), 10) / 100
+    s = str.slice(0, atIdx).trim()
+  }
+  const match = s.match(/^(.+?)\s*\((\d+(?:[.,]\d+)?)\s*(\w+)?\)$/)
   if (match) {
     const nome = match[1].trim()
     const qtd = match[2].replace(',', '.')
     const unidade = match[3]?.trim() || 'ml'
     const proc = procs.find(p => p.nome === nome)
     const precoPorMl = proc?.precoPorMl || 0
-    return { nome, qtd, total: precoPorMl > 0 ? precoPorMl * parseFloat(qtd) : 0, precoPorMl, unidade }
+    const calcTotal = precoPorMl > 0 ? precoPorMl * parseFloat(qtd) : 0
+    return { nome, qtd, total: storedVal || calcTotal, precoPorMl, unidade, storedVal }
   }
-  const proc = procs.find(p => p.nome === str.trim())
-  return { nome: str.trim(), qtd: '', total: 0, precoPorMl: proc?.precoPorMl || 0, unidade: proc?.unidade || 'ml' }
+  const proc = procs.find(p => p.nome === s.trim())
+  return { nome: s.trim(), qtd: '', total: storedVal, precoPorMl: proc?.precoPorMl || 0, unidade: proc?.unidade || 'ml', storedVal }
+}
+
+function displayProc(str) {
+  if (!str) return ''
+  return str.replace(/@\d+/g, '').replace(/\s+/g, ' ').trim()
 }
 
 function getProcedimentos(fromContext) {
@@ -344,7 +358,11 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes, leads, pr
     if (!paciente) return
     const procedimentos = listaProcs
       .filter(p => p.nome)
-      .map(p => p.qtd ? `${p.nome} (${p.qtd}${p.unidade || 'ml'})` : p.nome)
+      .map(p => {
+        let s = p.qtd ? `${p.nome} (${p.qtd}${p.unidade || 'ml'})` : p.nome
+        if (p.total > 0) s += `@${Math.round(p.total * 100)}`
+        return s
+      })
       .join(' e ')
     const valorFinal = Math.max(0, parseMoeda(valorTratamento) - parseMoeda(desconto))
     onSalvar({ data, paciente, tipo, responsavel, procedimentos, valorTaxa: parseMoeda(valorTaxa), valorTratamento: valorFinal, formasPgto, agendado, obs })
@@ -503,10 +521,10 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
   const [listaProcs, setListaProcs] = useState(() => {
     if (!lancamento.procedimentos) return [{ nome: '', qtd: '', total: 0, precoPorMl: 0, unidade: 'ml', valorStr: '' }]
     const parsed = lancamento.procedimentos.split(' e ').filter(Boolean).map(s => parseLinhaProc(s, procs))
-    const somaCalc = parsed.reduce((acc, p) => acc + (p.total || 0), 0)
+    const hasStored = parsed.some(p => p.storedVal > 0)
     return parsed.map(p => {
-      let total = p.total || 0
-      if (somaCalc === 0 && parsed.length === 1 && lancamento.valorTratamento > 0) total = lancamento.valorTratamento
+      let total = p.storedVal || p.total || 0
+      if (!hasStored && parsed.length === 1 && lancamento.valorTratamento > 0) total = lancamento.valorTratamento
       return { ...p, total, valorStr: total > 0 ? mascaraMoeda(String(Math.round(total * 100))) : '' }
     })
   })
@@ -553,7 +571,11 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
     if (!paciente) return
     const procedimentos = listaProcs
       .filter(p => p.nome)
-      .map(p => p.qtd ? `${p.nome} (${p.qtd}${p.unidade || 'ml'})` : p.nome)
+      .map(p => {
+        let s = p.qtd ? `${p.nome} (${p.qtd}${p.unidade || 'ml'})` : p.nome
+        if (p.total > 0) s += `@${Math.round(p.total * 100)}`
+        return s
+      })
       .join(' e ')
     const valorFinal = Math.max(0, parseMoeda(valorTratamento) - parseMoeda(desconto))
     onAtualizar(lancamento.id, { data, paciente, tipo, responsavel, procedimentos, valorTaxa: parseMoeda(valorTaxa), valorTratamento: valorFinal, formasPgto, agendado, obs })
@@ -778,14 +800,28 @@ export default function Faturamento() {
     lancamentosMes.forEach(l => {
       if (!l.procedimentos) return
       const partes = l.procedimentos.split(' e ')
-      const temEsse = partes.some(s => parseLinhaProc(s, procs).nome === p.nome)
-      if (!temEsse) return
+      const matching = partes.filter(s => parseLinhaProc(s, procs).nome === p.nome)
+      if (matching.length === 0) return
       count++
-      total += (l.valorTaxa || 0) + (l.valorTratamento || 0)
-      if (p.mostraQtd) {
-        partes.forEach(s => {
+      const hasStored = partes.some(s => parseLinhaProc(s, procs).storedVal > 0)
+      if (hasStored) {
+        matching.forEach(s => {
           const parsed = parseLinhaProc(s, procs)
-          if (parsed.nome === p.nome && parsed.qtd) totalMl += parseFloat(parsed.qtd) || 0
+          total += parsed.storedVal
+          if (p.mostraQtd && parsed.qtd) totalMl += parseFloat(parsed.qtd) || 0
+        })
+      } else if (partes.length === 1) {
+        total += (l.valorTaxa || 0) + (l.valorTratamento || 0)
+        if (p.mostraQtd && matching[0]) {
+          const parsed = parseLinhaProc(matching[0], procs)
+          if (parsed.qtd) totalMl += parseFloat(parsed.qtd) || 0
+        }
+      } else {
+        // Dados antigos sem valores por procedimento: divide igualmente
+        total += (l.valorTratamento || 0) / partes.length
+        matching.forEach(s => {
+          const parsed = parseLinhaProc(s, procs)
+          if (p.mostraQtd && parsed.qtd) totalMl += parseFloat(parsed.qtd) || 0
         })
       }
     })
@@ -878,7 +914,7 @@ export default function Faturamento() {
                 new Date(l.data).toLocaleDateString('pt-BR'),
                 l.paciente, l.tipo,
                 l.responsavel || '',
-                l.procedimentos || '',
+                displayProc(l.procedimentos) || '',
                 (l.valorTaxa || 0).toFixed(2),
                 (l.valorTratamento || 0).toFixed(2),
                 ((l.valorTaxa || 0) + (l.valorTratamento || 0)).toFixed(2),
@@ -922,7 +958,7 @@ export default function Faturamento() {
                     <td className="py-3 px-3 font-medium text-gray-800">{l.paciente}</td>
                     <td className="py-3 px-3"><span className={`px-2 py-1 rounded-full text-xs font-semibold ${l.tipo === 'Novo' ? 'bg-green-100 text-green-600' : l.tipo === 'Recorrência' ? 'bg-blue-100 text-blue-600' : 'bg-brand-100 text-brand-600'}`}>{l.tipo}</span></td>
                     <td className="py-3 px-3 text-gray-600 text-sm">{l.responsavel || '—'}</td>
-                    <td className="py-3 px-3 text-gray-500 max-w-[180px] truncate">{l.procedimentos || '—'}</td>
+                    <td className="py-3 px-3 text-gray-500 max-w-[180px] truncate">{displayProc(l.procedimentos) || '—'}</td>
                     <td className="py-3 px-3 text-gray-600 text-right whitespace-nowrap">R$ {fmt(l.valorTaxa || 0)}</td>
                     <td className="py-3 px-3 text-gray-600 text-right whitespace-nowrap">R$ {fmt(l.valorTratamento || 0)}</td>
                     <td className="py-3 px-3 font-semibold text-gray-800 text-right whitespace-nowrap">R$ {fmt(total)}</td>
