@@ -75,14 +75,15 @@ export function ClinicaProvider({ children }) {
     })
   }, [clinicaId])
 
-  // Load current month from Supabase when month or clinicaId changes
+  // Load current month + polling
   useEffect(() => {
-    if (!clinicaId || loadedMonths.has(mesKey)) return
+    if (!clinicaId) return
 
-    Promise.all([
-      supabase.from('clinica_metas').select('*').eq('clinica_id', clinicaId).eq('ano', ano).eq('mes', mes).maybeSingle(),
-      supabase.from('clinica_posts').select('*').eq('clinica_id', clinicaId).eq('ano', ano).eq('mes', mes).maybeSingle(),
-    ]).then(([{ data: meta }, { data: posts }]) => {
+    const loadMes = async () => {
+      const [{ data: meta }, { data: postsData }] = await Promise.all([
+        supabase.from('clinica_metas').select('*').eq('clinica_id', clinicaId).eq('ano', ano).eq('mes', mes).maybeSingle(),
+        supabase.from('clinica_posts').select('*').eq('clinica_id', clinicaId).eq('ano', ano).eq('mes', mes).maybeSingle(),
+      ])
       setDadosPorMes(prev => ({
         ...prev,
         [mesKey]: {
@@ -93,9 +94,18 @@ export function ClinicaProvider({ children }) {
           recordeValor: meta?.recorde_valor ?? undefined,
         },
       }))
-      setPostsPorMes(prev => ({ ...prev, [mesKey]: posts?.posts || [] }))
+      setPostsPorMes(prev => ({ ...prev, [mesKey]: postsData?.posts || [] }))
       setLoadedMonths(prev => new Set([...prev, mesKey]))
-    })
+    }
+
+    loadMes()
+    const onVisible = () => { if (document.visibilityState === 'visible') loadMes() }
+    document.addEventListener('visibilitychange', onVisible)
+    const interval = setInterval(loadMes, 15000)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      clearInterval(interval)
+    }
   }, [clinicaId, mesKey])
 
   // Realtime subscriptions
@@ -173,14 +183,13 @@ export function ClinicaProvider({ children }) {
     setPostsPorMes(prev => {
       const atual = prev[mesKey] || []
       const next = typeof updater === 'function' ? updater(atual) : updater
-      const updated = { ...prev, [mesKey]: next }
       if (clinicaId) {
         supabase.from('clinica_posts').upsert(
           { clinica_id: clinicaId, ano, mes, posts: next },
           { onConflict: 'clinica_id,ano,mes' }
-        )
+        ).then(({ error }) => { if (error) console.error('setPosts error:', error) })
       }
-      return updated
+      return { ...prev, [mesKey]: next }
     })
   }
 
