@@ -29,6 +29,9 @@ export default function Dashboard() {
   const countNovos = lMesSemConsulta.filter(l => l.tipo === 'Novo').length
   const countRecorrentes = lMesSemConsulta.filter(l => l.tipo === 'Recorrência').length
   const countIndicacaoLanc = lMesSemConsulta.filter(l => l.tipo === 'Indicação').length
+  const lConsultas = lMesValidos.filter(l => isConsulta(l))
+  const totalConsultas = lConsultas.reduce((acc, l) => acc + (l.valorTaxa || 0), 0)
+  const countConsultas = lConsultas.length
   const ticketGeral = lMesValidos.length > 0 ? totalGeral / lMesValidos.length : 0
   const ticketNovos = countNovos > 0 ? totalNovos / countNovos : 0
   const ticketRecorrentes = countRecorrentes > 0 ? totalRecorrentes / countRecorrentes : 0
@@ -84,6 +87,12 @@ export default function Dashboard() {
               <span className="text-gray-500">Recorrência</span>
               <span className="font-medium text-gray-800">{fmt(totalRecorrentes)} <span className="text-brand-400 text-xs ml-1">{countRecorrentes} venda(s)</span> <span className="text-gray-400 text-xs">({totalGeral > 0 ? ((totalRecorrentes / totalGeral) * 100).toFixed(1) : 0}%)</span></span>
             </div>
+            {totalConsultas > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Consultas</span>
+                <span className="font-medium text-gray-800">{fmt(totalConsultas)} <span className="text-brand-400 text-xs ml-1">{countConsultas} consulta(s)</span> <span className="text-gray-400 text-xs">({totalGeral > 0 ? ((totalConsultas / totalGeral) * 100).toFixed(1) : 0}%)</span></span>
+              </div>
+            )}
           </div>
         </div>
 
