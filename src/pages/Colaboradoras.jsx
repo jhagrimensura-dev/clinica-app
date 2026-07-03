@@ -104,6 +104,7 @@ export default function Colaboradoras() {
   const hoje = new Date()
   const [mes, setMes] = useState(hoje.getMonth())
   const [ano, setAno] = useState(hoje.getFullYear())
+  const [refreshKey, setRefreshKey] = useState(0)
 
   const [dados, setDados] = useState(() => loadData(hoje.getMonth(), hoje.getFullYear()) || defaultState())
 
@@ -181,6 +182,7 @@ export default function Colaboradoras() {
                   const next = { ...dados, semanas: [...vendasPorSemana] }
                   setDados(next)
                   saveData(mes, ano, next)
+                  setRefreshKey(k => k + 1)
                 }}
                 className="flex items-center gap-1.5 text-xs font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-3 py-1.5 rounded-xl transition-colors"
               >
@@ -204,7 +206,7 @@ export default function Colaboradoras() {
                     )}
                   </div>
                   <div className="flex-1">
-                    <MoneyInput value={v} onChange={val => setSemana(i, val)} />
+                    <MoneyInput key={`s${i}-${refreshKey}`} value={v} onChange={val => setSemana(i, val)} />
                   </div>
                   <div className="w-36 flex-shrink-0 flex items-center justify-between">
                     <TierBadge valor={v} tiers={TIERS_SEMANA} />
