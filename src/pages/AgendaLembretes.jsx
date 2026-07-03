@@ -194,9 +194,10 @@ export default function AgendaLembretes() {
                             <button
                               key={l.id}
                               onClick={e => { e.stopPropagation(); abrirEditar(l) }}
-                              className={`w-full text-left px-1.5 py-0.5 rounded-md text-[10px] font-semibold truncate flex items-center gap-1 ${cor.bg} ${cor.text} ${l.concluido ? 'opacity-40 line-through' : ''}`}>
+                              className={`w-full text-left px-1.5 py-0.5 rounded-md text-[10px] font-semibold flex items-center gap-1 ${cor.bg} ${cor.text} ${l.concluido ? 'opacity-40 line-through' : ''}`}>
                               {l.hora && <span className="opacity-60 flex-shrink-0">{l.hora}</span>}
-                              <span className="truncate">{l.leadNome}{(l.descricao || '').includes('Aniversário') ? ' 🎂' : ''}</span>
+                              <span className="truncate flex-1">{l.leadNome}</span>
+                              {(l.descricao || '').includes('Aniversário') && <span className="flex-shrink-0">🎈</span>}
                             </button>
                           )
                         })}
@@ -275,7 +276,10 @@ export default function AgendaLembretes() {
                       <p className={`text-[10px] font-semibold ${cor.text} opacity-70`}>
                         {l.data.split('-').reverse().join('/')}{l.hora ? ` · ${l.hora}` : ''}
                       </p>
-                      <p className={`text-xs font-bold ${cor.text} truncate`}>{l.leadNome}{(l.descricao || '').includes('Aniversário') ? ' 🎂' : ''}</p>
+                      <div className={`flex items-center justify-between gap-1`}>
+                        <p className={`text-xs font-bold ${cor.text} truncate flex-1`}>{l.leadNome}</p>
+                        {(l.descricao || '').includes('Aniversário') && <span className="flex-shrink-0 text-sm">🎈</span>}
+                      </div>
                       {l.descricao && <p className={`text-[10px] ${cor.text} opacity-60 truncate`}>{l.descricao}</p>}
                     </button>
                   )
@@ -305,9 +309,10 @@ export default function AgendaLembretes() {
                       return (
                         <button key={l.id} onClick={() => abrirEditar(l)}
                           className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${cor.bg} ${cor.border} hover:opacity-80 ${l.concluido ? 'opacity-40' : ''}`}>
-                          <span className={`text-sm font-semibold ${cor.text} ${l.concluido ? 'line-through' : ''}`}>
-                            {l.leadNome}{(l.descricao || '').includes('Aniversário') ? ' 🎂' : (l.descricao ? `: ${l.descricao}` : '')}
+                          <span className={`text-sm font-semibold ${cor.text} ${l.concluido ? 'line-through' : ''} flex-1`}>
+                            {l.leadNome}{(l.descricao || '').includes('Aniversário') ? '' : (l.descricao ? `: ${l.descricao}` : '')}
                           </span>
+                          {(l.descricao || '').includes('Aniversário') && <span className="flex-shrink-0 text-base">🎈</span>}
                           <button onClick={e => { e.stopPropagation(); toggleConcluido(l.id) }}
                             className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${cor.border} ${l.concluido ? cor.bg : 'bg-white'}`}>
                             {l.concluido && <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
@@ -335,9 +340,12 @@ export default function AgendaLembretes() {
                               className={`flex items-start gap-2 px-3 py-2 rounded-xl border text-left hover:opacity-80 transition-opacity ${cor.bg} ${cor.border} ${l.concluido ? 'opacity-40' : ''}`}
                               style={{ minWidth: 160 }}>
                               <div className="flex-1 min-w-0">
-                                <p className={`text-xs font-bold ${cor.text} ${l.concluido ? 'line-through' : ''}`}>
-                                  {l.hora} · {l.leadNome}{(l.descricao || '').includes('Aniversário') ? ' 🎂' : ''}
-                                </p>
+                                <div className="flex items-center justify-between gap-1">
+                                  <p className={`text-xs font-bold ${cor.text} ${l.concluido ? 'line-through' : ''} truncate flex-1`}>
+                                    {l.hora} · {l.leadNome}
+                                  </p>
+                                  {(l.descricao || '').includes('Aniversário') && <span className="flex-shrink-0 text-sm">🎈</span>}
+                                </div>
                                 {l.descricao && (
                                   <p className={`text-[11px] ${cor.text} opacity-70 truncate ${l.concluido ? 'line-through' : ''}`}>{l.descricao}</p>
                                 )}
