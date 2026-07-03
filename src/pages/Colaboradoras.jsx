@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { useVendas } from '../context/VendasContext'
 
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
@@ -90,12 +91,35 @@ const defaultState = () => ({
   fatRecorrencia: 0,
 })
 
+// Retorna qual semana do mês (1–4) um dia pertence
+function semanaDoMes(dia) {
+  if (dia <= 7)  return 0
+  if (dia <= 14) return 1
+  if (dia <= 21) return 2
+  return 3
+}
+
 export default function Colaboradoras() {
+  const { lancamentos } = useVendas()
   const hoje = new Date()
   const [mes, setMes] = useState(hoje.getMonth())
   const [ano, setAno] = useState(hoje.getFullYear())
 
   const [dados, setDados] = useState(() => loadData(hoje.getMonth(), hoje.getFullYear()) || defaultState())
+
+  // Vendas de pacientes novos agrupadas por semana do mês selecionado
+  const vendasPorSemana = useMemo(() => {
+    const totais = [0, 0, 0, 0]
+    const prefixo = `${ano}-${String(mes + 1).padStart(2, '0')}-`
+    lancamentos
+      .filter(l => l.tipo === 'Novo' && l.data?.startsWith(prefixo) && !l.tipo?.includes('Modelo'))
+      .forEach(l => {
+        const dia = parseInt(l.data.slice(8, 10), 10)
+        const idx = semanaDoMes(dia)
+        totais[idx] += (l.valorTratamento || 0)
+      })
+    return totais
+  }, [lancamentos, mes, ano])
 
   const trocarMes = (novoMes, novoAno) => {
     setMes(novoMes); setAno(novoAno)
@@ -150,15 +174,39 @@ export default function Colaboradoras() {
 
           {/* Semanas */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-            <h2 className="text-sm font-bold text-gray-700 mb-4">Bônus Semanais</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-bold text-gray-700">Bônus Semanais</h2>
+              <button
+                onClick={() => {
+                  const next = { ...dados, semanas: [...vendasPorSemana] }
+                  setDados(next)
+                  saveData(mes, ano, next)
+                }}
+                className="flex items-center gap-1.5 text-xs font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-3 py-1.5 rounded-xl transition-colors"
+              >
+                <svg viewBox="0 0 20 20" className="w-3.5 h-3.5 fill-current"><path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd"/></svg>
+                Puxar do sistema
+              </button>
+            </div>
+            {vendasPorSemana.some(v => v > 0) && (
+              <div className="flex items-center gap-2 bg-green-50 border border-green-100 rounded-xl px-3 py-2 mb-3 text-xs text-green-700">
+                <span>✓</span>
+                <span>Encontrado <strong>{fmt(vendasPorSemana.reduce((a,b)=>a+b,0))}</strong> em vendas de pacientes novos em {MESES[mes]}. Clique em "Puxar do sistema" para preencher.</span>
+              </div>
+            )}
             <div className="space-y-3">
               {dados.semanas.map((v, i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <span className="text-xs font-semibold text-gray-500 w-16 flex-shrink-0">Semana {i + 1}</span>
+                  <div className="flex-shrink-0 w-20">
+                    <span className="text-xs font-semibold text-gray-500">Semana {i + 1}</span>
+                    {vendasPorSemana[i] > 0 && vendasPorSemana[i] !== v && (
+                      <p className="text-[10px] text-brand-500 font-medium">Sistema: {fmt(vendasPorSemana[i])}</p>
+                    )}
+                  </div>
                   <div className="flex-1">
                     <MoneyInput value={v} onChange={val => setSemana(i, val)} />
                   </div>
-                  <div className="w-32 flex-shrink-0 flex items-center justify-between">
+                  <div className="w-36 flex-shrink-0 flex items-center justify-between">
                     <TierBadge valor={v} tiers={TIERS_SEMANA} />
                     <span className={`text-sm font-bold ml-2 ${bonusSemanas[i] > 0 ? 'text-green-600' : 'text-gray-300'}`}>
                       +{fmt(bonusSemanas[i])}
