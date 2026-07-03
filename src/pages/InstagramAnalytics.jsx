@@ -277,13 +277,16 @@ const MESES_NOME = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho
 const CAMPOS_ORGANICO = [
   { key: 'alcance',           label: 'Alcance',            group: 'distribuicao', onde: 'Insights → Visão geral → "Contas alcançadas"' },
   { key: 'impressoes',        label: 'Impressões',          group: 'distribuicao', onde: 'Insights → Visão geral → "Impressões"' },
+  { key: 'total_seguidores',  label: 'Total seguidores',    group: 'distribuicao', onde: 'Insights → Público → total de seguidores atual' },
   { key: 'novos_seguidores',  label: 'Novos seguidores',    group: 'distribuicao', onde: 'Insights → Público → "Seguidores" (variação do mês)' },
+  { key: 'visitas_perfil',    label: 'Visitas ao perfil',   group: 'distribuicao', onde: 'Insights → Visão geral → "Visitas ao perfil"' },
   { key: 'nao_seguidores_pct',label: '% não seguidores',    group: 'distribuicao', onde: 'Insights → Alcance → "Não seguidores" (%)' },
   { key: 'curtidas',          label: 'Curtidas',            group: 'engajamento',  onde: 'Insights → Visão geral → "Curtidas"' },
   { key: 'comentarios',       label: 'Comentários',         group: 'engajamento',  onde: 'Insights → Visão geral → "Comentários"' },
   { key: 'salvamentos',       label: 'Salvamentos',         group: 'engajamento',  onde: 'Insights → Visão geral → "Salvamentos"' },
   { key: 'compartilhamentos', label: 'Compartilhamentos',   group: 'engajamento',  onde: 'Insights → Visão geral → "Compartilhamentos"' },
   { key: 'cliques_bio',       label: 'Cliques no link bio', group: 'cliques',      onde: 'Insights → Visão geral → "Cliques no link do site"' },
+  { key: 'mensagens',         label: 'Mensagens (DM)',       group: 'cliques',      onde: 'Insights → Visão geral → "Mensagens"' },
   { key: 'cliques_whatsapp',  label: 'Cliques WhatsApp',    group: 'cliques',      onde: 'Insights → Visão geral → "Cliques no botão de contato"' },
 ]
 
@@ -325,11 +328,12 @@ async function fetchIGInsights(userId, token, ano, mes) {
     alcance: totals.reach || 0,
     impressoes: totals.impressions || 0,
     novos_seguidores: totals.follower_count || 0,
+    total_seguidores: profileJson.followers_count || 0,
     curtidas: totals.accounts_engaged || 0,
     cliques_bio: (totals.website_clicks || 0) + (totals.email_contacts || 0),
+    mensagens: totals.text_message_clicks || 0,
     cliques_whatsapp: (totals.text_message_clicks || 0) + (totals.phone_call_clicks || 0),
     visitas_perfil: totals.profile_views || 0,
-    followers_count: profileJson.followers_count || 0,
     username: profileJson.username || '',
   }
 }
@@ -560,9 +564,12 @@ function PainelOrganico({ leads, mes, ano, navMes, igConfig, onOpenSetup }) {
         ...atual,
         alcance: resultado.alcance || atual.alcance,
         impressoes: resultado.impressoes || atual.impressoes,
+        total_seguidores: resultado.total_seguidores || atual.total_seguidores,
         novos_seguidores: resultado.novos_seguidores || atual.novos_seguidores,
+        visitas_perfil: resultado.visitas_perfil || atual.visitas_perfil,
         curtidas: resultado.curtidas || atual.curtidas,
         cliques_bio: resultado.cliques_bio || atual.cliques_bio,
+        mensagens: resultado.mensagens || atual.mensagens,
         cliques_whatsapp: resultado.cliques_whatsapp || atual.cliques_whatsapp,
       }
       saveOrganico(ano, mes, merged)
@@ -597,9 +604,11 @@ function PainelOrganico({ leads, mes, ano, navMes, igConfig, onOpenSetup }) {
   const fmtR = (v) => v == null ? '—' : v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
   const secoes = [
-    { title: 'Distribuição', color: 'text-blue-600', cols: 4, cards: [
+    { title: 'Distribuição', color: 'text-blue-600', cols: 3, cards: [
       { label: 'Alcance', value: fmtN(num('alcance')), icon: '📡' },
       { label: 'Impressões', value: fmtN(num('impressoes')), icon: '👁️' },
+      { label: 'Visitas ao perfil', value: fmtN(num('visitas_perfil')), icon: '🔍' },
+      { label: 'Total seguidores', value: fmtN(num('total_seguidores')), icon: '👥' },
       { label: 'Novos seguidores', value: fmtN(num('novos_seguidores')), icon: '➕' },
       { label: '% não seguidores', value: fmtP(num('nao_seguidores_pct')), icon: '🌍' },
     ]},
@@ -610,8 +619,9 @@ function PainelOrganico({ leads, mes, ano, navMes, igConfig, onOpenSetup }) {
       { label: 'Compartilhamentos', value: fmtN(num('compartilhamentos')), icon: '🔁' },
       { label: 'Taxa de engajamento', value: fmtP(taxaEng), icon: '📈', highlight: true },
     ]},
-    { title: 'Cliques & Conversão', color: 'text-green-600', cols: 4, cards: [
+    { title: 'Cliques & Conversão', color: 'text-green-600', cols: 5, cards: [
       { label: 'Cliques no link bio', value: fmtN(num('cliques_bio')), icon: '🔗' },
+      { label: 'Mensagens (DM)', value: fmtN(num('mensagens')), icon: '✉️' },
       { label: 'Cliques WhatsApp', value: fmtN(num('cliques_whatsapp')), icon: '📲' },
       { label: 'Leads recebidos', value: fmtN(totalLeads), icon: '🎯' },
       { label: 'Custo por lead', value: fmtR(custoPorLead), icon: '💰' },
@@ -980,6 +990,7 @@ export default function InstagramAnalytics() {
   const [periodo, setPeriodo] = useState('last_30d')
   const [overview, setOverview] = useState(null)
   const [campanhas, setCampanhas] = useState([])
+  const [filtroTipo, setFiltroTipo] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -1000,19 +1011,24 @@ export default function InstagramAnalytics() {
       const base = `${GRAPH_BASE}/act_${accountId}`
       const fields = 'spend,impressions,reach,clicks,ctr,cpm,cpp,actions'
 
-      const [overviewRes, campaignsRes] = await Promise.all([
+      const [overviewRes, campaignsRes, campInfoRes] = await Promise.all([
         fetch(`${base}/insights?fields=${fields}&date_preset=${periodo}&access_token=${token}`),
         fetch(`${base}/insights?fields=campaign_name,campaign_id,spend,impressions,reach,clicks,ctr,cpm,cpp&level=campaign&date_preset=${periodo}&access_token=${token}`),
+        fetch(`${base}/campaigns?fields=id,name,objective&access_token=${token}&limit=200`),
       ])
 
       const overviewJson = await overviewRes.json()
       const campaignsJson = await campaignsRes.json()
+      const campInfoJson = await campInfoRes.json()
 
       if (overviewJson.error) throw new Error(overviewJson.error.message)
       if (campaignsJson.error) throw new Error(campaignsJson.error.message)
 
+      const objMap = {}
+      ;(campInfoJson.data || []).forEach(c => { objMap[c.id] = c.objective })
+
       setOverview(overviewJson.data?.[0] || null)
-      setCampanhas(campaignsJson.data || [])
+      setCampanhas((campaignsJson.data || []).map(c => ({ ...c, objetivo: objMap[c.campaign_id] || '' })))
     } catch (e) {
       setError(e.message)
     } finally {
@@ -1023,7 +1039,17 @@ export default function InstagramAnalytics() {
   useEffect(() => { fetchData() }, [fetchData])
 
   const metaLeads = overview?.actions?.find(a => a.action_type === 'lead')?.value
-  const mensagens = overview?.actions?.find(a => a.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value
+  const mensagensAds = overview?.actions?.find(a => a.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value
+
+  const LABEL_OBJETIVO = {
+    OUTCOME_AWARENESS: 'Reconhecimento', OUTCOME_TRAFFIC: 'Tráfego', OUTCOME_ENGAGEMENT: 'Engajamento',
+    OUTCOME_LEADS: 'Leads', OUTCOME_APP_PROMOTION: 'Aplicativo', OUTCOME_SALES: 'Vendas',
+    REACH: 'Alcance', BRAND_AWARENESS: 'Reconhecimento', VIDEO_VIEWS: 'Visualizações',
+    CONVERSIONS: 'Conversões', LEAD_GENERATION: 'Geração de leads', MESSAGES: 'Mensagens',
+    POST_ENGAGEMENT: 'Engajamento', LINK_CLICKS: 'Cliques no link',
+  }
+  const tiposDisponiveis = [...new Set(campanhas.map(c => c.objetivo).filter(Boolean))]
+  const campanhasFiltradas = filtroTipo ? campanhas.filter(c => c.objetivo === filtroTipo) : campanhas
 
   if (!config) {
     return (
@@ -1150,21 +1176,43 @@ export default function InstagramAnalytics() {
           <MetricCard label="CPM" value={fmt(overview.cpm, 'R$ ')} sub="custo por 1k impressões" />
           <MetricCard label="Custo por resultado" value={fmt(overview.cpp, 'R$ ')} />
           {metaLeads && <MetricCard label="Leads (Meta)" value={fmtInt(metaLeads)} />}
-          {!metaLeads && mensagens && <MetricCard label="Conversas iniciadas" value={fmtInt(mensagens)} />}
+          {!metaLeads && mensagensAds && <MetricCard label="Conversas iniciadas" value={fmtInt(mensagensAds)} />}
         </div>
       )}
 
       {/* Tabela campanhas */}
       {campanhas.length > 0 && (
         <div className="bg-white rounded-2xl border border-brand-100/60 shadow-sm overflow-hidden">
-          <div className="px-5 py-3 border-b border-gray-100">
+          <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between gap-3">
             <h2 className="text-sm font-bold text-gray-700">Campanhas</h2>
+            {tiposDisponiveis.length > 0 && (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <button
+                  onClick={() => setFiltroTipo('')}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${!filtroTipo ? 'text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                  style={!filtroTipo ? { background: 'linear-gradient(135deg, #ee2a7b, #6228d7)' } : {}}
+                >
+                  Todos
+                </button>
+                {tiposDisponiveis.map(tipo => (
+                  <button
+                    key={tipo}
+                    onClick={() => setFiltroTipo(tipo)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${filtroTipo === tipo ? 'text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                    style={filtroTipo === tipo ? { background: 'linear-gradient(135deg, #ee2a7b, #6228d7)' } : {}}
+                  >
+                    {LABEL_OBJETIVO[tipo] || tipo}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-xs text-gray-400 font-semibold uppercase tracking-wide border-b border-gray-100">
                   <th className="px-5 py-3 text-left">Campanha</th>
+                  <th className="px-4 py-3 text-left">Tipo</th>
                   <th className="px-4 py-3 text-right">Gasto</th>
                   <th className="px-4 py-3 text-right">Impressões</th>
                   <th className="px-4 py-3 text-right">Alcance</th>
@@ -1174,9 +1222,14 @@ export default function InstagramAnalytics() {
                 </tr>
               </thead>
               <tbody>
-                {campanhas.map((c, i) => (
+                {campanhasFiltradas.map((c, i) => (
                   <tr key={c.campaign_id || i} className="border-b border-gray-50 hover:bg-brand-50/30 transition-colors">
-                    <td className="px-5 py-3 font-medium text-gray-800 max-w-[220px] truncate">{c.campaign_name}</td>
+                    <td className="px-5 py-3 font-medium text-gray-800 max-w-[200px] truncate">{c.campaign_name}</td>
+                    <td className="px-4 py-3">
+                      {c.objetivo ? (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">{LABEL_OBJETIVO[c.objetivo] || c.objetivo}</span>
+                      ) : <span className="text-gray-300">—</span>}
+                    </td>
                     <td className="px-4 py-3 text-right text-gray-700">{fmt(c.spend, 'R$ ')}</td>
                     <td className="px-4 py-3 text-right text-gray-500">{fmtInt(c.impressions)}</td>
                     <td className="px-4 py-3 text-right text-gray-500">{fmtInt(c.reach)}</td>
