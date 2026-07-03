@@ -664,7 +664,7 @@ export default function SocialMedia() {
                     <div key={lead.id}
                       onClick={() => {
                         if (temTelefone) {
-                          window.dispatchEvent(new CustomEvent('navegarInbox', { detail: { telefone: lead.telefone } }))
+                          window.dispatchEvent(new CustomEvent('navegarInbox', { detail: { telefone: lead.telefone, contaTipo: 'Leads Novos' } }))
                           setModalLeadsDia(null)
                         }
                       }}

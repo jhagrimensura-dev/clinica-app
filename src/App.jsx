@@ -240,8 +240,16 @@ function AppContent() {
     }
     const handler = (e) => {
       if (e.detail?.telefone) sessionStorage.setItem('inbox_abrir_telefone', e.detail.telefone)
-      setActiveRaw('inbox')
-      window.history.pushState({ page: 'inbox' }, '', '#/inbox')
+      let targetPage = 'inbox'
+      if (e.detail?.contaTipo) {
+        try {
+          const contas = JSON.parse(localStorage.getItem('config_whatsapp_contas') || '[]')
+          const match = contas.find(c => c.tipo === e.detail.contaTipo)
+          if (match?.id) targetPage = `inbox_${match.id}`
+        } catch {}
+      }
+      setActiveRaw(targetPage)
+      window.history.pushState({ page: targetPage }, '', `#/${targetPage}`)
     }
     window.addEventListener('popstate', onPop)
     window.addEventListener('navegarInbox', handler)
