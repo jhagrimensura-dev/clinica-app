@@ -46,12 +46,12 @@ function CalendarioPos({ registros, diaSelecionado, onSelectDia }) {
   const [mes, setMes] = useState(new Date().getMonth())
   const [ano, setAno] = useState(new Date().getFullYear())
 
-  const navMes = (delta) => setMes(m => {
-    let nm = m + delta, na = ano
-    if (nm < 0) { nm = 11; setAno(na - 1) }
-    else if (nm > 11) { nm = 0; setAno(na + 1) }
-    return nm
-  })
+  const navMes = (delta) => {
+    let nm = mes + delta, na = ano
+    if (nm < 0) { nm = 11; na -= 1 }
+    else if (nm > 11) { nm = 0; na += 1 }
+    setMes(nm); setAno(na)
+  }
 
   const lembretesPorDia = useMemo(() => {
     const map = {}
@@ -68,10 +68,20 @@ function CalendarioPos({ registros, diaSelecionado, onSelectDia }) {
   const primeiroDia = new Date(ano, mes, 1).getDay()
   const diasNoMes = new Date(ano, mes + 1, 0).getDate()
   const cells = [...Array(primeiroDia).fill(null), ...Array.from({ length: diasNoMes }, (_, i) => i + 1)]
+  // pad to complete last row
+  while (cells.length % 7 !== 0) cells.push(null)
+
+  const STATUS_COLOR = {
+    pendente:     'bg-yellow-400',
+    contatado:    'bg-blue-400',
+    sem_resposta: 'bg-orange-400',
+    concluido:    'bg-green-400',
+  }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
         <h2 className="text-sm font-bold text-gray-700">Calendário de Pós Procedimento</h2>
         <div className="flex items-center gap-2">
           <button onClick={() => navMes(-1)} className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 text-base">‹</button>
@@ -80,50 +90,66 @@ function CalendarioPos({ registros, diaSelecionado, onSelectDia }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-7 mb-1">
+      {/* Day headers */}
+      <div className="grid grid-cols-7 border-b border-gray-100">
         {DIAS_SEMANA.map(d => (
-          <div key={d} className="text-center text-xs font-semibold text-gray-400 py-1">{d}</div>
+          <div key={d} className="text-center text-xs font-semibold text-gray-400 py-2 border-r border-gray-100 last:border-r-0">{d}</div>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-0.5">
+      {/* Grid */}
+      <div className="grid grid-cols-7">
         {cells.map((d, i) => {
-          if (!d) return <div key={i} />
+          if (!d) return (
+            <div key={i} className={`min-h-[100px] border-r border-b border-gray-100 last:border-r-0 bg-gray-50/50 ${i % 7 === 6 ? 'border-r-0' : ''}`} />
+          )
           const dayStr = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
           const pacs = lembretesPorDia[dayStr] || []
           const isHoje = dayStr === hoje
           const isSel = dayStr === diaSelecionado
 
           return (
-            <button key={i} onClick={() => onSelectDia(isSel ? null : dayStr)}
-              className={`relative flex flex-col items-center py-1.5 px-1 rounded-xl transition-all min-h-[54px] ${
-                isSel ? 'bg-teal-500 text-white' :
-                isHoje ? 'bg-brand-50 ring-1 ring-brand-300' :
-                pacs.length > 0 ? 'hover:bg-teal-50 cursor-pointer' : 'cursor-default'
-              }`}>
-              <span className={`text-xs font-semibold ${isSel ? 'text-white' : isHoje ? 'text-brand-600' : 'text-gray-700'}`}>{d}</span>
-              {pacs.length > 0 && (
-                <div className="mt-1 flex flex-wrap gap-0.5 justify-center">
-                  {pacs.slice(0, 2).map((_, j) => (
-                    <span key={j} className={`w-1.5 h-1.5 rounded-full ${isSel ? 'bg-white' : 'bg-teal-400'}`} />
-                  ))}
-                  {pacs.length > 2 && <span className={`text-[9px] font-bold ${isSel ? 'text-white' : 'text-teal-600'}`}>+{pacs.length - 2}</span>}
-                </div>
-              )}
-            </button>
+            <div key={i}
+              onClick={() => pacs.length > 0 ? onSelectDia(isSel ? null : dayStr) : undefined}
+              className={`min-h-[100px] border-r border-b border-gray-100 p-1.5 transition-colors flex flex-col ${
+                i % 7 === 6 ? 'border-r-0' : ''
+              } ${isSel ? 'bg-teal-50 ring-2 ring-inset ring-teal-300' : isHoje ? 'bg-brand-50/60' : 'hover:bg-gray-50'} ${pacs.length > 0 ? 'cursor-pointer' : ''}`}>
+              {/* Day number */}
+              <span className={`text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full mb-1 flex-shrink-0 ${
+                isHoje ? 'bg-brand-400 text-white' : isSel ? 'text-teal-700' : 'text-gray-500'
+              }`}>{d}</span>
+              {/* Patient entries */}
+              <div className="flex flex-col gap-0.5 flex-1 overflow-hidden">
+                {pacs.slice(0, 3).map((p, j) => (
+                  <div key={j} className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] leading-tight ${
+                    isSel ? 'bg-teal-100 text-teal-800' : 'bg-teal-50 text-teal-700'
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${STATUS_COLOR[p.status] || 'bg-gray-300'}`} />
+                    <span className="font-semibold truncate">{p.lembHora || ''}</span>
+                    <span className="truncate flex-1">{p.nome}</span>
+                  </div>
+                ))}
+                {pacs.length > 3 && (
+                  <span className="text-[10px] text-teal-500 font-semibold pl-1">+{pacs.length - 3} mais</span>
+                )}
+              </div>
+            </div>
           )
         })}
       </div>
 
+      {/* Detail panel when day selected */}
       {diaSelecionado && lembretesPorDia[diaSelecionado]?.length > 0 && (
-        <div className="mt-4 border-t border-gray-100 pt-4 space-y-1.5">
-          <p className="text-xs font-semibold text-gray-500 mb-2">Pós procedimentos em {formatData(diaSelecionado)}</p>
+        <div className="border-t border-gray-100 px-5 py-4 space-y-2">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-semibold text-gray-600">Pós procedimentos em {formatData(diaSelecionado)}</p>
+            <button onClick={() => onSelectDia(null)} className="text-xs text-gray-400 hover:text-gray-600">✕ fechar</button>
+          </div>
           {lembretesPorDia[diaSelecionado].map((p, i) => (
-            <div key={i} className="flex items-center gap-3 bg-teal-50 rounded-xl px-3 py-2">
-              <span className="text-xs font-bold text-teal-600 w-10 flex-shrink-0">{p.lembHora || '09:00'}</span>
-              <span className="text-sm font-medium text-gray-800 flex-1">{p.nome}</span>
+            <div key={i} className="flex items-center gap-3 bg-teal-50 rounded-xl px-3 py-2.5">
+              <span className="text-xs font-bold text-teal-600 w-12 flex-shrink-0">{p.lembHora || '—'}</span>
+              <span className="text-sm font-semibold text-gray-800 flex-1 truncate">{p.nome}</span>
               <StatusBadge status={p.status} />
-              {p.lembObs && <span className="text-xs text-gray-400 truncate max-w-[120px]">{p.lembObs}</span>}
             </div>
           ))}
         </div>
