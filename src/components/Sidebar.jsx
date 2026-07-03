@@ -179,6 +179,7 @@ export default function Sidebar({ active, setActive }) {
   const podeVerItem = (item) => {
     if (!isFuncionario) return true
     if (item.id === 'relatorios') return false
+    if (item.id === 'instagram') return false
     if (permissoes) return permissoes.includes(item.id)
     return item.id !== 'financeiro'
   }

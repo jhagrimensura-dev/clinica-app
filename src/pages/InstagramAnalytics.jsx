@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useLeads } from '../context/LeadsContext'
 import { useFinanceiro } from '../context/FinanceiroContext'
+import { supabase } from '../lib/supabase'
 
 const GRAPH_BASE = 'https://graph.facebook.com/v21.0'
 
@@ -292,7 +293,10 @@ const FORMATOS_CRIATIVO = ['Reel', 'Carrossel', 'Story', 'Post estático', 'Live
 const IG_KEY = 'instagram_graph_config'
 
 function loadIGConfig() { try { return JSON.parse(localStorage.getItem(IG_KEY) || 'null') } catch { return null } }
-function saveIGConfig(cfg) { localStorage.setItem(IG_KEY, JSON.stringify(cfg)) }
+function saveIGConfig(cfg) {
+  localStorage.setItem(IG_KEY, JSON.stringify(cfg))
+  supabase.from('configuracoes').upsert({ chave: IG_KEY, valor: cfg }, { onConflict: 'chave' })
+}
 
 async function igFetch(path, token) {
   const res = await fetch(`${GRAPH_BASE}${path}${path.includes('?') ? '&' : '?'}access_token=${token}`)
@@ -500,13 +504,17 @@ function loadOrganico(ano, mes) {
   try { return JSON.parse(localStorage.getItem(`instagram_organico_${ano}_${mes}`) || '{}') } catch { return {} }
 }
 function saveOrganico(ano, mes, dados) {
-  localStorage.setItem(`instagram_organico_${ano}_${mes}`, JSON.stringify(dados))
+  const key = `instagram_organico_${ano}_${mes}`
+  localStorage.setItem(key, JSON.stringify(dados))
+  supabase.from('configuracoes').upsert({ chave: key, valor: dados }, { onConflict: 'chave' })
 }
 function loadCriativos(ano, mes) {
   try { return JSON.parse(localStorage.getItem(`instagram_criativos_${ano}_${mes}`) || '[]') } catch { return [] }
 }
 function saveCriativos(ano, mes, lista) {
-  localStorage.setItem(`instagram_criativos_${ano}_${mes}`, JSON.stringify(lista))
+  const key = `instagram_criativos_${ano}_${mes}`
+  localStorage.setItem(key, JSON.stringify(lista))
+  supabase.from('configuracoes').upsert({ chave: key, valor: lista }, { onConflict: 'chave' })
 }
 
 function Tooltip({ texto }) {
@@ -529,7 +537,14 @@ function PainelOrganico({ leads, mes, ano, navMes, igConfig, onOpenSetup }) {
   const [form, setForm] = useState({})
   const [sincronizando, setSincronizando] = useState(false)
 
-  useEffect(() => { setDados(loadOrganico(ano, mes)) }, [ano, mes])
+  useEffect(() => {
+    const key = `instagram_organico_${ano}_${mes}`
+    supabase.from('configuracoes').select('valor').eq('chave', key).maybeSingle()
+      .then(({ data }) => {
+        if (data?.valor) { localStorage.setItem(key, JSON.stringify(data.valor)); setDados(data.valor) }
+        else setDados(loadOrganico(ano, mes))
+      })
+  }, [ano, mes])
 
   const sincronizar = async () => {
     if (!igConfig) return
@@ -701,7 +716,14 @@ function CriativosSection({ mes, ano, igConfig, onOpenSetup }) {
   const [form, setForm] = useState(CRIATIVO_VAZIO)
   const [importando, setImportando] = useState(false)
 
-  useEffect(() => { setCriativos(loadCriativos(ano, mes)) }, [ano, mes])
+  useEffect(() => {
+    const key = `instagram_criativos_${ano}_${mes}`
+    supabase.from('configuracoes').select('valor').eq('chave', key).maybeSingle()
+      .then(({ data }) => {
+        if (data?.valor) { localStorage.setItem(key, JSON.stringify(data.valor)); setCriativos(data.valor) }
+        else setCriativos(loadCriativos(ano, mes))
+      })
+  }, [ano, mes])
 
   const save = (lista) => { saveCriativos(ano, mes, lista); setCriativos(lista) }
 
@@ -932,6 +954,17 @@ export default function InstagramAnalytics() {
   const [config, setConfig] = useState(() => {
     try { return JSON.parse(localStorage.getItem('instagram_ads_config') || 'null') } catch { return null }
   })
+
+  useEffect(() => {
+    supabase.from('configuracoes').select('chave,valor').in('chave', [IG_KEY, 'instagram_ads_config'])
+      .then(({ data }) => {
+        if (!data) return
+        data.forEach(row => {
+          if (row.chave === IG_KEY && row.valor) { localStorage.setItem(IG_KEY, JSON.stringify(row.valor)); setIGConfig(row.valor) }
+          if (row.chave === 'instagram_ads_config' && row.valor) { localStorage.setItem('instagram_ads_config', JSON.stringify(row.valor)); setConfig(row.valor) }
+        })
+      })
+  }, [])
   const [showConfig, setShowConfig] = useState(false)
   const [periodo, setPeriodo] = useState('last_30d')
   const [overview, setOverview] = useState(null)
@@ -942,6 +975,7 @@ export default function InstagramAnalytics() {
   const saveConfig = (token, accountId) => {
     const c = { token, accountId }
     localStorage.setItem('instagram_ads_config', JSON.stringify(c))
+    supabase.from('configuracoes').upsert({ chave: 'instagram_ads_config', valor: c }, { onConflict: 'chave' })
     setConfig(c)
     setShowConfig(false)
   }
