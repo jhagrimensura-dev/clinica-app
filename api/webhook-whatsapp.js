@@ -40,6 +40,11 @@ export default async function handler(req, res) {
     // Prioriza chatName (nome salvo no celular) para que enviados e recebidos do mesmo chat sejam consistentes
     const nomeContato = payload?.chatName || payload?.senderName || phone
     const tsRaw = payload?.momment || payload?.timestamp || Date.now()
+    // Anúncio de origem (Click-to-WhatsApp ads)
+    const ref = payload?.referral || payload?.referralAd || null
+    const referralAnuncio = ref
+      ? (ref.headline || ref.body || ref.title || ref.source || null)
+      : null
     const ts = Number(tsRaw) < 10000000000 ? Number(tsRaw) * 1000 : Number(tsRaw)
 
     if (!texto) return res.status(200).json({ ok: true, skipped: true })
@@ -81,6 +86,7 @@ export default async function handler(req, res) {
         tipo: payload?.type || 'text',
         media_url: mediaUrl || null,
         timestamp_ms: Number(ts),
+        referral_anuncio: referralAnuncio || null,
       }),
     })
 

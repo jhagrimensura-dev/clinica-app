@@ -783,6 +783,7 @@ export default function InboxWhatsApp({ contaId }) {
         mediaUrl: m.media_url || null,
         hora: formatTs(normTs(m.timestamp_ms)),
         tsMs: normTs(m.timestamp_ms),
+        referralAnuncio: m.referral_anuncio || null,
       })
       let msgs = [...(byPhone || []), ...byNome]
         .filter(m => { const k = m.message_id || m.id; const ok = !seen.has(k); seen.add(k); return ok })
@@ -1512,6 +1513,14 @@ export default function InboxWhatsApp({ contaId }) {
                       <div className="flex-1 h-px bg-gray-200" />
                       <span className="text-xs text-gray-400 font-medium bg-gray-100 px-3 py-1 rounded-full">{diaAtual}</span>
                       <div className="flex-1 h-px bg-gray-200" />
+                    </div>
+                  )}
+                  {msg.referralAnuncio && (
+                    <div className="flex justify-start mb-1">
+                      <div className="flex items-center gap-1.5 bg-purple-50 border border-purple-200 text-purple-700 text-[11px] font-semibold px-3 py-1 rounded-full">
+                        <svg viewBox="0 0 20 20" className="w-3 h-3 fill-current opacity-70"><path d="M10 2a8 8 0 100 16A8 8 0 0010 2zm1 11H9v-2h2v2zm0-4H9V5h2v4z"/></svg>
+                        Anúncio: {msg.referralAnuncio}
+                      </div>
                     </div>
                   )}
                   <div className={`flex items-end gap-1 ${msg.minha ? 'justify-end' : 'justify-start'} group`}>
