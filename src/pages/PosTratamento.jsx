@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { useLeads } from '../context/LeadsContext'
 import { useAgenda } from '../context/AgendaContext'
 import { useAuth } from '../context/AuthContext'
+import { usePacientes } from '../context/PacientesContext'
 
 const STATUSES = {
   pendente:     { label: 'Pendente',     bg: 'bg-yellow-100', text: 'text-yellow-700', dot: 'bg-yellow-400' },
@@ -34,11 +35,39 @@ function ProximoContato({ data, hoje }) {
 }
 
 function ModalNovo({ onSalvar, onFechar }) {
+  const { pacientes } = usePacientes()
   const hoje = new Date().toISOString().slice(0, 10)
   const [nome, setNome] = useState('')
   const [telefone, setTelefone] = useState('')
   const [data, setData] = useState(hoje)
   const [obs, setObs] = useState('')
+  const [sugestoes, setSugestoes] = useState([])
+  const [showSug, setShowSug] = useState(false)
+  const inputRef = useRef(null)
+
+  const handleNomeChange = (val) => {
+    setNome(val)
+    if (val.trim().length < 2) { setSugestoes([]); setShowSug(false); return }
+    const termo = val.toLowerCase()
+    const matches = pacientes
+      .filter(p => p.nome.toLowerCase().includes(termo))
+      .slice(0, 6)
+    setSugestoes(matches)
+    setShowSug(matches.length > 0)
+  }
+
+  const selecionarPaciente = (p) => {
+    setNome(p.nome)
+    setTelefone(p.whatsapp || '')
+    setSugestoes([])
+    setShowSug(false)
+  }
+
+  useEffect(() => {
+    const fechar = (e) => { if (!inputRef.current?.parentElement?.contains(e.target)) setShowSug(false) }
+    document.addEventListener('mousedown', fechar)
+    return () => document.removeEventListener('mousedown', fechar)
+  }, [])
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
@@ -48,11 +77,31 @@ function ModalNovo({ onSalvar, onFechar }) {
           <button onClick={onFechar} className="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div className="col-span-2">
+          <div className="col-span-2 relative" ref={inputRef}>
             <label className="text-xs font-semibold text-gray-500 mb-1 block">Nome <span className="text-red-400">*</span></label>
-            <input value={nome} onChange={e => setNome(e.target.value)} placeholder="Nome da paciente"
+            <input
+              value={nome}
+              onChange={e => handleNomeChange(e.target.value)}
+              onFocus={() => sugestoes.length > 0 && setShowSug(true)}
+              placeholder="Buscar paciente pelo nome..."
               autoFocus
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300" />
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300"
+            />
+            {showSug && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-10 overflow-hidden">
+                {sugestoes.map(p => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onMouseDown={() => selecionarPaciente(p)}
+                    className="w-full text-left px-4 py-2.5 text-sm hover:bg-brand-50 transition-colors flex items-center justify-between"
+                  >
+                    <span className="font-medium text-gray-800">{p.nome}</span>
+                    {p.whatsapp && <span className="text-xs text-gray-400">{p.whatsapp}</span>}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div>
             <label className="text-xs font-semibold text-gray-500 mb-1 block">Telefone</label>
