@@ -1900,7 +1900,7 @@ export default function InboxWhatsApp({ contaId }) {
               let anoAniv = hoje.getFullYear()
               const dataAniv = new Date(`${anoAniv}-${mes}-${dia}`)
               if (dataAniv <= hoje) anoAniv += 1
-              addLembrete({ id: Date.now() + 99, leadNome: dados.nome, leadTelefone: dados.telefone || '', descricao: `🎂 Aniversário de ${dados.nome}`, data: `${anoAniv}-${mes}-${dia}`, hora: '09:00', cor: 'pink', concluido: false, criadoEm: Date.now() })
+              addLembrete({ id: Date.now() + 99, leadNome: dados.nome, leadTelefone: dados.telefone || '', descricao: `🎂 Aniversário de ${dados.nome}`, data: `${anoAniv}-${mes}-${dia}`, hora: '09:00', cor: 'yellow', concluido: false, criadoEm: Date.now() })
             }
             setEditarLeadRegistrado(null)
           }}

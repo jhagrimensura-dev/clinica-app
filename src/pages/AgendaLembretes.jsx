@@ -14,8 +14,13 @@ const CORES = [
   { id: 'brand',  bg: 'bg-brand-100',  text: 'text-brand-800',  border: 'border-brand-300',  solid: 'bg-brand-400'  },
   { id: 'purple', bg: 'bg-purple-100', text: 'text-purple-800', border: 'border-purple-300', solid: 'bg-purple-400' },
   { id: 'red',    bg: 'bg-red-100',    text: 'text-red-800',    border: 'border-red-300',    solid: 'bg-red-400'    },
+  { id: 'yellow', bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-300', solid: 'bg-yellow-400' },
 ]
 function getCor(id) { return CORES.find(c => c.id === id) || CORES[0] }
+function getCorLembrete(l) {
+  if ((l.descricao || '').includes('Aniversário')) return CORES.find(c => c.id === 'yellow')
+  return getCorLembrete(l)
+}
 
 function formatMes(ano, mes) {
   return new Date(ano, mes).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
@@ -184,7 +189,7 @@ export default function AgendaLembretes() {
                       </span>
                       <div className="flex flex-col gap-0.5 flex-1">
                         {visiveis.map(l => {
-                          const cor = getCor(l.cor)
+                          const cor = getCorLembrete(l)
                           return (
                             <button
                               key={l.id}
@@ -243,7 +248,7 @@ export default function AgendaLembretes() {
                 .sort((a, b) => a.data.localeCompare(b.data) || (a.hora || '').localeCompare(b.hora || ''))
                 .slice(0, 12)
                 .map(l => {
-                  const cor = getCor(l.cor)
+                  const cor = getCorLembrete(l)
                   return (
                     <button key={l.id}
                       onClick={() => { setDiaSel(l.data); setMesRef({ ano: parseInt(l.data.slice(0, 4)), mes: parseInt(l.data.slice(5, 7)) - 1 }) }}
@@ -277,7 +282,7 @@ export default function AgendaLembretes() {
                   <p className="text-xs font-semibold text-gray-400 mb-2">Dia todo</p>
                   <div className="flex flex-wrap gap-2">
                     {diaTodo.map(l => {
-                      const cor = getCor(l.cor)
+                      const cor = getCorLembrete(l)
                       return (
                         <button key={l.id} onClick={() => abrirEditar(l)}
                           className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${cor.bg} ${cor.border} hover:opacity-80 ${l.concluido ? 'opacity-40' : ''}`}>
@@ -305,7 +310,7 @@ export default function AgendaLembretes() {
                       </div>
                       <div className="flex-1 border-t border-gray-100 pt-2 pb-1 flex gap-2 flex-wrap items-start relative">
                         {itens.map(l => {
-                          const cor = getCor(l.cor)
+                          const cor = getCorLembrete(l)
                           return (
                             <button key={l.id} onClick={() => abrirEditar(l)}
                               className={`flex items-start gap-2 px-3 py-2 rounded-xl border text-left hover:opacity-80 transition-opacity ${cor.bg} ${cor.border} ${l.concluido ? 'opacity-40' : ''}`}
