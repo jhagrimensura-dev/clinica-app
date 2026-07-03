@@ -19,7 +19,7 @@ const CORES = [
 function getCor(id) { return CORES.find(c => c.id === id) || CORES[0] }
 function getCorLembrete(l) {
   if ((l.descricao || '').includes('Aniversário')) return CORES.find(c => c.id === 'yellow')
-  return getCorLembrete(l)
+  return getCor(l.cor)
 }
 
 function formatMes(ano, mes) {
