@@ -41,9 +41,18 @@ function ModalNovo({ onSalvar, onFechar }) {
   const [telefone, setTelefone] = useState('')
   const [data, setData] = useState(hoje)
   const [obs, setObs] = useState('')
+  const [lembretes, setLembretes] = useState([
+    { data: '', hora: '09:00', obs: '' },
+    { data: '', hora: '09:00', obs: '' },
+    { data: '', hora: '09:00', obs: '' },
+  ])
   const [sugestoes, setSugestoes] = useState([])
   const [showSug, setShowSug] = useState(false)
   const inputRef = useRef(null)
+
+  const setLembrete = (i, field, val) => setLembretes(prev => prev.map((l, idx) => idx === i ? { ...l, [field]: val } : l))
+  const addLembrete = () => setLembretes(prev => [...prev, { data: '', hora: '09:00', obs: '' }])
+  const removeLembrete = (i) => setLembretes(prev => prev.filter((_, idx) => idx !== i))
 
   const handleNomeChange = (val) => {
     setNome(val)
@@ -120,11 +129,37 @@ function ModalNovo({ onSalvar, onFechar }) {
               className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 resize-none" />
           </div>
         </div>
-        <div className="flex justify-end gap-3 pt-1">
+
+        <div>
+          <label className="text-xs font-semibold text-gray-500 mb-2 block">Lembretes de retorno</label>
+          <div className="space-y-2">
+            {lembretes.map((l, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <span className="text-xs text-gray-400 w-4 flex-shrink-0">{i + 1}.</span>
+                <input type="date" value={l.data} onChange={e => setLembrete(i, 'data', e.target.value)}
+                  className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300" />
+                <input type="time" value={l.hora} onChange={e => setLembrete(i, 'hora', e.target.value)}
+                  className="w-24 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300" />
+                <input value={l.obs} onChange={e => setLembrete(i, 'obs', e.target.value)}
+                  placeholder="Obs..."
+                  className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300" />
+                {lembretes.length > 1 && (
+                  <button onClick={() => removeLembrete(i)} className="text-gray-300 hover:text-red-400 text-lg leading-none flex-shrink-0">×</button>
+                )}
+              </div>
+            ))}
+          </div>
+          <button onClick={addLembrete}
+            className="w-full mt-2 py-1.5 border border-dashed border-gray-300 rounded-xl text-xs text-gray-400 hover:text-brand-500 hover:border-brand-300 transition-colors">
+            + Adicionar lembrete
+          </button>
+        </div>
+
+        <div className="flex justify-end gap-3 pt-1 border-t border-gray-100">
           <button onClick={onFechar} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
           <button
             disabled={!nome.trim()}
-            onClick={() => onSalvar({ nome: nome.trim(), telefone, data, obs, status: 'pendente', origem: 'pos_tratamento' })}
+            onClick={() => onSalvar({ nome: nome.trim(), telefone, data, obs, status: 'pendente', origem: 'pos_tratamento', lembretes })}
             className="px-5 py-2 bg-brand-400 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl">
             Salvar
           </button>
@@ -244,7 +279,22 @@ export default function PosTratamento({ onNavigate }) {
   })
 
   const handleNovo = async (dados) => {
-    await addLead(dados)
+    const { lembretes: lems, ...leadDados } = dados
+    const novoLead = await addLead({ ...leadDados, proximoFollowup: lems?.find(l => l.data)?.data || '' })
+    for (const lem of (lems || [])) {
+      if (!lem.data) continue
+      addLembrete({
+        id: Date.now() + Math.random(),
+        leadNome: dados.nome,
+        leadTelefone: dados.telefone || '',
+        descricao: `Pós tratamento — ${dados.nome}${lem.obs ? ': ' + lem.obs : ''}`,
+        data: lem.data,
+        hora: lem.hora || '09:00',
+        cor: 'teal',
+        concluido: false,
+        criadoEm: Date.now(),
+      })
+    }
     setModalNovo(false)
   }
 
