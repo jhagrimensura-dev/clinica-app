@@ -11,7 +11,6 @@ const STATUSES = {
 }
 
 const MESES_NOME = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
-const DIAS_SEMANA = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']
 
 function formatData(str) {
   if (!str) return '—'
@@ -40,120 +39,192 @@ function ProximoContato({ data, hoje }) {
   return <span className="text-xs text-blue-600">{formatData(data)}</span>
 }
 
-// ─── Calendário próprio ───────────────────────────────────────────────────────
-function CalendarioPos({ registros, diaSelecionado, onSelectDia }) {
-  const hoje = new Date().toISOString().slice(0, 10)
-  const [mes, setMes] = useState(new Date().getMonth())
-  const [ano, setAno] = useState(new Date().getFullYear())
+// ─── Calendário semanal (estilo Agenda) ──────────────────────────────────────
+const DIAS_FULL  = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB']
+const MESES_PT   = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro']
+const SLOT_H_PX  = 40 // height per 30-min slot
 
-  const navMes = (delta) => {
-    let nm = mes + delta, na = ano
-    if (nm < 0) { nm = 11; na -= 1 }
-    else if (nm > 11) { nm = 0; na += 1 }
-    setMes(nm); setAno(na)
-  }
+const SLOTS = []
+for (let h = 7; h <= 20; h++) {
+  SLOTS.push(`${String(h).padStart(2,'0')}:00`)
+  if (h < 20) SLOTS.push(`${String(h).padStart(2,'0')}:30`)
+}
 
-  const lembretesPorDia = useMemo(() => {
+const STATUS_SLOT = {
+  pendente:     'bg-yellow-100 text-yellow-800 border-yellow-300',
+  contatado:    'bg-blue-100   text-blue-800   border-blue-300',
+  sem_resposta: 'bg-orange-100 text-orange-800 border-orange-300',
+  concluido:    'bg-green-100  text-green-700  border-green-300',
+}
+
+function semanaRef0(data) {
+  const d = new Date(data)
+  d.setDate(d.getDate() - d.getDay())
+  return d
+}
+
+function CalendarioPos({ registros, onSelectDia }) {
+  const hojeDate = new Date()
+  const hojeStr  = hojeDate.toISOString().slice(0, 10)
+
+  const [semana, setSemana] = useState(() => semanaRef0(hojeDate))
+  const [miniMes, setMiniMes] = useState(hojeDate.getMonth())
+  const [miniAno, setMiniAno] = useState(hojeDate.getFullYear())
+
+  const diasSemana = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(semana)
+    d.setDate(semana.getDate() + i)
+    return d
+  })
+
+  const navSemana = (delta) => setSemana(prev => {
+    const d = new Date(prev); d.setDate(d.getDate() + delta * 7); return d
+  })
+  const irHoje = () => setSemana(semanaRef0(new Date()))
+
+  const dom = diasSemana[0], sab = diasSemana[6]
+  const semanaLabel = `Dom ${dom.getDate()} – Sáb ${sab.getDate()} de ${MESES_PT[sab.getMonth()]} de ${sab.getFullYear()}`
+
+  // index: date → [{ ...reg, lembHora }]
+  const lembMap = useMemo(() => {
     const map = {}
     registros.forEach(r => {
       parseLembretes(r.obs).forEach(l => {
         if (!l.data) return
         if (!map[l.data]) map[l.data] = []
-        map[l.data].push({ ...r, lembHora: l.hora, lembObs: l.obs })
+        map[l.data].push({ ...r, lembHora: l.hora || '09:00', lembObs: l.obs })
       })
     })
     return map
   }, [registros])
 
-  const primeiroDia = new Date(ano, mes, 1).getDay()
-  const diasNoMes = new Date(ano, mes + 1, 0).getDate()
-  const cells = [...Array(primeiroDia).fill(null), ...Array.from({ length: diasNoMes }, (_, i) => i + 1)]
-  // pad to complete last row
-  while (cells.length % 7 !== 0) cells.push(null)
+  const getSlotEntries = (dayStr, slot) => {
+    const [sh, sm] = slot.split(':').map(Number)
+    const slotMin = sh * 60 + sm
+    return (lembMap[dayStr] || []).filter(e => {
+      const [eh, em] = (e.lembHora || '09:00').split(':').map(Number)
+      const em2 = eh * 60 + em
+      return em2 >= slotMin && em2 < slotMin + 30
+    })
+  }
 
-  const STATUS_COLOR = {
-    pendente:     'bg-yellow-400',
-    contatado:    'bg-blue-400',
-    sem_resposta: 'bg-orange-400',
-    concluido:    'bg-green-400',
+  // próximos a partir de hoje
+  const proximos = useMemo(() => {
+    const arr = []
+    registros.forEach(r => parseLembretes(r.obs).forEach(l => {
+      if (l.data && l.data >= hojeStr) arr.push({ ...r, lembHora: l.hora, lembData: l.data })
+    }))
+    return arr.sort((a,b) => a.lembData.localeCompare(b.lembData) || (a.lembHora||'').localeCompare(b.lembHora||'')).slice(0, 6)
+  }, [registros, hojeStr])
+
+  // mini calendar
+  const miniPrimeiro = new Date(miniAno, miniMes, 1).getDay()
+  const miniTotal    = new Date(miniAno, miniMes + 1, 0).getDate()
+  const miniCells    = [...Array(miniPrimeiro).fill(null), ...Array.from({ length: miniTotal }, (_, i) => i + 1)]
+  const navMini = (d) => {
+    let nm = miniMes + d, na = miniAno
+    if (nm < 0) { nm = 11; na-- } else if (nm > 11) { nm = 0; na++ }
+    setMiniMes(nm); setMiniAno(na)
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-        <h2 className="text-sm font-bold text-gray-700">Calendário — Pós Procedimento</h2>
-        <div className="flex items-center gap-2">
-          <button onClick={() => navMes(-1)} className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 text-base">‹</button>
-          <span className="text-sm font-semibold text-gray-700 min-w-[140px] text-center">{MESES_NOME[mes]} {ano}</span>
-          <button onClick={() => navMes(1)} className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 text-base">›</button>
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex" style={{ height: '560px' }}>
+
+      {/* ── Sidebar esquerda ─────────────────────── */}
+      <div className="w-44 border-r border-gray-100 flex flex-col flex-shrink-0 overflow-y-auto">
+        {/* mini cal */}
+        <div className="p-3">
+          <div className="flex items-center justify-between mb-1.5">
+            <button onClick={() => navMini(-1)} className="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-gray-600 text-sm">‹</button>
+            <span className="text-[10px] font-bold text-gray-600 uppercase tracking-wide">{MESES_NOME[miniMes].slice(0,3)} {miniAno}</span>
+            <button onClick={() => navMini(1)}  className="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-gray-600 text-sm">›</button>
+          </div>
+          <div className="grid grid-cols-7">
+            {['D','S','T','Q','Q','S','S'].map((d,i) => (
+              <div key={i} className="text-center text-[9px] font-semibold text-gray-400 py-0.5">{d}</div>
+            ))}
+            {miniCells.map((d, i) => {
+              if (!d) return <div key={i} />
+              const ds = `${miniAno}-${String(miniMes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
+              const isHoje = ds === hojeStr
+              const hasPac = !!lembMap[ds]
+              return (
+                <button key={i} onClick={() => setSemana(semanaRef0(new Date(miniAno, miniMes, d)))}
+                  className={`text-[10px] w-5 h-5 mx-auto flex items-center justify-center rounded-full font-medium transition-colors ${
+                    isHoje ? 'bg-brand-400 text-white' : hasPac ? 'text-teal-600 font-bold' : 'text-gray-500 hover:bg-gray-100'
+                  }`}>{d}</button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* próximos */}
+        <div className="px-3 pb-3 flex-1">
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Próximos</p>
+          {proximos.length === 0
+            ? <p className="text-[10px] text-gray-300">Nenhum agendado</p>
+            : proximos.map((p, i) => (
+              <div key={i} className="mb-2 cursor-pointer" onClick={() => { setSemana(semanaRef0(new Date(p.lembData))); onSelectDia(p.lembData) }}>
+                <p className="text-[10px] text-brand-500 font-semibold">{formatData(p.lembData)}{p.lembHora ? ` · ${p.lembHora}` : ''}</p>
+                <p className="text-[11px] text-gray-700 font-medium truncate">{p.nome}</p>
+              </div>
+            ))
+          }
         </div>
       </div>
 
-      {/* Day headers */}
-      <div className="grid grid-cols-7 border-b border-gray-100">
-        {DIAS_SEMANA.map(d => (
-          <div key={d} className="text-center text-xs font-semibold text-gray-400 py-2 border-r border-gray-100 last:border-r-0">{d}</div>
-        ))}
-      </div>
+      {/* ── Área principal ───────────────────────── */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* top bar */}
+        <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-100 flex-shrink-0">
+          <button onClick={() => navSemana(-1)} className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 text-gray-400 text-base">‹</button>
+          <button onClick={() => navSemana(1)}  className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 text-gray-400 text-base">›</button>
+          <button onClick={irHoje} className="px-3 py-1 rounded-lg border border-brand-200 text-xs font-semibold text-brand-600 hover:bg-brand-100 transition-colors">Hoje</button>
+          <span className="text-sm font-semibold text-gray-700 flex-1">{semanaLabel}</span>
+        </div>
 
-      {/* Grid */}
-      <div className="grid grid-cols-7">
-        {cells.map((d, i) => {
-          if (!d) return (
-            <div key={i} className={`min-h-[100px] border-r border-b border-gray-100 last:border-r-0 bg-gray-50/50 ${i % 7 === 6 ? 'border-r-0' : ''}`} />
-          )
-          const dayStr = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-          const pacs = lembretesPorDia[dayStr] || []
-          const isHoje = dayStr === hoje
-          const isSel = dayStr === diaSelecionado
-
-          return (
-            <div key={i}
-              onClick={() => pacs.length > 0 ? onSelectDia(isSel ? null : dayStr) : undefined}
-              className={`min-h-[100px] border-r border-b border-gray-100 p-1.5 transition-colors flex flex-col ${
-                i % 7 === 6 ? 'border-r-0' : ''
-              } ${isSel ? 'bg-teal-50 ring-2 ring-inset ring-teal-300' : isHoje ? 'bg-brand-50/60' : 'hover:bg-gray-50'} ${pacs.length > 0 ? 'cursor-pointer' : ''}`}>
-              {/* Day number */}
-              <span className={`text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full mb-1 flex-shrink-0 ${
-                isHoje ? 'bg-brand-400 text-white' : isSel ? 'text-teal-700' : 'text-gray-500'
-              }`}>{d}</span>
-              {/* Patient entries */}
-              <div className="flex flex-col gap-0.5 flex-1 overflow-hidden">
-                {pacs.slice(0, 3).map((p, j) => (
-                  <div key={j} className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] leading-tight ${
-                    isSel ? 'bg-teal-100 text-teal-800' : 'bg-teal-50 text-teal-700'
-                  }`}>
-                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${STATUS_COLOR[p.status] || 'bg-gray-300'}`} />
-                    <span className="font-semibold truncate">{p.lembHora || ''}</span>
-                    <span className="truncate flex-1">{p.nome}</span>
-                  </div>
-                ))}
-                {pacs.length > 3 && (
-                  <span className="text-[10px] text-teal-500 font-semibold pl-1">+{pacs.length - 3} mais</span>
-                )}
+        {/* day headers */}
+        <div className="flex border-b border-gray-100 flex-shrink-0">
+          <div className="w-14 flex-shrink-0" />
+          {diasSemana.map((day, i) => {
+            const ds = day.toISOString().slice(0, 10)
+            const isHoje = ds === hojeStr
+            return (
+              <div key={i} className={`flex-1 py-2 text-center border-l border-gray-100 ${isHoje ? 'bg-brand-50' : ''}`}>
+                <p className={`text-[10px] font-semibold ${isHoje ? 'text-brand-500' : 'text-gray-400'}`}>{DIAS_FULL[i]}</p>
+                <p className={`text-sm font-bold ${isHoje ? 'text-brand-600' : 'text-gray-700'}`}>{day.getDate()}</p>
               </div>
-            </div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
 
-      {/* Detail panel when day selected */}
-      {diaSelecionado && lembretesPorDia[diaSelecionado]?.length > 0 && (
-        <div className="border-t border-gray-100 px-5 py-4 space-y-2">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-semibold text-gray-600">Pós procedimentos em {formatData(diaSelecionado)}</p>
-            <button onClick={() => onSelectDia(null)} className="text-xs text-gray-400 hover:text-gray-600">✕ fechar</button>
-          </div>
-          {lembretesPorDia[diaSelecionado].map((p, i) => (
-            <div key={i} className="flex items-center gap-3 bg-teal-50 rounded-xl px-3 py-2.5">
-              <span className="text-xs font-bold text-teal-600 w-12 flex-shrink-0">{p.lembHora || '—'}</span>
-              <span className="text-sm font-semibold text-gray-800 flex-1 truncate">{p.nome}</span>
-              <StatusBadge status={p.status} />
+        {/* time grid */}
+        <div className="flex-1 overflow-y-auto">
+          {SLOTS.map((slot, si) => (
+            <div key={si} className="flex" style={{ height: `${SLOT_H_PX}px` }}>
+              <div className="w-14 flex-shrink-0 flex items-start justify-end pr-2 pt-0.5">
+                {slot.endsWith(':00') && <span className="text-[10px] text-gray-400">{slot}</span>}
+              </div>
+              {diasSemana.map((day, di) => {
+                const ds = day.toISOString().slice(0, 10)
+                const entries = getSlotEntries(ds, slot)
+                const isHoje = ds === hojeStr
+                return (
+                  <div key={di} className={`flex-1 border-l border-t border-gray-100 relative px-0.5 py-0.5 ${isHoje ? 'bg-brand-50/20' : ''} ${slot.endsWith(':00') ? '' : 'border-t-dashed'}`}>
+                    {entries.map((e, ei) => (
+                      <div key={ei}
+                        onClick={() => onSelectDia(ds)}
+                        className={`w-full rounded border px-1.5 py-0.5 text-[10px] font-semibold truncate cursor-pointer leading-tight ${STATUS_SLOT[e.status] || 'bg-teal-100 text-teal-800 border-teal-300'}`}>
+                        <span className="opacity-70">{e.lembHora} </span>{e.nome}
+                      </div>
+                    ))}
+                  </div>
+                )
+              })}
             </div>
           ))}
         </div>
-      )}
+      </div>
     </div>
   )
 }
