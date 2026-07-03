@@ -45,6 +45,7 @@ export default async function handler(req, res) {
     const referralAnuncio = ref
       ? (ref.headline || ref.body || ref.title || ref.source || null)
       : null
+    const referralThumbnail = ref?.thumbnailUrl || ref?.thumbnail || null
     const ts = Number(tsRaw) < 10000000000 ? Number(tsRaw) * 1000 : Number(tsRaw)
 
     if (!texto) return res.status(200).json({ ok: true, skipped: true })
@@ -87,6 +88,7 @@ export default async function handler(req, res) {
         media_url: mediaUrl || null,
         timestamp_ms: Number(ts),
         referral_anuncio: referralAnuncio || null,
+        referral_thumbnail: referralThumbnail || null,
       }),
     })
 

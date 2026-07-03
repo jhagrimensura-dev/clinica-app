@@ -784,6 +784,7 @@ export default function InboxWhatsApp({ contaId }) {
         hora: formatTs(normTs(m.timestamp_ms)),
         tsMs: normTs(m.timestamp_ms),
         referralAnuncio: m.referral_anuncio || null,
+        referralThumbnail: m.referral_thumbnail || null,
       })
       let msgs = [...(byPhone || []), ...byNome]
         .filter(m => { const k = m.message_id || m.id; const ok = !seen.has(k); seen.add(k); return ok })
@@ -1516,10 +1517,16 @@ export default function InboxWhatsApp({ contaId }) {
                     </div>
                   )}
                   {msg.referralAnuncio && (
-                    <div className="flex justify-start mb-1">
-                      <div className="flex items-center gap-1.5 bg-purple-50 border border-purple-200 text-purple-700 text-[11px] font-semibold px-3 py-1 rounded-full">
-                        <svg viewBox="0 0 20 20" className="w-3 h-3 fill-current opacity-70"><path d="M10 2a8 8 0 100 16A8 8 0 0010 2zm1 11H9v-2h2v2zm0-4H9V5h2v4z"/></svg>
-                        Anúncio: {msg.referralAnuncio}
+                    <div className="flex justify-start mb-2">
+                      <div className="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-xl px-3 py-2 max-w-xs">
+                        {msg.referralThumbnail && (
+                          <img src={msg.referralThumbnail} alt="Anúncio"
+                            className="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-purple-200" />
+                        )}
+                        <div>
+                          <p className="text-[10px] text-purple-400 font-semibold uppercase tracking-wide">Anúncio</p>
+                          <p className="text-xs text-purple-800 font-semibold leading-tight">{msg.referralAnuncio}</p>
+                        </div>
                       </div>
                     </div>
                   )}
