@@ -1,43 +1,46 @@
+import { useMemo } from 'react'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { useVendas } from '../context/VendasContext'
-import { useFinanceiro } from '../context/FinanceiroContext'
 
+const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 const isConsulta = (l) => (l.procedimentos || '').toLowerCase().trim() === 'consulta'
+
+function fmtK(v) {
+  if (v === 0) return 'R$ 0'
+  if (v >= 1000) return `R$ ${(v / 1000).toFixed(0)}k`
+  return `R$ ${v}`
+}
+
+function CustomTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  return (
+    <div className="bg-white border border-gray-100 rounded-xl shadow-lg px-4 py-3 text-sm">
+      <p className="font-semibold text-gray-700 mb-2">{label}</p>
+      {payload.map(p => (
+        <div key={p.dataKey} className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: p.color }} />
+          <span className="text-gray-500">{p.dataKey}</span>
+          <span className="font-bold text-gray-900 ml-1">{fmtK(p.value)}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export default function Relatorios() {
   const { lancamentos } = useVendas()
-  const { mes, ano } = useFinanceiro()
 
-  const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
-  const lMes = lancamentos.filter(l => l.data.startsWith(prefix) && l.tipo !== 'Paciente Modelo' && !isConsulta(l))
-
-  const novos      = lMes.filter(l => l.tipo === 'Novo')
-  const recorrentes = lMes.filter(l => l.tipo === 'Recorrência')
-  const indicacao  = lMes.filter(l => l.tipo === 'Indicação')
-
-  const totalNovos      = novos.reduce((a, l) => a + (l.valorTratamento || 0), 0)
-  const totalRecorrentes = recorrentes.reduce((a, l) => a + (l.valorTratamento || 0), 0)
-  const totalIndicacao  = indicacao.reduce((a, l) => a + (l.valorTratamento || 0), 0)
-  const totalGeral = totalNovos + totalRecorrentes + totalIndicacao
-
-  const fmt = (v) => v >= 1000
-    ? `R$ ${(v / 1000).toFixed(1)}k`
-    : `R$ ${v.toLocaleString('pt-BR')}`
-
-  const barras = [
-    { label: 'Novos',       valor: totalNovos,       count: novos.length,       cor: 'bg-brand-400',  corLight: 'bg-brand-200',  texto: 'text-brand-600'  },
-    { label: 'Recorrência', valor: totalRecorrentes,  count: recorrentes.length, cor: 'bg-blue-400',   corLight: 'bg-blue-200',   texto: 'text-blue-600'   },
-    { label: 'Indicação',   valor: totalIndicacao,   count: indicacao.length,   cor: 'bg-purple-400', corLight: 'bg-purple-200', texto: 'text-purple-600' },
-  ]
-  const maxValor = Math.max(...barras.map(b => b.valor), 1)
-
-  const nomeMes = new Date(ano, mes).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
-    .replace(/^\w/, c => c.toUpperCase())
-
-  const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun']
-  const faturamento = [28000, 32000, 35000, 30000, 38450, 0]
-  const leads = [42, 38, 51, 45, 59, 0]
-  const maxFat = Math.max(...faturamento)
-  const maxLeads = Math.max(...leads)
+  const dados = useMemo(() => {
+    return MESES.map((mes, i) => {
+      const total = (ano) => {
+        const prefix = `${ano}-${String(i + 1).padStart(2, '0')}`
+        return lancamentos
+          .filter(l => l.data.startsWith(prefix) && l.tipo !== 'Paciente Modelo')
+          .reduce((acc, l) => acc + (l.valorTratamento || 0) + (l.valorTaxa || 0), 0)
+      }
+      return { mes, '2025': total(2025), '2026': total(2026) }
+    })
+  }, [lancamentos])
 
   return (
     <div className="p-6 space-y-6">
@@ -48,77 +51,34 @@ export default function Relatorios() {
         </button>
       </div>
 
-      {/* Gráfico Vendas por Tipo */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-base font-bold text-gray-800">Vendas por Tipo</h2>
-          <span className="text-xs text-gray-400 font-medium">{nomeMes}</span>
-        </div>
-        <div className="flex items-end gap-6 h-48">
-          {barras.map((b, i) => (
-            <div key={i} className="flex-1 flex flex-col items-center gap-2">
-              <div className="text-center">
-                <p className={`text-sm font-bold ${b.texto}`}>{fmt(b.valor)}</p>
-                <p className="text-xs text-gray-400">{b.count} venda{b.count !== 1 ? 's' : ''}</p>
-              </div>
-              <div className="w-full flex items-end justify-center" style={{ height: '120px' }}>
-                <div
-                  className={`w-full rounded-t-xl transition-all ${b.valor > 0 ? b.cor : b.corLight}`}
-                  style={{ height: b.valor > 0 ? `${(b.valor / maxValor) * 120}px` : '4px' }}
-                />
-              </div>
-              <span className="text-xs text-gray-500 font-semibold">{b.label}</span>
-            </div>
-          ))}
-        </div>
-        {totalGeral > 0 && (
-          <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between text-sm">
-            <span className="text-gray-500">Total</span>
-            <span className="font-bold text-gray-900">{fmt(totalGeral)} · {lMes.length} vendas</span>
-          </div>
-        )}
-      </div>
-
       {/* Gráfico Faturamento */}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <h2 className="text-base font-bold text-gray-800 mb-6">Faturamento Mensal</h2>
-        <div className="flex items-end gap-4 h-48">
-          {meses.map((mes, i) => (
-            <div key={i} className="flex-1 flex flex-col items-center gap-2">
-              <span className="text-xs font-semibold text-gray-500">
-                {faturamento[i] > 0 ? `R$ ${(faturamento[i] / 1000).toFixed(0)}k` : ''}
-              </span>
-              <div className="w-full flex items-end justify-center" style={{ height: '140px' }}>
-                <div
-                  className={`w-full rounded-t-xl transition-all ${i === 4 ? 'bg-brand-400' : 'bg-brand-200'}`}
-                  style={{ height: faturamento[i] > 0 ? `${(faturamento[i] / maxFat) * 140}px` : '4px' }}
-                />
-              </div>
-              <span className="text-xs text-gray-400 font-medium">{mes}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Gráfico Leads */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <h2 className="text-base font-bold text-gray-800 mb-6">Leads por Mês</h2>
-        <div className="flex items-end gap-4 h-48">
-          {meses.map((mes, i) => (
-            <div key={i} className="flex-1 flex flex-col items-center gap-2">
-              <span className="text-xs font-semibold text-gray-500">
-                {leads[i] > 0 ? leads[i] : ''}
-              </span>
-              <div className="w-full flex items-end justify-center" style={{ height: '140px' }}>
-                <div
-                  className={`w-full rounded-t-xl transition-all ${i === 4 ? 'bg-purple-400' : 'bg-purple-200'}`}
-                  style={{ height: leads[i] > 0 ? `${(leads[i] / maxLeads) * 140}px` : '4px' }}
-                />
-              </div>
-              <span className="text-xs text-gray-400 font-medium">{mes}</span>
-            </div>
-          ))}
-        </div>
+        <h2 className="text-base font-bold text-gray-800 mb-6">Faturamento</h2>
+        <ResponsiveContainer width="100%" height={320}>
+          <AreaChart data={dados} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+            <defs>
+              <linearGradient id="grad2026" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#C9A96E" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#C9A96E" stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="grad2025" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#6b7280" stopOpacity={0.15} />
+                <stop offset="95%" stopColor="#6b7280" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+            <XAxis dataKey="mes" tick={{ fontSize: 12, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
+            <YAxis tickFormatter={fmtK} tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} width={60} />
+            <Tooltip content={<CustomTooltip />} />
+            <Legend
+              formatter={(v) => <span style={{ color: '#6b7280', fontSize: 12 }}>{v}</span>}
+              iconType="circle"
+              iconSize={8}
+            />
+            <Area type="monotone" dataKey="2025" stroke="#6b7280" strokeWidth={2} fill="url(#grad2025)" dot={false} activeDot={{ r: 4 }} />
+            <Area type="monotone" dataKey="2026" stroke="#C9A96E" strokeWidth={2} fill="url(#grad2026)" dot={false} activeDot={{ r: 4 }} />
+          </AreaChart>
+        </ResponsiveContainer>
       </div>
     </div>
   )
