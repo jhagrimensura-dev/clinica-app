@@ -67,7 +67,7 @@ export function SocialProvider({ children }) {
     const key = `${ano}-${mes}`
     if (loadedMonths.has(key)) return
     setLoadedMonths(prev => new Set([...prev, key])) // mark immediately to avoid duplicate fetches
-    supabase.from('social_metricas').select('*').eq('ano', ano).eq('mes', mes).maybeSingle()
+    supabase.from('social_metricas').select('*').eq('clinica_id', clinicaId).eq('ano', ano).eq('mes', mes).maybeSingle()
       .then(({ data }) => {
         const val = { trafego: data?.trafego ?? 0, seguidores: data?.seguidores ?? 0 }
         metricasRef.current = { ...metricasRef.current, [key]: val }
@@ -131,36 +131,30 @@ export function SocialProvider({ children }) {
     }
   }, [clinicaId])
 
-  const setTrafego = (ano, mes, valor) => {
+  const setTrafego = async (ano, mes, valor) => {
     const key = `${ano}-${mes}`
     const cur = metricasRef.current[key] || {}
     const next = { ...cur, trafego: valor }
     metricasRef.current = { ...metricasRef.current, [key]: next }
     setMetricas(prev => ({ ...prev, [key]: next }))
-    if (saveTimers.current[key + '_t']) clearTimeout(saveTimers.current[key + '_t'])
-    saveTimers.current[key + '_t'] = setTimeout(() => {
-      const latest = metricasRef.current[key] || {}
-      supabase.from('social_metricas').upsert(
-        { clinica_id: clinicaId, ano, mes, trafego: valor, seguidores: latest.seguidores ?? 0 },
-        { onConflict: 'clinica_id,ano,mes' }
-      )
-    }, 300)
+    const { error } = await supabase.from('social_metricas').upsert(
+      { clinica_id: clinicaId, ano, mes, trafego: valor, seguidores: cur.seguidores ?? 0 },
+      { onConflict: 'clinica_id,ano,mes' }
+    )
+    if (error) console.error('SocialContext setTrafego error:', error)
   }
 
-  const setSeguidores = (ano, mes, valor) => {
+  const setSeguidores = async (ano, mes, valor) => {
     const key = `${ano}-${mes}`
     const cur = metricasRef.current[key] || {}
     const next = { ...cur, seguidores: valor }
     metricasRef.current = { ...metricasRef.current, [key]: next }
     setMetricas(prev => ({ ...prev, [key]: next }))
-    if (saveTimers.current[key + '_s']) clearTimeout(saveTimers.current[key + '_s'])
-    saveTimers.current[key + '_s'] = setTimeout(() => {
-      const latest = metricasRef.current[key] || {}
-      supabase.from('social_metricas').upsert(
-        { clinica_id: clinicaId, ano, mes, trafego: latest.trafego ?? 0, seguidores: valor },
-        { onConflict: 'clinica_id,ano,mes' }
-      )
-    }, 300)
+    const { error } = await supabase.from('social_metricas').upsert(
+      { clinica_id: clinicaId, ano, mes, trafego: cur.trafego ?? 0, seguidores: valor },
+      { onConflict: 'clinica_id,ano,mes' }
+    )
+    if (error) console.error('SocialContext setSeguidores error:', error)
   }
 
   const salvarRotina = (nova) => {
