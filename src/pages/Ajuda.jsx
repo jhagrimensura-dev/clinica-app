@@ -6,6 +6,79 @@ export default function Ajuda() {
         <p className="text-sm text-gray-400 mt-1">Entenda como funcionam os indicadores e melhore a gestão da sua clínica</p>
       </div>
 
+      {/* ORIGEM DOS ANÚNCIOS */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <h2 className="text-base font-bold text-gray-800 mb-1">📣 De onde vêm os leads?</h2>
+        <p className="text-xs text-gray-400 mb-5">Entenda os dois tipos de anúncio usados pela clínica e como identificar a origem de cada lead</p>
+
+        <div className="grid grid-cols-2 gap-4">
+          {/* Instagram Impulsionar */}
+          <div className="rounded-2xl border border-pink-200 bg-pink-50 p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-2xl">📸</span>
+              <div>
+                <p className="text-sm font-bold text-gray-800">Instagram — Impulsionar</p>
+                <p className="text-xs text-pink-500 font-semibold">Direto pelo Instagram</p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 leading-relaxed mb-4">
+              São posts ou reels impulsionados diretamente pelo app do Instagram. O lead chega pelo botão de contato da publicação.
+            </p>
+            <p className="text-xs font-semibold text-gray-600 mb-2">De onde vêm:</p>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 border border-pink-100">
+                <span className="text-base">🔗</span>
+                <div>
+                  <p className="text-xs font-bold text-gray-700">Link da Bio</p>
+                  <p className="text-xs text-gray-400">Lead clicou no link da bio do perfil</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 border border-pink-100">
+                <span className="text-base">📖</span>
+                <div>
+                  <p className="text-xs font-bold text-gray-700">Link dos Stories</p>
+                  <p className="text-xs text-gray-400">Lead clicou no link direto do story</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Tráfego — Gerenciador */}
+          <div className="rounded-2xl border border-purple-200 bg-purple-50 p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-2xl">📊</span>
+              <div>
+                <p className="text-sm font-bold text-gray-800">Tráfego — Gerenciador</p>
+                <p className="text-xs text-purple-500 font-semibold">Meta Ads Manager</p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 leading-relaxed mb-4">
+              Campanha de mensagens criada no Gerenciador de Anúncios da Meta. Quando o lead clica, abre direto o WhatsApp.
+            </p>
+            <p className="text-xs font-semibold text-gray-600 mb-2">Como identificar o anúncio:</p>
+            <div className="bg-white rounded-xl px-3 py-3 border border-purple-100">
+              <p className="text-xs text-gray-500 mb-2">Os anúncios sempre têm no nome:</p>
+              <div className="flex flex-wrap gap-2">
+                <span className="bg-purple-100 text-purple-700 text-xs font-bold px-2 py-1 rounded-full">emoji</span>
+                <span className="bg-red-100 text-red-600 text-xs font-bold px-2 py-1 rounded-full">❤️ coração</span>
+                <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-full">🔵 bolinha</span>
+              </div>
+              <p className="text-[10px] text-gray-400 mt-2">Ex: ❤️ Botox Dra Amanda 🔵</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 bg-amber-50 rounded-xl p-4 flex gap-3 border border-amber-100">
+          <span className="text-amber-500 text-lg flex-shrink-0">💡</span>
+          <div>
+            <p className="text-sm font-semibold text-gray-700 mb-1">Como aparece no Inbox?</p>
+            <p className="text-xs text-gray-500 leading-relaxed">
+              Quando um lead chega pelo anúncio do Gerenciador, aparece um badge roxo no topo da conversa mostrando o nome e imagem do anúncio — assim você sabe exatamente qual campanha gerou aquele contato.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* FUNIL DE CONVERSÃO */}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <h2 className="text-base font-bold text-gray-800 mb-5">Funil de Conversão</h2>
