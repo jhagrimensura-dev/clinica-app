@@ -210,6 +210,25 @@ export default function AgendaLembretes() {
               )
             })}
           </div>
+          {/* Legenda de cores */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 px-1">
+            {[
+              { id: 'blue',   label: 'Azul'       },
+              { id: 'green',  label: 'Verde'       },
+              { id: 'brand',  label: 'Rosa'        },
+              { id: 'purple', label: 'Roxo'        },
+              { id: 'red',    label: 'Vermelho'    },
+              { id: 'yellow', label: 'Aniversário 🎂' },
+            ].map(({ id, label }) => {
+              const cor = getCor(id)
+              return (
+                <div key={id} className="flex items-center gap-1.5">
+                  <span className={`w-3 h-3 rounded-full flex-shrink-0 ${cor.solid}`} />
+                  <span className="text-[11px] text-gray-500">{label}</span>
+                </div>
+              )
+            })}
+          </div>
         </div>
       ) : (
         /* ===== VISTA DIA ===== */
