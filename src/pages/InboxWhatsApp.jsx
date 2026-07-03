@@ -1208,7 +1208,7 @@ export default function InboxWhatsApp({ contaId }) {
         descricao: `🎂 Aniversário de ${dados.nome}`,
         data: `${anoAniv}-${mes}-${dia}`,
         hora: '09:00',
-        cor: 'pink',
+        cor: 'yellow',
         concluido: false,
         criadoEm: Date.now(),
       })

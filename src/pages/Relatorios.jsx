@@ -3,7 +3,6 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { useVendas } from '../context/VendasContext'
 
 const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
-const isConsulta = (l) => (l.procedimentos || '').toLowerCase().trim() === 'consulta'
 
 function fmtK(v) {
   if (v === 0) return 'R$ 0'
