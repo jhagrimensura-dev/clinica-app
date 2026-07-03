@@ -59,7 +59,7 @@ function MoneyInput({ value, onChange, placeholder = 'R$ 0,00' }) {
 
 function TierBadge({ valor, tiers }) {
   const hit = [...tiers].reverse().find(t => valor >= t.meta)
-  if (!hit) return <span className="text-xs text-gray-400">Abaixo da meta</span>
+  if (!hit) return null
   const color = hit.label === 'Super Meta' ? 'bg-purple-100 text-purple-700' : hit.label === 'Ideal' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
   return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${color}`}>{hit.label}</span>
 }
