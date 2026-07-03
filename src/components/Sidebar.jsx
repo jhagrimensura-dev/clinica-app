@@ -42,7 +42,7 @@ const menuItems = [
       { id: 'leads_recorrentes', label: 'Leads Recorrentes',icon: 'leads'     },
       { id: 'indicacao',         label: 'Indicação',        icon: 'indicacao' },
       { id: 'resgates',          label: 'Resgates',         icon: 'resgates'       },
-      { id: 'pos_tratamento',    label: 'Pós Tratamento',   icon: 'pos_tratamento' },
+      { id: 'pos_tratamento',    label: 'Pós Procedimento', icon: 'pos_tratamento' },
     ],
   },
   { id: 'faturamento', label: 'Vendas',            icon: 'faturamento'  },

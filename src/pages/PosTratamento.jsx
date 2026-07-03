@@ -82,7 +82,7 @@ function CalendarioPos({ registros, diaSelecionado, onSelectDia }) {
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-        <h2 className="text-sm font-bold text-gray-700">Calendário de Pós Procedimento</h2>
+        <h2 className="text-sm font-bold text-gray-700">Calendário — Pós Procedimento</h2>
         <div className="flex items-center gap-2">
           <button onClick={() => navMes(-1)} className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 text-base">‹</button>
           <span className="text-sm font-semibold text-gray-700 min-w-[140px] text-center">{MESES_NOME[mes]} {ano}</span>
@@ -197,7 +197,7 @@ function ModalNovo({ onSalvar, onFechar }) {
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold text-gray-900">Novo Pós Tratamento</h2>
+          <h2 className="text-base font-bold text-gray-900">Novo Pós Procedimento</h2>
           <button onClick={onFechar} className="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
         </div>
 
@@ -415,7 +415,7 @@ export default function PosTratamento() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">💆 Pós Tratamento</h1>
+          <h1 className="text-2xl font-bold text-gray-800">💆 Pós Procedimento</h1>
           <p className="text-sm text-gray-400 mt-1">Acompanhamento pós-atendimento das pacientes</p>
         </div>
         <button onClick={() => setModalNovo(true)}
