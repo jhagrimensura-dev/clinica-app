@@ -1,6 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { useLeads } from '../context/LeadsContext'
-import { useAgenda } from '../context/AgendaContext'
 import { useAuth } from '../context/AuthContext'
 import { usePacientes } from '../context/PacientesContext'
 
@@ -11,10 +10,17 @@ const STATUSES = {
   concluido:    { label: 'Concluído',    bg: 'bg-green-100',  text: 'text-green-700',  dot: 'bg-green-400'  },
 }
 
+const MESES_NOME = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+const DIAS_SEMANA = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']
+
 function formatData(str) {
   if (!str) return '—'
   const [y, m, d] = str.split('-')
   return `${d}/${m}/${y}`
+}
+
+function parseLembretes(obs) {
+  try { const p = JSON.parse(obs || '{}'); return Array.isArray(p.lembretes) ? p.lembretes : [] } catch { return [] }
 }
 
 function StatusBadge({ status }) {
@@ -34,13 +40,105 @@ function ProximoContato({ data, hoje }) {
   return <span className="text-xs text-blue-600">{formatData(data)}</span>
 }
 
+// ─── Calendário próprio ───────────────────────────────────────────────────────
+function CalendarioPos({ registros, diaSelecionado, onSelectDia }) {
+  const hoje = new Date().toISOString().slice(0, 10)
+  const [mes, setMes] = useState(new Date().getMonth())
+  const [ano, setAno] = useState(new Date().getFullYear())
+
+  const navMes = (delta) => setMes(m => {
+    let nm = m + delta, na = ano
+    if (nm < 0) { nm = 11; setAno(na - 1) }
+    else if (nm > 11) { nm = 0; setAno(na + 1) }
+    return nm
+  })
+
+  const lembretesPorDia = useMemo(() => {
+    const map = {}
+    registros.forEach(r => {
+      parseLembretes(r.obs).forEach(l => {
+        if (!l.data) return
+        if (!map[l.data]) map[l.data] = []
+        map[l.data].push({ ...r, lembHora: l.hora, lembObs: l.obs })
+      })
+    })
+    return map
+  }, [registros])
+
+  const primeiroDia = new Date(ano, mes, 1).getDay()
+  const diasNoMes = new Date(ano, mes + 1, 0).getDate()
+  const cells = [...Array(primeiroDia).fill(null), ...Array.from({ length: diasNoMes }, (_, i) => i + 1)]
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-bold text-gray-700">Calendário de Pós Procedimento</h2>
+        <div className="flex items-center gap-2">
+          <button onClick={() => navMes(-1)} className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 text-base">‹</button>
+          <span className="text-sm font-semibold text-gray-700 min-w-[140px] text-center">{MESES_NOME[mes]} {ano}</span>
+          <button onClick={() => navMes(1)} className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 text-base">›</button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-7 mb-1">
+        {DIAS_SEMANA.map(d => (
+          <div key={d} className="text-center text-xs font-semibold text-gray-400 py-1">{d}</div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-7 gap-0.5">
+        {cells.map((d, i) => {
+          if (!d) return <div key={i} />
+          const dayStr = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+          const pacs = lembretesPorDia[dayStr] || []
+          const isHoje = dayStr === hoje
+          const isSel = dayStr === diaSelecionado
+
+          return (
+            <button key={i} onClick={() => onSelectDia(isSel ? null : dayStr)}
+              className={`relative flex flex-col items-center py-1.5 px-1 rounded-xl transition-all min-h-[54px] ${
+                isSel ? 'bg-teal-500 text-white' :
+                isHoje ? 'bg-brand-50 ring-1 ring-brand-300' :
+                pacs.length > 0 ? 'hover:bg-teal-50 cursor-pointer' : 'cursor-default'
+              }`}>
+              <span className={`text-xs font-semibold ${isSel ? 'text-white' : isHoje ? 'text-brand-600' : 'text-gray-700'}`}>{d}</span>
+              {pacs.length > 0 && (
+                <div className="mt-1 flex flex-wrap gap-0.5 justify-center">
+                  {pacs.slice(0, 2).map((_, j) => (
+                    <span key={j} className={`w-1.5 h-1.5 rounded-full ${isSel ? 'bg-white' : 'bg-teal-400'}`} />
+                  ))}
+                  {pacs.length > 2 && <span className={`text-[9px] font-bold ${isSel ? 'text-white' : 'text-teal-600'}`}>+{pacs.length - 2}</span>}
+                </div>
+              )}
+            </button>
+          )
+        })}
+      </div>
+
+      {diaSelecionado && lembretesPorDia[diaSelecionado]?.length > 0 && (
+        <div className="mt-4 border-t border-gray-100 pt-4 space-y-1.5">
+          <p className="text-xs font-semibold text-gray-500 mb-2">Pós procedimentos em {formatData(diaSelecionado)}</p>
+          {lembretesPorDia[diaSelecionado].map((p, i) => (
+            <div key={i} className="flex items-center gap-3 bg-teal-50 rounded-xl px-3 py-2">
+              <span className="text-xs font-bold text-teal-600 w-10 flex-shrink-0">{p.lembHora || '09:00'}</span>
+              <span className="text-sm font-medium text-gray-800 flex-1">{p.nome}</span>
+              <StatusBadge status={p.status} />
+              {p.lembObs && <span className="text-xs text-gray-400 truncate max-w-[120px]">{p.lembObs}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Modal Novo ───────────────────────────────────────────────────────────────
 function ModalNovo({ onSalvar, onFechar }) {
   const { pacientes } = usePacientes()
   const hoje = new Date().toISOString().slice(0, 10)
   const [nome, setNome] = useState('')
   const [telefone, setTelefone] = useState('')
   const [data, setData] = useState(hoje)
-  const [obs, setObs] = useState('')
   const [lembretes, setLembretes] = useState([
     { data: '', hora: '09:00', obs: '' },
     { data: '', hora: '09:00', obs: '' },
@@ -57,20 +155,11 @@ function ModalNovo({ onSalvar, onFechar }) {
   const handleNomeChange = (val) => {
     setNome(val)
     if (val.trim().length < 2) { setSugestoes([]); setShowSug(false); return }
-    const termo = val.toLowerCase()
-    const matches = pacientes
-      .filter(p => p.nome.toLowerCase().includes(termo))
-      .slice(0, 6)
-    setSugestoes(matches)
-    setShowSug(matches.length > 0)
+    const matches = pacientes.filter(p => p.nome.toLowerCase().includes(val.toLowerCase())).slice(0, 6)
+    setSugestoes(matches); setShowSug(matches.length > 0)
   }
 
-  const selecionarPaciente = (p) => {
-    setNome(p.nome)
-    setTelefone(p.whatsapp || '')
-    setSugestoes([])
-    setShowSug(false)
-  }
+  const selecionarPaciente = (p) => { setNome(p.nome); setTelefone(p.whatsapp || ''); setSugestoes([]); setShowSug(false) }
 
   useEffect(() => {
     const fechar = (e) => { if (!inputRef.current?.parentElement?.contains(e.target)) setShowSug(false) }
@@ -80,31 +169,24 @@ function ModalNovo({ onSalvar, onFechar }) {
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-gray-900">Novo Pós Tratamento</h2>
           <button onClick={onFechar} className="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
         </div>
+
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2 relative" ref={inputRef}>
             <label className="text-xs font-semibold text-gray-500 mb-1 block">Nome <span className="text-red-400">*</span></label>
-            <input
-              value={nome}
-              onChange={e => handleNomeChange(e.target.value)}
+            <input value={nome} onChange={e => handleNomeChange(e.target.value)}
               onFocus={() => sugestoes.length > 0 && setShowSug(true)}
-              placeholder="Buscar paciente pelo nome..."
-              autoFocus
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300"
-            />
+              placeholder="Buscar paciente pelo nome..." autoFocus
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300" />
             {showSug && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-10 overflow-hidden">
                 {sugestoes.map(p => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onMouseDown={() => selecionarPaciente(p)}
-                    className="w-full text-left px-4 py-2.5 text-sm hover:bg-brand-50 transition-colors flex items-center justify-between"
-                  >
+                  <button key={p.id} type="button" onMouseDown={() => selecionarPaciente(p)}
+                    className="w-full text-left px-4 py-2.5 text-sm hover:bg-brand-50 transition-colors flex items-center justify-between">
                     <span className="font-medium text-gray-800">{p.nome}</span>
                     {p.whatsapp && <span className="text-xs text-gray-400">{p.whatsapp}</span>}
                   </button>
@@ -153,9 +235,8 @@ function ModalNovo({ onSalvar, onFechar }) {
 
         <div className="flex justify-end gap-3 pt-1 border-t border-gray-100">
           <button onClick={onFechar} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
-          <button
-            disabled={!nome.trim()}
-            onClick={() => onSalvar({ nome: nome.trim(), telefone, data, obs, status: 'pendente', origem: 'pos_tratamento', lembretes })}
+          <button disabled={!nome.trim()}
+            onClick={() => onSalvar({ nome: nome.trim(), telefone, data, lembretes, status: 'pendente', origem: 'pos_tratamento' })}
             className="px-5 py-2 bg-brand-400 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl">
             Salvar
           </button>
@@ -165,9 +246,17 @@ function ModalNovo({ onSalvar, onFechar }) {
   )
 }
 
+// ─── Modal Editar ─────────────────────────────────────────────────────────────
 function ModalEditar({ lead, onSalvar, onFechar }) {
+  const existingLems = parseLembretes(lead.obs)
   const [status, setStatus] = useState(lead.status || 'pendente')
-  const [lembretes, setLembretes] = useState([{ data: lead.proximoFollowup || '', hora: '09:00', obs: '' }])
+  const [lembretes, setLembretes] = useState(
+    existingLems.length > 0
+      ? existingLems
+      : [{ data: lead.proximoFollowup || '', hora: '09:00', obs: '' },
+         { data: '', hora: '09:00', obs: '' },
+         { data: '', hora: '09:00', obs: '' }]
+  )
 
   const setLembrete = (i, field, val) => setLembretes(prev => prev.map((l, idx) => idx === i ? { ...l, [field]: val } : l))
   const addLembrete = () => setLembretes(prev => [...prev, { data: '', hora: '09:00', obs: '' }])
@@ -185,13 +274,10 @@ function ModalEditar({ lead, onSalvar, onFechar }) {
           <label className="text-xs font-semibold text-gray-500 mb-2 block">Status do contato</label>
           <div className="grid grid-cols-2 gap-2">
             {Object.entries(STATUSES).map(([key, s]) => (
-              <button
-                key={key}
-                onClick={() => setStatus(key)}
+              <button key={key} onClick={() => setStatus(key)}
                 className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all ${
                   status === key ? `${s.bg} ${s.text} border-transparent` : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
-                }`}
-              >
+                }`}>
                 <span className={`w-2 h-2 rounded-full ${status === key ? s.dot : 'bg-gray-300'}`} />
                 {s.label}
               </button>
@@ -201,27 +287,27 @@ function ModalEditar({ lead, onSalvar, onFechar }) {
 
         <div>
           <label className="text-xs font-semibold text-gray-500 mb-2 block">Lembrete de Pós procedimento</label>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {lembretes.map((l, i) => (
-              <div key={i} className="border border-gray-100 rounded-xl p-3 space-y-2 bg-gray-50 relative">
-                {lembretes.length > 1 && (
-                  <button onClick={() => removeLembrete(i)}
-                    className="absolute top-2 right-2 text-gray-300 hover:text-red-400 text-lg leading-none">×</button>
-                )}
-                <div className="flex gap-2">
+              <div key={i} className="bg-gray-50 rounded-xl p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-400 w-4 flex-shrink-0">{i + 1}.</span>
                   <input type="date" value={l.data} onChange={e => setLembrete(i, 'data', e.target.value)}
-                    className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300 bg-white" />
+                    className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 bg-white" />
                   <input type="time" value={l.hora} onChange={e => setLembrete(i, 'hora', e.target.value)}
-                    className="w-28 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300 bg-white" />
+                    className="w-24 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 bg-white" />
+                  {lembretes.length > 1 && (
+                    <button onClick={() => removeLembrete(i)} className="text-gray-300 hover:text-red-400 text-lg leading-none flex-shrink-0">×</button>
+                  )}
                 </div>
-                <textarea value={l.obs} onChange={e => setLembrete(i, 'obs', e.target.value)} rows={2}
-                  placeholder="Observação do retorno..."
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 resize-none bg-white" />
+                <input value={l.obs} onChange={e => setLembrete(i, 'obs', e.target.value)}
+                  placeholder="Observação do lembrete..."
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 bg-white" />
               </div>
             ))}
           </div>
           <button onClick={addLembrete}
-            className="w-full mt-2 py-2 border border-dashed border-gray-300 rounded-xl text-sm text-gray-400 hover:text-brand-500 hover:border-brand-300 transition-colors">
+            className="w-full mt-2 py-1.5 border border-dashed border-gray-300 rounded-xl text-xs text-gray-400 hover:text-brand-500 hover:border-brand-300 transition-colors">
             + Adicionar lembrete
           </button>
         </div>
@@ -236,9 +322,9 @@ function ModalEditar({ lead, onSalvar, onFechar }) {
   )
 }
 
-export default function PosTratamento({ onNavigate }) {
+// ─── Página principal ─────────────────────────────────────────────────────────
+export default function PosTratamento() {
   const { leads, addLead, updateLead, removeLead } = useLeads()
-  const { addLembrete } = useAgenda()
   const { userRole } = useAuth()
   const isAdmin = userRole === 'Administrador'
   const hoje = new Date().toISOString().slice(0, 10)
@@ -249,80 +335,51 @@ export default function PosTratamento({ onNavigate }) {
       .sort((a, b) => {
         const aVenc = a.proximoFollowup && a.proximoFollowup < hoje
         const bVenc = b.proximoFollowup && b.proximoFollowup < hoje
-        const aHoje = a.proximoFollowup === hoje
-        const bHoje = b.proximoFollowup === hoje
         if (aVenc !== bVenc) return aVenc ? -1 : 1
-        if (aHoje !== bHoje) return aHoje ? -1 : 1
         if (a.proximoFollowup && b.proximoFollowup) return a.proximoFollowup.localeCompare(b.proximoFollowup)
         return (b.data || '').localeCompare(a.data || '')
       })
   , [leads, hoje])
 
   const pendentes   = registros.filter(l => l.status === 'pendente').length
-  const atrasados   = registros.filter(l => l.proximoFollowup && l.proximoFollowup < hoje && l.status !== 'concluido').length
   const concluidos  = registros.filter(l => l.status === 'concluido').length
   const semResposta = registros.filter(l => l.status === 'sem_resposta').length
 
   const [busca, setBusca] = useState('')
   const [filtroStatus, setFiltroStatus] = useState('todos')
+  const [diaSelecionado, setDiaSelecionado] = useState(null)
   const [modalNovo, setModalNovo] = useState(false)
   const [modalEditar, setModalEditar] = useState(null)
 
   const filtrados = registros.filter(l => {
     const matchBusca = !busca || (l.nome || '').toLowerCase().includes(busca.toLowerCase()) || (l.telefone || '').includes(busca)
     const matchStatus = filtroStatus === 'todos' || l.status === filtroStatus
-    return matchBusca && matchStatus
+    const matchDia = !diaSelecionado || parseLembretes(l.obs).some(lem => lem.data === diaSelecionado)
+    return matchBusca && matchStatus && matchDia
   })
 
   const handleNovo = async (dados) => {
-    const { lembretes: lems, ...leadDados } = dados
-    const novoLead = await addLead({ ...leadDados, proximoFollowup: lems?.find(l => l.data)?.data || '' })
-    for (const lem of (lems || [])) {
-      if (!lem.data) continue
-      addLembrete({
-        id: Date.now() + Math.random(),
-        leadNome: dados.nome,
-        leadTelefone: dados.telefone || '',
-        descricao: `Pós tratamento — ${dados.nome}${lem.obs ? ': ' + lem.obs : ''}`,
-        data: lem.data,
-        hora: lem.hora || '09:00',
-        cor: 'teal',
-        concluido: false,
-        criadoEm: Date.now(),
-      })
-    }
+    const { lembretes, ...leadDados } = dados
+    const lemsValidos = (lembretes || []).filter(l => l.data)
+    const obs = lemsValidos.length > 0 ? JSON.stringify({ lembretes: lemsValidos }) : ''
+    const proximoFollowup = lemsValidos[0]?.data || ''
+    await addLead({ ...leadDados, obs, proximoFollowup })
     setModalNovo(false)
   }
 
   const handleSalvarEdicao = async (registro, { status, lembretes }) => {
-    const primeiro = lembretes?.[0]
-    await updateLead(registro.id, {
-      status,
-      proximoFollowup: primeiro?.data || registro.proximoFollowup || '',
-    })
-    for (const lem of (lembretes || [])) {
-      if (!lem.data) continue
-      addLembrete({
-        id: Date.now() + Math.random(),
-        leadNome: registro.nome,
-        leadTelefone: registro.telefone || '',
-        descricao: `Pós tratamento — ${registro.nome}${lem.obs ? ': ' + lem.obs : ''}`,
-        data: lem.data,
-        hora: lem.hora || '09:00',
-        cor: 'teal',
-        concluido: false,
-        criadoEm: Date.now(),
-      })
-    }
-    if (lembretes?.some(l => l.data) && onNavigate) onNavigate('agenda_lembretes')
+    const lemsValidos = (lembretes || []).filter(l => l.data)
+    const obs = lemsValidos.length > 0 ? JSON.stringify({ lembretes: lemsValidos }) : ''
+    const proximoFollowup = lemsValidos[0]?.data || ''
+    await updateLead(registro.id, { status, proximoFollowup, obs })
     setModalEditar(null)
   }
 
-  const abrirInbox = (registro) => {
-    if (registro.telefone) {
-      sessionStorage.setItem('inbox_abrir_telefone', registro.telefone)
+  const abrirInbox = (reg) => {
+    if (reg.telefone) {
+      sessionStorage.setItem('inbox_abrir_telefone', reg.telefone)
       window.dispatchEvent(new CustomEvent('navegarInbox', {
-        detail: { telefone: registro.telefone, contaTipo: 'Leads Recorrentes' }
+        detail: { telefone: reg.telefone, contaTipo: 'Leads Recorrentes' }
       }))
     }
   }
@@ -341,6 +398,9 @@ export default function PosTratamento({ onNavigate }) {
         </button>
       </div>
 
+      {/* Calendário */}
+      <CalendarioPos registros={registros} diaSelecionado={diaSelecionado} onSelectDia={setDiaSelecionado} />
+
       {/* Cards */}
       <div className="grid grid-cols-4 gap-4">
         {[
@@ -358,24 +418,19 @@ export default function PosTratamento({ onNavigate }) {
 
       {/* Filtros */}
       <div className="flex gap-3 items-center flex-wrap">
-        <input
-          value={busca}
-          onChange={e => setBusca(e.target.value)}
+        <input value={busca} onChange={e => setBusca(e.target.value)}
           placeholder="Buscar por nome ou telefone..."
-          className="flex-1 max-w-xs border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300"
-        />
-        {[
-          ['todos', 'Todos'],
-          ['pendente', 'Pendentes'],
-          ['contatado', 'Contatados'],
-          ['sem_resposta', 'Sem resposta'],
-          ['concluido', 'Concluídos'],
-        ].map(([val, label]) => (
+          className="flex-1 max-w-xs border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300" />
+        {diaSelecionado && (
+          <button onClick={() => setDiaSelecionado(null)}
+            className="px-3 py-2 text-xs rounded-xl font-medium bg-teal-100 text-teal-700 border border-teal-200 hover:bg-teal-200 transition-colors">
+            📅 {formatData(diaSelecionado)} ×
+          </button>
+        )}
+        {[['todos','Todos'],['pendente','Pendentes'],['contatado','Contatados'],['sem_resposta','Sem resposta'],['concluido','Concluídos']].map(([val, label]) => (
           <button key={val} onClick={() => setFiltroStatus(val)}
             className={`px-4 py-2 text-sm rounded-xl font-medium transition-colors ${
-              filtroStatus === val
-                ? 'bg-brand-400 text-white'
-                : 'bg-white text-gray-500 border border-gray-200 hover:border-brand-300'
+              filtroStatus === val ? 'bg-brand-400 text-white' : 'bg-white text-gray-500 border border-gray-200 hover:border-brand-300'
             }`}>
             {label}
           </button>
@@ -394,7 +449,7 @@ export default function PosTratamento({ onNavigate }) {
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50 text-left">
-                {['Nome', 'Contato', 'Status', 'Atendimento', 'Próx. retorno', 'Observações', 'Ações'].map(h => (
+                {['Nome', 'Contato', 'Status', 'Atendimento', 'Próx. retorno', 'Ações'].map(h => (
                   <th key={h} className="px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
@@ -420,18 +475,9 @@ export default function PosTratamento({ onNavigate }) {
                         )}
                       </div>
                     </td>
-                    <td className="px-5 py-3">
-                      <StatusBadge status={reg.status} />
-                    </td>
-                    <td className="px-5 py-3">
-                      <span className="text-xs text-gray-500">{formatData(reg.data)}</span>
-                    </td>
-                    <td className="px-5 py-3">
-                      <ProximoContato data={reg.proximoFollowup} hoje={hoje} />
-                    </td>
-                    <td className="px-5 py-3 max-w-[160px]">
-                      <span className="text-xs text-gray-500 truncate block">{reg.obs || '—'}</span>
-                    </td>
+                    <td className="px-5 py-3"><StatusBadge status={reg.status} /></td>
+                    <td className="px-5 py-3"><span className="text-xs text-gray-500">{formatData(reg.data)}</span></td>
+                    <td className="px-5 py-3"><ProximoContato data={reg.proximoFollowup} hoje={hoje} /></td>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2">
                         <button onClick={() => setModalEditar(reg)}
@@ -439,9 +485,7 @@ export default function PosTratamento({ onNavigate }) {
                           Editar
                         </button>
                         {isAdmin && (
-                          <button onClick={() => {
-                            if (window.confirm(`Excluir "${reg.nome}"?\n\nEssa ação não pode ser desfeita.`)) removeLead(reg.id)
-                          }}
+                          <button onClick={() => { if (window.confirm(`Excluir "${reg.nome}"?`)) removeLead(reg.id) }}
                             className="text-xs px-2 py-1.5 bg-red-50 hover:bg-red-100 text-red-400 hover:text-red-600 rounded-lg transition-colors">
                             <svg viewBox="0 0 20 20" className="w-3.5 h-3.5" fill="currentColor">
                               <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd"/>
@@ -460,11 +504,9 @@ export default function PosTratamento({ onNavigate }) {
 
       {modalNovo && <ModalNovo onSalvar={handleNovo} onFechar={() => setModalNovo(false)} />}
       {modalEditar && (
-        <ModalEditar
-          lead={modalEditar}
+        <ModalEditar lead={modalEditar}
           onSalvar={(dados) => handleSalvarEdicao(modalEditar, dados)}
-          onFechar={() => setModalEditar(null)}
-        />
+          onFechar={() => setModalEditar(null)} />
       )}
     </div>
   )
