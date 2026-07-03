@@ -42,8 +42,7 @@ function ModalPerfilPaciente({ paciente, onClose, onSalvar, onExcluir, lancament
       procedimentos: lProc,
       valorTaxa: parseFloat(String(lTaxa).replace(',', '.')) || 0,
       valorTratamento: parseFloat(String(lValor).replace(',', '.')) || 0,
-      formasPagamento: lFormas,
-      parcelas: lParcelas,
+      formasPgto: lFormas,
       obs: lObs,
       mes: parseInt(lData.split('-')[1]) - 1,
       ano: parseInt(lData.split('-')[0]),
@@ -247,8 +246,8 @@ function ModalPerfilPaciente({ paciente, onClose, onSalvar, onExcluir, lancament
                             {l.data ? new Date(l.data + 'T12:00').toLocaleDateString('pt-BR') : '—'}
                             {l.responsavel ? ` · ${l.responsavel}` : ''}
                           </p>
-                          {l.formasPagamento?.length > 0 && (
-                            <p className="text-xs text-gray-400 mt-0.5">{l.formasPagamento.join(', ')}</p>
+                          {l.formasPgto?.length > 0 && (
+                            <p className="text-xs text-gray-400 mt-0.5">{l.formasPgto.join(', ')}</p>
                           )}
                         </div>
                         <div className="text-right flex-shrink-0">
