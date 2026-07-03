@@ -87,6 +87,12 @@ export default function Dashboard() {
               <span className="text-gray-500">Recorrência</span>
               <span className="font-medium text-gray-800">{fmt(totalRecorrentes)} <span className="text-brand-400 text-xs ml-1">{countRecorrentes} venda(s)</span> <span className="text-gray-400 text-xs">({totalGeral > 0 ? ((totalRecorrentes / totalGeral) * 100).toFixed(1) : 0}%)</span></span>
             </div>
+            {totalIndicacaoLanc > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Indicação</span>
+                <span className="font-medium text-gray-800">{fmt(totalIndicacaoLanc)} <span className="text-brand-400 text-xs ml-1">{countIndicacaoLanc} venda(s)</span> <span className="text-gray-400 text-xs">({totalGeral > 0 ? ((totalIndicacaoLanc / totalGeral) * 100).toFixed(1) : 0}%)</span></span>
+              </div>
+            )}
             {totalConsultas > 0 && (
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Consultas</span>
