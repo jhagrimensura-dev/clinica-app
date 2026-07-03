@@ -63,7 +63,7 @@ function semanaRef0(data) {
   return d
 }
 
-function CalendarioPos({ registros, onSelectDia }) {
+function CalendarioPos({ registros, onSelectDia, onEditReg }) {
   const hojeDate = new Date()
   const hojeStr  = hojeDate.toISOString().slice(0, 10)
 
@@ -213,9 +213,10 @@ function CalendarioPos({ registros, onSelectDia }) {
                   <div key={di} className={`flex-1 border-l border-t border-gray-100 relative px-0.5 py-0.5 ${isHoje ? 'bg-brand-50/20' : ''} ${slot.endsWith(':00') ? '' : 'border-t-dashed'}`}>
                     {entries.map((e, ei) => (
                       <div key={ei}
-                        onClick={() => onSelectDia(ds)}
-                        className={`w-full rounded border px-1.5 py-0.5 text-[10px] font-semibold truncate cursor-pointer leading-tight ${STATUS_SLOT[e.status] || 'bg-teal-100 text-teal-800 border-teal-300'}`}>
-                        <span className="opacity-70">{e.lembHora} </span>{e.nome}
+                        onClick={() => onEditReg(e)}
+                        className={`w-full rounded border px-1.5 py-0.5 text-[10px] font-semibold truncate cursor-pointer leading-tight ${STATUS_SLOT[e.status] || 'bg-teal-100 text-teal-800 border-teal-300'} ${e.status === 'concluido' ? 'opacity-60' : ''}`}>
+                        <span className="opacity-70">{e.lembHora} </span>
+                        <span className={e.status === 'concluido' ? 'line-through' : ''}>{e.nome}</span>
                       </div>
                     ))}
                   </div>
@@ -438,10 +439,6 @@ export default function PosTratamento() {
       })
   , [leads, hoje])
 
-  const pendentes   = registros.filter(l => l.status === 'pendente').length
-  const concluidos  = registros.filter(l => l.status === 'concluido').length
-  const semResposta = registros.filter(l => l.status === 'sem_resposta').length
-
   const [busca, setBusca] = useState('')
   const [filtroStatus, setFiltroStatus] = useState('todos')
   const [diaSelecionado, setDiaSelecionado] = useState(null)
@@ -496,22 +493,7 @@ export default function PosTratamento() {
       </div>
 
       {/* Calendário */}
-      <CalendarioPos registros={registros} diaSelecionado={diaSelecionado} onSelectDia={setDiaSelecionado} />
-
-      {/* Cards */}
-      <div className="grid grid-cols-4 gap-4">
-        {[
-          { label: 'Total', value: registros.length, color: 'text-gray-700', bg: 'bg-white' },
-          { label: 'Pendentes', value: pendentes, color: 'text-yellow-600', bg: 'bg-yellow-50' },
-          { label: 'Sem resposta', value: semResposta, color: 'text-orange-500', bg: 'bg-orange-50' },
-          { label: 'Concluídos', value: concluidos, color: 'text-green-600', bg: 'bg-green-50' },
-        ].map((c, i) => (
-          <div key={i} className={`${c.bg} rounded-2xl p-4 shadow-sm border border-gray-100`}>
-            <p className="text-xs text-gray-500 mb-1">{c.label}</p>
-            <p className={`text-3xl font-bold ${c.color}`}>{c.value}</p>
-          </div>
-        ))}
-      </div>
+      <CalendarioPos registros={registros} diaSelecionado={diaSelecionado} onSelectDia={setDiaSelecionado} onEditReg={setModalEditar} />
 
       {/* Filtros */}
       <div className="flex gap-3 items-center flex-wrap">
@@ -558,7 +540,7 @@ export default function PosTratamento() {
                   <tr key={reg.id} onClick={() => setModalEditar(reg)}
                     className={`border-t border-gray-50 hover:bg-brand-50/40 cursor-pointer transition-colors ${vencido ? 'bg-red-50/40' : ''}`}>
                     <td className="px-5 py-3">
-                      <p className="text-sm font-semibold text-gray-800">{reg.nome}</p>
+                      <p className={`text-sm font-semibold ${reg.status === 'concluido' ? 'line-through text-gray-400' : 'text-gray-800'}`}>{reg.nome}</p>
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2">
