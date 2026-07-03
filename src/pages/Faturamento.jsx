@@ -865,7 +865,7 @@ export default function Faturamento() {
       {/* Cards */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <p className="text-sm text-gray-500 font-medium mb-1">Vendas Total</p>
+          <p className="text-sm text-gray-500 font-medium mb-1">Vendas Totais de Tratamentos</p>
           <p className="text-2xl font-bold text-gray-900">R$ {fmt(totalGeral)}</p>
           <p className="text-xs text-gray-400 mt-1">
             {lancamentosMes.length} lançamentos ·{' '}
