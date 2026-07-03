@@ -196,7 +196,7 @@ export default function AgendaLembretes() {
                               onClick={e => { e.stopPropagation(); abrirEditar(l) }}
                               className={`w-full text-left px-1.5 py-0.5 rounded-md text-[10px] font-semibold truncate flex items-center gap-1 ${cor.bg} ${cor.text} ${l.concluido ? 'opacity-40 line-through' : ''}`}>
                               {l.hora && <span className="opacity-60 flex-shrink-0">{l.hora}</span>}
-                              <span className="truncate">{l.leadNome}</span>
+                              <span className="truncate">{l.leadNome}{(l.descricao || '').includes('Aniversário') ? ' 🎂' : ''}</span>
                             </button>
                           )
                         })}
@@ -256,7 +256,7 @@ export default function AgendaLembretes() {
                       <p className={`text-[10px] font-semibold ${cor.text} opacity-70`}>
                         {l.data.split('-').reverse().join('/')}{l.hora ? ` · ${l.hora}` : ''}
                       </p>
-                      <p className={`text-xs font-bold ${cor.text} truncate`}>{l.leadNome}</p>
+                      <p className={`text-xs font-bold ${cor.text} truncate`}>{l.leadNome}{(l.descricao || '').includes('Aniversário') ? ' 🎂' : ''}</p>
                       {l.descricao && <p className={`text-[10px] ${cor.text} opacity-60 truncate`}>{l.descricao}</p>}
                     </button>
                   )
@@ -287,7 +287,7 @@ export default function AgendaLembretes() {
                         <button key={l.id} onClick={() => abrirEditar(l)}
                           className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${cor.bg} ${cor.border} hover:opacity-80 ${l.concluido ? 'opacity-40' : ''}`}>
                           <span className={`text-sm font-semibold ${cor.text} ${l.concluido ? 'line-through' : ''}`}>
-                            {l.leadNome}{l.descricao ? `: ${l.descricao}` : ''}
+                            {l.leadNome}{(l.descricao || '').includes('Aniversário') ? ' 🎂' : (l.descricao ? `: ${l.descricao}` : '')}
                           </span>
                           <button onClick={e => { e.stopPropagation(); toggleConcluido(l.id) }}
                             className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${cor.border} ${l.concluido ? cor.bg : 'bg-white'}`}>
@@ -317,7 +317,7 @@ export default function AgendaLembretes() {
                               style={{ minWidth: 160 }}>
                               <div className="flex-1 min-w-0">
                                 <p className={`text-xs font-bold ${cor.text} ${l.concluido ? 'line-through' : ''}`}>
-                                  {l.hora} · {l.leadNome}
+                                  {l.hora} · {l.leadNome}{(l.descricao || '').includes('Aniversário') ? ' 🎂' : ''}
                                 </p>
                                 {l.descricao && (
                                   <p className={`text-[11px] ${cor.text} opacity-70 truncate ${l.concluido ? 'line-through' : ''}`}>{l.descricao}</p>
