@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import Picker from '@emoji-mart/react'
 import data from '@emoji-mart/data'
+import InfoTooltip from '../components/InfoTooltip'
 
 // ── Proxy helper (evita CORS) ─────────────────────────────────────
 async function zapiFetch(conta, path, method = 'GET', body = null) {
@@ -381,7 +382,28 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
 
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="text-xs font-semibold text-gray-500">Mídia</label>
+            <div className="flex items-center gap-1">
+              <label className="text-xs font-semibold text-gray-500">Mídia</label>
+              <InfoTooltip>
+                <p className="font-bold mb-2 text-white">De onde vem o lead?</p>
+                <div className="space-y-2">
+                  <div>
+                    <p className="font-semibold text-pink-300">📸 Instagram — Impulsionar</p>
+                    <p className="text-gray-300 text-[11px]">Post ou reel impulsionado pelo app. O lead chega por:</p>
+                    <p className="text-gray-300 text-[11px]">🔗 Link da Bio &nbsp;·&nbsp; 📖 Link dos Stories</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-purple-300">📊 Tráfego — Gerenciador</p>
+                    <p className="text-gray-300 text-[11px]">Campanha no Meta Ads. Os anúncios sempre têm:</p>
+                    <p className="text-gray-300 text-[11px]">emoji + ❤️ coração ou 🔵 bolinha no nome</p>
+                    <p className="text-gray-400 text-[10px]">Ex: ❤️ Botox Dra Amanda 🔵</p>
+                  </div>
+                  <div className="border-t border-gray-700 pt-2">
+                    <p className="text-gray-300 text-[11px]">💡 Leads do Gerenciador mostram um badge roxo com o nome do anúncio na conversa do Inbox.</p>
+                  </div>
+                </div>
+              </InfoTooltip>
+            </div>
             {isAdmin && (
               <button onClick={() => setEditandoMidia(v => !v)}
                 className="text-[10px] text-brand-500 hover:text-brand-700 font-semibold">
