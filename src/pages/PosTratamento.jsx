@@ -122,16 +122,10 @@ function ModalNovo({ onSalvar, onFechar }) {
             <input type="date" value={data} onChange={e => setData(e.target.value)}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300" />
           </div>
-          <div className="col-span-2">
-            <label className="text-xs font-semibold text-gray-500 mb-1 block">Observações <span className="text-gray-300">(opcional)</span></label>
-            <textarea value={obs} onChange={e => setObs(e.target.value)} rows={2}
-              placeholder="Ex: realizou Botox, retorno em 15 dias..."
-              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 resize-none" />
-          </div>
         </div>
 
         <div>
-          <label className="text-xs font-semibold text-gray-500 mb-2 block">Lembretes de retorno</label>
+          <label className="text-xs font-semibold text-gray-500 mb-2 block">Lembrete de Pós procedimento</label>
           <div className="space-y-2">
             {lembretes.map((l, i) => (
               <div key={i} className="bg-gray-50 rounded-xl p-3 space-y-2">
@@ -206,7 +200,7 @@ function ModalEditar({ lead, onSalvar, onFechar }) {
         </div>
 
         <div>
-          <label className="text-xs font-semibold text-gray-500 mb-2 block">Lembretes de retorno</label>
+          <label className="text-xs font-semibold text-gray-500 mb-2 block">Lembrete de Pós procedimento</label>
           <div className="space-y-3">
             {lembretes.map((l, i) => (
               <div key={i} className="border border-gray-100 rounded-xl p-3 space-y-2 bg-gray-50 relative">
