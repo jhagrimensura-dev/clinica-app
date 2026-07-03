@@ -197,35 +197,45 @@ export default function Colaboradoras() {
               </div>
             )}
             <div className="space-y-3">
-              {dados.semanas.map((v, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <div className="flex-shrink-0 w-20">
-                    <span className="text-xs font-semibold text-gray-500">Semana {i + 1}</span>
-                    {vendasPorSemana[i] > 0 && vendasPorSemana[i] !== v && (
-                      <p className="text-[10px] text-brand-500 font-medium">Sistema: {fmt(vendasPorSemana[i])}</p>
-                    )}
+              {dados.semanas.map((v, i) => {
+                const pct = Math.min(100, TIERS_SEMANA[2].meta > 0 ? (v / TIERS_SEMANA[2].meta) * 100 : 0)
+                return (
+                  <div key={i} className="rounded-xl border border-gray-100 bg-gray-50/50 p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-bold text-gray-700">Semana {i + 1}</span>
+                      <TierBadge valor={v} tiers={TIERS_SEMANA} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                      <div>
+                        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1 block">Vendido</label>
+                        <MoneyInput key={`s${i}-${refreshKey}`} value={v} onChange={val => setSemana(i, val)} />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1 block">Metas</label>
+                        <div className="flex gap-1">
+                          {TIERS_SEMANA.map(t => {
+                            const atingida = v >= t.meta
+                            return (
+                              <div key={t.label} className={`flex-1 text-center rounded-lg px-1 py-2 border ${atingida ? 'bg-green-50 border-green-200' : 'bg-white border-gray-100'}`}>
+                                <p className={`text-[9px] font-semibold leading-tight ${atingida ? 'text-green-600' : 'text-gray-400'}`}>{t.label === 'Super Meta' ? 'Super' : t.label}</p>
+                                <p className={`text-[10px] font-bold mt-0.5 ${atingida ? 'text-green-700' : 'text-gray-500'}`}>{(t.meta / 1000).toFixed(0)}k</p>
+                                <p className={`text-[9px] font-semibold ${atingida ? 'text-green-600' : 'text-gray-300'}`}>+{fmt(t.bonus)}</p>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 bg-gray-200 rounded-full h-1.5">
+                        <div className="h-1.5 rounded-full bg-green-400 transition-all duration-300" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="text-[10px] text-gray-400 w-8 text-right">{pct.toFixed(0)}%</span>
+                      <span className={`text-sm font-bold w-20 text-right ${bonusSemanas[i] > 0 ? 'text-green-600' : 'text-gray-300'}`}>+{fmt(bonusSemanas[i])}</span>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <MoneyInput key={`s${i}-${refreshKey}`} value={v} onChange={val => setSemana(i, val)} />
-                  </div>
-                  <div className="w-36 flex-shrink-0 flex items-center justify-between">
-                    <TierBadge valor={v} tiers={TIERS_SEMANA} />
-                    <span className={`text-sm font-bold ml-2 ${bonusSemanas[i] > 0 ? 'text-green-600' : 'text-gray-300'}`}>
-                      +{fmt(bonusSemanas[i])}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {/* Referência */}
-            <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-3 gap-2">
-              {TIERS_SEMANA.map(t => (
-                <div key={t.label} className="text-center bg-gray-50 rounded-xl p-2">
-                  <p className="text-[10px] text-gray-400 font-semibold">{t.label}</p>
-                  <p className="text-xs font-bold text-gray-700">{fmt(t.meta)}</p>
-                  <p className="text-xs text-green-600 font-semibold">+{fmt(t.bonus)}</p>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
 
