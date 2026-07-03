@@ -116,7 +116,7 @@ export default function Dashboard() {
             <p className="text-sm text-gray-500 font-medium">Vendas</p>
             <span className="text-brand-400 text-lg">👥</span>
           </div>
-          <p className="text-3xl font-bold text-gray-900 mb-3">{lMesValidos.length}</p>
+          <p className="text-3xl font-bold text-gray-900 mb-3">{lMesSemConsulta.length}</p>
           <p className="text-sm text-gray-400">{countNovos} novos · {countRecorrentes} recorrentes</p>
         </div>
       </div>
@@ -195,7 +195,7 @@ export default function Dashboard() {
             { label: 'Social Media', icon: '🔗', color: 'text-brand-500', value: String(seguidores.toLocaleString('pt-BR')), sub: 'seguidores', extras: [`${totalLeads} leads recebidos`, `${convComercial}% conversão`] },
             { label: 'Leads Novos', icon: '🏢', color: 'text-blue-500', value: String(totalLeads), sub: `leads (${leadsNovos.length} novos · ${leadsIndicacao.length} indicações)`, extras: [`${totalAgend} agendamentos`, `${convComercial}% conversão`] },
             { label: 'Leads Recorrência', icon: '🔄', color: 'text-teal-500', value: String(leadsRecorrentes.length), sub: 'contatos recorrentes', extras: [`${agendRecorrentes} agendamentos`, `${convRecorrencia}% conversão`] },
-            { label: 'Vendas', icon: '📊', color: 'text-green-500', value: String(lMesValidos.length), sub: 'lançamentos no mês', extras: [`${countNovos} novos · ${countRecorrentes} recorrentes`, lMesValidos.length > 0 ? `${fmt(ticketGeral)} ticket médio` : '—'] },
+            { label: 'Vendas', icon: '📊', color: 'text-green-500', value: String(lMesSemConsulta.length), sub: 'lançamentos no mês', extras: [`${countNovos} novos · ${countRecorrentes} recorrentes`, lMesSemConsulta.length > 0 ? `${fmt(ticketGeral)} ticket médio` : '—'] },
           ].map((card, i) => (
             <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
               <div className="flex justify-between items-start mb-1">
