@@ -19,6 +19,8 @@ export default function Dashboard() {
   const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
   const lMes = lancamentos.filter(l => l.data.startsWith(prefix))
   const isConsulta = (l) => (l.procedimentos || '').toLowerCase().trim() === 'consulta'
+  // lMesSemConsulta → CONTAGENS e TICKET (consultas não são "vendas")
+  // lMesValidos     → VALOR TOTAL (inclui valorTaxa das consultas)
   const lMesSemConsulta = lMes.filter(l => !isConsulta(l) && l.tipo !== 'Paciente Modelo')
   const lMesValidos = lMes.filter(l => l.tipo !== 'Paciente Modelo')
 
