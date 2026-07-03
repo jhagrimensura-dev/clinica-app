@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAgenda } from '../context/AgendaContext'
+import { useLeads } from '../context/LeadsContext'
 
 export function gerarIdLembrete() {
   return `lem_${Date.now()}_${Math.random().toString(36).slice(2)}`
@@ -44,6 +45,7 @@ function toDateStr(ano, mes, dia) {
 export default function AgendaLembretes() {
   const hoje = new Date().toISOString().split('T')[0]
   const { lembretes, addLembrete, updateLembrete, deleteLembrete } = useAgenda()
+  const { leads } = useLeads()
   const [mesRef, setMesRef] = useState(() => ({ ano: new Date().getFullYear(), mes: new Date().getMonth() }))
   const [diaSel, setDiaSel] = useState(hoje)
   const [modal, setModal] = useState(null)
@@ -369,7 +371,14 @@ export default function AgendaLembretes() {
                     onClick={() => {
                       sessionStorage.setItem('inbox_abrir_telefone', fTel.trim())
                       setModal(null)
-                      window.dispatchEvent(new CustomEvent('navegarInbox'))
+                      const digits = fTel.trim().replace(/\D/g, '')
+                      const lead = leads.find(l => {
+                        const lt = (l.telefone || '').replace(/\D/g, '')
+                        return lt.length > 5 && (lt === digits || lt.endsWith(digits.slice(-9)) || digits.endsWith(lt.slice(-9)))
+                      })
+                      const ORIGEM_CONTA = { leads_novos: 'Leads Novos', leads_recorrentes: 'Leads Recorrentes', indicacao: 'Indicação' }
+                      const contaTipo = ORIGEM_CONTA[lead?.origem] || null
+                      window.dispatchEvent(new CustomEvent('navegarInbox', { detail: { telefone: fTel.trim(), contaTipo } }))
                     }}
                     title="Abrir conversa no WhatsApp"
                     className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-green-500 hover:bg-green-600 text-white rounded-xl transition-colors text-base">
