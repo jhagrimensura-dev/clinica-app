@@ -135,7 +135,7 @@ export default function SocialMedia() {
   const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
   const leadsPorDia = {}
   const leadsDetalhadosPorDia = {}
-  leads.filter(l => l.origem === 'leads_novos' && l.data && l.data.startsWith(prefix) && !String(l.fonte || '').toLowerCase().includes('follow')).forEach(l => {
+  leads.filter(l => l.origem === 'leads_novos' && l.data && l.data.startsWith(prefix) && !String(l.fonte || '').toLowerCase().includes('follow') && !String(l.origemCustom || '').toLowerCase().includes('follow')).forEach(l => {
     const dia = parseInt(l.data.split('-')[2], 10)
     if (!isNaN(dia)) {
       leadsPorDia[dia] = (leadsPorDia[dia] || 0) + 1
