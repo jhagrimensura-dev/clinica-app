@@ -42,6 +42,14 @@ function calcConversao(taxa, valorConsultas) {
 
 function MoneyInput({ value, onChange, placeholder = 'R$ 0,00' }) {
   const [raw, setRaw] = useState(value ? Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '')
+
+  useEffect(() => {
+    // só sincroniza quando o valor externo difere do que está no campo
+    if (parseMoney(raw) !== (value || 0)) {
+      setRaw(value ? Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '')
+    }
+  }, [value])
+
   const handleChange = (e) => {
     const s = e.target.value.replace(/[^\d,]/g, '')
     setRaw(s)
