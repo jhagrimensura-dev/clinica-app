@@ -352,7 +352,7 @@ export default function Colaboradoras() {
               <div>
                 <label className="text-xs text-gray-500 mb-1 block">Valor das consultas</label>
                 <MoneyInput value={dados.valorConsultas} onChange={v => update({ valorConsultas: v })} />
-                {valorConsultasDoMes > 0 && valorConsultasDoMes !== dados.valorConsultas && (
+                {valorConsultasDoMes > 0 && (
                   <button onClick={() => update({ valorConsultas: valorConsultasDoMes })}
                     className="mt-1 text-[10px] font-semibold text-brand-600 hover:text-brand-700">
                     ✓ Sistema: {fmt(valorConsultasDoMes)} — puxar
