@@ -129,6 +129,14 @@ export default function Colaboradoras() {
       .reduce((acc, l) => acc + (l.valorTratamento || 0), 0)
   }, [lancamentos, mes, ano])
 
+  // Valor total de consultas do mês (valorTaxa)
+  const valorConsultasDoMes = useMemo(() => {
+    const prefixo = `${ano}-${String(mes + 1).padStart(2, '0')}-`
+    return lancamentos
+      .filter(l => l.data?.startsWith(prefixo))
+      .reduce((acc, l) => acc + (l.valorTaxa || 0), 0)
+  }, [lancamentos, mes, ano])
+
   // Vendas de pacientes novos agrupadas por semana do mês selecionado
   const vendasPorSemana = useMemo(() => {
     const totais = [0, 0, 0, 0]
@@ -330,7 +338,15 @@ export default function Colaboradoras() {
                   placeholder="0" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300" />
               </div>
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Valor das consultas</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs text-gray-500">Valor das consultas</label>
+                  {valorConsultasDoMes > 0 && (
+                    <button onClick={() => update({ valorConsultas: valorConsultasDoMes })}
+                      className="text-[10px] font-semibold text-brand-600 hover:text-brand-700 underline underline-offset-2">
+                      Puxar {fmt(valorConsultasDoMes)}
+                    </button>
+                  )}
+                </div>
                 <MoneyInput value={dados.valorConsultas} onChange={v => update({ valorConsultas: v })} />
               </div>
             </div>
