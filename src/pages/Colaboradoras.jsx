@@ -129,7 +129,7 @@ export default function Colaboradoras() {
     const prefixo = `${ano}-${String(mes + 1).padStart(2, '0')}-`
     return lancamentos
       .filter(l => l.data?.startsWith(prefixo))
-      .reduce((acc, l) => acc + (l.valorTratamento || 0), 0)
+      .reduce((acc, l) => acc + (l.valorTratamento || 0) + (l.valorTaxa || 0), 0)
   }, [lancamentos, mes, ano])
 
   // Faturamento de recorrentes do mês
@@ -389,12 +389,12 @@ export default function Colaboradoras() {
             <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
               <div className="flex items-center gap-3">
                 <span className="text-sm text-gray-600">Taxa de conversão:</span>
-                <span className={`text-lg font-bold ${taxaConversao >= 20 ? 'text-purple-600' : taxaConversao >= 15 ? 'text-blue-600' : taxaConversao >= 10 ? 'text-green-600' : 'text-gray-400'}`}>
+                <span className={`text-lg font-bold ${taxaConversao > 20 ? 'text-purple-600' : taxaConversao >= 15 ? 'text-blue-600' : taxaConversao >= 10 ? 'text-green-600' : 'text-gray-400'}`}>
                   {taxaConversao.toFixed(1)}%
                 </span>
                 {taxaConversao >= 10 && (
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${taxaConversao >= 20 ? 'bg-purple-100 text-purple-700' : taxaConversao >= 15 ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
-                    {taxaConversao >= 20 ? '20% das consultas' : taxaConversao >= 15 ? '15% das consultas' : '10% das consultas'}
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${taxaConversao > 20 ? 'bg-purple-100 text-purple-700' : taxaConversao >= 15 ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                    {taxaConversao > 20 ? '20% das consultas' : taxaConversao >= 15 ? '15% das consultas' : '10% das consultas'}
                   </span>
                 )}
               </div>
