@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useVendas } from '../context/VendasContext'
+import { useLeads } from '../context/LeadsContext'
 
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
@@ -114,6 +115,7 @@ function semanaDoMes(dia) {
 
 export default function Colaboradoras() {
   const { lancamentos } = useVendas()
+  const { leads } = useLeads()
   const hoje = new Date()
   const [mes, setMes] = useState(hoje.getMonth())
   const [ano, setAno] = useState(hoje.getFullYear())
@@ -136,6 +138,14 @@ export default function Colaboradoras() {
       .filter(l => l.data?.startsWith(prefixo) && l.tipo === 'Recorrência')
       .reduce((acc, l) => acc + (l.valorTratamento || 0), 0)
   }, [lancamentos, mes, ano])
+
+  // Leads do mês (excluindo pos_tratamento)
+  const leadsDoMes = useMemo(() => {
+    const prefixo = `${ano}-${String(mes + 1).padStart(2, '0')}-`
+    return leads.filter(l => l.origem !== 'pos_tratamento' && l.data?.startsWith(prefixo))
+  }, [leads, mes, ano])
+
+  const leadsFechadosDoMes = useMemo(() => leadsDoMes.filter(l => l.status === 'fechado'), [leadsDoMes])
 
   // Valor total de consultas do mês (valorTaxa)
   const valorConsultasDoMes = useMemo(() => {
@@ -336,7 +346,22 @@ export default function Colaboradoras() {
 
           {/* Conversão */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-            <h2 className="text-sm font-bold text-gray-700 mb-1">Bônus por Conversão</h2>
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="text-sm font-bold text-gray-700">Bônus por Conversão</h2>
+              {leadsDoMes.length > 0 && (
+                <button onClick={() => update({ totalLeads: leadsDoMes.length, leadsConvertidos: leadsFechadosDoMes.length })}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-3 py-1.5 rounded-xl transition-colors">
+                  <svg viewBox="0 0 20 20" className="w-3.5 h-3.5 fill-current"><path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd"/></svg>
+                  Puxar do sistema
+                </button>
+              )}
+            </div>
+            {leadsDoMes.length > 0 && (
+              <div className="flex items-center gap-2 bg-green-50 border border-green-100 rounded-xl px-3 py-2 mb-3 text-xs text-green-700">
+                <span>✓</span>
+                <span>Encontrado <strong>{leadsDoMes.length} leads</strong> em {MESES[mes]}, sendo <strong>{leadsFechadosDoMes.length} fechados</strong>.</span>
+              </div>
+            )}
             <p className="text-xs text-gray-400 mb-4">% de leads que se tornaram pacientes × valor das consultas</p>
             <div className="grid grid-cols-3 gap-3 mb-3">
               <div>
