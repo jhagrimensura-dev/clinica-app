@@ -113,6 +113,22 @@ export default function Colaboradoras() {
 
   const [dados, setDados] = useState(() => loadData(hoje.getMonth(), hoje.getFullYear()) || defaultState())
 
+  // Faturamento total do mês (todos os lançamentos, igual ao Dashboard)
+  const fatTotalDoMes = useMemo(() => {
+    const prefixo = `${ano}-${String(mes + 1).padStart(2, '0')}-`
+    return lancamentos
+      .filter(l => l.data?.startsWith(prefixo))
+      .reduce((acc, l) => acc + (l.valorTratamento || 0), 0)
+  }, [lancamentos, mes, ano])
+
+  // Faturamento de recorrentes do mês
+  const fatRecorrenciaDoMes = useMemo(() => {
+    const prefixo = `${ano}-${String(mes + 1).padStart(2, '0')}-`
+    return lancamentos
+      .filter(l => l.data?.startsWith(prefixo) && l.tipo === 'Recorrência')
+      .reduce((acc, l) => acc + (l.valorTratamento || 0), 0)
+  }, [lancamentos, mes, ano])
+
   // Vendas de pacientes novos agrupadas por semana do mês selecionado
   const vendasPorSemana = useMemo(() => {
     const totais = [0, 0, 0, 0]
@@ -262,7 +278,18 @@ export default function Colaboradoras() {
 
           {/* Meta Mensal */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-            <h2 className="text-sm font-bold text-gray-700 mb-4">Bônus Mensal</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-bold text-gray-700">Bônus Mensal</h2>
+              {fatTotalDoMes > 0 && (
+                <button
+                  onClick={() => update({ fatMensal: fatTotalDoMes })}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-3 py-1.5 rounded-xl transition-colors"
+                >
+                  <svg viewBox="0 0 20 20" className="w-3.5 h-3.5 fill-current"><path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd"/></svg>
+                  Puxar do sistema ({fmt(fatTotalDoMes)})
+                </button>
+              )}
+            </div>
             <div className="flex items-center gap-3">
               <div className="flex-1">
                 <label className="text-xs text-gray-500 mb-1 block">Faturamento total do mês</label>
@@ -339,7 +366,18 @@ export default function Colaboradoras() {
 
           {/* Recorrência */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-            <h2 className="text-sm font-bold text-gray-700 mb-4">Bônus Recorrência</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-bold text-gray-700">Bônus Recorrência</h2>
+              {fatRecorrenciaDoMes > 0 && (
+                <button
+                  onClick={() => update({ fatRecorrencia: fatRecorrenciaDoMes })}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-3 py-1.5 rounded-xl transition-colors"
+                >
+                  <svg viewBox="0 0 20 20" className="w-3.5 h-3.5 fill-current"><path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd"/></svg>
+                  Puxar do sistema ({fmt(fatRecorrenciaDoMes)})
+                </button>
+              )}
+            </div>
             <div className="flex items-center gap-3">
               <div className="flex-1">
                 <label className="text-xs text-gray-500 mb-1 block">Faturamento de recorrentes</label>
