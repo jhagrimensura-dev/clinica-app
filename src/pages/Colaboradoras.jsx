@@ -31,7 +31,8 @@ const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL
 const parseMoney = (s) => parseFloat((s || '0').replace(/\./g, '').replace(',', '.')) || 0
 
 function calcBonusAcum(valor, tiers) {
-  return tiers.reduce((acc, t) => valor >= t.meta ? acc + t.bonus : acc, 0)
+  const hit = [...tiers].reverse().find(t => valor >= t.meta)
+  return hit ? hit.bonus : 0
 }
 
 function calcConversao(taxa, valorConsultas) {
