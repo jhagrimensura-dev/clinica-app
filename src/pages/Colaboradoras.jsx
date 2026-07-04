@@ -297,15 +297,19 @@ export default function Colaboradoras() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-bold text-gray-700">Bônus Mensal</h2>
               {fatTotalDoMes > 0 && (
-                <button
-                  onClick={() => update({ fatMensal: fatTotalDoMes })}
-                  className="flex items-center gap-1.5 text-xs font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-3 py-1.5 rounded-xl transition-colors"
-                >
+                <button onClick={() => update({ fatMensal: fatTotalDoMes })}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-3 py-1.5 rounded-xl transition-colors">
                   <svg viewBox="0 0 20 20" className="w-3.5 h-3.5 fill-current"><path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd"/></svg>
-                  Puxar do sistema ({fmt(fatTotalDoMes)})
+                  Puxar do sistema
                 </button>
               )}
             </div>
+            {fatTotalDoMes > 0 && (
+              <div className="flex items-center gap-2 bg-green-50 border border-green-100 rounded-xl px-3 py-2 mb-3 text-xs text-green-700">
+                <span>✓</span>
+                <span>Encontrado <strong>{fmt(fatTotalDoMes)}</strong> em faturamento total em {MESES[mes]}.</span>
+              </div>
+            )}
             <div className="flex items-center gap-3">
               <div className="flex-1">
                 <label className="text-xs text-gray-500 mb-1 block">Faturamento total do mês</label>
@@ -346,16 +350,14 @@ export default function Colaboradoras() {
                   placeholder="0" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300" />
               </div>
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs text-gray-500">Valor das consultas</label>
-                  {valorConsultasDoMes > 0 && (
-                    <button onClick={() => update({ valorConsultas: valorConsultasDoMes })}
-                      className="text-[10px] font-semibold text-brand-600 hover:text-brand-700 underline underline-offset-2">
-                      Puxar {fmt(valorConsultasDoMes)}
-                    </button>
-                  )}
-                </div>
+                <label className="text-xs text-gray-500 mb-1 block">Valor das consultas</label>
                 <MoneyInput value={dados.valorConsultas} onChange={v => update({ valorConsultas: v })} />
+                {valorConsultasDoMes > 0 && valorConsultasDoMes !== dados.valorConsultas && (
+                  <button onClick={() => update({ valorConsultas: valorConsultasDoMes })}
+                    className="mt-1 text-[10px] font-semibold text-brand-600 hover:text-brand-700">
+                    ✓ Sistema: {fmt(valorConsultasDoMes)} — puxar
+                  </button>
+                )}
               </div>
             </div>
             <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
@@ -393,15 +395,19 @@ export default function Colaboradoras() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-bold text-gray-700">Bônus Recorrência</h2>
               {fatRecorrenciaDoMes > 0 && (
-                <button
-                  onClick={() => update({ fatRecorrencia: fatRecorrenciaDoMes })}
-                  className="flex items-center gap-1.5 text-xs font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-3 py-1.5 rounded-xl transition-colors"
-                >
+                <button onClick={() => update({ fatRecorrencia: fatRecorrenciaDoMes })}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-3 py-1.5 rounded-xl transition-colors">
                   <svg viewBox="0 0 20 20" className="w-3.5 h-3.5 fill-current"><path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd"/></svg>
-                  Puxar do sistema ({fmt(fatRecorrenciaDoMes)})
+                  Puxar do sistema
                 </button>
               )}
             </div>
+            {fatRecorrenciaDoMes > 0 && (
+              <div className="flex items-center gap-2 bg-green-50 border border-green-100 rounded-xl px-3 py-2 mb-3 text-xs text-green-700">
+                <span>✓</span>
+                <span>Encontrado <strong>{fmt(fatRecorrenciaDoMes)}</strong> em recorrência em {MESES[mes]}.</span>
+              </div>
+            )}
             <div className="flex items-center gap-3">
               <div className="flex-1">
                 <label className="text-xs text-gray-500 mb-1 block">Faturamento de recorrentes</label>
