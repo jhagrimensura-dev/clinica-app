@@ -36,9 +36,9 @@ function calcBonusAcum(valor, tiers) {
 }
 
 function calcConversao(taxa, valorConsultas) {
-  if (taxa < 10) return 0
-  if (taxa < 15) return valorConsultas * 0.10
-  if (taxa < 20) return valorConsultas * 0.15
+  if (taxa < 10)  return 0
+  if (taxa < 15)  return valorConsultas * 0.10
+  if (taxa <= 20) return valorConsultas * 0.15
   return valorConsultas * 0.20
 }
 
