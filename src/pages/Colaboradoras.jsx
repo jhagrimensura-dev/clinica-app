@@ -89,6 +89,11 @@ const defaultState = () => ({
   leadsConvertidos: 0,
   valorConsultas: 0,
   fatRecorrencia: 0,
+  tiers: {
+    semana: TIERS_SEMANA.map(t => ({ ...t })),
+    mes:    TIERS_MES.map(t => ({ ...t })),
+    rec:    TIERS_REC.map(t => ({ ...t })),
+  },
 })
 
 // Retorna qual semana do mês (1–4) um dia pertence
@@ -133,10 +138,20 @@ export default function Colaboradoras() {
     trocarMes(nm, na)
   }
 
+  const tiersS = dados.tiers?.semana || TIERS_SEMANA
+  const tiersM = dados.tiers?.mes    || TIERS_MES
+  const tiersR = dados.tiers?.rec    || TIERS_REC
+
   const update = (patch) => {
     const next = { ...dados, ...patch }
     setDados(next)
     saveData(mes, ano, next)
+  }
+
+  const setTierMeta = (group, ti, field, val) => {
+    const base = dados.tiers || { semana: TIERS_SEMANA.map(t=>({...t})), mes: TIERS_MES.map(t=>({...t})), rec: TIERS_REC.map(t=>({...t})) }
+    const updated = base[group].map((t, j) => j === ti ? { ...t, [field]: val } : t)
+    update({ tiers: { ...base, [group]: updated } })
   }
 
   const setSemana = (i, v) => {
@@ -145,12 +160,12 @@ export default function Colaboradoras() {
   }
 
   // Cálculos
-  const bonusSemanas = useMemo(() => dados.semanas.map(v => calcBonusAcum(v, TIERS_SEMANA)), [dados.semanas])
+  const bonusSemanas = useMemo(() => dados.semanas.map(v => calcBonusAcum(v, tiersS)), [dados.semanas, dados.tiers])
   const totalBonusSemanas = bonusSemanas.reduce((a, b) => a + b, 0)
-  const bonusMensal = useMemo(() => calcBonusAcum(dados.fatMensal, TIERS_MES), [dados.fatMensal])
+  const bonusMensal = useMemo(() => calcBonusAcum(dados.fatMensal, tiersM), [dados.fatMensal, dados.tiers])
   const taxaConversao = dados.totalLeads > 0 ? (dados.leadsConvertidos / dados.totalLeads) * 100 : 0
   const bonusConversao = useMemo(() => calcConversao(taxaConversao, dados.valorConsultas), [taxaConversao, dados.valorConsultas])
-  const bonusRecorrencia = useMemo(() => calcBonusAcum(dados.fatRecorrencia, TIERS_REC), [dados.fatRecorrencia])
+  const bonusRecorrencia = useMemo(() => calcBonusAcum(dados.fatRecorrencia, tiersR), [dados.fatRecorrencia, dados.tiers])
   const totalFinal = SALARIO_BASE + totalBonusSemanas + bonusMensal + bonusConversao + bonusRecorrencia
 
   return (
@@ -198,7 +213,7 @@ export default function Colaboradoras() {
             )}
             <div className="space-y-2">
               {dados.semanas.map((v, i) => {
-                const pct = Math.min(100, TIERS_SEMANA[2].meta > 0 ? (v / TIERS_SEMANA[2].meta) * 100 : 0)
+                const pct = Math.min(100, tiersS[2].meta > 0 ? (v / tiersS[2].meta) * 100 : 0)
                 return (
                   <div key={i} className="rounded-xl border border-gray-100 bg-gray-50/50 px-3 py-2.5">
                     <div className="flex items-center gap-3">
@@ -207,7 +222,7 @@ export default function Colaboradoras() {
                         <MoneyInput key={`s${i}-${refreshKey}`} value={v} onChange={val => setSemana(i, val)} />
                       </div>
                       <div className="flex gap-1 flex-1">
-                        {TIERS_SEMANA.map(t => {
+                        {tiersS.map(t => {
                           const atingida = v >= t.meta
                           return (
                             <div key={t.label} className={`flex-1 text-center rounded-lg px-1 py-1 border ${atingida ? 'bg-green-50 border-green-200' : 'bg-white border-gray-100'}`}>
@@ -217,18 +232,31 @@ export default function Colaboradoras() {
                           )
                         })}
                       </div>
-                      <TierBadge valor={v} tiers={TIERS_SEMANA} />
+                      <TierBadge valor={v} tiers={tiersS} />
                       <span className={`text-sm font-bold w-16 text-right flex-shrink-0 ${bonusSemanas[i] > 0 ? 'text-green-600' : 'text-gray-300'}`}>+{fmt(bonusSemanas[i])}</span>
                     </div>
                     <div className="flex items-center gap-2 mt-1.5 pl-[76px]">
                       <div className="flex-1 bg-gray-200 rounded-full h-1">
-                        <div className="h-1 rounded-full bg-green-400 transition-all duration-300" style={{ width: `${pct}%` }} />
+                        <div className="h-1 rounded-full bg-green-400 transition-all duration-300" style={{ width: `${Math.min(100, tiersS[2].meta > 0 ? (v / tiersS[2].meta) * 100 : 0)}%` }} />
                       </div>
                       <span className="text-[9px] text-gray-400">{pct.toFixed(0)}%</span>
                     </div>
                   </div>
                 )
               })}
+            </div>
+            {/* Metas editáveis semanais */}
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Editar metas semanais</p>
+              <div className="grid grid-cols-3 gap-2">
+                {tiersS.map((t, ti) => (
+                  <div key={t.label} className="bg-gray-50 rounded-xl p-2 space-y-1">
+                    <p className="text-[10px] text-gray-400 font-semibold">{t.label}</p>
+                    <MoneyInput value={t.meta} onChange={val => setTierMeta('semana', ti, 'meta', val)} />
+                    <p className="text-xs text-green-600 font-semibold text-center">+{fmt(t.bonus)}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -241,18 +269,21 @@ export default function Colaboradoras() {
                 <MoneyInput value={dados.fatMensal} onChange={v => update({ fatMensal: v })} />
               </div>
               <div className="text-right flex-shrink-0">
-                <TierBadge valor={dados.fatMensal} tiers={TIERS_MES} />
+                <TierBadge valor={dados.fatMensal} tiers={tiersM} />
                 <p className={`text-lg font-bold mt-1 ${bonusMensal > 0 ? 'text-green-600' : 'text-gray-300'}`}>+{fmt(bonusMensal)}</p>
               </div>
             </div>
-            <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-3 gap-2">
-              {TIERS_MES.map(t => (
-                <div key={t.label} className="text-center bg-gray-50 rounded-xl p-2">
-                  <p className="text-[10px] text-gray-400 font-semibold">{t.label}</p>
-                  <p className="text-xs font-bold text-gray-700">{fmt(t.meta)}</p>
-                  <p className="text-xs text-green-600 font-semibold">+{fmt(t.bonus)}</p>
-                </div>
-              ))}
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Editar metas mensais</p>
+              <div className="grid grid-cols-3 gap-2">
+                {tiersM.map((t, ti) => (
+                  <div key={t.label} className="bg-gray-50 rounded-xl p-2 space-y-1">
+                    <p className="text-[10px] text-gray-400 font-semibold">{t.label}</p>
+                    <MoneyInput value={t.meta} onChange={val => setTierMeta('mes', ti, 'meta', val)} />
+                    <p className="text-xs text-green-600 font-semibold text-center">+{fmt(t.bonus)}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -315,18 +346,21 @@ export default function Colaboradoras() {
                 <MoneyInput value={dados.fatRecorrencia} onChange={v => update({ fatRecorrencia: v })} />
               </div>
               <div className="text-right flex-shrink-0">
-                <TierBadge valor={dados.fatRecorrencia} tiers={TIERS_REC} />
+                <TierBadge valor={dados.fatRecorrencia} tiers={tiersR} />
                 <p className={`text-lg font-bold mt-1 ${bonusRecorrencia > 0 ? 'text-green-600' : 'text-gray-300'}`}>+{fmt(bonusRecorrencia)}</p>
               </div>
             </div>
-            <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-3 gap-2">
-              {TIERS_REC.map(t => (
-                <div key={t.label} className="text-center bg-gray-50 rounded-xl p-2">
-                  <p className="text-[10px] text-gray-400 font-semibold">{t.label}</p>
-                  <p className="text-xs font-bold text-gray-700">{fmt(t.meta)}</p>
-                  <p className="text-xs text-green-600 font-semibold">+{fmt(t.bonus)}</p>
-                </div>
-              ))}
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Editar metas de recorrência</p>
+              <div className="grid grid-cols-3 gap-2">
+                {tiersR.map((t, ti) => (
+                  <div key={t.label} className="bg-gray-50 rounded-xl p-2 space-y-1">
+                    <p className="text-[10px] text-gray-400 font-semibold">{t.label}</p>
+                    <MoneyInput value={t.meta} onChange={val => setTierMeta('rec', ti, 'meta', val)} />
+                    <p className="text-xs text-green-600 font-semibold text-center">+{fmt(t.bonus)}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
