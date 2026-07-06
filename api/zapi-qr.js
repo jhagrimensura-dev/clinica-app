@@ -32,15 +32,21 @@ export default async function handler(req, res) {
     }
 
     const rawValue = data?.value || data?.qrcode || data?.qr || null
-    console.log('Z-API QR value type:', typeof rawValue, 'starts with:', String(rawValue).slice(0, 60))
+    console.log('Z-API QR value prefix:', String(rawValue).slice(0, 80))
 
-    // Se o valor for uma URL, busca a imagem e retorna como base64
-    if (rawValue && typeof rawValue === 'string' && rawValue.startsWith('http')) {
-      const imgRes = await fetch(rawValue, { headers: ct ? { 'client-token': ct } : {} })
-      const imgBuffer = await imgRes.arrayBuffer()
-      const contentType = imgRes.headers.get('content-type') || 'image/png'
-      const b64 = Buffer.from(imgBuffer).toString('base64')
-      return res.json({ value: `data:${contentType};base64,${b64}` })
+    if (rawValue && typeof rawValue === 'string') {
+      // URL externa — faz proxy para evitar CORS
+      if (rawValue.startsWith('http')) {
+        const imgRes = await fetch(rawValue, { headers: ct ? { 'client-token': ct } : {} })
+        const imgBuffer = await imgRes.arrayBuffer()
+        const contentType = imgRes.headers.get('content-type') || 'image/png'
+        const b64 = Buffer.from(imgBuffer).toString('base64')
+        return res.json({ value: `data:${contentType};base64,${b64}` })
+      }
+      // Base64 sem prefixo data URI
+      if (!rawValue.startsWith('data:')) {
+        return res.json({ value: `data:image/png;base64,${rawValue}` })
+      }
     }
 
     res.json(data)
