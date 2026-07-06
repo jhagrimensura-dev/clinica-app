@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import QRCodeSVG from 'react-qr-code'
 import { useLeads } from '../context/LeadsContext'
 import { useConfig } from '../context/ConfigContext'
 import { useAgenda } from '../context/AgendaContext'
@@ -1325,7 +1326,13 @@ export default function InboxWhatsApp({ contaId }) {
               </button>
             ) : (
               <div>
-                <img src={qrCode} alt="QR Code WhatsApp" className="w-48 h-48 mx-auto rounded-xl mb-2" />
+                {qrCode.startsWith('http') ? (
+                  <div className="w-48 h-48 mx-auto mb-2 p-2 bg-white rounded-xl flex items-center justify-center">
+                    <QRCodeSVG value={qrCode} size={176} />
+                  </div>
+                ) : (
+                  <img src={qrCode} alt="QR Code WhatsApp" className="w-48 h-48 mx-auto rounded-xl mb-2" />
+                )}
                 <button onClick={fetchQrCode} disabled={loadingQr}
                   className="text-xs text-orange-500 hover:text-orange-700 underline">
                   Gerar novo QR Code
