@@ -848,7 +848,9 @@ export default function InboxWhatsApp({ contaId }) {
       const ctParam = contaAtiva.clientToken ? `&ct=${encodeURIComponent(contaAtiva.clientToken)}` : ''
       const res = await fetch(`/api/zapi-qr?i=${contaAtiva.instanciaId}&t=${contaAtiva.instanciaToken}${ctParam}`)
       const d = await res.json()
+      console.log('[QR] resposta completa:', JSON.stringify(d).slice(0, 300))
       const qr = d?.value || d?.qrcode || d?.qr || null
+      console.log('[QR] src definido como:', qr ? qr.slice(0, 80) : null)
       setQrCode(qr)
     } catch {}
     setLoadingQr(false)
