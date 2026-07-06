@@ -841,19 +841,27 @@ export default function InboxWhatsApp({ contaId }) {
     setLoadingMsgs(false)
   }, [contaAtiva?.instanciaId])
 
-  const fetchQrCode = async () => {
+  const fetchQrCode = useCallback(async () => {
     if (!contaAtiva?.instanciaId) return
     setLoadingQr(true)
-    setQrCode(null)
     try {
       const ctParam = contaAtiva.clientToken ? `&ct=${encodeURIComponent(contaAtiva.clientToken)}` : ''
       const res = await fetch(`/api/zapi-qr?i=${contaAtiva.instanciaId}&t=${contaAtiva.instanciaToken}${ctParam}`)
       const d = await res.json()
       const qr = d?.value || d?.qrcode || d?.qr || null
-      setQrCode(qr)
+      if (qr) setQrCode(qr)
     } catch {}
     setLoadingQr(false)
-  }
+  }, [contaAtiva?.instanciaId, contaAtiva?.instanciaToken, contaAtiva?.clientToken])
+
+  // Auto-fetch e refresh do QR a cada 45s quando desconectado
+  useEffect(() => {
+    if (!desconectado || !contaAtiva?.instanciaId) return
+    setQrCode(null)
+    fetchQrCode()
+    const id = setInterval(fetchQrCode, 45000)
+    return () => clearInterval(id)
+  }, [desconectado, contaAtiva?.instanciaId, fetchQrCode])
 
   // Polling de status quando desconectado
   useEffect(() => {
@@ -1317,25 +1325,27 @@ export default function InboxWhatsApp({ contaId }) {
             <p className="text-2xl mb-2">📵</p>
             <p className="text-sm font-bold text-orange-700 mb-1">WhatsApp desconectado</p>
             <p className="text-xs text-orange-500 mb-3">Escaneie o QR code para reconectar</p>
-            {!qrCode ? (
-              <button onClick={fetchQrCode} disabled={loadingQr}
-                className="w-full bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white text-sm font-semibold py-2 rounded-xl transition-colors">
-                {loadingQr ? 'Gerando QR Code...' : 'Gerar QR Code'}
-              </button>
-            ) : (
+            {loadingQr && !qrCode ? (
+              <div className="w-48 h-48 mx-auto mb-2 bg-gray-100 rounded-xl flex flex-col items-center justify-center gap-2">
+                <div className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+                <p className="text-xs text-gray-500">Gerando QR Code...</p>
+              </div>
+            ) : qrCode ? (
               <div>
-                {qrCode.startsWith('http') ? (
-                  <div className="w-48 h-48 mx-auto mb-2 p-2 bg-white rounded-xl flex items-center justify-center">
-                    <QRCodeSVG value={qrCode} size={176} />
-                  </div>
-                ) : (
-                  <img src={qrCode} alt="QR Code WhatsApp" className="w-48 h-48 mx-auto rounded-xl mb-2" />
-                )}
-                <button onClick={fetchQrCode} disabled={loadingQr}
-                  className="text-xs text-orange-500 hover:text-orange-700 underline">
-                  Gerar novo QR Code
+                <div className={`relative w-48 h-48 mx-auto mb-1 p-2 bg-white rounded-xl flex items-center justify-center transition-opacity ${loadingQr ? 'opacity-40' : ''}`}>
+                  {qrCode.startsWith('http') ? <QRCodeSVG value={qrCode} size={176} /> : <img src={qrCode} alt="QR Code WhatsApp" className="w-full h-full" />}
+                  {loadingQr && <div className="absolute inset-0 flex items-center justify-center"><div className="w-6 h-6 border-2 border-green-500 border-t-transparent rounded-full animate-spin" /></div>}
+                </div>
+                <p className="text-xs text-gray-400 mb-2">{loadingQr ? 'Atualizando QR...' : 'Renova automaticamente a cada 45s'}</p>
+                <button onClick={fetchQrCode} disabled={loadingQr} className="text-xs text-orange-500 hover:text-orange-700 underline disabled:opacity-40">
+                  Gerar novo agora
                 </button>
               </div>
+            ) : (
+              <button onClick={fetchQrCode} disabled={loadingQr}
+                className="w-full bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white text-sm font-semibold py-2 rounded-xl transition-colors">
+                Tentar novamente
+              </button>
             )}
             <p className="text-xs text-gray-400 mt-3 animate-pulse">Verificando conexão automaticamente...</p>
           </div>
