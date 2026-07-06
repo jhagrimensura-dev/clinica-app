@@ -35,13 +35,9 @@ export default async function handler(req, res) {
     console.log('Z-API QR value prefix:', String(rawValue).slice(0, 80))
 
     if (rawValue && typeof rawValue === 'string') {
-      // URL externa — faz proxy para evitar CORS
+      // URL externa — retorna direto, <img src> carrega sem CORS
       if (rawValue.startsWith('http')) {
-        const imgRes = await fetch(rawValue, { headers: ct ? { 'client-token': ct } : {} })
-        const imgBuffer = await imgRes.arrayBuffer()
-        const contentType = imgRes.headers.get('content-type') || 'image/png'
-        const b64 = Buffer.from(imgBuffer).toString('base64')
-        return res.json({ value: `data:${contentType};base64,${b64}` })
+        return res.json({ value: rawValue })
       }
       // Base64 sem prefixo data URI
       if (!rawValue.startsWith('data:')) {
