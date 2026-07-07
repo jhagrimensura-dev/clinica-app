@@ -689,7 +689,7 @@ const TODAS_PAGINAS = [
 ]
 const PERMISSOES_PADRAO = ['dashboard', 'agenda', 'metas', 'social', 'comercial', 'faturamento', 'pacientes', 'relatorios']
 
-const EMPTY_MEMBRO = { nome: '', apelido: '', funcao: 'Funcionário', email: '', telefone: '', cargo: '', permissoes: PERMISSOES_PADRAO }
+const EMPTY_MEMBRO = { nome: '', apelido: '', funcao: 'Funcionário', email: '', cargo: '', permissoes: PERMISSOES_PADRAO }
 
 function ModalMembro({ membro, onSalvar, onFechar }) {
   const [form, setForm] = useState(() => membro ? { ...EMPTY_MEMBRO, ...membro, permissoes: membro.permissoes || PERMISSOES_PADRAO } : EMPTY_MEMBRO)
@@ -723,19 +723,11 @@ function ModalMembro({ membro, onSalvar, onFechar }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-xs font-medium text-gray-600 mb-1 block">E-mail</label>
-            <input value={form.email} onChange={e => set('email', e.target.value)}
-              placeholder="email@exemplo.com"
-              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400" />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-gray-600 mb-1 block">WhatsApp</label>
-            <input value={form.telefone || ''} onChange={e => set('telefone', e.target.value)}
-              placeholder="55119..."
-              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400" />
-          </div>
+        <div>
+          <label className="text-xs font-medium text-gray-600 mb-1 block">E-mail</label>
+          <input value={form.email} onChange={e => set('email', e.target.value)}
+            placeholder="email@exemplo.com"
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400" />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -868,8 +860,7 @@ function TabEquipe() {
             <div className="flex items-center gap-3 flex-shrink-0">
               <button
                 onClick={() => {
-                  if (m.telefone) sessionStorage.setItem('inbox_abrir_telefone', m.telefone)
-                  window.dispatchEvent(new CustomEvent('navegarInbox', { detail: { telefone: m.telefone || '' } }))
+                  window.dispatchEvent(new CustomEvent('navegarInbox', { detail: {} }))
                 }}
                 title="Abrir WhatsApp"
                 className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-green-300 text-green-600 hover:bg-green-50 transition-colors">
