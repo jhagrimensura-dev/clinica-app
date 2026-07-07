@@ -799,8 +799,12 @@ export default function InboxWhatsApp({ contaId }) {
       let zapiMsgs = []
       try {
         const zapiData = await zapiFetch(contaAtiva, `chat-messages?phone=${phone}&page=1&pageSize=100`)
+        console.log('[ZAPI-MSGS] raw:', JSON.stringify(zapiData).slice(0, 300))
         zapiMsgs = normalizarMsgsZapi(zapiData)
-      } catch {}
+        console.log('[ZAPI-MSGS] normalized count:', zapiMsgs.length)
+      } catch (e) {
+        console.log('[ZAPI-MSGS] error:', e.message)
+      }
 
       // Mescla e deduplica por message_id
       const seen = new Set()
