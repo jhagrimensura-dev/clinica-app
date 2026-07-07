@@ -454,7 +454,7 @@ export default function PosTratamento() {
 
   const [busca, setBusca] = useState('')
   const [filtroStatus, setFiltroStatus] = useState('todos')
-  const [diaSelecionado, setDiaSelecionado] = useState(null)
+  const [diaSelecionado, setDiaSelecionado] = useState(new Date().toISOString().slice(0, 10))
   const [modalNovo, setModalNovo] = useState(false)
   const [modalEditar, setModalEditar] = useState(null)
 
