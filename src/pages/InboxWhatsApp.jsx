@@ -795,17 +795,6 @@ export default function InboxWhatsApp({ contaId }) {
         byNome = d || []
       }
 
-      // Busca histórico direto da Z-API (captura mensagens do celular mesmo sem webhook)
-      let zapiMsgs = []
-      try {
-        const zapiData = await zapiFetch(contaAtiva, `chat-messages?phone=${phone}&page=1&pageSize=100`)
-        console.log('[ZAPI-MSGS] raw:', JSON.stringify(zapiData).slice(0, 300))
-        zapiMsgs = normalizarMsgsZapi(zapiData)
-        console.log('[ZAPI-MSGS] normalized count:', zapiMsgs.length)
-      } catch (e) {
-        console.log('[ZAPI-MSGS] error:', e.message)
-      }
-
       // Mescla e deduplica por message_id
       const seen = new Set()
       const normTs = t => Number(t) < 10000000000 ? Number(t) * 1000 : Number(t)
@@ -820,16 +809,10 @@ export default function InboxWhatsApp({ contaId }) {
         referralAnuncio: m.referral_anuncio || null,
         referralThumbnail: m.referral_thumbnail || null,
       })
-      // Mensagens do Supabase
-      const supaMsgs = [...(byPhone || []), ...byNome]
+      let msgs = [...(byPhone || []), ...byNome]
         .filter(m => { const k = m.message_id || m.id; const ok = !seen.has(k); seen.add(k); return ok })
         .map(toMap)
-
-      // Adiciona mensagens da Z-API que não existem no Supabase (pelo id)
-      const zapiExtras = zapiMsgs.filter(m => !seen.has(m.id))
-      zapiExtras.forEach(m => seen.add(m.id))
-
-      let msgs = [...supaMsgs, ...zapiExtras].sort((a, b) => a.tsMs - b.tsMs)
+        .sort((a, b) => a.tsMs - b.tsMs)
 
       // Dedup mensagens próprias duplicadas (insert do frontend + insert do webhook Z-API)
       const seenOwn = new Map()
