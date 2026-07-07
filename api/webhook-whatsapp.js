@@ -30,13 +30,6 @@ export default async function handler(req, res) {
     const rawPhone = payload?.phone || ''
     const rawChatId = (payload?.chatId || '').replace('@s.whatsapp.net', '').replace('@c.us', '').replace('@lid', '')
     const isLidPhone = rawPhone.includes('@lid')
-    if (payload?.fromMe) {
-      console.log('[WH1] phone:', rawPhone)
-      console.log('[WH2] chatId:', payload?.chatId)
-      console.log('[WH3] chatName:', payload?.chatName)
-      console.log('[WH4] senderName:', payload?.senderName)
-      console.log('[WH5] resolved_phone:', phone)
-    }
     let phone = (rawPhone && !rawPhone.includes('@') && /^\d+$/.test(rawPhone))
       ? rawPhone
       : rawChatId || rawPhone.replace(/@.*/g, '')
