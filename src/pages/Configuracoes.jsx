@@ -689,7 +689,7 @@ const TODAS_PAGINAS = [
 ]
 const PERMISSOES_PADRAO = ['dashboard', 'agenda', 'metas', 'social', 'comercial', 'faturamento', 'pacientes', 'relatorios']
 
-const EMPTY_MEMBRO = { nome: '', apelido: '', funcao: 'Funcionário', email: '', cargo: '', permissoes: PERMISSOES_PADRAO }
+const EMPTY_MEMBRO = { nome: '', apelido: '', funcao: 'Funcionário', email: '', telefone: '', cargo: '', permissoes: PERMISSOES_PADRAO }
 
 function ModalMembro({ membro, onSalvar, onFechar }) {
   const [form, setForm] = useState(() => membro ? { ...EMPTY_MEMBRO, ...membro, permissoes: membro.permissoes || PERMISSOES_PADRAO } : EMPTY_MEMBRO)
@@ -723,11 +723,19 @@ function ModalMembro({ membro, onSalvar, onFechar }) {
           </div>
         </div>
 
-        <div>
-          <label className="text-xs font-medium text-gray-600 mb-1 block">E-mail</label>
-          <input value={form.email} onChange={e => set('email', e.target.value)}
-            placeholder="email@exemplo.com"
-            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400" />
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs font-medium text-gray-600 mb-1 block">E-mail</label>
+            <input value={form.email} onChange={e => set('email', e.target.value)}
+              placeholder="email@exemplo.com"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-600 mb-1 block">WhatsApp</label>
+            <input value={form.telefone || ''} onChange={e => set('telefone', e.target.value)}
+              placeholder="55119..."
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400" />
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -858,6 +866,18 @@ function TabEquipe() {
               {m.cargo && <p className="text-xs text-gray-500 mt-0.5">{m.cargo}</p>}
             </div>
             <div className="flex items-center gap-3 flex-shrink-0">
+              {m.telefone && (
+                <button
+                  onClick={() => {
+                    sessionStorage.setItem('inbox_abrir_telefone', m.telefone)
+                    window.dispatchEvent(new CustomEvent('navegarInbox', { detail: { telefone: m.telefone } }))
+                  }}
+                  title="Abrir conversa no WhatsApp"
+                  className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-green-300 text-green-600 hover:bg-green-50 transition-colors">
+                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.145.566 4.157 1.55 5.9L0 24l6.335-1.521A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.882a9.88 9.88 0 01-5.031-1.375l-.36-.214-3.733.897.936-3.618-.235-.372A9.878 9.878 0 012.118 12C2.118 6.533 6.533 2.118 12 2.118S21.882 6.533 21.882 12 17.467 21.882 12 21.882z"/></svg>
+                  WhatsApp
+                </button>
+              )}
               {m.email && (
                 feedbackConvite[m.id] === 'ok' ? (
                   <span className="flex items-center gap-1.5 text-xs text-green-600 font-semibold bg-green-50 px-3 py-1.5 rounded-lg">
