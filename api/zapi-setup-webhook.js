@@ -36,5 +36,6 @@ export default async function handler(req, res) {
     results.send = { error: e.message }
   }
 
+  console.log('[WEBHOOK-SETUP]', JSON.stringify({ webhookUrl, results }))
   res.json({ webhookUrl, results })
 }
