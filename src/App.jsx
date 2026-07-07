@@ -211,7 +211,7 @@ export default function App() {
   )
 }
 
-const PAGE_PARENT = { agenda_lembretes: 'comercial', leads_novos: 'comercial', leads_recorrentes: 'comercial', indicacao: 'comercial', resgates: 'comercial', pos_tratamento: 'comercial', contas: 'financeiro', colaboradoras: 'financeiro' }
+const PAGE_PARENT = { agenda_lembretes: 'comercial', leads_novos: 'comercial', leads_recorrentes: 'comercial', indicacao: 'comercial', resgates: 'comercial', pos_tratamento: 'comercial', contas: 'financeiro', colaboradoras: 'financeiro', inbox: 'comercial' }
 
 function AppContent() {
   const { userRole, permissoes } = useAuth()
@@ -223,7 +223,8 @@ function AppContent() {
   const podeAcessar = (page) => {
     if (userRole !== 'Funcionário') return true
     if (permissoes) {
-      const check = PAGE_PARENT[page] || page
+      const basePage = page.startsWith('inbox_') ? 'inbox' : page
+      const check = PAGE_PARENT[basePage] || basePage
       return permissoes.includes(check)
     }
     return !['financeiro', 'contas'].includes(page)
