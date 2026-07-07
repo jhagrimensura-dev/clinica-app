@@ -234,7 +234,14 @@ function CalendarioPos({ registros, onSelectDia, onEditReg }) {
 function ModalNovo({ onSalvar, onFechar }) {
   const { pacientes } = usePacientes()
   const hoje = new Date().toISOString().slice(0, 10)
-  const addDias = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10) }
+  const addDias = (n) => {
+    const d = new Date()
+    d.setDate(d.getDate() + n)
+    const dia = d.getDay()
+    if (dia === 0) d.setDate(d.getDate() + 1)      // domingo → segunda
+    else if (dia === 6) d.setDate(d.getDate() + 2)  // sábado → segunda
+    return d.toISOString().slice(0, 10)
+  }
   const [nome, setNome] = useState('')
   const [telefone, setTelefone] = useState('')
   const [data, setData] = useState(hoje)
