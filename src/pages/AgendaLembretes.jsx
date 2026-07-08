@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAgenda } from '../context/AgendaContext'
 import { useLeads } from '../context/LeadsContext'
 import { getFeriado } from '../lib/feriados'
+import FeriadoAviso from '../components/FeriadoAviso'
 
 export function gerarIdLembrete() {
   return `lem_${Date.now()}_${Math.random().toString(36).slice(2)}`
