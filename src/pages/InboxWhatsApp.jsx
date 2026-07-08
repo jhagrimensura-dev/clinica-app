@@ -125,14 +125,25 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
   const [statusLista, setStatusLista] = useState(leadStatus || STATUS_PADRAO)
   const [editandoStatus, setEditandoStatus] = useState(false)
   const [novoStatus, setNovoStatus] = useState('')
-  const MIDIAS_PADRAO = ['Orgânico', 'Impulsionar', 'Tráfego pago', 'Link da BIO']
+  const MIDIAS_PADRAO = ['Tráfego pago', 'Link da BIO', 'Indicação', 'Link dos Stories']
   const [midiaOpcoes, setMidiaOpcoes] = useState(leadMidias || MIDIAS_PADRAO)
   const [editandoMidia, setEditandoMidia] = useState(false)
   const [novaMidia, setNovaMidia] = useState('')
 
   useEffect(() => { if (leadOrigens) setOrigens(leadOrigens) }, [leadOrigens])
   useEffect(() => { if (leadStatus) setStatusLista(leadStatus) }, [leadStatus])
-  useEffect(() => { if (leadMidias) setMidiaOpcoes(leadMidias) }, [leadMidias])
+  useEffect(() => {
+    if (!leadMidias) return
+    const migrada = leadMidias.filter(m => m !== 'Orgânico' && m !== 'Impulsionar')
+    const toAdd = ['Indicação', 'Link dos Stories'].filter(m => !migrada.includes(m))
+    if (migrada.length !== leadMidias.length || toAdd.length > 0) {
+      const nova = [...migrada, ...toAdd]
+      setMidiaOpcoes(nova)
+      setLeadMidias(nova)
+    } else {
+      setMidiaOpcoes(leadMidias)
+    }
+  }, [leadMidias])
 
   function adicionarOrigem() {
     const v = novaOrigem.trim()
@@ -1477,8 +1488,9 @@ export default function InboxWhatsApp({ contaId }) {
                     <div className="flex items-center gap-1.5 flex-wrap justify-end">
                       <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
                         leadRegistrado[conversa.id].midia === 'Tráfego pago' ? 'bg-purple-100 text-purple-700' :
-                        leadRegistrado[conversa.id].midia === 'Impulsionar' ? 'bg-blue-100 text-blue-700' :
                         leadRegistrado[conversa.id].midia === 'Link da BIO' ? 'bg-amber-100 text-amber-700' :
+                        leadRegistrado[conversa.id].midia === 'Indicação' ? 'bg-green-100 text-green-700' :
+                        leadRegistrado[conversa.id].midia === 'Link dos Stories' ? 'bg-pink-100 text-pink-700' :
                         'bg-gray-100 text-gray-600'
                       }`}>
                         📢 {leadRegistrado[conversa.id].midia}

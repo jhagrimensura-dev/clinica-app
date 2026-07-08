@@ -324,7 +324,7 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes, leads, pr
 
   useEffect(() => {
     const soma = listaProcs.reduce((acc, p) => acc + (p.total || 0), 0)
-    if (soma > 0) setValorTratamento(mascaraMoeda(String(Math.round(soma * 100))))
+    setValorTratamento(soma > 0 ? mascaraMoeda(String(Math.round(soma * 100))) : '')
   }, [listaProcs])
 
   const handleProcNome = (idx, nome, preco, precoPorMl, unidade, mostraQtd) => {
@@ -539,7 +539,7 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
 
   useEffect(() => {
     const soma = listaProcs.reduce((acc, p) => acc + (p.total || 0), 0)
-    if (soma > 0) setValorTratamento(mascaraMoeda(String(Math.round(soma * 100))))
+    setValorTratamento(soma > 0 ? mascaraMoeda(String(Math.round(soma * 100))) : '')
   }, [listaProcs])
 
   const handleProcNome = (idx, nome, preco, precoPorMl, unidade, mostraQtd) => {

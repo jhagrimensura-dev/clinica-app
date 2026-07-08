@@ -159,7 +159,15 @@ export function LeadsProvider({ children }) {
 
   const getLeadsPorOrigem = (origem, ano, mes) => {
     const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
-    return leads.filter(l => l.origem === origem && l.data.startsWith(prefix))
+    return leads.filter(l => {
+      if (!l.data.startsWith(prefix)) return false
+      if (origem === 'indicacao') {
+        return l.origem === 'indicacao' || l.origemCustom === 'Indicação'
+      }
+      // nas outras abas, exclui leads com origemCustom=Indicação (aparecem na aba Indicação)
+      if (l.origemCustom === 'Indicação' && l.origem !== 'indicacao') return false
+      return l.origem === origem
+    })
   }
 
   return (

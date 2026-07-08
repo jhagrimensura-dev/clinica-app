@@ -212,6 +212,7 @@ export default function Resgates({ onNavigate }) {
 
   const [busca, setBusca] = useState('')
   const [filtroStatus, setFiltroStatus] = useState('todos')
+  const [ordem, setOrdem] = useState('desc')
   const [modalReativar, setModalReativar] = useState(null)
   const [modalEditar, setModalEditar] = useState(null)
   const [modalNovo, setModalNovo] = useState(false)
@@ -232,6 +233,9 @@ export default function Resgates({ onNavigate }) {
       : filtroStatus === 'sem_agenda' ? !l.proximoFollowup
       : true
     return matchBusca && matchStatus
+  }).sort((a, b) => {
+    const da = a.data || '', db = b.data || ''
+    return ordem === 'asc' ? da.localeCompare(db) : db.localeCompare(da)
   })
 
   const handleImportar = async () => {
@@ -395,6 +399,9 @@ export default function Resgates({ onNavigate }) {
           placeholder="Buscar por nome ou telefone..."
           className="flex-1 max-w-xs border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300"
         />
+        <button onClick={() => setOrdem(o => o === 'desc' ? 'asc' : 'desc')} title={ordem === 'desc' ? 'Mais recentes primeiro' : 'Mais antigos primeiro'} className="text-xs text-gray-500 hover:text-brand-500 border border-gray-200 rounded-xl px-2.5 py-2 flex items-center gap-1 transition-colors hover:bg-gray-50">
+          {ordem === 'desc' ? '↓' : '↑'} Data
+        </button>
         {[
           ['todos', 'Todos'],
           ['atrasado', `Atrasados${atrasados > 0 ? ` (${atrasados})` : ''}`],

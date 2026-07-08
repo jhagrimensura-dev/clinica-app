@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useLeads } from '../context/LeadsContext'
 import { useFinanceiro } from '../context/FinanceiroContext'
 import { useAuth } from '../context/AuthContext'
+import { useConfig } from '../context/ConfigContext'
+import { useAgenda } from '../context/AgendaContext'
 
 const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
@@ -156,19 +158,43 @@ function ModalNovoLead({ onClose, onSalvar, ano, mes }) {
 }
 
 function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
+  const { leadOrigens, leadMidias } = useConfig()
+  const ORIGENS_PADRAO = ['WhatsApp', 'Instagram Anúncio', 'Instagram Orgânico', 'Tráfego', 'Indicação', 'Retorno', 'Resgate']
+  const MIDIAS_PADRAO = ['Tráfego pago', 'Link da BIO', 'Indicação', 'Link dos Stories']
+  const origens = leadOrigens || ORIGENS_PADRAO
+  const midias = leadMidias || MIDIAS_PADRAO
+
   const [data, setData] = useState(lead.data || '')
   const [responsavel, setResponsavel] = useState(lead.responsavel || '')
   const [paciente, setPaciente] = useState(lead.nome || '')
-  const [fonte, setFonte] = useState(lead.fonte || lead.origemCustom || '')
+  const { addLembrete, lembretes: todosLembretes, deleteLembrete } = useAgenda()
+  const [origemCustom, setOrigemCustom] = useState(lead.origemCustom || lead.fonte || '')
+  const [midia, setMidia] = useState(lead.midia || '')
+  const [linkBio, setLinkBio] = useState(lead.linkBio || '')
   const [status, setStatus] = useState(lead.status || 'em_aberto')
   const [agendadoPara, setAgendadoPara] = useState(lead.agendadoPara || '')
-  const [proximoFollowup, setProximoFollowup] = useState(lead.proximoFollowup || '')
   const [obs, setObs] = useState(lead.obs || '')
   const [confirmando, setConfirmando] = useState(false)
+  const [lembretes, setLembretes] = useState(() => {
+    if (lead.lembretes?.length) return lead.lembretes.map(l => ({ data: l.data || '', hora: l.hora || '', obs: l.obs || '' }))
+    if (lead.proximoFollowup) return [{ data: lead.proximoFollowup, hora: '', obs: '' }]
+    return [{ data: '', hora: '', obs: '' }]
+  })
+
+  const telLead = (lead.telefone || '').replace(/\D/g, '')
+  const lembretesDaAgenda = todosLembretes.filter(l => {
+    const telLemb = (l.leadTelefone || '').replace(/\D/g, '')
+    if (telLead.length > 5 && telLemb.length > 5) return telLemb.endsWith(telLead.slice(-8)) || telLead.endsWith(telLemb.slice(-8))
+    return l.leadNome === lead.nome
+  }).sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0))
 
   const handleSalvar = () => {
     if (!paciente.trim()) return
-    onSalvar(lead.id, { nome: paciente.trim(), data, responsavel, fonte, status, agendadoPara: agendadoPara || null, proximoFollowup, obs: obs.trim() })
+    const lemsValidos = lembretes.filter(l => l.data)
+    lemsValidos.forEach((l, i) => {
+      addLembrete({ id: Date.now() + i, leadNome: paciente.trim(), leadTelefone: lead.telefone || '', descricao: l.obs || obs.trim() || '', data: l.data, hora: l.hora || '', cor: 'blue', concluido: false, criadoEm: Date.now() })
+    })
+    onSalvar(lead.id, { nome: paciente.trim(), data, responsavel, origemCustom, midia: midia || null, linkBio: midia === 'Link da BIO' ? (linkBio || null) : null, status, agendadoPara: agendadoPara || null, proximoFollowup: lemsValidos[0]?.data || '', lembretes: lemsValidos, obs: obs.trim() })
     onClose()
   }
 
@@ -208,16 +234,10 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="text-sm font-medium text-gray-700 mb-1.5 block">Origem</label>
-            <select value={fonte} onChange={e => setFonte(e.target.value)}
+            <select value={origemCustom} onChange={e => setOrigemCustom(e.target.value)}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400 bg-white">
-              <option value="">Selecione</option>
-              <option value="Instagram Anúncio">Instagram Anúncio</option>
-              <option value="Instagram Orgânico">Instagram Orgânico</option>
-              <option value="facebook">Facebook</option>
-              <option value="google">Google</option>
-              <option value="indicacao">Indicação</option>
-              <option value="whatsapp">WhatsApp</option>
-              <option value="outros">Outros</option>
+              <option value="">Não informado</option>
+              {origens.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
           </div>
           <div>
@@ -229,6 +249,24 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
           </div>
         </div>
 
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Mídia</label>
+          <select value={midia} onChange={e => { setMidia(e.target.value); if (e.target.value !== 'Link da BIO') setLinkBio('') }}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400 bg-white">
+            <option value="">Não informado</option>
+            {midias.map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+        </div>
+
+        {midia === 'Link da BIO' && (
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Link da BIO</label>
+            <input value={linkBio} onChange={e => setLinkBio(e.target.value)}
+              placeholder="Ex: link da bio, campanha, landing page..."
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400" />
+          </div>
+        )}
+
         {status === 'agendado' && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
             <label className="text-sm font-semibold text-blue-700 mb-1.5 block">📅 Agendado para</label>
@@ -237,10 +275,55 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
           </div>
         )}
 
+        {lembretesDaAgenda.length > 0 && (
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1.5 flex items-center gap-1">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3.5 h-3.5 text-amber-500"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              Lembretes na agenda ({lembretesDaAgenda.length})
+            </label>
+            <div className="space-y-1.5">
+              {lembretesDaAgenda.map(l => (
+                <div key={l.id} className={`flex items-center gap-2 rounded-xl px-3 py-2 ${l.concluido ? 'bg-gray-50 border border-gray-200' : 'bg-amber-50 border border-amber-200'}`}>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-xs font-medium ${l.concluido ? 'text-gray-400 line-through' : 'text-amber-800'}`}>{l.data}{l.hora ? ` às ${l.hora}` : ''}{l.concluido ? ' ✓' : ''}</p>
+                    {l.descricao && <p className={`text-xs truncate ${l.concluido ? 'text-gray-400' : 'text-amber-700'}`}>{l.descricao}</p>}
+                  </div>
+                  {!l.concluido && (
+                    <button type="button" onClick={() => deleteLembrete(l.id)} className="text-amber-400 hover:text-red-500 flex-shrink-0">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div>
-          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Próximo Follow-up</label>
-          <input type="date" value={proximoFollowup} onChange={e => setProximoFollowup(e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400" />
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-sm font-medium text-gray-700">Lembretes</label>
+            <button type="button" onClick={() => setLembretes(l => [...l, { data: '', hora: '', obs: '' }])}
+              className="text-amber-500 hover:text-amber-700 text-lg font-bold leading-none px-1">+</button>
+          </div>
+          <div className="space-y-3">
+            {lembretes.map((l, i) => (
+              <div key={i} className="border border-gray-200 rounded-xl p-2.5 space-y-2 bg-gray-50">
+                <div className="flex gap-2 items-center">
+                  <input type="date" value={l.data} onChange={e => setLembretes(prev => prev.map((x, j) => j === i ? { ...x, data: e.target.value } : x))}
+                    className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-amber-400 bg-white" />
+                  <input type="time" value={l.hora} onChange={e => setLembretes(prev => prev.map((x, j) => j === i ? { ...x, hora: e.target.value } : x))}
+                    className="w-28 border border-gray-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-amber-400 bg-white" />
+                  {lembretes.length > 1 && (
+                    <button type="button" onClick={() => setLembretes(prev => prev.filter((_, j) => j !== i))}
+                      className="text-gray-300 hover:text-red-400 text-xs font-bold flex-shrink-0">✕</button>
+                  )}
+                </div>
+                <input value={l.obs} onChange={e => setLembretes(prev => prev.map((x, j) => j === i ? { ...x, obs: e.target.value } : x))}
+                  placeholder="Observação deste lembrete..."
+                  className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-amber-400 bg-white" />
+              </div>
+            ))}
+          </div>
         </div>
 
         <div>
@@ -285,12 +368,17 @@ export default function LeadsNovos() {
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [visao, setVisao] = useState('lista')
   const [dragOver, setDragOver] = useState(null)
+  const [ordem, setOrdem] = useState('desc')
 
   const leads = getLeadsPorOrigem('leads_novos', ano, mes)
 
-  const leadsFiltrados = leads.filter(l =>
-    l.nome.toLowerCase().includes(busca.toLowerCase())
-  )
+  const leadsFiltrados = leads
+    .filter(l => l.nome.toLowerCase().includes(busca.toLowerCase()))
+    .sort((a, b) => {
+      const da = a.data || ''
+      const db = b.data || ''
+      return ordem === 'asc' ? da.localeCompare(db) : db.localeCompare(da)
+    })
 
   const agendados = leads.filter(l => l.status === 'agendado' || l.status === 'fechado').length
   const taxa = leads.length > 0 ? ((agendados / leads.length) * 100).toFixed(1) : '0.0'
@@ -385,6 +473,9 @@ export default function LeadsNovos() {
           <h2 className="text-base font-bold text-gray-800">Leads do Mês — {MESES_FULL[mes]}</h2>
           <div className="flex items-center gap-3">
             <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full">{leadsFiltrados.length} leads</span>
+            <button onClick={() => setOrdem(o => o === 'desc' ? 'asc' : 'desc')} title={ordem === 'desc' ? 'Mais recentes primeiro' : 'Mais antigos primeiro'} className="text-xs text-gray-500 hover:text-orange-500 border border-gray-200 rounded-xl px-2.5 py-1.5 flex items-center gap-1 transition-colors hover:bg-gray-50">
+              {ordem === 'desc' ? '↓' : '↑'} Data
+            </button>
             <div className="flex rounded-xl overflow-hidden border border-gray-200">
               <button onClick={() => setVisao('lista')} className={`px-3 py-1.5 text-xs font-semibold flex items-center gap-1 transition-colors ${visao === 'lista' ? 'bg-orange-400 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>≡ Lista</button>
               <button onClick={() => setVisao('quadro')} className={`px-3 py-1.5 text-xs font-semibold flex items-center gap-1 transition-colors ${visao === 'quadro' ? 'bg-orange-400 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>⊞ Quadro</button>
