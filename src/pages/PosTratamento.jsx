@@ -377,21 +377,6 @@ function ModalEditar({ lead, onSalvar, onFechar }) {
         </div>
 
         <div>
-          <label className="text-xs font-semibold text-gray-500 mb-2 block">Status do contato</label>
-          <div className="grid grid-cols-2 gap-2">
-            {Object.entries(STATUSES).map(([key, s]) => (
-              <button key={key} onClick={() => setStatus(key)}
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all ${
-                  status === key ? `${s.bg} ${s.text} border-transparent` : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
-                }`}>
-                <span className={`w-2 h-2 rounded-full ${status === key ? s.dot : 'bg-gray-300'}`} />
-                {s.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
           <label className="text-xs font-semibold text-gray-500 mb-2 block">Lembrete de Pós procedimento</label>
           <div className="space-y-2">
             {lembretes.map((l, i) => (
