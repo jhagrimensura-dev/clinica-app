@@ -4,6 +4,7 @@ import { useFinanceiro } from '../context/FinanceiroContext'
 import { useAuth } from '../context/AuthContext'
 import { useConfig } from '../context/ConfigContext'
 import { useAgenda } from '../context/AgendaContext'
+import FeriadoAviso from '../components/FeriadoAviso'
 
 const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
@@ -206,6 +207,7 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
             <label className="text-sm font-semibold text-blue-700 mb-1.5 block">📅 Agendado para</label>
             <input type="date" value={agendadoPara} onChange={e => setAgendadoPara(e.target.value)}
               className="w-full border border-blue-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-400 bg-white" />
+            <FeriadoAviso data={agendadoPara} />
           </div>
         )}
         {lembretesDaAgenda.length > 0 && (
@@ -250,6 +252,7 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
                       className="text-gray-300 hover:text-red-400 text-xs font-bold flex-shrink-0">✕</button>
                   )}
                 </div>
+                <FeriadoAviso data={l.data} />
                 <input value={l.obs} onChange={e => setLembretes(prev => prev.map((x, j) => j === i ? { ...x, obs: e.target.value } : x))}
                   placeholder="Observação deste lembrete..."
                   className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-teal-400 bg-white" />

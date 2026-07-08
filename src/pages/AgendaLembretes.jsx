@@ -436,6 +436,7 @@ export default function AgendaLembretes() {
                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Data</label>
                 <input type="date" value={fData} onChange={e => setFData(e.target.value)}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300" />
+                <FeriadoAviso data={fData} />
               </div>
               <div className="w-28">
                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Hora</label>
