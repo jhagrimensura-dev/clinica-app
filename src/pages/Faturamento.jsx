@@ -764,6 +764,7 @@ export default function Faturamento() {
   const [modal, setModal] = useState(false)
   const [editando, setEditando] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
+  const [ordemFat, setOrdemFat] = useState('desc')
   const isAdmin = userRole !== 'Funcionário'
   const handleProcsChange = (novos) => setProcedimentos(novos)
 
@@ -775,7 +776,9 @@ export default function Faturamento() {
   }
 
   const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
-  const lancamentosMesAll = lancamentos.filter(l => l.data.startsWith(prefix))
+  const lancamentosMesAll = lancamentos
+    .filter(l => l.data.startsWith(prefix))
+    .sort((a, b) => ordemFat === 'asc' ? a.data.localeCompare(b.data) : b.data.localeCompare(a.data))
   const lancamentosModelo = lancamentosMesAll.filter(l => l.tipo === 'Paciente Modelo')
   const lancamentosMes = lancamentosMesAll.filter(l => l.tipo !== 'Paciente Modelo')
 
@@ -908,6 +911,10 @@ export default function Faturamento() {
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base font-bold text-gray-800">Lançamentos de Vendas</h2>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setOrdemFat(o => o === 'desc' ? 'asc' : 'desc')} className="text-xs text-gray-500 hover:text-brand-500 border border-gray-200 rounded-xl px-2.5 py-1.5 flex items-center gap-1 transition-colors hover:bg-gray-50">
+              {ordemFat === 'desc' ? '↓' : '↑'} Data
+            </button>
           <button
             onClick={() => {
               const headers = ['Data','Paciente','Tipo','Responsável','Procedimentos','Consultas (R$)','Tratamento','Total','Pagamento']
@@ -933,6 +940,7 @@ export default function Faturamento() {
             </svg>
             Exportar
           </button>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
