@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useClinica } from '../context/ClinicaContext'
 import { useVendas } from '../context/VendasContext'
+import { getFeriado } from '../lib/feriados'
 
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
@@ -318,9 +319,11 @@ export default function Metas() {
               const temVendas = valorVendas > 0
               const metaDoDia = metaDinamicaPorDia[dia.dia] || metaDiariaOriginal
               const isFuturo = dia.dia >= diaHoje
+              const dateStr = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(dia.dia).padStart(2, '0')}`
+              const feriado = getFeriado(dateStr)
 
               const bg = !isSelected
-                ? 'bg-white border border-gray-100'
+                ? feriado ? 'bg-red-50 border border-red-100' : 'bg-white border border-gray-100'
                 : isFuturo
                   ? 'bg-blue-50 border border-blue-100'
                   : !temVendas
@@ -335,7 +338,8 @@ export default function Metas() {
                   onClick={() => toggleDia(si, di)}
                   className={`rounded-xl p-2 min-h-[72px] ${bg} cursor-pointer transition-all`}
                 >
-                  <p className="text-sm font-bold text-gray-800">{dia.dia}</p>
+                  <p className={`text-sm font-bold ${feriado ? 'text-red-500' : 'text-gray-800'}`}>{dia.dia}</p>
+                  {feriado && <p className="text-[9px] font-semibold text-red-400 leading-tight truncate">{feriado}</p>}
                   {isSelected && (
                     <div className="mt-1">
                       <p className={`text-sm font-bold ${temVendas ? (valorVendas >= metaDoDia ? 'text-green-600' : 'text-red-500') : 'text-gray-400'}`}>
