@@ -472,12 +472,6 @@ function ModalNovoLancamento({ onClose, onSalvar, ano, mes, pacientes, leads, pr
             </div>
           </div>
 
-          <label className="flex items-center gap-3 border border-gray-200 rounded-xl px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors">
-            <input type="checkbox" checked={agendado} onChange={e => setAgendado(e.target.checked)}
-              className="accent-brand-400 w-4 h-4" />
-            <span className="text-sm font-medium text-gray-700">Paciente veio por agendamento</span>
-          </label>
-
           <div>
             <label className="text-sm font-medium text-gray-700 mb-2 block">Formas de Pagamento</label>
             <div className="grid grid-cols-2 gap-2">
@@ -685,12 +679,6 @@ function ModalEditarLancamento({ lancamento, onClose, onAtualizar, onExcluir, pa
                 className="w-full border border-green-200 rounded-xl px-3 py-2.5 text-sm bg-green-50 text-green-700 font-semibold cursor-default" />
             </div>
           </div>
-
-          <label className="flex items-center gap-3 border border-gray-200 rounded-xl px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors">
-            <input type="checkbox" checked={agendado} onChange={e => setAgendado(e.target.checked)}
-              className="accent-brand-400 w-4 h-4" />
-            <span className="text-sm font-medium text-gray-700">Paciente veio por agendamento</span>
-          </label>
 
           <div>
             <label className="text-sm font-medium text-gray-700 mb-2 block">Formas de Pagamento</label>
