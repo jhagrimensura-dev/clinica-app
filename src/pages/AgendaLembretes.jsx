@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAgenda } from '../context/AgendaContext'
 import { useLeads } from '../context/LeadsContext'
+import { getFeriado } from '../lib/feriados'
 
 export function gerarIdLembrete() {
   return `lem_${Date.now()}_${Math.random().toString(36).slice(2)}`
@@ -173,6 +174,7 @@ export default function AgendaLembretes() {
               const ds = d ? toDateStr(mesRef.ano, mesRef.mes, d) : null
               const eh_hoje = ds === hoje
               const eh_sel = ds === diaSel
+              const feriado = ds ? getFeriado(ds) : null
               const itens = ds ? lembretesNoDia(ds) : []
               const visiveis = itens.slice(0, 3)
               const resto = itens.length - visiveis.length
@@ -183,10 +185,15 @@ export default function AgendaLembretes() {
                   className={`bg-white min-h-28 p-2 flex flex-col ${d ? 'cursor-pointer hover:bg-brand-50 transition-colors' : 'bg-gray-50'}`}>
                   {d && (
                     <>
-                      <span className={`text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full mb-1 flex-shrink-0
-                        ${eh_hoje ? 'bg-brand-500 text-white' : eh_sel ? 'bg-brand-100 text-brand-700' : 'text-gray-600'}`}>
-                        {d}
-                      </span>
+                      <div className="flex items-start justify-between mb-1">
+                        <span className={`text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full flex-shrink-0
+                          ${eh_hoje ? 'bg-brand-500 text-white' : eh_sel ? 'bg-brand-100 text-brand-700' : feriado ? 'text-red-500' : 'text-gray-600'}`}>
+                          {d}
+                        </span>
+                        {feriado && (
+                          <span className="text-[9px] font-semibold text-red-400 leading-tight text-right ml-1 truncate max-w-[70%]">{feriado}</span>
+                        )}
+                      </div>
                       <div className="flex flex-col gap-0.5 flex-1">
                         {visiveis.map(l => {
                           const cor = getCorLembrete(l)

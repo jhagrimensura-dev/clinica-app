@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { usePacientes } from '../context/PacientesContext'
 import { useAgenda } from '../context/AgendaContext'
+import { getFeriado } from '../lib/feriados'
 
 // Slots de 15 em 15 minutos, das 7:00 às 19:00
 const HORARIOS = []
@@ -91,12 +92,15 @@ function MiniCalendario({ selected, onSelect }) {
           const dk = `${ano}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
           const isSelected = dk === dateKey(selected)
           const isHoje = dk === hoje
+          const feriado = getFeriado(dk)
           return (
             <button key={i} onClick={() => onSelect(new Date(ano, mes, d))}
+              title={feriado || undefined}
               className={`text-xs w-7 h-7 rounded-full mx-auto flex items-center justify-center transition-colors
                 ${isSelected ? 'bg-brand-400 text-white font-bold' : ''}
                 ${isHoje && !isSelected ? 'bg-brand-100 text-brand-600 font-bold' : ''}
-                ${!isSelected && !isHoje ? 'text-gray-600 hover:bg-gray-100' : ''}
+                ${!isSelected && !isHoje && feriado ? 'text-red-500 font-bold hover:bg-red-50' : ''}
+                ${!isSelected && !isHoje && !feriado ? 'text-gray-600 hover:bg-gray-100' : ''}
               `}>
               {d}
             </button>
@@ -537,6 +541,7 @@ export default function Agenda() {
                   const isToday = dateKey(day) === todayKey
                   const dow = day.getDay()
                   const fechado = !HORARIO_FUNC[dow]
+                  const feriado = getFeriado(dateKey(day))
                   return (
                     <th key={i} className={`border-b border-r border-brand-200/40 py-2 text-center
                       ${isToday ? 'bg-brand-100' : fechado ? 'bg-brand-100/30' : 'bg-brand-50'}`}>
@@ -545,9 +550,12 @@ export default function Agenda() {
                         {DIAS_SEMANA[dow]}
                       </p>
                       <p className={`text-base font-bold leading-tight
-                        ${isToday ? 'text-brand-500' : fechado ? 'text-gray-400' : 'text-gray-700'}`}>
+                        ${isToday ? 'text-brand-500' : feriado ? 'text-red-500' : fechado ? 'text-gray-400' : 'text-gray-700'}`}>
                         {day.getDate()}
                       </p>
+                      {feriado && (
+                        <p className="text-[9px] font-semibold text-red-400 leading-tight mt-0.5 px-1 truncate">{feriado}</p>
+                      )}
                     </th>
                   )
                 })}
