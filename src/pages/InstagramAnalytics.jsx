@@ -779,12 +779,31 @@ function PainelOrganico({ leads, mes, ano, navMes, igConfig, onOpenSetup }) {
   )
 }
 
+function InfoBubble({ info }) {
+  const [pos, setPos] = React.useState(null)
+  return (
+    <span className="inline-flex">
+      <span
+        className="text-[10px] w-3.5 h-3.5 rounded-full bg-gray-300 text-white inline-flex items-center justify-center font-bold leading-none select-none cursor-help"
+        onMouseEnter={e => { const r = e.currentTarget.getBoundingClientRect(); setPos({ x: r.left, y: r.bottom + 6 }) }}
+        onMouseLeave={() => setPos(null)}
+      >i</span>
+      {pos && (
+        <span style={{ position: 'fixed', left: pos.x, top: pos.y, zIndex: 9999, width: 220 }}
+          className="bg-gray-800 text-white text-[11px] rounded-lg px-3 py-2 leading-snug shadow-xl normal-case tracking-normal font-normal pointer-events-none">
+          {info}
+        </span>
+      )}
+    </span>
+  )
+}
+
 function ThInfo({ label, info, align = 'right' }) {
   return (
     <th className={`px-4 py-3 text-${align}`}>
       <span className="inline-flex items-center gap-1">
         {label}
-        <span title={info} className="text-[10px] w-3.5 h-3.5 rounded-full bg-gray-300 text-white inline-flex items-center justify-center font-bold leading-none select-none cursor-help">i</span>
+        <InfoBubble info={info} />
       </span>
     </th>
   )
