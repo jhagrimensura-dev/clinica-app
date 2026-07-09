@@ -376,14 +376,33 @@ async function fetchIGPosts(userId, token, ano, mes) {
 }
 
 async function fetchIGAccounts(token) {
-  const pagesJson = await igFetch('/me/accounts?fields=id,name,instagram_business_account', token)
   const contas = []
-  for (const page of (pagesJson.data || [])) {
-    if (page.instagram_business_account) {
+  const seen = new Set()
+
+  const processPage = async (page) => {
+    if (!page.instagram_business_account || seen.has(page.id)) return
+    seen.add(page.id)
+    try {
       const ig = await igFetch(`/${page.instagram_business_account.id}?fields=id,username,followers_count,profile_picture_url`, token)
-      contas.push({ userId: ig.id, username: ig.username, followers: ig.followers_count, pageId: page.id, pageName: page.name })
+      if (ig.id) contas.push({ userId: ig.id, username: ig.username, followers: ig.followers_count, pageId: page.id, pageName: page.name })
+    } catch {}
+  }
+
+  // Tentativa 1: acesso direto via /me/accounts (admin tradicional)
+  const direct = await igFetch('/me/accounts?fields=id,name,instagram_business_account', token)
+  for (const page of (direct.data || [])) await processPage(page)
+
+  // Tentativa 2: acesso via portfólio empresarial (Business Portfolio)
+  if (contas.length === 0) {
+    const biz = await igFetch('/me/businesses?fields=id,name', token).catch(() => ({ data: [] }))
+    for (const b of (biz.data || [])) {
+      const owned = await igFetch(`/${b.id}/owned_pages?fields=id,name,instagram_business_account`, token).catch(() => ({ data: [] }))
+      for (const page of (owned.data || [])) await processPage(page)
+      const client = await igFetch(`/${b.id}/client_pages?fields=id,name,instagram_business_account`, token).catch(() => ({ data: [] }))
+      for (const page of (client.data || [])) await processPage(page)
     }
   }
+
   return contas
 }
 
