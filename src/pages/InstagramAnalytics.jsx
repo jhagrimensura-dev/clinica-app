@@ -1436,6 +1436,33 @@ export default function InstagramAnalytics() {
         </div>
       )}
 
+      {/* Glossário de termos */}
+      <div className="mt-6 bg-white rounded-2xl border border-brand-100/60 shadow-sm p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-base">💡</span>
+          <h3 className="text-sm font-bold text-gray-700">Glossário de termos</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {[
+            { termo: 'CTR', def: 'Click-Through Rate — % de pessoas que viram o anúncio e clicaram. Acima de 1% é bom para clínicas.' },
+            { termo: 'CPM', def: 'Custo por Mil impressões — quanto você paga para o anúncio aparecer 1.000 vezes. Quanto menor, mais barato.' },
+            { termo: 'Alcance', def: 'Quantidade de pessoas únicas que viram o anúncio pelo menos uma vez.' },
+            { termo: 'Impressões', def: 'Total de vezes que o anúncio foi exibido. Uma mesma pessoa pode ver várias vezes.' },
+            { termo: 'Custo por resultado', def: 'Quanto custou em média cada ação gerada (clique, conversa, lead) pela campanha.' },
+            { termo: 'Conv. WA', def: 'Conversas iniciadas no WhatsApp — pessoas que clicaram no anúncio e abriram o WhatsApp da clínica.' },
+            { termo: 'Engajamento', def: 'Tipo de campanha para gerar curtidas, comentários e compartilhamentos. Aumenta visibilidade do perfil.' },
+            { termo: 'Cliques no link', def: 'Tipo de campanha de tráfego para levar pessoas a um link — site, WhatsApp ou outra página.' },
+            { termo: 'Tráfego', def: 'Similar a cliques no link, mas otimizado para visitas à página de destino.' },
+            { termo: 'Conversas iniciadas', def: 'Anúncios com botão "Enviar mensagem" que direcionam diretamente para o WhatsApp da clínica.' },
+          ].map(({ termo, def }) => (
+            <div key={termo} className="flex gap-2.5 p-3 rounded-xl bg-gray-50">
+              <span className="text-xs font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-lg shrink-0 h-fit">{termo}</span>
+              <p className="text-xs text-gray-500 leading-relaxed">{def}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {showConfig && (
         <ConfigModal
           onSave={saveConfig}
