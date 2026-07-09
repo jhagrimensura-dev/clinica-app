@@ -392,7 +392,13 @@ async function fetchIGAccounts(token) {
   const direct = await igFetch('/me/accounts?fields=id,name,instagram_business_account', token)
   for (const page of (direct.data || [])) await processPage(page)
 
-  // Tentativa 2: acesso via portfólio empresarial (Business Portfolio)
+  // Tentativa 2: páginas atribuídas via Business Manager (não requer business_management)
+  if (contas.length === 0) {
+    const assigned = await igFetch('/me/assigned_pages?fields=id,name,instagram_business_account', token).catch(() => ({ data: [] }))
+    for (const page of (assigned.data || [])) await processPage(page)
+  }
+
+  // Tentativa 3: acesso via portfólio empresarial (requer business_management)
   if (contas.length === 0) {
     const biz = await igFetch('/me/businesses?fields=id,name', token).catch(() => ({ data: [] }))
     for (const b of (biz.data || [])) {
@@ -412,16 +418,30 @@ function IGSetupModal({ onSave, onClose, initial }) {
   const [carregando, setCarregando] = useState(false)
   const [contas, setContas] = useState([])
   const [erro, setErro] = useState('')
+  const [igIdManual, setIgIdManual] = useState('')
+  const [carregandoManual, setCarregandoManual] = useState(false)
 
   const buscarContas = async () => {
     if (!token.trim()) return
     setCarregando(true); setErro('')
     try {
       const lista = await fetchIGAccounts(token.trim())
-      if (lista.length === 0) { setErro('Nenhuma conta do Instagram Business encontrada vinculada a este token.'); setCarregando(false); return }
+      if (lista.length === 0) { setErro('Não encontramos a conta automaticamente. Cole abaixo o ID da conta Instagram Business (ou gere um novo token com a permissão business_management marcada).'); setCarregando(false); return }
       setContas(lista); setStep(4)
     } catch (e) { setErro(e.message) }
     setCarregando(false)
+  }
+
+  const conectarManual = async () => {
+    if (!igIdManual.trim() || !token.trim()) return
+    setCarregandoManual(true); setErro('')
+    try {
+      const ig = await igFetch(`/${igIdManual.trim()}?fields=id,username,followers_count,profile_picture_url`, token.trim())
+      if (!ig.id) { setErro('ID inválido ou sem permissão para acessar essa conta.'); setCarregandoManual(false); return }
+      setContas([{ userId: ig.id, username: ig.username, followers: ig.followers_count, pageId: 'manual', pageName: 'Conexão manual' }])
+      setStep(4)
+    } catch (e) { setErro('Erro: ' + e.message) }
+    setCarregandoManual(false)
   }
 
   const selecionar = (conta) => {
@@ -462,7 +482,7 @@ function IGSetupModal({ onSave, onClose, initial }) {
               <p className="text-xs text-gray-500 mb-1">1. Abra o Graph API Explorer</p>
               <p className="text-xs text-gray-500 mb-1">2. Selecione seu app no dropdown "Meta App"</p>
               <p className="text-xs text-gray-500 mb-1">3. Clique em "Generate Access Token"</p>
-              <p className="text-xs text-gray-500 mb-2">4. Marque as permissões: <strong>instagram_basic</strong>, <strong>instagram_manage_insights</strong>, <strong>pages_show_list</strong>, <strong>pages_read_engagement</strong></p>
+              <p className="text-xs text-gray-500 mb-2">4. Marque as permissões: <strong>instagram_basic</strong>, <strong>instagram_manage_insights</strong>, <strong>pages_show_list</strong>, <strong>pages_read_engagement</strong>, <strong>business_management</strong></p>
               <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-brand-500 underline">Abrir Graph API Explorer ↗</a>
             </div>
 
@@ -497,7 +517,19 @@ function IGSetupModal({ onSave, onClose, initial }) {
           </div>
         )}
 
-        {erro && <p className="text-xs text-red-500 bg-red-50 rounded-xl px-3 py-2 mb-4">{erro}</p>}
+        {erro && (
+          <div className="bg-red-50 rounded-xl px-3 py-3 mb-4 space-y-2">
+            <p className="text-xs text-red-500">{erro}</p>
+            <p className="text-xs text-gray-600 font-semibold">Conexão manual — cole o ID da conta Instagram Business:</p>
+            <div className="flex gap-2">
+              <input value={igIdManual} onChange={e => setIgIdManual(e.target.value)} placeholder="17841407062223101" className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-mono focus:outline-none focus:border-brand-400" />
+              <button onClick={conectarManual} disabled={!igIdManual.trim() || carregandoManual} className="px-3 py-1.5 bg-brand-400 hover:bg-brand-500 disabled:opacity-40 text-white text-xs font-semibold rounded-lg whitespace-nowrap">
+                {carregandoManual ? '...' : 'Conectar'}
+              </button>
+            </div>
+            <p className="text-xs text-gray-400">O ID da conta é: <strong>17841407062223101</strong> (dra.amandaliima)</p>
+          </div>
+        )}
 
         {step <= 3 && (
           <div className="flex items-center justify-between">
