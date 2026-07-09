@@ -350,7 +350,7 @@ async function fetchIGPosts(userId, token, ano, mes) {
   const until = Math.floor(fim.getTime() / 1000)
 
   const mediaJson = await igFetch(
-    `/${userId}/media?fields=id,caption,media_type,timestamp,like_count,comments_count,media_url,thumbnail_url,children{media_url,thumbnail_url}&since=${since}&until=${until}&limit=50`,
+    `/${userId}/media?fields=id,caption,media_type,timestamp,like_count,comments_count,media_url,thumbnail_url,permalink,children{media_url,thumbnail_url}&since=${since}&until=${until}&limit=50`,
     token
   )
 
@@ -370,6 +370,7 @@ async function fetchIGPosts(userId, token, ano, mes) {
       pago: false,
       publicado_em: data.toLocaleDateString('pt-BR'),
       thumbnail: media.thumbnail_url || (media.media_type === 'CAROUSEL_ALBUM' ? media.children?.data?.[0]?.media_url : media.media_url) || '',
+      permalink: media.permalink || '',
       alcance: insights.reach || 0,
       impressoes: insights.impressions || 0,
       curtidas: media.like_count || 0,
@@ -867,7 +868,7 @@ function CriativosSection({ mes, ano, igConfig, onOpenSetup }) {
       const atualizados = criativos.map(c => {
         if (!c.ig_id) return c
         const fresh = posts.find(p => p.ig_id === c.ig_id)
-        return fresh ? { ...c, thumbnail: fresh.thumbnail, publicado_em: fresh.publicado_em } : c
+        return fresh ? { ...c, thumbnail: fresh.thumbnail, publicado_em: fresh.publicado_em, permalink: fresh.permalink } : c
       })
       const merged = [...atualizados, ...novos]
       save(merged)
@@ -944,10 +945,10 @@ function CriativosSection({ mes, ano, igConfig, onOpenSetup }) {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         {c.thumbnail
-                          ? <>
-                              <img src={c.thumbnail} alt="" onError={e => { e.currentTarget.style.display='none'; e.currentTarget.nextElementSibling.style.display='flex' }} className="w-10 h-10 rounded-lg object-cover flex-shrink-0 bg-gray-100" />
-                              <div style={{display:'none'}} className="w-10 h-10 rounded-lg bg-gray-100 flex-shrink-0 items-center justify-center text-gray-300 text-lg">🖼</div>
-                            </>
+                          ? <a href={c.permalink || '#'} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 block">
+                              <img src={c.thumbnail} alt="" onError={e => { e.currentTarget.style.display='none'; e.currentTarget.nextElementSibling.style.display='flex' }} className="w-10 h-10 rounded-lg object-cover bg-gray-100 hover:opacity-80 transition-opacity cursor-pointer" />
+                              <div style={{display:'none'}} className="w-10 h-10 rounded-lg bg-gray-100 items-center justify-center text-gray-300 text-lg">🖼</div>
+                            </a>
                           : <div className="w-10 h-10 rounded-lg bg-gray-100 flex-shrink-0 flex items-center justify-center text-gray-300 text-lg">🖼</div>
                         }
                         <div>
