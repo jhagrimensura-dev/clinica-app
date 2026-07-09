@@ -97,7 +97,7 @@ const STATUS_KEYS = ['em_aberto', 'conversando', 'follow1', 'follow2', 'follow3'
 
 const STATUS_DENORMALIZE = { 'em_aberto': 'Em aberto', 'conversando': 'Conversando', 'follow1': 'Follow #1', 'follow2': 'Follow #2', 'follow3': 'Follow #3', 'agendado': 'Agendou', 'perdido': 'Perdido' }
 
-function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, leadInicial, lembretesDaAgenda = [], onDeletarLembrete }) {
+function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, leadInicial, lembretesDaAgenda = [], onDeletarLembrete, referralAnuncio }) {
   const { leadOrigens, setLeadOrigens, leadStatus, setLeadStatus, leadMidias, setLeadMidias } = useConfig()
   const { userRole } = useAuth()
   const isAdmin = userRole !== 'Funcionário'
@@ -116,8 +116,8 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
   })
   const [aniversario, setAniversario] = useState(leadInicial?.aniversario || '')
   const [obs, setObs] = useState(leadInicial?.obs || '')
-  const [midia, setMidia] = useState(leadInicial?.midia || '')
-  const [criativo, setCriativo] = useState(leadInicial?.criativo || '')
+  const [midia, setMidia] = useState(leadInicial?.midia || (referralAnuncio ? 'Tráfego pago' : ''))
+  const [criativo, setCriativo] = useState(leadInicial?.criativo || referralAnuncio || '')
   const [linkBio, setLinkBio] = useState(leadInicial?.linkBio || '')
   const [origens, setOrigens] = useState(leadOrigens || ORIGENS_PADRAO)
   const [editandoOrigens, setEditandoOrigens] = useState(false)
@@ -196,6 +196,16 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
           </div>
           <button onClick={onFechar} className="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
         </div>
+
+        {referralAnuncio && (
+          <div className="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-xl px-3 py-2">
+            <span className="text-purple-500 text-base">💰</span>
+            <div>
+              <p className="text-[10px] text-purple-400 font-semibold uppercase tracking-wide">Veio do anúncio</p>
+              <p className="text-xs text-purple-800 font-semibold leading-tight">{referralAnuncio}</p>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -1942,6 +1952,7 @@ export default function InboxWhatsApp({ contaId }) {
           tipo={modalLead}
           onSalvar={confirmarLead}
           onFechar={() => setModalLead(null)}
+          referralAnuncio={selecionada?.mensagens?.find(m => m.referralAnuncio)?.referralAnuncio || null}
         />
       )}
 
