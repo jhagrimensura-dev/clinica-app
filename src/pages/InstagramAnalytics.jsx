@@ -991,7 +991,7 @@ function CriativosSection({ mes, ano, igConfig, onOpenSetup, boostedPermalinks }
                           <p className="font-medium text-gray-800 max-w-[160px] truncate">{c.nome}</p>
                           <div className="flex items-center gap-1.5 mt-0.5">
                             {c.publicado_em && <span className="text-[10px] text-gray-400">{c.publicado_em}</span>}
-                            {c.pago && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium">pago</span>}
+                            {c.pago && <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-semibold">💰 Impulsionado</span>}
                             {!c.pago && c.permalink && boostedPermalinks?.has(c.permalink) && <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-medium">impulsionado</span>}
                           </div>
                         </div>
@@ -1066,7 +1066,7 @@ function CriativosSection({ mes, ano, igConfig, onOpenSetup, boostedPermalinks }
                 <div className="flex items-end pb-1">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={form.pago} onChange={e => setForm(p => ({ ...p, pago: e.target.checked }))} className="w-4 h-4 accent-brand-400" />
-                    <span className="text-sm text-gray-700 font-medium">Conteúdo pago / impulsionado</span>
+                    <span className="text-sm text-gray-700 font-medium">Marcar como impulsionado</span>
                   </label>
                 </div>
               </div>
