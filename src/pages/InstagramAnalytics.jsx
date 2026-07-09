@@ -1406,7 +1406,7 @@ export default function InstagramAnalytics() {
                           ? <img src={c.thumbnail} className="w-9 h-9 rounded-lg object-cover shrink-0" />
                           : <div className="w-9 h-9 rounded-lg bg-gray-100 shrink-0 flex items-center justify-center text-base">🖼</div>
                         }
-                        <span className="font-medium text-gray-800 truncate max-w-[160px]">{c.campaign_name}</span>
+                        <span className="font-medium text-gray-800 truncate max-w-[160px] cursor-default" title={c.campaign_name}>{c.campaign_name}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3">
