@@ -1163,7 +1163,7 @@ export default function InstagramAnalytics() {
         fetch(`${base}/insights?fields=${fields}&date_preset=${periodo}&access_token=${token}`),
         fetch(`${base}/insights?fields=campaign_name,campaign_id,spend,impressions,reach,clicks,ctr,cpm,cpp,actions&level=campaign&date_preset=${periodo}&access_token=${token}`),
         fetch(`${base}/campaigns?fields=id,name,objective,start_time&access_token=${token}&limit=200`),
-        fetch(`${base}/ads?fields=campaign_id,creative{thumbnail_url,image_url}&limit=100&date_preset=${periodo}&access_token=${token}`),
+        fetch(`${base}/ads?fields=campaign_id,instagram_permalink_url,creative{thumbnail_url,image_url}&limit=100&date_preset=${periodo}&access_token=${token}`),
       ])
 
       const overviewJson = await overviewRes.json()
@@ -1181,12 +1181,15 @@ export default function InstagramAnalytics() {
       const thumbMap = {}
       ;(adsJson.data || []).forEach(ad => {
         if (!thumbMap[ad.campaign_id]) {
-          thumbMap[ad.campaign_id] = ad.creative?.thumbnail_url || ad.creative?.image_url || ''
+          thumbMap[ad.campaign_id] = {
+            thumbnail: ad.creative?.thumbnail_url || ad.creative?.image_url || '',
+            permalink: ad.instagram_permalink_url || '',
+          }
         }
       })
 
       setOverview(overviewJson.data?.[0] || null)
-      setCampanhas((campaignsJson.data || []).map(c => ({ ...c, objetivo: objMap[c.campaign_id] || '', thumbnail: thumbMap[c.campaign_id] || '', inicio: startMap[c.campaign_id] || '' })))
+      setCampanhas((campaignsJson.data || []).map(c => ({ ...c, objetivo: objMap[c.campaign_id] || '', thumbnail: thumbMap[c.campaign_id]?.thumbnail || '', permalink: thumbMap[c.campaign_id]?.permalink || '', inicio: startMap[c.campaign_id] || '' })))
     } catch (e) {
       setError(e.message)
     } finally {
@@ -1404,7 +1407,9 @@ export default function InstagramAnalytics() {
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2.5">
                         {c.thumbnail
-                          ? <img src={c.thumbnail} className="w-9 h-9 rounded-lg object-cover shrink-0" />
+                          ? (c.permalink
+                              ? <a href={c.permalink} target="_blank" rel="noreferrer"><img src={c.thumbnail} className="w-9 h-9 rounded-lg object-cover shrink-0 hover:opacity-75 transition-opacity" title="Ver no Instagram" /></a>
+                              : <img src={c.thumbnail} className="w-9 h-9 rounded-lg object-cover shrink-0" />)
                           : <div className="w-9 h-9 rounded-lg bg-gray-100 shrink-0 flex items-center justify-center text-base">🖼</div>
                         }
                         <div>
