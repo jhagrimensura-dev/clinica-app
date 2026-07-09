@@ -1162,7 +1162,7 @@ export default function InstagramAnalytics() {
       const [overviewRes, campaignsRes, campInfoRes, adsRes] = await Promise.all([
         fetch(`${base}/insights?fields=${fields}&date_preset=${periodo}&access_token=${token}`),
         fetch(`${base}/insights?fields=campaign_name,campaign_id,spend,impressions,reach,clicks,ctr,cpm,cpp,actions&level=campaign&date_preset=${periodo}&access_token=${token}`),
-        fetch(`${base}/campaigns?fields=id,name,objective&access_token=${token}&limit=200`),
+        fetch(`${base}/campaigns?fields=id,name,objective,start_time&access_token=${token}&limit=200`),
         fetch(`${base}/ads?fields=campaign_id,creative{thumbnail_url,image_url}&limit=100&date_preset=${periodo}&access_token=${token}`),
       ])
 
@@ -1175,7 +1175,8 @@ export default function InstagramAnalytics() {
       if (campaignsJson.error) throw new Error(campaignsJson.error.message)
 
       const objMap = {}
-      ;(campInfoJson.data || []).forEach(c => { objMap[c.id] = c.objective })
+      const startMap = {}
+      ;(campInfoJson.data || []).forEach(c => { objMap[c.id] = c.objective; if (c.start_time) startMap[c.id] = c.start_time })
 
       const thumbMap = {}
       ;(adsJson.data || []).forEach(ad => {
@@ -1185,7 +1186,7 @@ export default function InstagramAnalytics() {
       })
 
       setOverview(overviewJson.data?.[0] || null)
-      setCampanhas((campaignsJson.data || []).map(c => ({ ...c, objetivo: objMap[c.campaign_id] || '', thumbnail: thumbMap[c.campaign_id] || '' })))
+      setCampanhas((campaignsJson.data || []).map(c => ({ ...c, objetivo: objMap[c.campaign_id] || '', thumbnail: thumbMap[c.campaign_id] || '', inicio: startMap[c.campaign_id] || '' })))
     } catch (e) {
       setError(e.message)
     } finally {
@@ -1406,7 +1407,10 @@ export default function InstagramAnalytics() {
                           ? <img src={c.thumbnail} className="w-9 h-9 rounded-lg object-cover shrink-0" />
                           : <div className="w-9 h-9 rounded-lg bg-gray-100 shrink-0 flex items-center justify-center text-base">🖼</div>
                         }
-                        <span className="font-medium text-gray-800 truncate max-w-[160px] cursor-default" title={c.campaign_name}>{c.campaign_name}</span>
+                        <div>
+                          <span className="font-medium text-gray-800 truncate max-w-[160px] block cursor-default" title={c.campaign_name}>{c.campaign_name}</span>
+                          {c.inicio && <span className="text-[11px] text-gray-400">{new Date(c.inicio).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>}
+                        </div>
                       </div>
                     </td>
                     <td className="px-4 py-3">
