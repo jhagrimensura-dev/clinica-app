@@ -97,7 +97,7 @@ const STATUS_KEYS = ['em_aberto', 'conversando', 'follow1', 'follow2', 'follow3'
 
 const STATUS_DENORMALIZE = { 'em_aberto': 'Em aberto', 'conversando': 'Conversando', 'follow1': 'Follow #1', 'follow2': 'Follow #2', 'follow3': 'Follow #3', 'agendado': 'Agendou', 'perdido': 'Perdido' }
 
-function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, leadInicial, lembretesDaAgenda = [], onDeletarLembrete, referralAnuncio }) {
+function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, leadInicial, lembretesDaAgenda = [], onDeletarLembrete, referralAnuncio, midiaDetectada }) {
   const { leadOrigens, setLeadOrigens, leadStatus, setLeadStatus, leadMidias, setLeadMidias } = useConfig()
   const { userRole } = useAuth()
   const isAdmin = userRole !== 'Funcionário'
@@ -116,7 +116,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
   })
   const [aniversario, setAniversario] = useState(leadInicial?.aniversario || '')
   const [obs, setObs] = useState(leadInicial?.obs || '')
-  const [midia, setMidia] = useState(leadInicial?.midia || (referralAnuncio ? 'Tráfego pago' : ''))
+  const [midia, setMidia] = useState(leadInicial?.midia || midiaDetectada || '')
   const [criativo, setCriativo] = useState(leadInicial?.criativo || referralAnuncio || '')
   const [linkBio, setLinkBio] = useState(leadInicial?.linkBio || '')
   const [origens, setOrigens] = useState(leadOrigens || ORIGENS_PADRAO)
@@ -199,10 +199,28 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
 
         {referralAnuncio && (
           <div className="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-xl px-3 py-2">
-            <span className="text-purple-500 text-base">💰</span>
+            <span className="text-base">💰</span>
             <div>
               <p className="text-[10px] text-purple-400 font-semibold uppercase tracking-wide">Veio do anúncio</p>
               <p className="text-xs text-purple-800 font-semibold leading-tight">{referralAnuncio}</p>
+            </div>
+          </div>
+        )}
+        {!referralAnuncio && midiaDetectada === 'Link da BIO' && (
+          <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-3 py-2">
+            <span className="text-base">🔗</span>
+            <div>
+              <p className="text-[10px] text-green-500 font-semibold uppercase tracking-wide">Origem detectada</p>
+              <p className="text-xs text-green-800 font-semibold">Link da BIO do Instagram</p>
+            </div>
+          </div>
+        )}
+        {!referralAnuncio && midiaDetectada === 'Link dos Stories' && (
+          <div className="flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-xl px-3 py-2">
+            <span className="text-base">📲</span>
+            <div>
+              <p className="text-[10px] text-orange-500 font-semibold uppercase tracking-wide">Origem detectada</p>
+              <p className="text-xs text-orange-800 font-semibold">Link dos Stories</p>
             </div>
           </div>
         )}
@@ -1946,15 +1964,25 @@ export default function InboxWhatsApp({ contaId }) {
         </div>
       )}
 
-      {modalLead && (
-        <ModalRegistrarLead
-          contato={conversa.contato}
-          tipo={modalLead}
-          onSalvar={confirmarLead}
-          onFechar={() => setModalLead(null)}
-          referralAnuncio={selecionada?.mensagens?.find(m => m.referralAnuncio)?.referralAnuncio || null}
-        />
-      )}
+      {modalLead && (() => {
+        const msgs = selecionada?.mensagens || []
+        const referralAnuncio = msgs.find(m => m.referralAnuncio)?.referralAnuncio || null
+        const primeiraMsg = msgs.find(m => !m.minha)?.texto || ''
+        const midiaDetectada = referralAnuncio ? 'Tráfego pago'
+          : primeiraMsg.includes('Gostaria de agendar uma consulta com a Dra Amanda') ? 'Link da BIO'
+          : primeiraMsg.includes('Vim dos stories da Dra Amanda') ? 'Link dos Stories'
+          : ''
+        return (
+          <ModalRegistrarLead
+            contato={conversa.contato}
+            tipo={modalLead}
+            onSalvar={confirmarLead}
+            onFechar={() => setModalLead(null)}
+            referralAnuncio={referralAnuncio}
+            midiaDetectada={midiaDetectada}
+          />
+        )
+      })()}
 
       {editarLeadRegistrado && (
         <ModalRegistrarLead
