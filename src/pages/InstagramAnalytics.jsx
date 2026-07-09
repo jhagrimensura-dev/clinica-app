@@ -784,12 +784,7 @@ function ThInfo({ label, info, align = 'right' }) {
     <th className={`px-4 py-3 text-${align}`}>
       <span className="inline-flex items-center gap-1">
         {label}
-        <span className="relative group cursor-default">
-          <span className="text-[10px] w-3.5 h-3.5 rounded-full bg-gray-300 text-white inline-flex items-center justify-center font-bold leading-none select-none">i</span>
-          <span className="absolute bottom-full right-0 mb-1.5 w-52 bg-gray-800 text-white text-[11px] rounded-lg px-2.5 py-2 leading-snug opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg normal-case tracking-normal font-normal whitespace-normal">
-            {info}
-          </span>
-        </span>
+        <span title={info} className="text-[10px] w-3.5 h-3.5 rounded-full bg-gray-300 text-white inline-flex items-center justify-center font-bold leading-none select-none cursor-help">i</span>
       </span>
     </th>
   )
