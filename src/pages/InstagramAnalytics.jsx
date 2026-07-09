@@ -780,7 +780,7 @@ function PainelOrganico({ leads, mes, ano, navMes, igConfig, onOpenSetup }) {
 }
 
 function InfoBubble({ info }) {
-  const [pos, setPos] = React.useState(null)
+  const [pos, setPos] = useState(null)
   return (
     <span className="inline-flex">
       <span
