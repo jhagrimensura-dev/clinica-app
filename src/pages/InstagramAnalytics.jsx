@@ -65,7 +65,10 @@ const CONTAS_PADRAO = [
 function ConfigModal({ onSave, initialToken, initialAccounts }) {
   const [token, setToken] = useState(initialToken || '')
   const [accounts, setAccounts] = useState(() =>
-    CONTAS_PADRAO.map((c, i) => ({ ...c, ...(initialAccounts?.[i] || {}) }))
+    CONTAS_PADRAO.map(c => {
+      const existing = initialAccounts?.find(a => a.label === c.label)
+      return { ...c, id: existing?.id || '' }
+    })
   )
 
   const handleSave = () => {
