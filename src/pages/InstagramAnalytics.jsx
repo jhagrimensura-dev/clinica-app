@@ -789,8 +789,8 @@ function InfoBubble({ info }) {
         onMouseLeave={() => setPos(null)}
       >i</span>
       {pos && (
-        <span style={{ position: 'fixed', left: pos.x, top: pos.y, zIndex: 9999, width: 220 }}
-          className="bg-gray-800 text-white text-[11px] rounded-lg px-3 py-2 leading-snug shadow-xl normal-case tracking-normal font-normal pointer-events-none">
+        <span style={{ position: 'fixed', left: pos.x, top: pos.y, zIndex: 9999, width: 230 }}
+          className="bg-gray-800 text-white text-[11px] text-left rounded-xl px-3 py-2.5 leading-relaxed shadow-xl normal-case tracking-normal font-normal pointer-events-none">
           {info}
         </span>
       )}
@@ -922,13 +922,13 @@ function CriativosSection({ mes, ano, igConfig, onOpenSetup }) {
                 <tr className="text-xs text-gray-400 font-semibold uppercase tracking-wide border-b border-gray-100 bg-gray-50">
                   <th className="px-4 py-3 text-left">#</th>
                   <th className="px-4 py-3 text-left">Criativo</th>
-                  <ThInfo label="Formato" align="left" info="Tipo do conteúdo publicado: Reel (vídeo curto), Carrossel (várias fotos), Post estático (foto única) ou Story." />
-                  <ThInfo label="Alcance" info="Quantas pessoas únicas viram esse post. Diferente de impressões — cada pessoa conta só uma vez, mesmo que tenha visto várias vezes." />
-                  <ThInfo label="Curtidas" info="Número de curtidas que o post recebeu." />
-                  <ThInfo label="Salv." info="Salvamentos: quantas vezes alguém salvou o post para ver depois. É um sinal forte de que o conteúdo foi útil ou inspirador." />
-                  <ThInfo label="Comp." info="Compartilhamentos: quantas vezes o post foi compartilhado no feed, stories ou enviado por direct para outra pessoa." />
-                  <ThInfo label="Engajamento" info="Soma de todas as interações: curtidas + comentários + salvamentos + compartilhamentos. Quanto maior, mais o conteúdo gerou reação." />
-                  <ThInfo label="Taxa eng." info="Taxa de engajamento: % do alcance que interagiu com o post. Calculado como (engajamento ÷ alcance) × 100. Acima de 3% é considerado bom." />
+                  <ThInfo label="Formato" align="left" info="Tipo do post: Reel, Carrossel, Story ou Post estático." />
+                  <ThInfo label="Alcance" info="Pessoas únicas que viram o post. Cada pessoa conta uma vez, mesmo que tenha visto mais de uma vez." />
+                  <ThInfo label="Curtidas" info="Total de curtidas recebidas." />
+                  <ThInfo label="Salv." info="Salvamentos — quantas vezes alguém salvou o post para ver depois. Indica que o conteúdo foi útil ou inspirador." />
+                  <ThInfo label="Comp." info="Compartilhamentos — quantas vezes o post foi enviado para outra pessoa ou publicado nos stories." />
+                  <ThInfo label="Engajamento" info="Soma de curtidas + comentários + salvamentos + compartilhamentos." />
+                  <ThInfo label="Taxa eng." info="% do alcance que interagiu com o post. Acima de 3% é considerado bom para Instagram." />
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
