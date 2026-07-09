@@ -1489,6 +1489,31 @@ export default function InstagramAnalytics() {
         </div>
       </div>
 
+      {/* Raciocínio prático */}
+      <div className="mt-4 bg-white rounded-2xl border border-brand-100/60 shadow-sm p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-base">🧠</span>
+          <h3 className="text-sm font-bold text-gray-700">Como identificar o problema</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {[
+            { sinal: 'CTR baixo (abaixo de 1%)', problema: 'O criativo não está chamando atenção — troque a imagem ou o texto do anúncio.', cor: 'text-red-600 bg-red-50' },
+            { sinal: 'CTR bom mas poucos resultados', problema: 'As pessoas clicam mas não mandam mensagem — reveja a oferta ou o atendimento.', cor: 'text-orange-600 bg-orange-50' },
+            { sinal: 'CPM alto', problema: 'Muita concorrência no período (datas comemorativas). Normal subir em maio, junho, dezembro.', cor: 'text-yellow-600 bg-yellow-50' },
+            { sinal: 'Conv. WA alto + poucos agendamentos', problema: 'O problema está na captação — o atendimento no WhatsApp precisa melhorar.', cor: 'text-blue-600 bg-blue-50' },
+            { sinal: 'Frequência acima de 3-4x', problema: 'O público está saturado — já viram o mesmo anúncio muitas vezes. Troque o criativo.', cor: 'text-purple-600 bg-purple-50' },
+            { sinal: 'Alcance caindo sem motivo', problema: 'O orçamento pode estar baixo ou o público muito restrito. Amplie o público-alvo.', cor: 'text-gray-600 bg-gray-50' },
+          ].map(({ sinal, problema, cor }) => (
+            <div key={sinal} className="p-3 rounded-xl bg-gray-50 flex gap-3">
+              <div className="shrink-0">
+                <span className={`text-[11px] font-bold px-2 py-1 rounded-lg ${cor}`}>{sinal}</span>
+              </div>
+              <p className="text-xs text-gray-500 leading-relaxed">{problema}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {showConfig && (
         <ConfigModal
           onSave={saveConfig}
