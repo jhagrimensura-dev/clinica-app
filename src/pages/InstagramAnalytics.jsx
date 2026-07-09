@@ -684,12 +684,10 @@ function PainelOrganico({ leads, mes, ano, navMes, igConfig, onOpenSetup }) {
       { label: 'Compartilhamentos', value: fmtN(num('compartilhamentos')), icon: '🔁' },
       { label: 'Taxa de engajamento', value: fmtP(taxaEng), icon: '📈', highlight: true },
     ]},
-    { title: 'Cliques & Conversão', color: 'text-green-600', cols: 5, cards: [
+    { title: 'Cliques & Conversão', color: 'text-green-600', cols: 3, cards: [
       { label: 'Cliques no link bio', value: fmtN(num('cliques_bio')), icon: '🔗' },
       { label: 'Mensagens (DM)', value: fmtN(num('mensagens')), icon: '✉️' },
       { label: 'Cliques WhatsApp', value: fmtN(num('cliques_whatsapp')), icon: '📲' },
-      { label: 'Leads recebidos', value: fmtN(totalLeads), icon: '🎯' },
-      { label: 'Custo por lead', value: fmtR(custoPorLead), icon: '💰' },
     ]},
   ]
 
