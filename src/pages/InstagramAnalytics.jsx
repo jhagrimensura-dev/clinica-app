@@ -882,7 +882,7 @@ function CriativosSection({ mes, ano, igConfig, onOpenSetup }) {
   const eng = (c) => c.curtidas + c.comentarios + c.salvamentos + c.compartilhamentos
   const taxaEng = (c) => c.alcance > 0 ? ((eng(c) / c.alcance) * 100) : 0
 
-  const sorted = [...criativos].sort((a, b) => taxaEng(b) - taxaEng(a))
+  const sorted = [...criativos].sort((a, b) => eng(b) - eng(a))
 
   const COR_FORMATO = { Reel: 'bg-purple-100 text-purple-700', Carrossel: 'bg-blue-100 text-blue-700', Story: 'bg-pink-100 text-pink-700', 'Post estático': 'bg-gray-100 text-gray-600', Live: 'bg-red-100 text-red-700' }
 
