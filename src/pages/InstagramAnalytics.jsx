@@ -864,9 +864,14 @@ function CriativosSection({ mes, ano, igConfig, onOpenSetup }) {
       if (posts.length === 0) { alert('Nenhum post encontrado neste mês.'); setImportando(false); return }
       const existentesIds = new Set(criativos.map(c => c.ig_id).filter(Boolean))
       const novos = posts.filter(p => !existentesIds.has(p.ig_id))
-      const merged = [...criativos, ...novos]
+      const atualizados = criativos.map(c => {
+        if (!c.ig_id) return c
+        const fresh = posts.find(p => p.ig_id === c.ig_id)
+        return fresh ? { ...c, thumbnail: fresh.thumbnail, publicado_em: fresh.publicado_em } : c
+      })
+      const merged = [...atualizados, ...novos]
       save(merged)
-      alert(`✅ ${novos.length} post(s) importado(s)!${novos.length < posts.length ? `\n${posts.length - novos.length} já existiam.` : ''}`)
+      alert(`✅ ${novos.length} novo(s) importado(s), ${atualizados.filter(c => c.ig_id).length} atualizado(s)!`)
     } catch (e) {
       alert('Erro ao importar posts: ' + e.message)
     }
@@ -939,7 +944,10 @@ function CriativosSection({ mes, ano, igConfig, onOpenSetup }) {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         {c.thumbnail
-                          ? <img src={c.thumbnail} alt="" referrerPolicy="no-referrer" className="w-10 h-10 rounded-lg object-cover flex-shrink-0 bg-gray-100" />
+                          ? <>
+                              <img src={c.thumbnail} alt="" onError={e => { e.currentTarget.style.display='none'; e.currentTarget.nextElementSibling.style.display='flex' }} className="w-10 h-10 rounded-lg object-cover flex-shrink-0 bg-gray-100" />
+                              <div style={{display:'none'}} className="w-10 h-10 rounded-lg bg-gray-100 flex-shrink-0 items-center justify-center text-gray-300 text-lg">🖼</div>
+                            </>
                           : <div className="w-10 h-10 rounded-lg bg-gray-100 flex-shrink-0 flex items-center justify-center text-gray-300 text-lg">🖼</div>
                         }
                         <div>
