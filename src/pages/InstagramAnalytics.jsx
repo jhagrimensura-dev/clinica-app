@@ -1150,6 +1150,35 @@ export default function InstagramAnalytics() {
     })
   }, [config])
 
+  const [textosCriativos, setTextosCriativos] = useState([])
+  const [loadingTextos, setLoadingTextos] = useState(false)
+  const [showTextos, setShowTextos] = useState(false)
+
+  const buscarTextosCriativos = async () => {
+    if (!config) return
+    setLoadingTextos(true)
+    const { token, accounts } = config
+    const ids = accounts?.map(a => a.id).filter(Boolean) || (config.accountId ? [config.accountId] : [])
+    const todos = []
+    await Promise.all(ids.map(async (id, idx) => {
+      const label = accounts?.[idx]?.label || `Conta ${idx + 1}`
+      try {
+        const res = await fetch(`${GRAPH_BASE}/act_${id}/ads?fields=name,creative{link_url,body,title,object_story_spec{link_data{link,message}}}&limit=100&access_token=${token}`)
+        const json = await res.json()
+        ;(json.data || []).forEach(ad => {
+          const cr = ad.creative || {}
+          const url = cr.link_url || cr.object_story_spec?.link_data?.link || ''
+          let texto = ''
+          try { texto = url ? decodeURIComponent(new URL(url).searchParams.get('text') || '') : '' } catch {}
+          if (texto) todos.push({ conta: label, nome: ad.name, texto })
+        })
+      } catch {}
+    }))
+    setTextosCriativos(todos)
+    setLoadingTextos(false)
+    setShowTextos(true)
+  }
+
   const [showConfig, setShowConfig] = useState(false)
   const [periodo, setPeriodo] = useState('last_30d')
   const [overview, setOverview] = useState(null)
@@ -1504,6 +1533,43 @@ export default function InstagramAnalytics() {
           Nenhum dado encontrado para o período selecionado.
         </div>
       )}
+
+      {/* Textos pré-preenchidos dos criativos */}
+      <div className="mt-4 bg-white rounded-2xl border border-brand-100/60 shadow-sm p-5">
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <span className="text-base">💬</span>
+            <h3 className="text-sm font-bold text-gray-700">Textos pré-preenchidos dos criativos</h3>
+          </div>
+          <button
+            onClick={buscarTextosCriativos}
+            disabled={loadingTextos}
+            className="px-4 py-1.5 rounded-xl text-xs font-semibold text-white disabled:opacity-50 transition-opacity"
+            style={{ background: 'linear-gradient(135deg, #ee2a7b, #6228d7)' }}
+          >
+            {loadingTextos ? 'Buscando...' : 'Buscar textos'}
+          </button>
+        </div>
+        <p className="text-xs text-gray-400 mb-4">Mensagens que aparecem no WhatsApp quando alguém clica num link de anúncio.</p>
+
+        {showTextos && (
+          textosCriativos.length === 0
+            ? <p className="text-xs text-gray-400 text-center py-4">Nenhum criativo com texto pré-preenchido encontrado. Os anúncios usam botão CTWA (detecção automática já está ativa).</p>
+            : <div className="space-y-2">
+                {textosCriativos.map((item, i) => (
+                  <div key={i} className="flex gap-3 items-start p-3 rounded-xl bg-gray-50">
+                    <div className="shrink-0">
+                      <span className="text-[11px] font-bold px-2 py-1 rounded-lg bg-purple-100 text-purple-700">{item.conta}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-gray-700 truncate mb-0.5" title={item.nome}>{item.nome}</p>
+                      <p className="text-xs text-gray-500 italic">"{item.texto}"</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+        )}
+      </div>
 
       {/* Glossário de termos */}
       <div className="mt-6 bg-white rounded-2xl border border-brand-100/60 shadow-sm p-5">
