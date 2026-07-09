@@ -805,9 +805,9 @@ function ThInfo({ label, info, align = 'right', sortKey, sortCol, sortDir, onSor
     <th className={`px-4 py-3 text-${align}`}>
       <span className="inline-flex items-center gap-1">
         {sortKey
-          ? <button onClick={() => onSort(sortKey)} className={`inline-flex items-center gap-0.5 hover:text-gray-600 transition-colors ${active ? 'text-gray-700' : ''}`}>
+          ? <button onClick={() => onSort(sortKey)} className={`inline-flex items-center gap-0.5 transition-colors outline-none focus:outline-none ${active ? 'text-gray-700' : 'hover:text-gray-500'}`}>
               {label}
-              <span className="text-[10px]">{active ? (sortDir === 'desc' ? '↓' : '↑') : '↕'}</span>
+              {active && <span className="text-[9px] ml-0.5">{sortDir === 'desc' ? '↓' : '↑'}</span>}
             </button>
           : label
         }
