@@ -785,7 +785,7 @@ function InfoBubble({ info }) {
     <span className="inline-flex">
       <span
         className="text-[10px] w-3.5 h-3.5 rounded-full bg-gray-300 text-white inline-flex items-center justify-center font-bold leading-none select-none cursor-help"
-        onMouseEnter={e => { const r = e.currentTarget.getBoundingClientRect(); setPos({ x: r.left, y: r.bottom + 6 }) }}
+        onMouseEnter={e => { const r = e.currentTarget.getBoundingClientRect(); const w = 230; const x = r.left + w > window.innerWidth - 8 ? r.right - w : r.left; setPos({ x, y: r.bottom + 6 }) }}
         onMouseLeave={() => setPos(null)}
       >i</span>
       {pos && (
