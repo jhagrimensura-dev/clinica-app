@@ -779,6 +779,22 @@ function PainelOrganico({ leads, mes, ano, navMes, igConfig, onOpenSetup }) {
   )
 }
 
+function ThInfo({ label, info, align = 'right' }) {
+  return (
+    <th className={`px-4 py-3 text-${align}`}>
+      <span className="inline-flex items-center gap-1">
+        {label}
+        <span className="relative group cursor-default">
+          <span className="text-[10px] w-3.5 h-3.5 rounded-full bg-gray-300 text-white inline-flex items-center justify-center font-bold leading-none select-none">i</span>
+          <span className="absolute bottom-full right-0 mb-1.5 w-52 bg-gray-800 text-white text-[11px] rounded-lg px-2.5 py-2 leading-snug opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg normal-case tracking-normal font-normal whitespace-normal">
+            {info}
+          </span>
+        </span>
+      </span>
+    </th>
+  )
+}
+
 const CRIATIVO_VAZIO = { nome: '', formato: 'Reel', pago: false, alcance: '', impressoes: '', curtidas: '', comentarios: '', salvamentos: '', compartilhamentos: '' }
 
 function CriativosSection({ mes, ano, igConfig, onOpenSetup }) {
@@ -892,13 +908,13 @@ function CriativosSection({ mes, ano, igConfig, onOpenSetup }) {
                 <tr className="text-xs text-gray-400 font-semibold uppercase tracking-wide border-b border-gray-100 bg-gray-50">
                   <th className="px-4 py-3 text-left">#</th>
                   <th className="px-4 py-3 text-left">Criativo</th>
-                  <th className="px-4 py-3 text-left">Formato</th>
-                  <th className="px-4 py-3 text-right">Alcance</th>
-                  <th className="px-4 py-3 text-right">Curtidas</th>
-                  <th className="px-4 py-3 text-right">Salv.</th>
-                  <th className="px-4 py-3 text-right">Comp.</th>
-                  <th className="px-4 py-3 text-right">Engajamento</th>
-                  <th className="px-4 py-3 text-right">Taxa eng.</th>
+                  <ThInfo label="Formato" align="left" info="Tipo do conteúdo publicado: Reel (vídeo curto), Carrossel (várias fotos), Post estático (foto única) ou Story." />
+                  <ThInfo label="Alcance" info="Quantas pessoas únicas viram esse post. Diferente de impressões — cada pessoa conta só uma vez, mesmo que tenha visto várias vezes." />
+                  <ThInfo label="Curtidas" info="Número de curtidas que o post recebeu." />
+                  <ThInfo label="Salv." info="Salvamentos: quantas vezes alguém salvou o post para ver depois. É um sinal forte de que o conteúdo foi útil ou inspirador." />
+                  <ThInfo label="Comp." info="Compartilhamentos: quantas vezes o post foi compartilhado no feed, stories ou enviado por direct para outra pessoa." />
+                  <ThInfo label="Engajamento" info="Soma de todas as interações: curtidas + comentários + salvamentos + compartilhamentos. Quanto maior, mais o conteúdo gerou reação." />
+                  <ThInfo label="Taxa eng." info="Taxa de engajamento: % do alcance que interagiu com o post. Calculado como (engajamento ÷ alcance) × 100. Acima de 3% é considerado bom." />
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
