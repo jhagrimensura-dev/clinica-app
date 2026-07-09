@@ -314,14 +314,18 @@ async function fetchIGInsights(userId, token, ano, mes) {
   const since = Math.floor(inicio.getTime() / 1000)
   const until = Math.floor(fim.getTime() / 1000)
 
-  const [insightsJson, profileJson] = await Promise.all([
-    igFetch(`/${userId}/insights?metric=reach,views,profile_views,accounts_engaged,follower_count,website_clicks,total_interactions,likes,comments,shares,saves&period=day&since=${since}&until=${until}`, token),
+  const [insightsDia, insightsTotal, profileJson] = await Promise.all([
+    igFetch(`/${userId}/insights?metric=reach,follower_count&period=day&since=${since}&until=${until}`, token),
+    igFetch(`/${userId}/insights?metric=views,profile_views,accounts_engaged,website_clicks,total_interactions,likes,comments,shares,saves&metric_type=total_value&since=${since}&until=${until}`, token),
     igFetch(`/${userId}?fields=followers_count,username,name`, token),
   ])
 
   const totals = {}
-  for (const m of (insightsJson.data || [])) {
+  for (const m of (insightsDia.data || [])) {
     totals[m.name] = (m.values || []).reduce((s, v) => s + (typeof v.value === 'number' ? v.value : 0), 0)
+  }
+  for (const m of (insightsTotal.data || [])) {
+    totals[m.name] = m.total_value?.value ?? m.value ?? 0
   }
 
   return {
