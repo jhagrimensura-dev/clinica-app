@@ -844,7 +844,7 @@ function ThInfo({ label, info, align = 'right', sortKey, sortCol, sortDir, onSor
 
 const CRIATIVO_VAZIO = { nome: '', formato: 'Reel', pago: false, alcance: '', impressoes: '', curtidas: '', comentarios: '', salvamentos: '', compartilhamentos: '' }
 
-function CriativosSection({ mes, ano, igConfig, onOpenSetup }) {
+function CriativosSection({ mes, ano, igConfig, onOpenSetup, boostedPermalinks }) {
   const [criativos, setCriativos] = useState(() => loadCriativos(ano, mes))
   const [modalAberto, setModalAberto] = useState(false)
   const [editIdx, setEditIdx] = useState(null)
@@ -992,6 +992,7 @@ function CriativosSection({ mes, ano, igConfig, onOpenSetup }) {
                           <div className="flex items-center gap-1.5 mt-0.5">
                             {c.publicado_em && <span className="text-[10px] text-gray-400">{c.publicado_em}</span>}
                             {c.pago && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium">pago</span>}
+                            {!c.pago && c.permalink && boostedPermalinks?.has(c.permalink) && <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-medium">impulsionado</span>}
                           </div>
                         </div>
                       </div>
@@ -1130,6 +1131,25 @@ export default function InstagramAnalytics() {
         else { try { const local = JSON.parse(localStorage.getItem('instagram_ads_config') || 'null'); if (local) { supabase.from('configuracoes').upsert({ chave: 'instagram_ads_config', valor: local }, { onConflict: 'chave' }); setConfig(local) } } catch {} }
       })
   }, [])
+  const [boostedPermalinks, setBoostedPermalinks] = useState(new Set())
+
+  useEffect(() => {
+    if (!config) return
+    const { token, accounts } = config
+    const ids = accounts?.map(a => a.id).filter(Boolean) || (config.accountId ? [config.accountId] : [])
+    if (!ids.length || !token) return
+    Promise.all(ids.map(id =>
+      fetch(`${GRAPH_BASE}/act_${id}/ads?fields=creative{instagram_permalink_url}&limit=200&access_token=${token}`)
+        .then(r => r.json()).catch(() => ({}))
+    )).then(results => {
+      const set = new Set()
+      results.forEach(json => {
+        ;(json.data || []).forEach(ad => { if (ad.creative?.instagram_permalink_url) set.add(ad.creative.instagram_permalink_url) })
+      })
+      setBoostedPermalinks(set)
+    })
+  }, [config])
+
   const [showConfig, setShowConfig] = useState(false)
   const [periodo, setPeriodo] = useState('last_30d')
   const [overview, setOverview] = useState(null)
@@ -1232,7 +1252,7 @@ export default function InstagramAnalytics() {
         </div>
 
         <PainelOrganico leads={leads} mes={mesPainel} ano={anoPainel} navMes={navMes} igConfig={igConfig} onOpenSetup={() => setShowIGSetup(true)} />
-        <CriativosSection mes={mesPainel} ano={anoPainel} igConfig={igConfig} onOpenSetup={() => setShowIGSetup(true)} />
+        <CriativosSection mes={mesPainel} ano={anoPainel} igConfig={igConfig} onOpenSetup={() => setShowIGSetup(true)} boostedPermalinks={boostedPermalinks} />
         <LeadsMidia leads={leads} periodo={periodo} />
         <LeadsOrigem leads={leads} periodo={periodo} />
 
@@ -1327,7 +1347,7 @@ export default function InstagramAnalytics() {
 
       {/* Painel orgânico — sempre visível */}
       <PainelOrganico leads={leads} mes={mesPainel} ano={anoPainel} navMes={navMes} igConfig={igConfig} onOpenSetup={() => setShowIGSetup(true)} />
-      <CriativosSection mes={mesPainel} ano={anoPainel} igConfig={igConfig} onOpenSetup={() => setShowIGSetup(true)} />
+      <CriativosSection mes={mesPainel} ano={anoPainel} igConfig={igConfig} onOpenSetup={() => setShowIGSetup(true)} boostedPermalinks={boostedPermalinks} />
 
       {/* Leads por origem — sempre visível */}
       <LeadsOrigem leads={leads} periodo={periodo} />
@@ -1450,6 +1470,29 @@ export default function InstagramAnalytics() {
                   )
                 })}
               </tbody>
+              <tfoot>
+                <tr className="bg-gray-50 border-t-2 border-gray-200">
+                  <td className="px-5 py-3 text-xs font-bold text-gray-600" colSpan={2}>TOTAL ({campanhasFiltradas.length} campanhas)</td>
+                  <td className="px-4 py-3 text-right text-sm font-bold text-gray-800">
+                    {fmt(campanhasFiltradas.reduce((s, c) => s + parseFloat(c.spend || 0), 0).toString(), 'R$ ')}
+                  </td>
+                  <td className="px-4 py-3 text-right text-sm font-bold text-gray-800">
+                    {fmtInt(campanhasFiltradas.reduce((s, c) => s + parseInt(c.impressions || 0), 0).toString())}
+                  </td>
+                  <td className="px-4 py-3 text-right text-sm font-bold text-gray-800">
+                    {fmtInt(campanhasFiltradas.reduce((s, c) => s + parseInt(c.reach || 0), 0).toString())}
+                  </td>
+                  <td className="px-4 py-3 text-right text-sm font-bold text-gray-800">
+                    {fmtInt(campanhasFiltradas.reduce((s, c) => s + parseInt(c.clicks || 0), 0).toString())}
+                  </td>
+                  <td className="px-4 py-3 text-right text-gray-400 text-xs">—</td>
+                  <td className="px-4 py-3 text-right text-gray-400 text-xs">—</td>
+                  <td className="px-4 py-3 text-right text-sm font-bold text-green-600">
+                    {(() => { const t = campanhasFiltradas.reduce((s, c) => s + parseInt(c.actions?.find(a => a.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value || 0), 0); return t > 0 ? fmtInt(t.toString()) : <span className="text-gray-400">—</span> })()}
+                  </td>
+                  <td className="px-4 py-3 text-right text-gray-400 text-xs">—</td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </div>
