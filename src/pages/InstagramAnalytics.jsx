@@ -1326,15 +1326,15 @@ export default function InstagramAnalytics() {
       {/* Métricas overview */}
       {overview && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <MetricCard label="Gasto total" value={fmt(overview.spend, 'R$ ')} />
-          <MetricCard label="Impressões" value={fmtInt(overview.impressions)} />
-          <MetricCard label="Alcance" value={fmtInt(overview.reach)} />
-          <MetricCard label="Cliques" value={fmtInt(overview.clicks)} />
-          <MetricCard label="CTR" value={fmtPct(overview.ctr)} sub="taxa de cliques" />
-          <MetricCard label="CPM" value={fmt(overview.cpm, 'R$ ')} sub="custo por 1k impressões" />
-          <MetricCard label="Custo por resultado" value={fmt(overview.cpp, 'R$ ')} />
-          {metaLeads && <MetricCard label="Leads (Meta)" value={fmtInt(metaLeads)} />}
-          {mensagensAds && <MetricCard label="Conversas iniciadas" value={fmtInt(mensagensAds)} sub="cliques p/ WhatsApp" />}
+          <MetricCard label="Gasto total" value={fmt(overview.spend, 'R$ ')} sub="valor investido em anúncios" />
+          <MetricCard label="Impressões" value={fmtInt(overview.impressions)} sub="vezes que o anúncio foi exibido" />
+          <MetricCard label="Alcance" value={fmtInt(overview.reach)} sub="pessoas únicas que viram" />
+          <MetricCard label="Cliques" value={fmtInt(overview.clicks)} sub="cliques no anúncio" />
+          <MetricCard label="CTR" value={fmtPct(overview.ctr)} sub="% de quem viu e clicou" />
+          <MetricCard label="CPM" value={fmt(overview.cpm, 'R$ ')} sub="custo para 1.000 exibições" />
+          <MetricCard label="Custo por resultado" value={fmt(overview.cpp, 'R$ ')} sub="quanto custa cada ação gerada" />
+          {metaLeads && <MetricCard label="Leads (Meta)" value={fmtInt(metaLeads)} sub="formulários preenchidos" />}
+          {mensagensAds && <MetricCard label="Conversas iniciadas" value={fmtInt(mensagensAds)} sub="pessoas enviadas ao WhatsApp" />}
         </div>
       )}
 
@@ -1371,13 +1371,13 @@ export default function InstagramAnalytics() {
                 <tr className="text-xs text-gray-400 font-semibold uppercase tracking-wide border-b border-gray-100">
                   <th className="px-5 py-3 text-left">Campanha</th>
                   <th className="px-4 py-3 text-left">Tipo</th>
-                  <th className="px-4 py-3 text-right">Gasto</th>
-                  <th className="px-4 py-3 text-right">Impressões</th>
-                  <th className="px-4 py-3 text-right">Alcance</th>
-                  <th className="px-4 py-3 text-right">Cliques</th>
-                  <th className="px-4 py-3 text-right">CTR</th>
-                  <th className="px-4 py-3 text-right">CPM</th>
-                  <th className="px-4 py-3 text-right">Conv. WA</th>
+                  <ThInfo label="Gasto" info="Total investido nesta campanha no período" align="right" />
+                  <ThInfo label="Impressões" info="Quantas vezes o anúncio foi exibido (uma pessoa pode ver mais de uma vez)" align="right" />
+                  <ThInfo label="Alcance" info="Pessoas únicas que viram o anúncio pelo menos uma vez" align="right" />
+                  <ThInfo label="Cliques" info="Total de cliques no anúncio (link, perfil, botão)" align="right" />
+                  <ThInfo label="CTR" info="Click-Through Rate: % de pessoas que viram e clicaram. Acima de 1% é bom." align="right" />
+                  <ThInfo label="CPM" info="Custo por Mil impressões: quanto custou exibir o anúncio 1.000 vezes" align="right" />
+                  <ThInfo label="Conv. WA" info="Conversas iniciadas no WhatsApp via clique neste anúncio (últimos 7 dias)" align="right" />
                 </tr>
               </thead>
               <tbody>
