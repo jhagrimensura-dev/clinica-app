@@ -316,8 +316,8 @@ async function fetchIGInsights(userId, token, ano, mes) {
 
   const until30 = Math.min(until, since + 2592000) // API limita a 30 dias por chamada
   const [insightsDia, insightsTotal, profileJson] = await Promise.all([
-    igFetch(`/${userId}/insights?metric=reach,follower_count&period=day&since=${since}&until=${until}`, token),
-    igFetch(`/${userId}/insights?metric=views,profile_views,accounts_engaged,website_clicks,total_interactions,likes,comments,shares,saves&metric_type=total_value&since=${since}&until=${until30}`, token),
+    igFetch(`/${userId}/insights?metric=reach,follower_count&period=day&since=${since}&until=${until30}`, token),
+    igFetch(`/${userId}/insights?metric=views,profile_views,accounts_engaged,website_clicks,total_interactions,likes,comments,shares,saves&metric_type=total_value&period=day&since=${since}&until=${until30}`, token),
     igFetch(`/${userId}?fields=followers_count,username,name`, token),
   ])
 
@@ -358,7 +358,7 @@ async function fetchIGPosts(userId, token, ano, mes) {
   for (const media of (mediaJson.data || [])) {
     let insights = {}
     try {
-      const insJson = await igFetch(`/${media.id}/insights?metric=reach,views,saves,shares`, token)
+      const insJson = await igFetch(`/${media.id}/insights?metric=reach,views,saved,shares`, token)
       for (const m of (insJson.data || [])) insights[m.name] = m.values?.[0]?.value ?? m.value ?? 0
     } catch {}
 
