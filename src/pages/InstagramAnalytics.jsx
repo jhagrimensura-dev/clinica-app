@@ -368,6 +368,7 @@ async function fetchIGPosts(userId, token, ano, mes) {
       nome: (media.caption || '').replace(/\n/g, ' ').slice(0, 60) || `${tipo} ${data.toLocaleDateString('pt-BR')}`,
       formato: tipo,
       pago: false,
+      publicado_em: data.toLocaleDateString('pt-BR'),
       alcance: insights.reach || 0,
       impressoes: insights.impressions || 0,
       curtidas: media.like_count || 0,
@@ -906,7 +907,10 @@ function CriativosSection({ mes, ano, igConfig, onOpenSetup }) {
                     <td className="px-4 py-3 text-base">{medalha(i) || <span className="text-xs text-gray-400">{i + 1}</span>}</td>
                     <td className="px-4 py-3">
                       <p className="font-medium text-gray-800 max-w-[180px] truncate">{c.nome}</p>
-                      {c.pago && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium">pago</span>}
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        {c.publicado_em && <span className="text-[10px] text-gray-400">{c.publicado_em}</span>}
+                        {c.pago && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium">pago</span>}
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${COR_FORMATO[c.formato] || 'bg-gray-100 text-gray-600'}`}>{c.formato}</span>
