@@ -350,7 +350,7 @@ async function fetchIGPosts(userId, token, ano, mes) {
   const until = Math.floor(fim.getTime() / 1000)
 
   const mediaJson = await igFetch(
-    `/${userId}/media?fields=id,caption,media_type,timestamp,like_count,comments_count,media_url,thumbnail_url&since=${since}&until=${until}&limit=50`,
+    `/${userId}/media?fields=id,caption,media_type,timestamp,like_count,comments_count,media_url,thumbnail_url,children{media_url,thumbnail_url}&since=${since}&until=${until}&limit=50`,
     token
   )
 
@@ -369,7 +369,7 @@ async function fetchIGPosts(userId, token, ano, mes) {
       formato: tipo,
       pago: false,
       publicado_em: data.toLocaleDateString('pt-BR'),
-      thumbnail: media.thumbnail_url || media.media_url || '',
+      thumbnail: media.thumbnail_url || (media.media_type === 'CAROUSEL_ALBUM' ? media.children?.data?.[0]?.media_url : media.media_url) || '',
       alcance: insights.reach || 0,
       impressoes: insights.impressions || 0,
       curtidas: media.like_count || 0,
@@ -925,7 +925,7 @@ function CriativosSection({ mes, ano, igConfig, onOpenSetup }) {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         {c.thumbnail
-                          ? <img src={c.thumbnail} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0 bg-gray-100" />
+                          ? <img src={c.thumbnail} alt="" referrerPolicy="no-referrer" className="w-10 h-10 rounded-lg object-cover flex-shrink-0 bg-gray-100" />
                           : <div className="w-10 h-10 rounded-lg bg-gray-100 flex-shrink-0 flex items-center justify-center text-gray-300 text-lg">🖼</div>
                         }
                         <div>
