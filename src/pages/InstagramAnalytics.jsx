@@ -1163,7 +1163,7 @@ export default function InstagramAnalytics() {
         fetch(`${base}/insights?fields=${fields}&date_preset=${periodo}&access_token=${token}`),
         fetch(`${base}/insights?fields=campaign_name,campaign_id,spend,impressions,reach,clicks,ctr,cpm,cpp,actions&level=campaign&date_preset=${periodo}&access_token=${token}`),
         fetch(`${base}/campaigns?fields=id,name,objective,start_time&access_token=${token}&limit=200`),
-        fetch(`${base}/ads?fields=campaign_id,instagram_permalink_url,creative{thumbnail_url,image_url}&limit=100&date_preset=${periodo}&access_token=${token}`),
+        fetch(`${base}/ads?fields=campaign_id,creative{thumbnail_url,image_url,instagram_permalink_url,object_story_id}&limit=100&date_preset=${periodo}&access_token=${token}`),
       ])
 
       const overviewJson = await overviewRes.json()
@@ -1181,9 +1181,15 @@ export default function InstagramAnalytics() {
       const thumbMap = {}
       ;(adsJson.data || []).forEach(ad => {
         if (!thumbMap[ad.campaign_id]) {
+          const cr = ad.creative || {}
+          let permalink = cr.instagram_permalink_url || ''
+          if (!permalink && cr.object_story_id) {
+            const [pageId, postId] = cr.object_story_id.split('_')
+            if (pageId && postId) permalink = `https://www.facebook.com/${pageId}/posts/${postId}`
+          }
           thumbMap[ad.campaign_id] = {
-            thumbnail: ad.creative?.thumbnail_url || ad.creative?.image_url || '',
-            permalink: ad.instagram_permalink_url || '',
+            thumbnail: cr.thumbnail_url || cr.image_url || '',
+            permalink,
           }
         }
       })
