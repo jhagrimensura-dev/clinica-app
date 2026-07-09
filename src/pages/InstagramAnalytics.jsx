@@ -1136,7 +1136,7 @@ export default function InstagramAnalytics() {
 
       const [overviewRes, campaignsRes, campInfoRes] = await Promise.all([
         fetch(`${base}/insights?fields=${fields}&date_preset=${periodo}&access_token=${token}`),
-        fetch(`${base}/insights?fields=campaign_name,campaign_id,spend,impressions,reach,clicks,ctr,cpm,cpp&level=campaign&date_preset=${periodo}&access_token=${token}`),
+        fetch(`${base}/insights?fields=campaign_name,campaign_id,spend,impressions,reach,clicks,ctr,cpm,cpp,actions&level=campaign&date_preset=${periodo}&access_token=${token}`),
         fetch(`${base}/campaigns?fields=id,name,objective&access_token=${token}&limit=200`),
       ])
 
@@ -1299,7 +1299,7 @@ export default function InstagramAnalytics() {
           <MetricCard label="CPM" value={fmt(overview.cpm, 'R$ ')} sub="custo por 1k impressões" />
           <MetricCard label="Custo por resultado" value={fmt(overview.cpp, 'R$ ')} />
           {metaLeads && <MetricCard label="Leads (Meta)" value={fmtInt(metaLeads)} />}
-          {!metaLeads && mensagensAds && <MetricCard label="Conversas iniciadas" value={fmtInt(mensagensAds)} />}
+          {mensagensAds && <MetricCard label="Conversas iniciadas" value={fmtInt(mensagensAds)} sub="cliques p/ WhatsApp" />}
         </div>
       )}
 
@@ -1342,10 +1342,13 @@ export default function InstagramAnalytics() {
                   <th className="px-4 py-3 text-right">Cliques</th>
                   <th className="px-4 py-3 text-right">CTR</th>
                   <th className="px-4 py-3 text-right">CPM</th>
+                  <th className="px-4 py-3 text-right">Conv. WA</th>
                 </tr>
               </thead>
               <tbody>
-                {campanhasFiltradas.map((c, i) => (
+                {campanhasFiltradas.map((c, i) => {
+                  const convWA = c.actions?.find(a => a.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value
+                  return (
                   <tr key={c.campaign_id || i} className="border-b border-gray-50 hover:bg-brand-50/30 transition-colors">
                     <td className="px-5 py-3 font-medium text-gray-800 max-w-[200px] truncate">{c.campaign_name}</td>
                     <td className="px-4 py-3">
@@ -1359,8 +1362,12 @@ export default function InstagramAnalytics() {
                     <td className="px-4 py-3 text-right text-gray-500">{fmtInt(c.clicks)}</td>
                     <td className="px-4 py-3 text-right text-gray-500">{fmtPct(c.ctr)}</td>
                     <td className="px-4 py-3 text-right text-gray-500">{fmt(c.cpm, 'R$ ')}</td>
+                    <td className="px-4 py-3 text-right">
+                      {convWA ? <span className="font-semibold text-green-600">{fmtInt(convWA)}</span> : <span className="text-gray-300">—</span>}
+                    </td>
                   </tr>
-                ))}
+                  )
+                })}
               </tbody>
             </table>
           </div>
