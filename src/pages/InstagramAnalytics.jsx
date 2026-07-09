@@ -1161,7 +1161,7 @@ export default function InstagramAnalytics() {
 
       const [overviewRes, campaignsRes, campInfoRes, adsRes] = await Promise.all([
         fetch(`${base}/insights?fields=${fields}&date_preset=${periodo}&access_token=${token}`),
-        fetch(`${base}/insights?fields=campaign_name,campaign_id,spend,impressions,reach,clicks,ctr,cpm,cpp,actions&level=campaign&date_preset=${periodo}&access_token=${token}`),
+        fetch(`${base}/insights?fields=campaign_name,campaign_id,spend,impressions,reach,clicks,ctr,cpm,cpp,frequency,actions&level=campaign&date_preset=${periodo}&access_token=${token}`),
         fetch(`${base}/campaigns?fields=id,name,objective,start_time&access_token=${token}&limit=200`),
         fetch(`${base}/ads?fields=campaign_id,creative{thumbnail_url,image_url,instagram_permalink_url,object_story_id}&limit=100&date_preset=${periodo}&access_token=${token}`),
       ])
@@ -1403,6 +1403,7 @@ export default function InstagramAnalytics() {
                   <ThInfo label="CTR" info="Click-Through Rate: de cada 100 pessoas que viram o anúncio, quantas clicaram. Acima de 1% é considerado bom." align="right" />
                   <ThInfo label="CPM" info="Custo por Mil impressões: quanto você paga para o anúncio aparecer 1.000 vezes. Quanto menor, mais barato está alcançando pessoas." align="right" />
                   <ThInfo label="Conv. WA" info="Pessoas que clicaram neste anúncio e abriram uma conversa no WhatsApp da clínica nos últimos 7 dias." align="right" />
+                  <ThInfo label="Freq." info="Frequência: quantas vezes em média a mesma pessoa viu este anúncio. Acima de 3-4 vezes o público está saturado — hora de trocar o criativo." align="right" />
                 </tr>
               </thead>
               <tbody>
@@ -1437,6 +1438,13 @@ export default function InstagramAnalytics() {
                     <td className="px-4 py-3 text-right text-gray-500">{fmt(c.cpm, 'R$ ')}</td>
                     <td className="px-4 py-3 text-right">
                       {convWA ? <span className="font-semibold text-green-600">{fmtInt(convWA)}</span> : <span className="text-gray-300">—</span>}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {c.frequency ? (
+                        <span className={`font-medium ${parseFloat(c.frequency) >= 4 ? 'text-red-500' : parseFloat(c.frequency) >= 3 ? 'text-yellow-500' : 'text-gray-500'}`}>
+                          {parseFloat(c.frequency).toFixed(1)}x
+                        </span>
+                      ) : <span className="text-gray-300">—</span>}
                     </td>
                   </tr>
                   )
