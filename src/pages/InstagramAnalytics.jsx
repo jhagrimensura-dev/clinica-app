@@ -315,7 +315,7 @@ async function fetchIGInsights(userId, token, ano, mes) {
   const until = Math.floor(fim.getTime() / 1000)
 
   const [insightsJson, profileJson] = await Promise.all([
-    igFetch(`/${userId}/insights?metric=reach,impressions,profile_views,accounts_engaged,follower_count,website_clicks,email_contacts,get_directions_clicks,phone_call_clicks,text_message_clicks&period=day&since=${since}&until=${until}`, token),
+    igFetch(`/${userId}/insights?metric=reach,views,profile_views,accounts_engaged,follower_count,website_clicks,total_interactions,likes,comments,shares,saves&period=day&since=${since}&until=${until}`, token),
     igFetch(`/${userId}?fields=followers_count,username,name`, token),
   ])
 
@@ -326,13 +326,13 @@ async function fetchIGInsights(userId, token, ano, mes) {
 
   return {
     alcance: totals.reach || 0,
-    impressoes: totals.impressions || 0,
+    impressoes: totals.views || 0,
     novos_seguidores: totals.follower_count || 0,
     total_seguidores: profileJson.followers_count || 0,
-    curtidas: totals.accounts_engaged || 0,
-    cliques_bio: (totals.website_clicks || 0) + (totals.email_contacts || 0),
-    mensagens: totals.text_message_clicks || 0,
-    cliques_whatsapp: (totals.text_message_clicks || 0) + (totals.phone_call_clicks || 0),
+    curtidas: totals.likes || totals.accounts_engaged || 0,
+    cliques_bio: totals.website_clicks || 0,
+    mensagens: 0,
+    cliques_whatsapp: 0,
     visitas_perfil: totals.profile_views || 0,
     username: profileJson.username || '',
   }
@@ -353,7 +353,7 @@ async function fetchIGPosts(userId, token, ano, mes) {
   for (const media of (mediaJson.data || [])) {
     let insights = {}
     try {
-      const insJson = await igFetch(`/${media.id}/insights?metric=reach,impressions,saved,shares`, token)
+      const insJson = await igFetch(`/${media.id}/insights?metric=reach,views,saves,shares`, token)
       for (const m of (insJson.data || [])) insights[m.name] = m.values?.[0]?.value ?? m.value ?? 0
     } catch {}
 
