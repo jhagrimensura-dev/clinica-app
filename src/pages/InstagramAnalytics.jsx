@@ -57,8 +57,8 @@ function MetricCard({ label, value, sub, info }) {
 }
 
 const CONTAS_PADRAO = [
-  { label: 'Amanda Lima – Rio Verde', id: '' },
   { label: 'Dra Amanda 02', id: '' },
+  { label: 'Amanda Lima – Rio Verde', id: '' },
   { label: 'CA – AMANDA LIMA 03', id: '' },
 ]
 
