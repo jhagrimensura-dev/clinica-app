@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase'
 import Picker from '@emoji-mart/react'
 import data from '@emoji-mart/data'
 import InfoTooltip from '../components/InfoTooltip'
+import FeriadoAviso from '../components/FeriadoAviso'
 
 // ── Proxy helper (evita CORS) ─────────────────────────────────────
 async function zapiFetch(conta, path, method = 'GET', body = null) {
@@ -201,7 +202,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
           <div className="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-xl px-3 py-2">
             <span className="text-base">💰</span>
             <div>
-              <p className="text-[10px] text-purple-400 font-semibold uppercase tracking-wide">Veio do anúncio</p>
+              <p className="text-[10px] text-purple-400 font-semibold uppercase tracking-wide">Tráfego pago — campanha detectada</p>
               <p className="text-xs text-purple-800 font-semibold leading-tight">{referralAnuncio}</p>
             </div>
           </div>
@@ -403,6 +404,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
                       className="text-gray-300 hover:text-red-400 text-xs font-bold flex-shrink-0">✕</button>
                   )}
                 </div>
+                <FeriadoAviso data={l.data} />
                 <input value={l.obs} onChange={e => setLembretes(prev => prev.map((x, j) => j === i ? { ...x, obs: e.target.value } : x))}
                   placeholder="Observação deste lembrete..."
                   className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-brand-300 bg-white" />
@@ -562,6 +564,12 @@ export default function InboxWhatsApp({ contaId }) {
           localStorage.setItem('config_whatsapp_contas', JSON.stringify(data.valor))
         }
       })
+  }, [])
+
+  const [ctwaMensagens, setCtwaMensagens] = useState([])
+  useEffect(() => {
+    supabase.from('configuracoes').select('valor').eq('chave', 'ctwa_mensagens').maybeSingle()
+      .then(({ data }) => { if (Array.isArray(data?.valor)) setCtwaMensagens(data.valor) })
   }, [])
 
   const arquivadasKey = `inbox_arquivadas_${contaAtiva?.id || 'default'}`
@@ -1968,17 +1976,23 @@ export default function InboxWhatsApp({ contaId }) {
         const msgs = selecionada?.mensagens || []
         const referralAnuncio = msgs.find(m => m.referralAnuncio)?.referralAnuncio || null
         const primeiraMsg = msgs.find(m => !m.minha)?.texto || ''
+        // Tenta detectar campanha CTWA pela mensagem de saudação salva
+        const campanhaDetectada = ctwaMensagens.find(c =>
+          c.mensagem && primeiraMsg.toLowerCase().includes(c.mensagem.toLowerCase())
+        ) || null
         const midiaDetectada = referralAnuncio ? 'Tráfego pago'
+          : campanhaDetectada ? 'Tráfego pago'
           : primeiraMsg.includes('Gostaria de agendar uma consulta com a Dra Amanda') ? 'Link da BIO'
           : primeiraMsg.includes('Vim dos stories da Dra Amanda') ? 'Link dos Stories'
           : ''
+        const criativoDetectado = referralAnuncio || campanhaDetectada?.nome || ''
         return (
           <ModalRegistrarLead
             contato={conversa.contato}
             tipo={modalLead}
             onSalvar={confirmarLead}
             onFechar={() => setModalLead(null)}
-            referralAnuncio={referralAnuncio}
+            referralAnuncio={criativoDetectado}
             midiaDetectada={midiaDetectada}
           />
         )

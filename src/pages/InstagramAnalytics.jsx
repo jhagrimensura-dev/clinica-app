@@ -623,6 +623,8 @@ function PainelOrganico({ leads, mes, ano, navMes, igConfig, onOpenSetup }) {
   const [dados, setDados] = useState(() => loadOrganico(ano, mes))
   const [form, setForm] = useState({})
   const [sincronizando, setSincronizando] = useState(false)
+  const [sincError, setSincError] = useState(null)
+  const [sincOk, setSincOk] = useState(false)
 
   useEffect(() => {
     const key = `instagram_organico_${ano}_${mes}`
@@ -640,6 +642,8 @@ function PainelOrganico({ leads, mes, ano, navMes, igConfig, onOpenSetup }) {
   const sincronizar = async () => {
     if (!igConfig) return
     setSincronizando(true)
+    setSincError(null)
+    setSincOk(false)
     try {
       const resultado = await fetchIGInsights(igConfig.userId, igConfig.token, ano, mes)
       const atual = loadOrganico(ano, mes)
@@ -660,9 +664,10 @@ function PainelOrganico({ leads, mes, ano, navMes, igConfig, onOpenSetup }) {
       }
       saveOrganico(ano, mes, merged)
       setDados(merged)
-      alert(`✅ Dados sincronizados de @${igConfig.username}!\n\nAlcance: ${resultado.alcance?.toLocaleString('pt-BR')}\nImpressões: ${resultado.impressoes?.toLocaleString('pt-BR')}\nNovos seguidores: ${resultado.novos_seguidores?.toLocaleString('pt-BR')}`)
+      setSincOk(true)
+      setTimeout(() => setSincOk(false), 3000)
     } catch (e) {
-      alert('Erro ao sincronizar: ' + e.message)
+      setSincError('Token do Instagram expirado. Reconecte o Instagram para sincronizar.')
     }
     setSincronizando(false)
   }
@@ -726,9 +731,13 @@ function PainelOrganico({ leads, mes, ano, navMes, igConfig, onOpenSetup }) {
           <span className="text-sm font-semibold text-gray-700 min-w-[110px] text-center">{MESES_NOME[mes]} {ano}</span>
           <button onClick={() => navMes(1)} className="w-7 h-7 rounded-lg border border-gray-200 bg-white flex items-center justify-center text-gray-400 hover:text-gray-600">›</button>
           {igConfig ? (
-            <button onClick={sincronizar} disabled={sincronizando} className="ml-2 px-3 py-1.5 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white rounded-xl text-xs font-semibold transition-colors">
-              {sincronizando ? 'Sincronizando...' : '🔄 Sincronizar'}
-            </button>
+            <div className="flex flex-col items-end gap-1">
+              <button onClick={sincronizar} disabled={sincronizando} className="ml-2 px-3 py-1.5 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white rounded-xl text-xs font-semibold transition-colors">
+                {sincronizando ? 'Sincronizando...' : '🔄 Sincronizar'}
+              </button>
+              {sincError && <p className="text-[10px] text-red-500 max-w-[200px] text-right leading-tight">{sincError}</p>}
+              {sincOk && <p className="text-[10px] text-green-600 text-right">✓ Sincronizado!</p>}
+            </div>
           ) : (
             <button onClick={onOpenSetup} className="ml-2 px-3 py-1.5 rounded-xl text-xs font-semibold text-white transition-colors" style={{ background: 'linear-gradient(135deg, #ee2a7b, #6228d7)' }}>
               Conectar Instagram
@@ -850,6 +859,7 @@ function CriativosSection({ mes, ano, igConfig, onOpenSetup, boostedPermalinks }
   const [editIdx, setEditIdx] = useState(null)
   const [form, setForm] = useState(CRIATIVO_VAZIO)
   const [importando, setImportando] = useState(false)
+  const [importMsg, setImportMsg] = useState(null)
   const [sortCol, setSortCol] = useState('eng')
   const [sortDir, setSortDir] = useState('desc')
 
@@ -894,9 +904,10 @@ function CriativosSection({ mes, ano, igConfig, onOpenSetup, boostedPermalinks }
   const importarPosts = async () => {
     if (!igConfig) return
     setImportando(true)
+    setImportMsg(null)
     try {
       const posts = await fetchIGPosts(igConfig.userId, igConfig.token, ano, mes)
-      if (posts.length === 0) { alert('Nenhum post encontrado neste mês.'); setImportando(false); return }
+      if (posts.length === 0) { setImportMsg({ tipo: 'warn', texto: 'Nenhum post encontrado neste mês.' }); setImportando(false); return }
       const existentesIds = new Set(criativos.map(c => c.ig_id).filter(Boolean))
       const novos = posts.filter(p => !existentesIds.has(p.ig_id))
       const atualizados = criativos.map(c => {
@@ -906,9 +917,9 @@ function CriativosSection({ mes, ano, igConfig, onOpenSetup, boostedPermalinks }
       })
       const merged = [...atualizados, ...novos]
       save(merged)
-      alert(`✅ ${novos.length} novo(s) importado(s), ${atualizados.filter(c => c.ig_id).length} atualizado(s)!`)
+      setImportMsg({ tipo: 'ok', texto: `${novos.length} novo(s) importado(s), ${atualizados.filter(c => c.ig_id).length} atualizado(s)!` })
     } catch (e) {
-      alert('Erro ao importar posts: ' + e.message)
+      setImportMsg({ tipo: 'erro', texto: 'Token do Instagram expirado. Reconecte o perfil orgânico.' })
     }
     setImportando(false)
   }
@@ -934,7 +945,8 @@ function CriativosSection({ mes, ano, igConfig, onOpenSetup, boostedPermalinks }
           <h2 className="text-base font-bold text-gray-800">Criativos</h2>
           <p className="text-xs text-gray-400">Rastreie cada post e veja qual performa melhor — {MESES_NOME[mes]} {ano}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col items-end gap-1">
+          <div className="flex items-center gap-2">
           {igConfig ? (
             <button onClick={importarPosts} disabled={importando} className="px-3 py-1.5 rounded-xl text-xs font-semibold text-white disabled:opacity-50 transition-colors" style={{ background: 'linear-gradient(135deg, #ee2a7b, #6228d7)' }}>
               {importando ? 'Importando...' : '📥 Importar posts do mês'}
@@ -947,6 +959,12 @@ function CriativosSection({ mes, ano, igConfig, onOpenSetup, boostedPermalinks }
           <button onClick={abrirNovo} className="px-3 py-1.5 bg-brand-400 hover:bg-brand-500 text-white rounded-xl text-xs font-semibold transition-colors">
             + Adicionar manual
           </button>
+          </div>
+          {importMsg && (
+            <p className={`text-[10px] max-w-[260px] text-right leading-tight ${importMsg.tipo === 'erro' ? 'text-red-500' : importMsg.tipo === 'ok' ? 'text-green-600' : 'text-yellow-600'}`}>
+              {importMsg.texto}
+            </p>
+          )}
         </div>
       </div>
 
@@ -1150,33 +1168,53 @@ export default function InstagramAnalytics() {
     })
   }, [config])
 
-  const [textosCriativos, setTextosCriativos] = useState([])
-  const [loadingTextos, setLoadingTextos] = useState(false)
-  const [showTextos, setShowTextos] = useState(false)
+  const [ctwaCampanhas, setCtwaCampanhas] = useState([]) // lista de campanhas buscada da API
+  const [ctwaMensagens, setCtwaMensagens] = useState([]) // {id, nome, conta, mensagem} salvo no Supabase
+  const [loadingCtwa, setLoadingCtwa] = useState(false)
+  const [salvandoCtwa, setSalvandoCtwa] = useState(false)
+  const [ctwaCarregado, setCtwaCarregado] = useState(false)
 
-  const buscarTextosCriativos = async () => {
+  // Carrega mensagens salvas do Supabase ao montar
+  useEffect(() => {
+    supabase.from('configuracoes').select('valor').eq('chave', 'ctwa_mensagens').maybeSingle()
+      .then(({ data }) => { if (data?.valor) setCtwaMensagens(data.valor) })
+  }, [])
+
+  const buscarCampanhasCtwa = async () => {
     if (!config) return
-    setLoadingTextos(true)
+    setLoadingCtwa(true)
     const { token, accounts } = config
     const ids = accounts?.map(a => a.id).filter(Boolean) || (config.accountId ? [config.accountId] : [])
-    const todos = []
+    const todas = []
     await Promise.all(ids.map(async (id, idx) => {
       const label = accounts?.[idx]?.label || `Conta ${idx + 1}`
       try {
-        const res = await fetch(`${GRAPH_BASE}/act_${id}/ads?fields=name,creative{link_url,body,title,object_story_spec{link_data{link,message}}}&limit=100&access_token=${token}`)
+        const res = await fetch(`${GRAPH_BASE}/act_${id}/campaigns?fields=id,name,status&limit=200&access_token=${token}`)
         const json = await res.json()
-        ;(json.data || []).forEach(ad => {
-          const cr = ad.creative || {}
-          const url = cr.link_url || cr.object_story_spec?.link_data?.link || ''
-          let texto = ''
-          try { texto = url ? decodeURIComponent(new URL(url).searchParams.get('text') || '') : '' } catch {}
-          if (texto) todos.push({ conta: label, nome: ad.name, texto })
-        })
+        ;(json.data || []).forEach(c => todas.push({ id: c.id, nome: c.name, conta: label, status: c.status }))
       } catch {}
     }))
-    setTextosCriativos(todos)
-    setLoadingTextos(false)
-    setShowTextos(true)
+    todas.sort((a, b) => (a.status === 'ACTIVE' ? -1 : 1) - (b.status === 'ACTIVE' ? -1 : 1))
+    // Merge com mensagens já salvas
+    const merged = todas.map(c => {
+      const salvo = ctwaMensagens.find(m => m.id === c.id)
+      return { ...c, mensagem: salvo?.mensagem || '' }
+    })
+    setCtwaCampanhas(merged)
+    setCtwaCarregado(true)
+    setLoadingCtwa(false)
+  }
+
+  const atualizarMensagemCtwa = (id, mensagem) => {
+    setCtwaCampanhas(prev => prev.map(c => c.id === id ? { ...c, mensagem } : c))
+  }
+
+  const salvarMensagensCtwa = async () => {
+    setSalvandoCtwa(true)
+    const payload = ctwaCampanhas.map(({ id, nome, conta, mensagem }) => ({ id, nome, conta, mensagem }))
+    await supabase.from('configuracoes').upsert({ chave: 'ctwa_mensagens', valor: payload }, { onConflict: 'chave' })
+    setCtwaMensagens(payload)
+    setSalvandoCtwa(false)
   }
 
   const [showConfig, setShowConfig] = useState(false)
@@ -1534,39 +1572,74 @@ export default function InstagramAnalytics() {
         </div>
       )}
 
-      {/* Textos pré-preenchidos dos criativos */}
+      {/* Mensagens de boas-vindas CTWA por campanha */}
       <div className="mt-4 bg-white rounded-2xl border border-brand-100/60 shadow-sm p-5">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
             <span className="text-base">💬</span>
-            <h3 className="text-sm font-bold text-gray-700">Textos pré-preenchidos dos criativos</h3>
+            <h3 className="text-sm font-bold text-gray-700">Mensagem de saudação por campanha (CTWA)</h3>
           </div>
-          <button
-            onClick={buscarTextosCriativos}
-            disabled={loadingTextos}
-            className="px-4 py-1.5 rounded-xl text-xs font-semibold text-white disabled:opacity-50 transition-opacity"
-            style={{ background: 'linear-gradient(135deg, #ee2a7b, #6228d7)' }}
-          >
-            {loadingTextos ? 'Buscando...' : 'Buscar textos'}
-          </button>
+          <div className="flex gap-2">
+            {ctwaCarregado && (
+              <button onClick={salvarMensagensCtwa} disabled={salvandoCtwa}
+                className="px-4 py-1.5 rounded-xl text-xs font-semibold bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white transition-colors">
+                {salvandoCtwa ? 'Salvando...' : '💾 Salvar'}
+              </button>
+            )}
+            <button onClick={buscarCampanhasCtwa} disabled={loadingCtwa}
+              className="px-4 py-1.5 rounded-xl text-xs font-semibold text-white disabled:opacity-50 transition-opacity"
+              style={{ background: 'linear-gradient(135deg, #ee2a7b, #6228d7)' }}>
+              {loadingCtwa ? 'Buscando...' : ctwaCarregado ? '🔄 Atualizar lista' : 'Buscar campanhas'}
+            </button>
+          </div>
         </div>
-        <p className="text-xs text-gray-400 mb-4">Mensagens que aparecem no WhatsApp quando alguém clica num link de anúncio.</p>
+        <p className="text-xs text-gray-400 mb-4">
+          O Meta não expõe a "Mensagem de saudação automática" 🟢 via API. Cole aqui o texto de cada campanha
+          (veja no Ads Manager → campanha → editar → Mensagem de saudação). O sistema usará esses textos para
+          identificar automaticamente de qual campanha cada lead veio no inbox.
+        </p>
 
-        {showTextos && (
-          textosCriativos.length === 0
-            ? <p className="text-xs text-gray-400 text-center py-4">Nenhum criativo com texto pré-preenchido encontrado. Os anúncios usam botão CTWA (detecção automática já está ativa).</p>
-            : <div className="space-y-2">
-                {textosCriativos.map((item, i) => (
-                  <div key={i} className="flex gap-3 items-start p-3 rounded-xl bg-gray-50">
-                    <div className="shrink-0">
-                      <span className="text-[11px] font-bold px-2 py-1 rounded-lg bg-purple-100 text-purple-700">{item.conta}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-gray-700 truncate mb-0.5" title={item.nome}>{item.nome}</p>
-                      <p className="text-xs text-gray-500 italic">"{item.texto}"</p>
-                    </div>
-                  </div>
-                ))}
+        {ctwaCarregado && (
+          ctwaCampanhas.length === 0
+            ? <p className="text-xs text-gray-400 text-center py-4">Nenhuma campanha encontrada.</p>
+            : <div className="overflow-x-auto">
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 text-left">
+                      <th className="px-3 py-2 text-gray-500 font-medium">Conta</th>
+                      <th className="px-3 py-2 text-gray-500 font-medium">Campanha</th>
+                      <th className="px-3 py-2 text-gray-500 font-medium">Status</th>
+                      <th className="px-3 py-2 text-gray-500 font-medium w-80">Mensagem de saudação (cole o texto exato do Ads Manager)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ctwaCampanhas.map((item) => (
+                      <tr key={item.id} className="border-t border-gray-100 hover:bg-gray-50">
+                        <td className="px-3 py-2">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 whitespace-nowrap">{item.conta}</span>
+                        </td>
+                        <td className="px-3 py-2 text-gray-700 font-medium max-w-[220px]">
+                          <span title={item.nome} className="line-clamp-2">{item.nome}</span>
+                        </td>
+                        <td className="px-3 py-2">
+                          {item.status === 'ACTIVE'
+                            ? <span className="px-2 py-0.5 rounded-full text-[10px] bg-green-100 text-green-700 whitespace-nowrap">Ativa</span>
+                            : <span className="px-2 py-0.5 rounded-full text-[10px] bg-gray-100 text-gray-500 whitespace-nowrap">{item.status === 'PAUSED' ? 'Pausada' : item.status}</span>
+                          }
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            type="text"
+                            value={item.mensagem}
+                            onChange={e => atualizarMensagemCtwa(item.id, e.target.value)}
+                            placeholder="Ex: Olá! Quero agendar com a Dra Amanda..."
+                            className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-brand-400 bg-white"
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
         )}
       </div>
