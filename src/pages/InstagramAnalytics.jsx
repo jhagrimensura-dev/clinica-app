@@ -350,7 +350,7 @@ async function fetchIGPosts(userId, token, ano, mes) {
   const until = Math.floor(fim.getTime() / 1000)
 
   const mediaJson = await igFetch(
-    `/${userId}/media?fields=id,caption,media_type,timestamp,like_count,comments_count&since=${since}&until=${until}&limit=50`,
+    `/${userId}/media?fields=id,caption,media_type,timestamp,like_count,comments_count,media_url,thumbnail_url&since=${since}&until=${until}&limit=50`,
     token
   )
 
@@ -369,6 +369,7 @@ async function fetchIGPosts(userId, token, ano, mes) {
       formato: tipo,
       pago: false,
       publicado_em: data.toLocaleDateString('pt-BR'),
+      thumbnail: media.thumbnail_url || media.media_url || '',
       alcance: insights.reach || 0,
       impressoes: insights.impressions || 0,
       curtidas: media.like_count || 0,
@@ -906,10 +907,18 @@ function CriativosSection({ mes, ano, igConfig, onOpenSetup }) {
                   <tr key={i} className={`border-b border-gray-50 hover:bg-brand-50/30 transition-colors ${i === 0 ? 'bg-yellow-50/40' : ''}`}>
                     <td className="px-4 py-3 text-base">{medalha(i) || <span className="text-xs text-gray-400">{i + 1}</span>}</td>
                     <td className="px-4 py-3">
-                      <p className="font-medium text-gray-800 max-w-[180px] truncate">{c.nome}</p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        {c.publicado_em && <span className="text-[10px] text-gray-400">{c.publicado_em}</span>}
-                        {c.pago && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium">pago</span>}
+                      <div className="flex items-center gap-2">
+                        {c.thumbnail
+                          ? <img src={c.thumbnail} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0 bg-gray-100" />
+                          : <div className="w-10 h-10 rounded-lg bg-gray-100 flex-shrink-0 flex items-center justify-center text-gray-300 text-lg">🖼</div>
+                        }
+                        <div>
+                          <p className="font-medium text-gray-800 max-w-[160px] truncate">{c.nome}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            {c.publicado_em && <span className="text-[10px] text-gray-400">{c.publicado_em}</span>}
+                            {c.pago && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium">pago</span>}
+                          </div>
+                        </div>
                       </div>
                     </td>
                     <td className="px-4 py-3">
