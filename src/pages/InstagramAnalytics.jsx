@@ -53,14 +53,22 @@ function MetricCard({ label, value, sub }) {
   )
 }
 
-function ConfigModal({ onSave, initialToken, initialAccountId }) {
+const CONTAS_PADRAO = [
+  { label: 'Amanda Lima – Rio Verde', id: '' },
+  { label: 'Dra Amanda 02', id: '' },
+  { label: 'CA – AMANDA LIMA 03', id: '' },
+]
+
+function ConfigModal({ onSave, initialToken, initialAccounts }) {
   const [token, setToken] = useState(initialToken || '')
-  const [accountId, setAccountId] = useState(initialAccountId || '')
+  const [accounts, setAccounts] = useState(() =>
+    CONTAS_PADRAO.map((c, i) => ({ ...c, ...(initialAccounts?.[i] || {}) }))
+  )
 
   const handleSave = () => {
-    const id = accountId.trim().replace(/^act_/, '')
-    if (!token.trim() || !id) return
-    onSave(token.trim(), id)
+    const valid = accounts.filter(a => a.id.trim())
+    if (!token.trim() || !valid.length) return
+    onSave(token.trim(), valid.map(a => ({ ...a, id: a.id.trim().replace(/^act_/, '') })))
   }
 
   return (
@@ -88,21 +96,28 @@ function ConfigModal({ onSave, initialToken, initialAccountId }) {
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5">ID da Conta de Anúncios</label>
-            <input
-              value={accountId}
-              onChange={e => setAccountId(e.target.value)}
-              placeholder="Ex: 1234567890 ou act_1234567890"
-              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-700 focus:outline-none focus:border-brand-400 focus:ring-1 focus:ring-brand-400"
-            />
-            <p className="text-xs text-gray-400 mt-1">Encontre em: Gerenciador de Anúncios → canto superior esquerdo</p>
+            <label className="block text-xs font-semibold text-gray-600 mb-2">Contas de Anúncios</label>
+            <div className="space-y-2.5">
+              {accounts.map((acc, i) => (
+                <div key={i}>
+                  <p className="text-xs text-gray-500 mb-1">{acc.label}</p>
+                  <input
+                    value={acc.id}
+                    onChange={e => setAccounts(prev => prev.map((a, j) => j === i ? { ...a, id: e.target.value } : a))}
+                    placeholder="Ex: 258608453829027"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-700 focus:outline-none focus:border-brand-400 focus:ring-1 focus:ring-brand-400"
+                  />
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-gray-400 mt-2">IDs visíveis no Graph API Explorer → me/adaccounts</p>
           </div>
         </div>
 
         <div className="mt-6">
           <button
             onClick={handleSave}
-            disabled={!token.trim() || !accountId.trim()}
+            disabled={!token.trim() || !accounts.some(a => a.id.trim())}
             className="w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-opacity disabled:opacity-40"
             style={{ background: 'linear-gradient(135deg, #ee2a7b, #6228d7)' }}
           >
@@ -1117,11 +1132,14 @@ export default function InstagramAnalytics() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const saveConfig = (token, accountId) => {
-    const c = { token, accountId }
+  const [contaIdx, setContaIdx] = useState(0)
+
+  const saveConfig = (token, accounts) => {
+    const c = { token, accounts }
     localStorage.setItem('instagram_ads_config', JSON.stringify(c))
     supabase.from('configuracoes').upsert({ chave: 'instagram_ads_config', valor: c }, { onConflict: 'chave' })
     setConfig(c)
+    setContaIdx(0)
     setShowConfig(false)
   }
 
@@ -1130,7 +1148,8 @@ export default function InstagramAnalytics() {
     setLoading(true)
     setError(null)
     try {
-      const { token, accountId } = config
+      const { token } = config
+      const accountId = config.accounts?.[contaIdx]?.id || config.accountId
       const base = `${GRAPH_BASE}/act_${accountId}`
       const fields = 'spend,impressions,reach,clicks,ctr,cpm,cpp,actions'
 
@@ -1157,7 +1176,7 @@ export default function InstagramAnalytics() {
     } finally {
       setLoading(false)
     }
-  }, [config, periodo])
+  }, [config, periodo, contaIdx])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -1207,7 +1226,7 @@ export default function InstagramAnalytics() {
           </button>
         </div>
 
-        {showConfig && <ConfigModal onSave={saveConfig} />}
+        {showConfig && <ConfigModal onSave={saveConfig} initialToken={config?.token} initialAccounts={config?.accounts} />}
         {showIGSetup && <IGSetupModal onSave={salvarIGConfig} onClose={() => setShowIGSetup(false)} initial={igConfig} />}
       </div>
     )
@@ -1223,7 +1242,7 @@ export default function InstagramAnalytics() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-800">Análises Instagram</h1>
-            <p className="text-sm text-gray-400">Meta Ads · act_{config.accountId}</p>
+            <p className="text-sm text-gray-400">Meta Ads · {config.accounts?.[contaIdx]?.label || `act_${config.accountId}`}</p>
           </div>
         </div>
 
@@ -1264,6 +1283,22 @@ export default function InstagramAnalytics() {
           </button>
         </div>
       </div>
+
+      {/* Seletor de contas */}
+      {config.accounts?.length > 1 && (
+        <div className="flex gap-2 mb-5">
+          {config.accounts.map((acc, i) => (
+            <button
+              key={i}
+              onClick={() => { setContaIdx(i); setOverview(null); setCampanhas([]) }}
+              className={`px-4 py-1.5 rounded-xl text-xs font-semibold transition-colors ${contaIdx === i ? 'text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-500 hover:text-gray-700'}`}
+              style={contaIdx === i ? { background: 'linear-gradient(135deg, #ee2a7b, #6228d7)' } : {}}
+            >
+              {acc.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Painel orgânico — sempre visível */}
       <PainelOrganico leads={leads} mes={mesPainel} ano={anoPainel} navMes={navMes} igConfig={igConfig} onOpenSetup={() => setShowIGSetup(true)} />
@@ -1385,8 +1420,7 @@ export default function InstagramAnalytics() {
         <ConfigModal
           onSave={saveConfig}
           initialToken={config.token}
-          initialAccountId={config.accountId}
-          onClose={() => setShowConfig(false)}
+          initialAccounts={config.accounts}
         />
       )}
 
