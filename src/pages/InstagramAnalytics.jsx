@@ -811,11 +811,11 @@ function InfoBubble({ info }) {
     <span className="inline-flex">
       <span
         className="text-[10px] w-3.5 h-3.5 rounded-full bg-gray-300 text-white inline-flex items-center justify-center font-bold leading-none select-none cursor-help"
-        onMouseEnter={e => { const r = e.currentTarget.getBoundingClientRect(); const w = 230; const x = r.left + w > window.innerWidth - 8 ? r.right - w : r.left; setPos({ x, y: r.bottom + 6 }) }}
+        onMouseEnter={e => { const r = e.currentTarget.getBoundingClientRect(); const w = 260; const x = r.left + w > window.innerWidth - 8 ? r.right - w : r.left; setPos({ x, y: r.bottom + 6 }) }}
         onMouseLeave={() => setPos(null)}
       >i</span>
       {pos && (
-        <span style={{ position: 'fixed', left: pos.x, top: pos.y, zIndex: 9999, width: 230 }}
+        <span style={{ position: 'fixed', left: pos.x, top: pos.y, zIndex: 9999, width: 260 }}
           className="bg-gray-800 text-white text-[11px] text-left rounded-xl px-3 py-2.5 leading-relaxed shadow-xl normal-case tracking-normal font-normal pointer-events-none">
           {info}
         </span>
@@ -1386,13 +1386,13 @@ export default function InstagramAnalytics() {
                 <tr className="text-xs text-gray-400 font-semibold uppercase tracking-wide border-b border-gray-100">
                   <th className="px-5 py-3 text-left">Campanha</th>
                   <th className="px-4 py-3 text-left">Tipo</th>
-                  <ThInfo label="Gasto" info="Total investido nesta campanha no período" align="right" />
-                  <ThInfo label="Impressões" info="Quantas vezes o anúncio foi exibido (uma pessoa pode ver mais de uma vez)" align="right" />
-                  <ThInfo label="Alcance" info="Pessoas únicas que viram o anúncio pelo menos uma vez" align="right" />
-                  <ThInfo label="Cliques" info="Total de cliques no anúncio (link, perfil, botão)" align="right" />
-                  <ThInfo label="CTR" info="Click-Through Rate: % de pessoas que viram e clicaram. Acima de 1% é bom." align="right" />
-                  <ThInfo label="CPM" info="Custo por Mil impressões: quanto custou exibir o anúncio 1.000 vezes" align="right" />
-                  <ThInfo label="Conv. WA" info="Conversas iniciadas no WhatsApp via clique neste anúncio (últimos 7 dias)" align="right" />
+                  <ThInfo label="Gasto" info="Total investido nesta campanha no período selecionado." align="right" />
+                  <ThInfo label="Impressões" info="Quantas vezes o anúncio foi exibido. Uma mesma pessoa pode ver mais de uma vez — por isso impressões é sempre maior que alcance." align="right" />
+                  <ThInfo label="Alcance" info="Quantidade de pessoas únicas que viram o anúncio pelo menos uma vez no período." align="right" />
+                  <ThInfo label="Cliques" info="Total de cliques no anúncio, incluindo cliques no link, no perfil ou no botão de ação." align="right" />
+                  <ThInfo label="CTR" info="Click-Through Rate: de cada 100 pessoas que viram o anúncio, quantas clicaram. Acima de 1% é considerado bom." align="right" />
+                  <ThInfo label="CPM" info="Custo por Mil impressões: quanto você paga para o anúncio aparecer 1.000 vezes. Quanto menor, mais barato está alcançando pessoas." align="right" />
+                  <ThInfo label="Conv. WA" info="Pessoas que clicaram neste anúncio e abriram uma conversa no WhatsApp da clínica nos últimos 7 dias." align="right" />
                 </tr>
               </thead>
               <tbody>
