@@ -799,11 +799,18 @@ function InfoBubble({ info }) {
   )
 }
 
-function ThInfo({ label, info, align = 'right' }) {
+function ThInfo({ label, info, align = 'right', sortKey, sortCol, sortDir, onSort }) {
+  const active = sortKey && sortCol === sortKey
   return (
     <th className={`px-4 py-3 text-${align}`}>
       <span className="inline-flex items-center gap-1">
-        {label}
+        {sortKey
+          ? <button onClick={() => onSort(sortKey)} className={`inline-flex items-center gap-0.5 hover:text-gray-600 transition-colors ${active ? 'text-gray-700' : ''}`}>
+              {label}
+              <span className="text-[10px]">{active ? (sortDir === 'desc' ? '↓' : '↑') : '↕'}</span>
+            </button>
+          : label
+        }
         <InfoBubble info={info} />
       </span>
     </th>
@@ -818,6 +825,8 @@ function CriativosSection({ mes, ano, igConfig, onOpenSetup }) {
   const [editIdx, setEditIdx] = useState(null)
   const [form, setForm] = useState(CRIATIVO_VAZIO)
   const [importando, setImportando] = useState(false)
+  const [sortCol, setSortCol] = useState('eng')
+  const [sortDir, setSortDir] = useState('desc')
 
   useEffect(() => {
     const key = `instagram_criativos_${ano}_${mes}`
@@ -882,7 +891,9 @@ function CriativosSection({ mes, ano, igConfig, onOpenSetup }) {
   const eng = (c) => c.curtidas + c.comentarios + c.salvamentos + c.compartilhamentos
   const taxaEng = (c) => c.alcance > 0 ? ((eng(c) / c.alcance) * 100) : 0
 
-  const sorted = [...criativos].sort((a, b) => eng(b) - eng(a))
+  const getVal = (c, col) => ({ alcance: c.alcance, curtidas: c.curtidas, salvamentos: c.salvamentos, compartilhamentos: c.compartilhamentos, eng: eng(c), taxa: taxaEng(c) })[col] ?? 0
+  const toggleSort = (col) => { if (sortCol === col) setSortDir(d => d === 'desc' ? 'asc' : 'desc'); else { setSortCol(col); setSortDir('desc') } }
+  const sorted = [...criativos].sort((a, b) => sortDir === 'desc' ? getVal(b, sortCol) - getVal(a, sortCol) : getVal(a, sortCol) - getVal(b, sortCol))
 
   const COR_FORMATO = { Reel: 'bg-purple-100 text-purple-700', Carrossel: 'bg-blue-100 text-blue-700', Story: 'bg-pink-100 text-pink-700', 'Post estático': 'bg-gray-100 text-gray-600', Live: 'bg-red-100 text-red-700' }
 
@@ -929,12 +940,12 @@ function CriativosSection({ mes, ano, igConfig, onOpenSetup }) {
                   <th className="px-4 py-3 text-left">#</th>
                   <th className="px-4 py-3 text-left">Criativo</th>
                   <ThInfo label="Formato" align="left" info="Tipo do post: Reel, Carrossel, Story ou Post estático." />
-                  <ThInfo label="Alcance" info="Pessoas únicas que viram o post. Cada pessoa conta uma vez, mesmo que tenha visto mais de uma vez." />
-                  <ThInfo label="Curtidas" info="Total de curtidas recebidas." />
-                  <ThInfo label="Salv." info="Salvamentos — quantas vezes alguém salvou o post para ver depois. Indica que o conteúdo foi útil ou inspirador." />
-                  <ThInfo label="Comp." info="Compartilhamentos — quantas vezes o post foi enviado para outra pessoa ou publicado nos stories." />
-                  <ThInfo label="Engajamento" info="Soma de curtidas + comentários + salvamentos + compartilhamentos." />
-                  <ThInfo label="Taxa eng." info="% do alcance que interagiu com o post. Acima de 3% é considerado bom para Instagram." />
+                  <ThInfo label="Alcance" info="Pessoas únicas que viram o post." sortKey="alcance" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
+                  <ThInfo label="Curtidas" info="Total de curtidas recebidas." sortKey="curtidas" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
+                  <ThInfo label="Salv." info="Salvamentos — quantas vezes alguém salvou o post para ver depois." sortKey="salvamentos" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
+                  <ThInfo label="Comp." info="Compartilhamentos — quantas vezes o post foi enviado para outra pessoa." sortKey="compartilhamentos" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
+                  <ThInfo label="Engajamento" info="Soma de curtidas + comentários + salvamentos + compartilhamentos." sortKey="eng" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
+                  <ThInfo label="Taxa eng." info="% do alcance que interagiu com o post. Acima de 3% é considerado bom." sortKey="taxa" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
