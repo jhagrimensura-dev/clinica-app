@@ -1153,15 +1153,17 @@ export default function InstagramAnalytics() {
       const base = `${GRAPH_BASE}/act_${accountId}`
       const fields = 'spend,impressions,reach,clicks,ctr,cpm,cpp,actions'
 
-      const [overviewRes, campaignsRes, campInfoRes] = await Promise.all([
+      const [overviewRes, campaignsRes, campInfoRes, adsRes] = await Promise.all([
         fetch(`${base}/insights?fields=${fields}&date_preset=${periodo}&access_token=${token}`),
         fetch(`${base}/insights?fields=campaign_name,campaign_id,spend,impressions,reach,clicks,ctr,cpm,cpp,actions&level=campaign&date_preset=${periodo}&access_token=${token}`),
         fetch(`${base}/campaigns?fields=id,name,objective&access_token=${token}&limit=200`),
+        fetch(`${base}/ads?fields=campaign_id,creative{thumbnail_url,image_url}&limit=100&date_preset=${periodo}&access_token=${token}`),
       ])
 
       const overviewJson = await overviewRes.json()
       const campaignsJson = await campaignsRes.json()
       const campInfoJson = await campInfoRes.json()
+      const adsJson = await adsRes.json()
 
       if (overviewJson.error) throw new Error(overviewJson.error.message)
       if (campaignsJson.error) throw new Error(campaignsJson.error.message)
@@ -1169,8 +1171,15 @@ export default function InstagramAnalytics() {
       const objMap = {}
       ;(campInfoJson.data || []).forEach(c => { objMap[c.id] = c.objective })
 
+      const thumbMap = {}
+      ;(adsJson.data || []).forEach(ad => {
+        if (!thumbMap[ad.campaign_id]) {
+          thumbMap[ad.campaign_id] = ad.creative?.thumbnail_url || ad.creative?.image_url || ''
+        }
+      })
+
       setOverview(overviewJson.data?.[0] || null)
-      setCampanhas((campaignsJson.data || []).map(c => ({ ...c, objetivo: objMap[c.campaign_id] || '' })))
+      setCampanhas((campaignsJson.data || []).map(c => ({ ...c, objetivo: objMap[c.campaign_id] || '', thumbnail: thumbMap[c.campaign_id] || '' })))
     } catch (e) {
       setError(e.message)
     } finally {
@@ -1385,7 +1394,15 @@ export default function InstagramAnalytics() {
                   const convWA = c.actions?.find(a => a.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value
                   return (
                   <tr key={c.campaign_id || i} className="border-b border-gray-50 hover:bg-brand-50/30 transition-colors">
-                    <td className="px-5 py-3 font-medium text-gray-800 max-w-[200px] truncate">{c.campaign_name}</td>
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-2.5">
+                        {c.thumbnail
+                          ? <img src={c.thumbnail} className="w-9 h-9 rounded-lg object-cover shrink-0" />
+                          : <div className="w-9 h-9 rounded-lg bg-gray-100 shrink-0 flex items-center justify-center text-base">🖼</div>
+                        }
+                        <span className="font-medium text-gray-800 truncate max-w-[160px]">{c.campaign_name}</span>
+                      </div>
+                    </td>
                     <td className="px-4 py-3">
                       {c.objetivo ? (
                         <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">{LABEL_OBJETIVO[c.objetivo] || c.objetivo}</span>
