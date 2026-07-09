@@ -314,9 +314,10 @@ async function fetchIGInsights(userId, token, ano, mes) {
   const since = Math.floor(inicio.getTime() / 1000)
   const until = Math.floor(fim.getTime() / 1000)
 
+  const until30 = Math.min(until, since + 2592000) // API limita a 30 dias por chamada
   const [insightsDia, insightsTotal, profileJson] = await Promise.all([
     igFetch(`/${userId}/insights?metric=reach,follower_count&period=day&since=${since}&until=${until}`, token),
-    igFetch(`/${userId}/insights?metric=views,profile_views,accounts_engaged,website_clicks,total_interactions,likes,comments,shares,saves&metric_type=total_value&since=${since}&until=${until}`, token),
+    igFetch(`/${userId}/insights?metric=views,profile_views,accounts_engaged,website_clicks,total_interactions,likes,comments,shares,saves&metric_type=total_value&since=${since}&until=${until30}`, token),
     igFetch(`/${userId}?fields=followers_count,username,name`, token),
   ])
 
