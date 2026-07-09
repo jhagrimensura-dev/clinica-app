@@ -43,10 +43,13 @@ function StatusBadge({ status }) {
   return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${s.cls}`}>{s.label}</span>
 }
 
-function MetricCard({ label, value, sub }) {
+function MetricCard({ label, value, sub, info }) {
   return (
     <div className="bg-white rounded-2xl p-4 shadow-sm border border-brand-100/60">
-      <p className="text-xs text-gray-400 font-medium mb-1">{label}</p>
+      <div className="flex items-center gap-1 mb-1">
+        <p className="text-xs text-gray-400 font-medium">{label}</p>
+        {info && <InfoBubble info={info} />}
+      </div>
       <p className="text-xl font-bold text-gray-800">{value}</p>
       {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
     </div>
@@ -1339,8 +1342,8 @@ export default function InstagramAnalytics() {
           <MetricCard label="Impressões" value={fmtInt(overview.impressions)} sub="vezes que o anúncio foi exibido" />
           <MetricCard label="Alcance" value={fmtInt(overview.reach)} sub="pessoas únicas que viram" />
           <MetricCard label="Cliques" value={fmtInt(overview.clicks)} sub="cliques no anúncio" />
-          <MetricCard label="CTR" value={fmtPct(overview.ctr)} sub="% de quem viu e clicou" />
-          <MetricCard label="CPM" value={fmt(overview.cpm, 'R$ ')} sub="custo para 1.000 exibições" />
+          <MetricCard label="CTR" value={fmtPct(overview.ctr)} sub="% de quem viu e clicou" info="Click-Through Rate: de cada 100 pessoas que viram o anúncio, quantas clicaram. Acima de 1% é considerado bom." />
+          <MetricCard label="CPM" value={fmt(overview.cpm, 'R$ ')} sub="custo para 1.000 exibições" info="Custo por Mil impressões: quanto você paga para o anúncio ser exibido 1.000 vezes. Quanto menor, mais barato está alcançando pessoas." />
           <MetricCard label="Custo por resultado" value={fmt(overview.cpp, 'R$ ')} sub="quanto custa cada ação gerada" />
           {metaLeads && <MetricCard label="Leads (Meta)" value={fmtInt(metaLeads)} sub="formulários preenchidos" />}
           {mensagensAds && <MetricCard label="Conversas iniciadas" value={fmtInt(mensagensAds)} sub="pessoas enviadas ao WhatsApp" />}
