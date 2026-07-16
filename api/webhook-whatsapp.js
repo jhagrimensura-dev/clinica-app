@@ -48,6 +48,7 @@ export default async function handler(req, res) {
     const referralThumbnail = ref?.thumbnailUrl || ref?.thumbnail || null
     const ts = Number(tsRaw) < 10000000000 ? Number(tsRaw) * 1000 : Number(tsRaw)
 
+    console.log('[WH]', JSON.stringify({ phone: rawPhone, chatId: payload?.chatId, fromMe: deMin, type: payload?.type, texto: texto?.slice(0, 50), instancia: instanciaId }))
     if (!texto) return res.status(200).json({ ok: true, skipped: true })
 
     const SUPABASE_URL = process.env.VITE_SUPABASE_URL

@@ -12,28 +12,47 @@ export default async function handler(req, res) {
 
   const results = {}
 
-  // Configura webhook de mensagens RECEBIDAS
-  try {
-    const r = await fetch(`https://api.z-api.io/instances/${i}/token/${t}/update-webhook-received`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ value: webhookUrl }),
-    })
-    results.received = { status: r.status, body: await r.json().catch(() => ({})) }
-  } catch (e) {
-    results.received = { error: e.message }
+  // Tenta configurar webhook de mensagens RECEBIDAS (testa PUT e POST)
+  const receivedEndpoints = [
+    { method: 'PUT', path: 'update-webhook-received' },
+    { method: 'POST', path: 'webhook-received' },
+    { method: 'PUT', path: 'webhook-received' },
+  ]
+  for (const { method, path } of receivedEndpoints) {
+    try {
+      const r = await fetch(`https://api.z-api.io/instances/${i}/token/${t}/${path}`, {
+        method,
+        headers,
+        body: JSON.stringify({ value: webhookUrl, url: webhookUrl }),
+      })
+      const body = await r.json().catch(() => ({}))
+      results.received = { status: r.status, body, method, path }
+      if (r.status === 200 && !body.error) break
+    } catch (e) {
+      results.received = { error: e.message }
+    }
   }
 
-  // Configura webhook de mensagens ENVIADAS (pelo celular)
-  try {
-    const r = await fetch(`https://api.z-api.io/instances/${i}/token/${t}/update-webhook-send`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ value: webhookUrl }),
-    })
-    results.send = { status: r.status, body: await r.json().catch(() => ({})) }
-  } catch (e) {
-    results.send = { error: e.message }
+  // Tenta configurar webhook de mensagens ENVIADAS (pelo celular)
+  const sendEndpoints = [
+    { method: 'PUT', path: 'update-webhook-send' },
+    { method: 'POST', path: 'update-webhook-send' },
+    { method: 'PUT', path: 'webhook-send' },
+    { method: 'POST', path: 'webhook-send' },
+  ]
+  for (const { method, path } of sendEndpoints) {
+    try {
+      const r = await fetch(`https://api.z-api.io/instances/${i}/token/${t}/${path}`, {
+        method,
+        headers,
+        body: JSON.stringify({ value: webhookUrl, url: webhookUrl }),
+      })
+      const body = await r.json().catch(() => ({}))
+      results.send = { status: r.status, body, method, path }
+      if (r.status === 200 && !body.error) break
+    } catch (e) {
+      results.send = { error: e.message }
+    }
   }
 
   console.log('[WEBHOOK-SETUP]', JSON.stringify({ webhookUrl, results }))

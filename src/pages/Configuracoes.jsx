@@ -210,7 +210,8 @@ function TabWhatsApp() {
         }),
       })
       const data = await res.json()
-      const ok = data.results?.received?.status === 200 && data.results?.send?.status === 200
+      const receivedOk = data.results?.received?.status === 200 && !data.results?.received?.body?.error
+      const ok = receivedOk
       setWebhookStatus(s => ({ ...s, [conta.id]: ok ? 'ok' : 'erro' }))
       setTimeout(() => setWebhookStatus(s => ({ ...s, [conta.id]: null })), 4000)
     } catch {

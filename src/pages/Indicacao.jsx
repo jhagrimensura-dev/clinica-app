@@ -110,7 +110,7 @@ function ModalNovoLead({ onClose, onSalvar, ano, mes }) {
 
 function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
   const { leadMidias } = useConfig()
-  const MIDIAS_PADRAO = ['Tráfego pago', 'Link da BIO', 'Indicação', 'Link dos Stories']
+  const MIDIAS_PADRAO = ['Campanha de msg para Whatsapp', 'Link da BIO', 'Indicação', 'Link dos Stories']
   const midias = leadMidias || MIDIAS_PADRAO
 
   const [data, setData] = useState(lead.data || '')

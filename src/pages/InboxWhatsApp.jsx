@@ -126,7 +126,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
   const [statusLista, setStatusLista] = useState(leadStatus || STATUS_PADRAO)
   const [editandoStatus, setEditandoStatus] = useState(false)
   const [novoStatus, setNovoStatus] = useState('')
-  const MIDIAS_PADRAO = ['Tráfego pago', 'Link da BIO', 'Indicação', 'Link dos Stories']
+  const MIDIAS_PADRAO = ['Campanha de msg para Whatsapp', 'Link da BIO', 'Indicação', 'Link dos Stories']
   const [midiaOpcoes, setMidiaOpcoes] = useState(leadMidias || MIDIAS_PADRAO)
   const [editandoMidia, setEditandoMidia] = useState(false)
   const [novaMidia, setNovaMidia] = useState('')
@@ -202,7 +202,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
           <div className="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-xl px-3 py-2">
             <span className="text-base">💰</span>
             <div>
-              <p className="text-[10px] text-purple-400 font-semibold uppercase tracking-wide">Tráfego pago — campanha detectada</p>
+              <p className="text-[10px] text-purple-400 font-semibold uppercase tracking-wide">Campanha de msg para Whatsapp — campanha detectada</p>
               <p className="text-xs text-purple-800 font-semibold leading-tight">{referralAnuncio}</p>
             </div>
           </div>
@@ -478,7 +478,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
               </div>
             </div>
           ) : (
-            <select value={midia} onChange={e => { setMidia(e.target.value); if (e.target.value !== 'Tráfego pago') setCriativo(''); if (e.target.value !== 'Link da BIO') setLinkBio('') }}
+            <select value={midia} onChange={e => { setMidia(e.target.value); if (e.target.value !== 'Campanha de msg para Whatsapp') setCriativo(''); if (e.target.value !== 'Link da BIO') setLinkBio('') }}
               className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 bg-white">
               <option value="">Não informado</option>
               {midiaOpcoes.map(m => <option key={m} value={m}>{m}</option>)}
@@ -486,7 +486,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
           )}
         </div>
 
-        {midia === 'Tráfego pago' && (
+        {midia === 'Campanha de msg para Whatsapp' && (
           <div>
             <label className="text-xs font-semibold text-gray-500 mb-1 block">Criativo</label>
             <input value={criativo} onChange={e => setCriativo(e.target.value)}
@@ -521,7 +521,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
           <div className="flex gap-3">
           <button onClick={onFechar} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
           <button
-            onClick={() => nome.trim() && onSalvar({ nome: nome.trim(), telefone, responsavel, obs, origem: tipo, origemCustom, data, status, agendadoPara: agendadoPara || null, lembretes: lembretes.filter(l => l.data), lembrete: lembretes.find(l => l.data)?.data || null, lembreteHora: lembretes.find(l => l.data)?.hora || null, aniversario: aniversario || null, fonte: 'WhatsApp', midia: midia || null, criativo: midia === 'Tráfego pago' ? (criativo || null) : null, linkBio: midia === 'Link da BIO' ? (linkBio || null) : null })}
+            onClick={() => nome.trim() && onSalvar({ nome: nome.trim(), telefone, responsavel, obs, origem: tipo, origemCustom, data, status, agendadoPara: agendadoPara || null, lembretes: lembretes.filter(l => l.data), lembrete: lembretes.find(l => l.data)?.data || null, lembreteHora: lembretes.find(l => l.data)?.hora || null, aniversario: aniversario || null, fonte: 'WhatsApp', midia: midia || null, criativo: midia === 'Campanha de msg para Whatsapp' ? (criativo || null) : null, linkBio: midia === 'Link da BIO' ? (linkBio || null) : null })}
             disabled={!nome.trim() || (status === 'Agendou' && !agendadoPara)}
             className="px-5 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded-xl disabled:opacity-40">
             {leadInicial ? 'Salvar alterações' : 'Registrar'}
@@ -870,6 +870,15 @@ export default function InboxWhatsApp({ contaId }) {
         seenOwn.set(m.texto, m.tsMs)
         return true
       })
+
+      // Fallback: se Supabase não tem msgs, busca histórico direto da Z-API (conversas pelo celular)
+      if (msgs.length === 0) {
+        try {
+          const zapiData = await zapiFetch(contaAtiva, `messages?phone=${phone}&page=1&pageSize=50`)
+          const zapiMsgs = normalizarMsgsZapi(zapiData)
+          if (zapiMsgs.length > 0) msgs = zapiMsgs.sort((a, b) => a.tsMs - b.tsMs)
+        } catch {}
+      }
 
       // Detecta mensagens novas e notifica
       const anteriorCount = msgCountRef.current[phone] ?? -1
@@ -1523,7 +1532,7 @@ export default function InboxWhatsApp({ contaId }) {
                   {leadRegistrado[conversa.id].midia && (
                     <div className="flex items-center gap-1.5 flex-wrap justify-end">
                       <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
-                        leadRegistrado[conversa.id].midia === 'Tráfego pago' ? 'bg-purple-100 text-purple-700' :
+                        leadRegistrado[conversa.id].midia === 'Campanha de msg para Whatsapp' ? 'bg-purple-100 text-purple-700' :
                         leadRegistrado[conversa.id].midia === 'Link da BIO' ? 'bg-amber-100 text-amber-700' :
                         leadRegistrado[conversa.id].midia === 'Indicação' ? 'bg-green-100 text-green-700' :
                         leadRegistrado[conversa.id].midia === 'Link dos Stories' ? 'bg-pink-100 text-pink-700' :
@@ -1980,8 +1989,8 @@ export default function InboxWhatsApp({ contaId }) {
         const campanhaDetectada = ctwaMensagens.find(c =>
           c.mensagem && primeiraMsg.toLowerCase().includes(c.mensagem.toLowerCase())
         ) || null
-        const midiaDetectada = referralAnuncio ? 'Tráfego pago'
-          : campanhaDetectada ? 'Tráfego pago'
+        const midiaDetectada = referralAnuncio ? 'Campanha de msg para Whatsapp'
+          : campanhaDetectada ? 'Campanha de msg para Whatsapp'
           : primeiraMsg.includes('Gostaria de agendar uma consulta com a Dra Amanda') ? 'Link da BIO'
           : primeiraMsg.includes('Vim dos stories da Dra Amanda') ? 'Link dos Stories'
           : ''

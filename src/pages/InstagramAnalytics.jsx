@@ -206,7 +206,7 @@ function LeadsOrigem({ leads, periodo }) {
 const COR_MIDIA = {
   'Orgânico':     { bg: 'bg-purple-100', text: 'text-purple-700', bar: '#6228d7' },
   'Impulsionar':  { bg: 'bg-pink-100',   text: 'text-pink-700',   bar: '#ee2a7b' },
-  'Tráfego pago': { bg: 'bg-blue-100',   text: 'text-blue-700',   bar: '#3b82f6' },
+  'Campanha de msg para Whatsapp': { bg: 'bg-blue-100',   text: 'text-blue-700',   bar: '#3b82f6' },
 }
 
 function LeadsMidia({ leads, periodo }) {
@@ -227,7 +227,7 @@ function LeadsMidia({ leads, periodo }) {
   const total = filtrados.length
   const sorted = Object.entries(porMidia).sort((a, b) => b[1] - a[1])
 
-  const trafegoPago = filtrados.filter(l => l.midia === 'Tráfego pago' && l.criativo)
+  const trafegoPago = filtrados.filter(l => l.midia === 'Campanha de msg para Whatsapp' && l.criativo)
   const porCriativo = {}
   trafegoPago.forEach(l => {
     porCriativo[l.criativo] = (porCriativo[l.criativo] || 0) + 1
@@ -266,7 +266,7 @@ function LeadsMidia({ leads, periodo }) {
       {criativos.length > 0 && (
         <>
           <div className="border-t border-gray-100 pt-4">
-            <p className="text-xs font-semibold text-gray-500 mb-3">Criativos — Tráfego pago</p>
+            <p className="text-xs font-semibold text-gray-500 mb-3">Criativos — Campanha de msg para Whatsapp</p>
             <div className="space-y-2">
               {criativos.map(([criativo, count], i) => {
                 const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}.`
