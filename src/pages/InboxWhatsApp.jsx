@@ -92,7 +92,7 @@ function normalizeChats(data, instancia) {
 }
 
 // ── Modal registrar lead ──────────────────────────────────────────
-const ORIGENS_PADRAO = ['WhatsApp', 'Instagram Anúncio', 'Instagram Orgânico', 'Tráfego', 'Indicação', 'Retorno', 'Resgate']
+const ORIGENS_PADRAO = ['Instagram Anúncio', 'Instagram Orgânico', 'Tráfego', 'Indicação', 'Retorno', 'Resgate']
 const STATUS_PADRAO = ['Em aberto', 'Conversando', 'Follow #1', 'Follow #2', 'Follow #3', 'Agendou', 'Perdido']
 const STATUS_KEYS = ['em_aberto', 'conversando', 'follow1', 'follow2', 'follow3', 'agendado', 'perdido']
 
@@ -120,7 +120,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
   const [midia, setMidia] = useState(leadInicial?.midia || midiaDetectada || '')
   const [criativo, setCriativo] = useState(leadInicial?.criativo || referralAnuncio || '')
   const [linkBio, setLinkBio] = useState(leadInicial?.linkBio || '')
-  const [origens, setOrigens] = useState(leadOrigens || ORIGENS_PADRAO)
+  const [origens, setOrigens] = useState((leadOrigens || ORIGENS_PADRAO).filter(o => o !== 'WhatsApp'))
   const [editandoOrigens, setEditandoOrigens] = useState(false)
   const [novaOrigem, setNovaOrigem] = useState('')
   const [statusLista, setStatusLista] = useState(leadStatus || STATUS_PADRAO)

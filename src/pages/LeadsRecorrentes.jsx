@@ -114,9 +114,9 @@ function ModalNovoLead({ onClose, onSalvar, ano, mes }) {
 
 function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
   const { leadOrigens, leadMidias } = useConfig()
-  const ORIGENS_PADRAO = ['WhatsApp', 'Instagram Anúncio', 'Instagram Orgânico', 'Tráfego', 'Indicação', 'Retorno', 'Resgate']
+  const ORIGENS_PADRAO = ['Instagram Anúncio', 'Instagram Orgânico', 'Tráfego', 'Indicação', 'Retorno', 'Resgate']
   const MIDIAS_PADRAO = ['Campanha de msg para Whatsapp', 'Link da BIO', 'Indicação', 'Link dos Stories']
-  const origens = leadOrigens || ORIGENS_PADRAO
+  const origens = (leadOrigens || ORIGENS_PADRAO).filter(o => o !== 'WhatsApp')
   const midias = leadMidias || MIDIAS_PADRAO
 
   const [data, setData] = useState(lead.data || '')
