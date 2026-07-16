@@ -1249,7 +1249,7 @@ export default function InstagramAnalytics() {
       const [overviewRes, campaignsRes, campInfoRes, adsRes] = await Promise.all([
         fetch(`${base}/insights?fields=${fields}&date_preset=${periodo}&access_token=${token}`),
         fetch(`${base}/insights?fields=campaign_name,campaign_id,spend,impressions,reach,clicks,ctr,cpm,cpp,frequency,actions&level=campaign&date_preset=${periodo}&access_token=${token}`),
-        fetch(`${base}/campaigns?fields=id,name,objective,start_time&access_token=${token}&limit=200`),
+        fetch(`${base}/campaigns?fields=id,name,objective,start_time,status&access_token=${token}&limit=200`),
         fetch(`${base}/ads?fields=campaign_id,creative{thumbnail_url,image_url,instagram_permalink_url,object_story_id}&limit=100&date_preset=${periodo}&access_token=${token}`),
       ])
 
@@ -1263,7 +1263,8 @@ export default function InstagramAnalytics() {
 
       const objMap = {}
       const startMap = {}
-      ;(campInfoJson.data || []).forEach(c => { objMap[c.id] = c.objective; if (c.start_time) startMap[c.id] = c.start_time })
+      const statusMap = {}
+      ;(campInfoJson.data || []).forEach(c => { objMap[c.id] = c.objective; if (c.start_time) startMap[c.id] = c.start_time; statusMap[c.id] = c.status || '' })
 
       const thumbMap = {}
       ;(adsJson.data || []).forEach(ad => {
@@ -1282,7 +1283,7 @@ export default function InstagramAnalytics() {
       })
 
       setOverview(overviewJson.data?.[0] || null)
-      setCampanhas((campaignsJson.data || []).map(c => ({ ...c, objetivo: objMap[c.campaign_id] || '', thumbnail: thumbMap[c.campaign_id]?.thumbnail || '', permalink: thumbMap[c.campaign_id]?.permalink || '', inicio: startMap[c.campaign_id] || '' })))
+      setCampanhas((campaignsJson.data || []).map(c => ({ ...c, objetivo: objMap[c.campaign_id] || '', status: statusMap[c.campaign_id] || '', thumbnail: thumbMap[c.campaign_id]?.thumbnail || '', permalink: thumbMap[c.campaign_id]?.permalink || '', inicio: startMap[c.campaign_id] || '' })))
     } catch (e) {
       setError(e.message)
     } finally {
@@ -1564,6 +1565,94 @@ export default function InstagramAnalytics() {
           </div>
         </div>
       )}
+
+      {/* Criativos de Engajamento */}
+      {(() => {
+        const eng = campanhas.filter(c => ['OUTCOME_ENGAGEMENT', 'POST_ENGAGEMENT'].includes(c.objetivo))
+        if (eng.length === 0) return null
+        const STATUS_LABEL = { ACTIVE: 'Ativo', PAUSED: 'Pausado', ARCHIVED: 'Arquivado', DELETED: 'Excluído' }
+        const STATUS_COLOR = { ACTIVE: 'bg-green-100 text-green-700', PAUSED: 'bg-yellow-100 text-yellow-700', ARCHIVED: 'bg-gray-100 text-gray-500', DELETED: 'bg-red-100 text-red-500' }
+        return (
+          <div className="mt-4 bg-white rounded-2xl border border-brand-100/60 shadow-sm overflow-hidden">
+            <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
+              <span className="text-base">❤️</span>
+              <h2 className="text-sm font-bold text-gray-700">Criativos — Engajamento</h2>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-pink-100 text-pink-600">{eng.length} campanha{eng.length !== 1 ? 's' : ''}</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-xs text-gray-400 font-semibold uppercase tracking-wide border-b border-gray-100">
+                    <th className="px-5 py-3 text-left">Criativo</th>
+                    <th className="px-4 py-3 text-left">Status</th>
+                    <th className="px-4 py-3 text-right">Gasto</th>
+                    <th className="px-4 py-3 text-right">Impressões</th>
+                    <th className="px-4 py-3 text-right">Alcance</th>
+                    <th className="px-4 py-3 text-right">Engajamentos</th>
+                    <th className="px-4 py-3 text-right">CPE</th>
+                    <th className="px-4 py-3 text-right">Freq.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {eng.map((c, i) => {
+                    const engVal = parseInt(c.actions?.find(a => a.action_type === 'post_engagement')?.value || 0)
+                    const cpe = engVal > 0 ? parseFloat(c.spend || 0) / engVal : null
+                    return (
+                      <tr key={c.campaign_id || i} className="border-b border-gray-50 hover:bg-brand-50/30 transition-colors">
+                        <td className="px-5 py-3">
+                          <div className="flex items-center gap-2.5">
+                            {c.thumbnail
+                              ? (c.permalink
+                                  ? <a href={c.permalink} target="_blank" rel="noreferrer"><img src={c.thumbnail} className="w-9 h-9 rounded-lg object-cover shrink-0 hover:opacity-75 transition-opacity" /></a>
+                                  : <img src={c.thumbnail} className="w-9 h-9 rounded-lg object-cover shrink-0" />)
+                              : <div className="w-9 h-9 rounded-lg bg-pink-50 shrink-0 flex items-center justify-center text-base">❤️</div>
+                            }
+                            <div>
+                              <span className="font-medium text-gray-800 truncate max-w-[180px] block" title={c.campaign_name}>{c.campaign_name}</span>
+                              {c.inicio && <span className="text-[11px] text-gray-400">{new Date(c.inicio).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          {c.status
+                            ? <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLOR[c.status] || 'bg-gray-100 text-gray-500'}`}>{STATUS_LABEL[c.status] || c.status}</span>
+                            : <span className="text-gray-300">—</span>}
+                        </td>
+                        <td className="px-4 py-3 text-right text-gray-700">{fmt(c.spend, 'R$ ')}</td>
+                        <td className="px-4 py-3 text-right text-gray-500">{fmtInt(c.impressions)}</td>
+                        <td className="px-4 py-3 text-right text-gray-500">{fmtInt(c.reach)}</td>
+                        <td className="px-4 py-3 text-right">
+                          {engVal > 0 ? <span className="font-semibold text-pink-600">{fmtInt(engVal.toString())}</span> : <span className="text-gray-300">—</span>}
+                        </td>
+                        <td className="px-4 py-3 text-right text-gray-500">
+                          {cpe !== null ? fmt(cpe.toFixed(2), 'R$ ') : <span className="text-gray-300">—</span>}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          {c.frequency
+                            ? <span className={`font-medium ${parseFloat(c.frequency) >= 4 ? 'text-red-500' : parseFloat(c.frequency) >= 3 ? 'text-yellow-500' : 'text-gray-500'}`}>{parseFloat(c.frequency).toFixed(1)}x</span>
+                            : <span className="text-gray-300">—</span>}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-gray-50 border-t-2 border-gray-200">
+                    <td className="px-5 py-3 text-xs font-bold text-gray-600" colSpan={2}>TOTAL ({eng.length} campanha{eng.length !== 1 ? 's' : ''})</td>
+                    <td className="px-4 py-3 text-right text-sm font-bold text-gray-800">{fmt(eng.reduce((s, c) => s + parseFloat(c.spend || 0), 0).toFixed(2), 'R$ ')}</td>
+                    <td className="px-4 py-3 text-right text-sm font-bold text-gray-800">{fmtInt(eng.reduce((s, c) => s + parseInt(c.impressions || 0), 0).toString())}</td>
+                    <td className="px-4 py-3 text-right text-sm font-bold text-gray-800">{fmtInt(eng.reduce((s, c) => s + parseInt(c.reach || 0), 0).toString())}</td>
+                    <td className="px-4 py-3 text-right text-sm font-bold text-pink-600">
+                      {(() => { const t = eng.reduce((s, c) => s + parseInt(c.actions?.find(a => a.action_type === 'post_engagement')?.value || 0), 0); return t > 0 ? fmtInt(t.toString()) : <span className="text-gray-400">—</span> })()}
+                    </td>
+                    <td className="px-4 py-3 text-right text-gray-400 text-xs" colSpan={2}>—</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Estado vazio após carregar */}
       {!loading && !error && overview === null && (
