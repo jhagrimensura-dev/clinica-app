@@ -1295,24 +1295,35 @@ export default function InstagramAnalytics() {
       setOverview(overviewJson.data?.[0] || null)
       setCampanhas((campaignsJson.data || []).map(c => ({ ...c, objetivo: objMap[c.campaign_id] || '', status: statusMap[c.campaign_id] || '', thumbnail: thumbMap[c.campaign_id]?.thumbnail || '', permalink: thumbMap[c.campaign_id]?.permalink || '', inicio: startMap[c.campaign_id] || '' })))
 
-      // Busca métricas por anúncio para a tabela (filtro por campaign_id — válido na insights API)
-      let adsEngJson = { data: [] }
+      // Busca métricas por anúncio para a tabela (filtro por campaign_id)
+      const campanhasEng = (campaignsJson.data || []).map(c => ({ ...c, objetivo: objMap[c.campaign_id] || '', thumbnail: thumbMap[c.campaign_id]?.thumbnail || '', permalink: thumbMap[c.campaign_id]?.permalink || '' })).filter(c => ['OUTCOME_ENGAGEMENT', 'POST_ENGAGEMENT'].includes(c.objetivo))
+      let engFormatados = []
       if (engCampaignIds.size > 0) {
         const campFilter = encodeURIComponent(JSON.stringify([{ field: 'campaign_id', operator: 'IN', value: [...engCampaignIds] }]))
         try {
           const r = await fetch(`${base}/insights?fields=ad_name,ad_id,campaign_id,campaign_name,spend,impressions,reach,clicks,ctr,cpm,frequency,actions&level=ad&date_preset=${periodo}&filtering=${campFilter}&limit=200&access_token=${token}`)
-          adsEngJson = await r.json()
+          const adsEngJson = await r.json()
+          if (!adsEngJson.error && adsEngJson.data?.length > 0) {
+            engFormatados = adsEngJson.data.map(a => ({
+              ...a,
+              thumbnail: adThumbMap[a.ad_id]?.thumbnail || thumbMap[a.campaign_id]?.thumbnail || '',
+              permalink: adThumbMap[a.ad_id]?.permalink || thumbMap[a.campaign_id]?.permalink || '',
+              adNameFull: adThumbMap[a.ad_id]?.adName || a.ad_name || '',
+            }))
+          }
         } catch {}
       }
-      // Monta lista final — thumbnail vem de adThumbMap (criativo por ad_id) ou fallback pelo campaign_id
-      const engFormatados = (adsEngJson.data || []).map(a => ({
-        ...a,
-        thumbnail: adThumbMap[a.ad_id]?.thumbnail || thumbMap[a.campaign_id]?.thumbnail || '',
-        permalink: adThumbMap[a.ad_id]?.permalink || thumbMap[a.campaign_id]?.permalink || '',
-        adNameFull: adThumbMap[a.ad_id]?.adName || a.ad_name || '',
-      }))
+      // Fallback: se não veio dado por anúncio, usa nível de campanha
+      if (engFormatados.length === 0 && campanhasEng.length > 0) {
+        engFormatados = campanhasEng.map(c => ({
+          ad_id: c.campaign_id, ad_name: c.campaign_name, campaign_id: c.campaign_id,
+          campaign_name: c.campaign_name, spend: c.spend, impressions: c.impressions,
+          reach: c.reach, clicks: c.clicks, ctr: c.ctr, cpm: c.cpm, frequency: c.frequency,
+          actions: c.actions, thumbnail: c.thumbnail, permalink: c.permalink,
+          adNameFull: c.campaign_name,
+        }))
+      }
       setAdsEngajamento(engFormatados)
-      // useEffect acima salva no Supabase automaticamente quando engFormatados.length > 0
     } catch (e) {
       setError(e.message)
     } finally {
