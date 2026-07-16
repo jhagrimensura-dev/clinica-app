@@ -1295,16 +1295,20 @@ export default function InstagramAnalytics() {
       setOverview(overviewJson.data?.[0] || null)
       setCampanhas((campaignsJson.data || []).map(c => ({ ...c, objetivo: objMap[c.campaign_id] || '', status: statusMap[c.campaign_id] || '', thumbnail: thumbMap[c.campaign_id]?.thumbnail || '', permalink: thumbMap[c.campaign_id]?.permalink || '', inicio: startMap[c.campaign_id] || '' })))
 
-      // Busca métricas por anúncio para a tabela (filtro por campaign_id)
-      const campanhasEng = (campaignsJson.data || []).map(c => ({ ...c, objetivo: objMap[c.campaign_id] || '', thumbnail: thumbMap[c.campaign_id]?.thumbnail || '', permalink: thumbMap[c.campaign_id]?.permalink || '' })).filter(c => ['OUTCOME_ENGAGEMENT', 'POST_ENGAGEMENT'].includes(c.objetivo))
+      // Busca métricas por anúncio: chama /{campaign_id}/insights?level=ad para cada campanha de engajamento
       let engFormatados = []
       if (engCampaignIds.size > 0) {
-        const campFilter = encodeURIComponent(JSON.stringify([{ field: 'campaign_id', operator: 'IN', value: [...engCampaignIds] }]))
         try {
-          const r = await fetch(`${base}/insights?fields=ad_name,ad_id,campaign_id,campaign_name,spend,impressions,reach,clicks,ctr,cpm,frequency,actions&level=ad&date_preset=${periodo}&filtering=${campFilter}&limit=200&access_token=${token}`)
-          const adsEngJson = await r.json()
-          if (!adsEngJson.error && adsEngJson.data?.length > 0) {
-            engFormatados = adsEngJson.data.map(a => ({
+          const adInsightsResults = await Promise.all(
+            [...engCampaignIds].map(campId =>
+              fetch(`${GRAPH_BASE}/${campId}/insights?fields=ad_name,ad_id,campaign_id,campaign_name,spend,impressions,reach,clicks,ctr,cpm,frequency,actions&level=ad&date_preset=${periodo}&limit=200&access_token=${token}`)
+                .then(r => r.json())
+                .catch(() => ({ data: [] }))
+            )
+          )
+          const allAds = adInsightsResults.flatMap(j => (!j.error && Array.isArray(j.data)) ? j.data : [])
+          if (allAds.length > 0) {
+            engFormatados = allAds.map(a => ({
               ...a,
               thumbnail: adThumbMap[a.ad_id]?.thumbnail || thumbMap[a.campaign_id]?.thumbnail || '',
               permalink: adThumbMap[a.ad_id]?.permalink || thumbMap[a.campaign_id]?.permalink || '',
@@ -1314,14 +1318,16 @@ export default function InstagramAnalytics() {
         } catch {}
       }
       // Fallback: se não veio dado por anúncio, usa nível de campanha
-      if (engFormatados.length === 0 && campanhasEng.length > 0) {
-        engFormatados = campanhasEng.map(c => ({
-          ad_id: c.campaign_id, ad_name: c.campaign_name, campaign_id: c.campaign_id,
-          campaign_name: c.campaign_name, spend: c.spend, impressions: c.impressions,
-          reach: c.reach, clicks: c.clicks, ctr: c.ctr, cpm: c.cpm, frequency: c.frequency,
-          actions: c.actions, thumbnail: c.thumbnail, permalink: c.permalink,
-          adNameFull: c.campaign_name,
-        }))
+      if (engFormatados.length === 0 && engCampaignIds.size > 0) {
+        engFormatados = (campaignsJson.data || [])
+          .filter(c => engCampaignIds.has(c.campaign_id))
+          .map(c => ({
+            ad_id: c.campaign_id, ad_name: c.campaign_name, campaign_id: c.campaign_id,
+            campaign_name: c.campaign_name, spend: c.spend, impressions: c.impressions,
+            reach: c.reach, clicks: c.clicks, ctr: c.ctr, cpm: c.cpm, frequency: c.frequency,
+            actions: c.actions, thumbnail: thumbMap[c.campaign_id]?.thumbnail || '',
+            permalink: thumbMap[c.campaign_id]?.permalink || '', adNameFull: c.campaign_name,
+          }))
       }
       setAdsEngajamento(engFormatados)
     } catch (e) {
@@ -1606,83 +1612,97 @@ export default function InstagramAnalytics() {
         </div>
       )}
 
-      {/* Criativos de Engajamento — nível de anúncio */}
-      {adsEngajamento.length > 0 && (
-        <div className="mt-4 bg-white rounded-2xl border border-brand-100/60 shadow-sm overflow-hidden">
-          <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
-            <span className="text-base">❤️</span>
-            <h2 className="text-sm font-bold text-gray-700">Criativos — Engajamento</h2>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-pink-100 text-pink-600">{adsEngajamento.length} criativo{adsEngajamento.length !== 1 ? 's' : ''}</span>
+      {/* Criativos de Engajamento — nível de anúncio (fallback: nível de campanha) */}
+      {(() => {
+        const rows = adsEngajamento.length > 0
+          ? adsEngajamento
+          : campanhas
+              .filter(c => ['OUTCOME_ENGAGEMENT', 'POST_ENGAGEMENT'].includes(c.objetivo))
+              .map(c => ({
+                ad_id: c.campaign_id, ad_name: c.campaign_name, campaign_id: c.campaign_id,
+                campaign_name: c.campaign_name, spend: c.spend, impressions: c.impressions,
+                reach: c.reach, clicks: c.clicks, ctr: c.ctr, cpm: c.cpm, frequency: c.frequency,
+                actions: c.actions, thumbnail: c.thumbnail, permalink: c.permalink,
+                adNameFull: c.campaign_name,
+              }))
+        if (rows.length === 0) return null
+        return (
+          <div className="mt-4 bg-white rounded-2xl border border-brand-100/60 shadow-sm overflow-hidden">
+            <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
+              <span className="text-base">❤️</span>
+              <h2 className="text-sm font-bold text-gray-700">Criativos — Engajamento</h2>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-pink-100 text-pink-600">{rows.length} criativo{rows.length !== 1 ? 's' : ''}</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-xs text-gray-400 font-semibold uppercase tracking-wide border-b border-gray-100">
+                    <th className="px-5 py-3 text-left">Criativo</th>
+                    <th className="px-4 py-3 text-left">Campanha</th>
+                    <th className="px-4 py-3 text-right">Gasto</th>
+                    <th className="px-4 py-3 text-right">Impressões</th>
+                    <th className="px-4 py-3 text-right">Alcance</th>
+                    <th className="px-4 py-3 text-right">Engajamentos</th>
+                    <th className="px-4 py-3 text-right">CPE</th>
+                    <th className="px-4 py-3 text-right">Freq.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((a, i) => {
+                    const engVal = parseInt(a.actions?.find(x => x.action_type === 'post_engagement')?.value || 0)
+                    const cpe = engVal > 0 ? parseFloat(a.spend || 0) / engVal : null
+                    const nome = a.adNameFull || a.ad_name || `Anúncio ${i + 1}`
+                    return (
+                      <tr key={a.ad_id || i} className="border-b border-gray-50 hover:bg-brand-50/30 transition-colors">
+                        <td className="px-5 py-3">
+                          <div className="flex items-center gap-2.5">
+                            {a.thumbnail
+                              ? (a.permalink
+                                  ? <a href={a.permalink} target="_blank" rel="noreferrer"><img src={a.thumbnail} className="w-9 h-9 rounded-lg object-cover shrink-0 hover:opacity-75 transition-opacity" title="Ver no Instagram" /></a>
+                                  : <img src={a.thumbnail} className="w-9 h-9 rounded-lg object-cover shrink-0" />)
+                              : <div className="w-9 h-9 rounded-lg bg-pink-50 shrink-0 flex items-center justify-center text-base">❤️</div>
+                            }
+                            <span className="font-medium text-gray-800 truncate max-w-[200px] block" title={nome}>{nome}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-xs text-gray-500 truncate max-w-[160px] block" title={a.campaign_name}>{a.campaign_name}</span>
+                        </td>
+                        <td className="px-4 py-3 text-right text-gray-700">{fmt(a.spend, 'R$ ')}</td>
+                        <td className="px-4 py-3 text-right text-gray-500">{fmtInt(a.impressions)}</td>
+                        <td className="px-4 py-3 text-right text-gray-500">{fmtInt(a.reach)}</td>
+                        <td className="px-4 py-3 text-right">
+                          {engVal > 0 ? <span className="font-semibold text-pink-600">{fmtInt(engVal.toString())}</span> : <span className="text-gray-300">—</span>}
+                        </td>
+                        <td className="px-4 py-3 text-right text-gray-500">
+                          {cpe !== null ? fmt(cpe.toFixed(2), 'R$ ') : <span className="text-gray-300">—</span>}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          {a.frequency
+                            ? <span className={`font-medium ${parseFloat(a.frequency) >= 4 ? 'text-red-500' : parseFloat(a.frequency) >= 3 ? 'text-yellow-500' : 'text-gray-500'}`}>{parseFloat(a.frequency).toFixed(1)}x</span>
+                            : <span className="text-gray-300">—</span>}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-gray-50 border-t-2 border-gray-200">
+                    <td className="px-5 py-3 text-xs font-bold text-gray-600" colSpan={2}>TOTAL ({rows.length} criativo{rows.length !== 1 ? 's' : ''})</td>
+                    <td className="px-4 py-3 text-right text-sm font-bold text-gray-800">{fmt(rows.reduce((s, a) => s + parseFloat(a.spend || 0), 0).toFixed(2), 'R$ ')}</td>
+                    <td className="px-4 py-3 text-right text-sm font-bold text-gray-800">{fmtInt(rows.reduce((s, a) => s + parseInt(a.impressions || 0), 0).toString())}</td>
+                    <td className="px-4 py-3 text-right text-sm font-bold text-gray-800">{fmtInt(rows.reduce((s, a) => s + parseInt(a.reach || 0), 0).toString())}</td>
+                    <td className="px-4 py-3 text-right text-sm font-bold text-pink-600">
+                      {(() => { const t = rows.reduce((s, a) => s + parseInt(a.actions?.find(x => x.action_type === 'post_engagement')?.value || 0), 0); return t > 0 ? fmtInt(t.toString()) : <span className="text-gray-400">—</span> })()}
+                    </td>
+                    <td className="px-4 py-3 text-right text-gray-400 text-xs" colSpan={2}>—</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-xs text-gray-400 font-semibold uppercase tracking-wide border-b border-gray-100">
-                  <th className="px-5 py-3 text-left">Criativo</th>
-                  <th className="px-4 py-3 text-left">Campanha</th>
-                  <th className="px-4 py-3 text-right">Gasto</th>
-                  <th className="px-4 py-3 text-right">Impressões</th>
-                  <th className="px-4 py-3 text-right">Alcance</th>
-                  <th className="px-4 py-3 text-right">Engajamentos</th>
-                  <th className="px-4 py-3 text-right">CPE</th>
-                  <th className="px-4 py-3 text-right">Freq.</th>
-                </tr>
-              </thead>
-              <tbody>
-                {adsEngajamento.map((a, i) => {
-                  const engVal = parseInt(a.actions?.find(x => x.action_type === 'post_engagement')?.value || 0)
-                  const cpe = engVal > 0 ? parseFloat(a.spend || 0) / engVal : null
-                  const nome = a.adNameFull || a.ad_name || `Anúncio ${i + 1}`
-                  return (
-                    <tr key={a.ad_id || i} className="border-b border-gray-50 hover:bg-brand-50/30 transition-colors">
-                      <td className="px-5 py-3">
-                        <div className="flex items-center gap-2.5">
-                          {a.thumbnail
-                            ? (a.permalink
-                                ? <a href={a.permalink} target="_blank" rel="noreferrer"><img src={a.thumbnail} className="w-9 h-9 rounded-lg object-cover shrink-0 hover:opacity-75 transition-opacity" title="Ver no Instagram" /></a>
-                                : <img src={a.thumbnail} className="w-9 h-9 rounded-lg object-cover shrink-0" />)
-                            : <div className="w-9 h-9 rounded-lg bg-pink-50 shrink-0 flex items-center justify-center text-base">❤️</div>
-                          }
-                          <span className="font-medium text-gray-800 truncate max-w-[200px] block" title={nome}>{nome}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="text-xs text-gray-500 truncate max-w-[160px] block" title={a.campaign_name}>{a.campaign_name}</span>
-                      </td>
-                      <td className="px-4 py-3 text-right text-gray-700">{fmt(a.spend, 'R$ ')}</td>
-                      <td className="px-4 py-3 text-right text-gray-500">{fmtInt(a.impressions)}</td>
-                      <td className="px-4 py-3 text-right text-gray-500">{fmtInt(a.reach)}</td>
-                      <td className="px-4 py-3 text-right">
-                        {engVal > 0 ? <span className="font-semibold text-pink-600">{fmtInt(engVal.toString())}</span> : <span className="text-gray-300">—</span>}
-                      </td>
-                      <td className="px-4 py-3 text-right text-gray-500">
-                        {cpe !== null ? fmt(cpe.toFixed(2), 'R$ ') : <span className="text-gray-300">—</span>}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {a.frequency
-                          ? <span className={`font-medium ${parseFloat(a.frequency) >= 4 ? 'text-red-500' : parseFloat(a.frequency) >= 3 ? 'text-yellow-500' : 'text-gray-500'}`}>{parseFloat(a.frequency).toFixed(1)}x</span>
-                          : <span className="text-gray-300">—</span>}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-              <tfoot>
-                <tr className="bg-gray-50 border-t-2 border-gray-200">
-                  <td className="px-5 py-3 text-xs font-bold text-gray-600" colSpan={2}>TOTAL ({adsEngajamento.length} criativo{adsEngajamento.length !== 1 ? 's' : ''})</td>
-                  <td className="px-4 py-3 text-right text-sm font-bold text-gray-800">{fmt(adsEngajamento.reduce((s, a) => s + parseFloat(a.spend || 0), 0).toFixed(2), 'R$ ')}</td>
-                  <td className="px-4 py-3 text-right text-sm font-bold text-gray-800">{fmtInt(adsEngajamento.reduce((s, a) => s + parseInt(a.impressions || 0), 0).toString())}</td>
-                  <td className="px-4 py-3 text-right text-sm font-bold text-gray-800">{fmtInt(adsEngajamento.reduce((s, a) => s + parseInt(a.reach || 0), 0).toString())}</td>
-                  <td className="px-4 py-3 text-right text-sm font-bold text-pink-600">
-                    {(() => { const t = adsEngajamento.reduce((s, a) => s + parseInt(a.actions?.find(x => x.action_type === 'post_engagement')?.value || 0), 0); return t > 0 ? fmtInt(t.toString()) : <span className="text-gray-400">—</span> })()}
-                  </td>
-                  <td className="px-4 py-3 text-right text-gray-400 text-xs" colSpan={2}>—</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* Estado vazio após carregar */}
       {!loading && !error && overview === null && (

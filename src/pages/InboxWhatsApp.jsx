@@ -122,45 +122,10 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
   const [linkBio, setLinkBio] = useState(leadInicial?.linkBio || '')
   const [adsEngajamento, setAdsEngajamento] = useState([])
   const [showAdsPicker, setShowAdsPicker] = useState(false)
-  const [syncingAds, setSyncingAds] = useState(false)
   useEffect(() => {
     supabase.from('configuracoes').select('valor').eq('chave', 'ads_engajamento').maybeSingle()
       .then(({ data }) => { if (Array.isArray(data?.valor)) setAdsEngajamento(data.valor) })
   }, [])
-  const sincronizarAds = async () => {
-    setSyncingAds(true)
-    try {
-      const { data: cfgData } = await supabase.from('configuracoes').select('valor').eq('chave', 'instagram_ads_config').maybeSingle()
-      const cfg = cfgData?.valor
-      if (!cfg?.token) return
-      const accounts = cfg.accounts || (cfg.accountId ? [{ id: cfg.accountId }] : [])
-      const engFilter = encodeURIComponent(JSON.stringify([{ field: 'campaign.objective', operator: 'IN', value: ['OUTCOME_ENGAGEMENT', 'POST_ENGAGEMENT'] }]))
-      const todos = []
-      await Promise.all(accounts.map(async acc => {
-        const base = `https://graph.facebook.com/v21.0/act_${acc.id}`
-        const [insRes, adsRes] = await Promise.all([
-          fetch(`${base}/insights?fields=ad_name,ad_id,campaign_id&level=ad&date_preset=last_30d&filtering=${engFilter}&limit=200&access_token=${cfg.token}`),
-          fetch(`${base}/ads?fields=id,name,creative{thumbnail_url,image_url,instagram_permalink_url}&limit=200&access_token=${cfg.token}`),
-        ])
-        const insJson = await insRes.json()
-        const adsJson = await adsRes.json()
-        const thumbMap = {}
-        ;(adsJson.data || []).forEach(ad => {
-          const cr = ad.creative || {}
-          thumbMap[ad.id] = { thumbnail: cr.thumbnail_url || cr.image_url || '', permalink: cr.instagram_permalink_url || '', nome: ad.name || '' }
-        })
-        ;(insJson.data || []).forEach(a => {
-          todos.push({ ad_id: a.ad_id, nome: thumbMap[a.ad_id]?.nome || a.ad_name || '', thumbnail: thumbMap[a.ad_id]?.thumbnail || '', permalink: thumbMap[a.ad_id]?.permalink || '' })
-        })
-      }))
-      const dedup = [...new Map(todos.map(a => [a.ad_id, a])).values()]
-      if (dedup.length > 0) {
-        await supabase.from('configuracoes').upsert({ chave: 'ads_engajamento', valor: dedup }, { onConflict: 'chave' })
-        setAdsEngajamento(dedup)
-      }
-    } catch {}
-    setSyncingAds(false)
-  }
   const [origens, setOrigens] = useState((leadOrigens || ORIGENS_PADRAO).filter(o => o !== 'WhatsApp'))
   const [editandoOrigens, setEditandoOrigens] = useState(false)
   const [novaOrigem, setNovaOrigem] = useState('')
@@ -549,14 +514,8 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
             {showAdsPicker && (
               <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
                 {adsEngajamento.length === 0 ? (
-                  <div className="p-4 flex flex-col gap-2">
-                    <input value={criativo} onChange={e => setCriativo(e.target.value)} autoFocus
-                      placeholder="Ex: Reel botox novembro, Story antes/depois..."
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-brand-300" />
-                    <button onClick={sincronizarAds} disabled={syncingAds}
-                      className="text-xs text-brand-500 hover:text-brand-700 font-medium disabled:opacity-50 text-left">
-                      {syncingAds ? '⏳ Sincronizando...' : '🔄 Sincronizar criativos do Meta Ads'}
-                    </button>
+                  <div className="p-4">
+                    <p className="text-xs text-gray-400 text-center">Nenhum criativo carregado.<br/>Acesse <strong>Análises Instagram</strong> para sincronizar.</p>
                   </div>
                 ) : (
                   <div className="max-h-56 overflow-y-auto">
