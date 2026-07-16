@@ -122,10 +122,64 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
   const [linkBio, setLinkBio] = useState(leadInicial?.linkBio || '')
   const [adsEngajamento, setAdsEngajamento] = useState([])
   const [showAdsPicker, setShowAdsPicker] = useState(false)
+  const [syncingAds, setSyncingAds] = useState(false)
   useEffect(() => {
     supabase.from('configuracoes').select('valor').eq('chave', 'ads_engajamento').maybeSingle()
       .then(({ data }) => { if (Array.isArray(data?.valor)) setAdsEngajamento(data.valor) })
   }, [])
+  useEffect(() => {
+    if (!showAdsPicker) return
+    supabase.from('configuracoes').select('valor').eq('chave', 'ads_engajamento').maybeSingle()
+      .then(({ data }) => { if (Array.isArray(data?.valor) && data.valor.length > 0) setAdsEngajamento(data.valor) })
+  }, [showAdsPicker])
+  const sincronizarAds = async () => {
+    setSyncingAds(true)
+    try {
+      // Tenta Supabase primeiro, fallback para localStorage
+      const { data: cfgData } = await supabase.from('configuracoes').select('valor').eq('chave', 'instagram_ads_config').maybeSingle()
+      let cfg = cfgData?.valor
+      if (!cfg) {
+        try { cfg = JSON.parse(localStorage.getItem('instagram_ads_config') || 'null') } catch {}
+      }
+      if (!cfg?.token) return
+      const accountId = cfg.accounts?.[0]?.id || cfg.accountId
+      const base = `https://graph.facebook.com/v21.0/act_${accountId}`
+      const [campInfoRes, adsRes] = await Promise.all([
+        fetch(`${base}/campaigns?fields=id,objective&access_token=${cfg.token}&limit=200`),
+        fetch(`${base}/ads?fields=id,campaign_id,name,creative{thumbnail_url,image_url,instagram_permalink_url}&limit=200&access_token=${cfg.token}`),
+      ])
+      const campInfoJson = await campInfoRes.json()
+      const adsJson = await adsRes.json()
+      const engCampaignIds = (campInfoJson.data || [])
+        .filter(c => ['OUTCOME_ENGAGEMENT', 'POST_ENGAGEMENT'].includes(c.objective))
+        .map(c => c.id)
+      const adThumbMap = {}
+      ;(adsJson.data || []).forEach(ad => {
+        const cr = ad.creative || {}
+        adThumbMap[ad.id] = { thumbnail: cr.thumbnail_url || cr.image_url || '', permalink: cr.instagram_permalink_url || '', nome: ad.name || '' }
+      })
+      if (engCampaignIds.length === 0) return
+      const results = await Promise.all(
+        engCampaignIds.map(campId =>
+          fetch(`https://graph.facebook.com/v21.0/${campId}/insights?fields=ad_name,ad_id,campaign_id,campaign_name&level=ad&date_preset=last_30d&limit=200&access_token=${cfg.token}`)
+            .then(r => r.json()).catch(() => ({ data: [] }))
+        )
+      )
+      const allAds = results.flatMap(j => (!j.error && Array.isArray(j.data)) ? j.data : [])
+      const dedup = [...new Map(allAds.map(a => [a.ad_id, {
+        ad_id: a.ad_id,
+        nome: adThumbMap[a.ad_id]?.nome || a.ad_name || '',
+        thumbnail: adThumbMap[a.ad_id]?.thumbnail || '',
+        permalink: adThumbMap[a.ad_id]?.permalink || '',
+      }])).values()]
+      if (dedup.length > 0) {
+        await supabase.from('configuracoes').upsert({ chave: 'ads_engajamento', valor: dedup }, { onConflict: 'chave' })
+        setAdsEngajamento(dedup)
+      }
+    } catch {} finally {
+      setSyncingAds(false)
+    }
+  }
   const [origens, setOrigens] = useState((leadOrigens || ORIGENS_PADRAO).filter(o => o !== 'WhatsApp'))
   const [editandoOrigens, setEditandoOrigens] = useState(false)
   const [novaOrigem, setNovaOrigem] = useState('')
@@ -514,8 +568,12 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
             {showAdsPicker && (
               <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
                 {adsEngajamento.length === 0 ? (
-                  <div className="p-4">
-                    <p className="text-xs text-gray-400 text-center">Nenhum criativo carregado.<br/>Acesse <strong>Análises Instagram</strong> para sincronizar.</p>
+                  <div className="p-4 flex flex-col items-center gap-2">
+                    <p className="text-xs text-gray-400 text-center">Nenhum criativo carregado.</p>
+                    <button onClick={sincronizarAds} disabled={syncingAds}
+                      className="text-xs bg-brand-500 hover:bg-brand-600 text-white font-semibold px-3 py-1.5 rounded-lg disabled:opacity-50">
+                      {syncingAds ? '⏳ Buscando...' : '🔄 Buscar criativos'}
+                    </button>
                   </div>
                 ) : (
                   <div className="max-h-56 overflow-y-auto">
