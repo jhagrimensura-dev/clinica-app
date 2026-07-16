@@ -1223,6 +1223,13 @@ export default function InstagramAnalytics() {
   const [campanhas, setCampanhas] = useState([])
   const [adsEngajamento, setAdsEngajamento] = useState([])
   const [filtroTipo, setFiltroTipo] = useState('')
+
+  // Salva no Supabase sempre que os criativos de engajamento forem carregados
+  useEffect(() => {
+    if (adsEngajamento.length === 0) return
+    const payload = adsEngajamento.map(a => ({ ad_id: a.ad_id, nome: a.adNameFull || a.ad_name || '', thumbnail: a.thumbnail, permalink: a.permalink }))
+    supabase.from('configuracoes').upsert({ chave: 'ads_engajamento', valor: payload }, { onConflict: 'chave' })
+  }, [adsEngajamento])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -1288,13 +1295,7 @@ export default function InstagramAnalytics() {
       setOverview(overviewJson.data?.[0] || null)
       setCampanhas((campaignsJson.data || []).map(c => ({ ...c, objetivo: objMap[c.campaign_id] || '', status: statusMap[c.campaign_id] || '', thumbnail: thumbMap[c.campaign_id]?.thumbnail || '', permalink: thumbMap[c.campaign_id]?.permalink || '', inicio: startMap[c.campaign_id] || '' })))
 
-      // Salva picker de criativos de engajamento no Supabase (direto do adsJson, sem chamada extra)
-      const pickerPayload = (adsJson.data || [])
-        .filter(ad => engCampaignIds.has(ad.campaign_id))
-        .map(ad => ({ ad_id: ad.id, nome: ad.name || '', thumbnail: adThumbMap[ad.id]?.thumbnail || '', permalink: adThumbMap[ad.id]?.permalink || '' }))
-      if (pickerPayload.length > 0) supabase.from('configuracoes').upsert({ chave: 'ads_engajamento', valor: pickerPayload }, { onConflict: 'chave' })
-
-      // Busca métricas por anúncio para a tabela (sequencial, filtro por campaign_id)
+      // Busca métricas por anúncio para a tabela (filtro por campaign_id — válido na insights API)
       let adsEngJson = { data: [] }
       if (engCampaignIds.size > 0) {
         const campFilter = encodeURIComponent(JSON.stringify([{ field: 'campaign_id', operator: 'IN', value: [...engCampaignIds] }]))
@@ -1303,12 +1304,15 @@ export default function InstagramAnalytics() {
           adsEngJson = await r.json()
         } catch {}
       }
-      setAdsEngajamento((adsEngJson.data || []).map(a => ({
+      // Monta lista final — thumbnail vem de adThumbMap (criativo por ad_id) ou fallback pelo campaign_id
+      const engFormatados = (adsEngJson.data || []).map(a => ({
         ...a,
-        thumbnail: adThumbMap[a.ad_id]?.thumbnail || '',
-        permalink: adThumbMap[a.ad_id]?.permalink || '',
+        thumbnail: adThumbMap[a.ad_id]?.thumbnail || thumbMap[a.campaign_id]?.thumbnail || '',
+        permalink: adThumbMap[a.ad_id]?.permalink || thumbMap[a.campaign_id]?.permalink || '',
         adNameFull: adThumbMap[a.ad_id]?.adName || a.ad_name || '',
-      })))
+      }))
+      setAdsEngajamento(engFormatados)
+      // useEffect acima salva no Supabase automaticamente quando engFormatados.length > 0
     } catch (e) {
       setError(e.message)
     } finally {
