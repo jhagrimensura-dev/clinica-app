@@ -120,6 +120,12 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
   const [midia, setMidia] = useState(leadInicial?.midia || midiaDetectada || '')
   const [criativo, setCriativo] = useState(leadInicial?.criativo || referralAnuncio || '')
   const [linkBio, setLinkBio] = useState(leadInicial?.linkBio || '')
+  const [adsEngajamento, setAdsEngajamento] = useState([])
+  const [showAdsPicker, setShowAdsPicker] = useState(false)
+  useEffect(() => {
+    supabase.from('configuracoes').select('valor').eq('chave', 'ads_engajamento').maybeSingle()
+      .then(({ data }) => { if (Array.isArray(data?.valor)) setAdsEngajamento(data.valor) })
+  }, [])
   const [origens, setOrigens] = useState((leadOrigens || ORIGENS_PADRAO).filter(o => o !== 'WhatsApp'))
   const [editandoOrigens, setEditandoOrigens] = useState(false)
   const [novaOrigem, setNovaOrigem] = useState('')
@@ -487,11 +493,56 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
         </div>
 
         {midia === 'Campanha de msg para Whatsapp' && (
-          <div>
+          <div className="relative">
             <label className="text-xs font-semibold text-gray-500 mb-1 block">Criativo</label>
-            <input value={criativo} onChange={e => setCriativo(e.target.value)}
-              placeholder="Ex: Reel botox novembro, Story antes/depois..."
-              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300" />
+            <div
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm cursor-pointer flex items-center justify-between gap-2 hover:border-brand-300 transition-colors"
+              onClick={() => setShowAdsPicker(v => !v)}
+            >
+              {criativo ? (
+                <div className="flex items-center gap-2 min-w-0">
+                  {adsEngajamento.find(a => a.nome === criativo)?.thumbnail && (
+                    <img src={adsEngajamento.find(a => a.nome === criativo).thumbnail} className="w-6 h-6 rounded object-cover shrink-0" />
+                  )}
+                  <span className="truncate text-gray-800">{criativo}</span>
+                </div>
+              ) : (
+                <span className="text-gray-400">{adsEngajamento.length > 0 ? 'Selecione o criativo...' : 'Ex: Reel botox novembro, Story antes/depois...'}</span>
+              )}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${showAdsPicker ? 'rotate-180' : ''}`}><path d="M6 9l6 6 6-6"/></svg>
+            </div>
+            {showAdsPicker && (
+              <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                {adsEngajamento.length === 0 ? (
+                  <div className="p-4">
+                    <input value={criativo} onChange={e => setCriativo(e.target.value)} autoFocus
+                      placeholder="Ex: Reel botox novembro, Story antes/depois..."
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-brand-300" />
+                    <p className="text-[11px] text-gray-400 mt-2">Nenhum criativo carregado. Acesse Análises Instagram para sincronizar.</p>
+                  </div>
+                ) : (
+                  <div className="max-h-56 overflow-y-auto">
+                    <button
+                      onClick={() => { setCriativo(''); setShowAdsPicker(false) }}
+                      className="w-full text-left px-3 py-2 text-xs text-gray-400 hover:bg-gray-50 border-b border-gray-100"
+                    >Nenhum</button>
+                    {adsEngajamento.map((ad, i) => (
+                      <button
+                        key={ad.ad_id || i}
+                        onClick={() => { setCriativo(ad.nome); setShowAdsPicker(false) }}
+                        className={`w-full text-left px-3 py-2 flex items-center gap-3 hover:bg-brand-50/40 transition-colors ${criativo === ad.nome ? 'bg-brand-50/60' : ''}`}
+                      >
+                        {ad.thumbnail
+                          ? <img src={ad.thumbnail} className="w-9 h-9 rounded-lg object-cover shrink-0" />
+                          : <div className="w-9 h-9 rounded-lg bg-pink-50 shrink-0 flex items-center justify-center text-sm">❤️</div>
+                        }
+                        <span className="text-sm text-gray-800 truncate">{ad.nome}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 

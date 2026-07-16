@@ -1287,12 +1287,16 @@ export default function InstagramAnalytics() {
 
       setOverview(overviewJson.data?.[0] || null)
       setCampanhas((campaignsJson.data || []).map(c => ({ ...c, objetivo: objMap[c.campaign_id] || '', status: statusMap[c.campaign_id] || '', thumbnail: thumbMap[c.campaign_id]?.thumbnail || '', permalink: thumbMap[c.campaign_id]?.permalink || '', inicio: startMap[c.campaign_id] || '' })))
-      setAdsEngajamento((adsEngJson.data || []).map(a => ({
+      const adsEngFormatados = (adsEngJson.data || []).map(a => ({
         ...a,
         thumbnail: adThumbMap[a.ad_id]?.thumbnail || '',
         permalink: adThumbMap[a.ad_id]?.permalink || '',
         adNameFull: adThumbMap[a.ad_id]?.adName || a.ad_name || '',
-      })))
+      }))
+      setAdsEngajamento(adsEngFormatados)
+      // Salva no Supabase para uso no Inbox
+      const payload = adsEngFormatados.map(a => ({ ad_id: a.ad_id, nome: a.adNameFull || a.ad_name || '', thumbnail: a.thumbnail, permalink: a.permalink }))
+      if (payload.length > 0) supabase.from('configuracoes').upsert({ chave: 'ads_engajamento', valor: payload }, { onConflict: 'chave' })
     } catch (e) {
       setError(e.message)
     } finally {
