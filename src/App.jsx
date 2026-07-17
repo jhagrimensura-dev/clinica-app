@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { PACIENTES_IMPORT } from './data/pacientesImport'
 
@@ -204,11 +204,28 @@ function AppInner() {
   return <AppContent />
 }
 
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { error: null } }
+  static getDerivedStateFromError(e) { return { error: e } }
+  render() {
+    if (this.state.error) return (
+      <div style={{ padding: 32, fontFamily: 'monospace', background: '#fff1f2', minHeight: '100vh' }}>
+        <h2 style={{ color: '#e11d48' }}>Erro ao carregar o app</h2>
+        <pre style={{ fontSize: 13, whiteSpace: 'pre-wrap', color: '#333' }}>{String(this.state.error)}</pre>
+        <button onClick={() => window.location.reload()} style={{ marginTop: 16, padding: '8px 16px', background: '#e11d48', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>Recarregar</button>
+      </div>
+    )
+    return this.props.children
+  }
+}
+
 export default function App() {
   return (
+    <ErrorBoundary>
     <AuthProvider>
       <AppInner />
     </AuthProvider>
+    </ErrorBoundary>
   )
 }
 
