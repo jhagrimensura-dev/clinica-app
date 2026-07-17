@@ -83,6 +83,41 @@ export default async function handler(req, res) {
           foundPhone = lookupData?.[0]?.phone || null
         }
 
+        // Opção 3: busca no chat list do Z-API pelo nome do contato
+        if (!foundPhone && chatName) {
+          try {
+            const confRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/configuracoes?chave=eq.config_whatsapp_contas&select=valor`,
+              { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+            )
+            const confData = await confRes.json()
+            let zapiToken = null
+            let zapiClientToken = null
+            for (const row of (confData || [])) {
+              try {
+                const contas = JSON.parse(row.valor)
+                const conta = Array.isArray(contas) ? contas.find(c => c.instanciaId === instanciaId) : null
+                if (conta) { zapiToken = conta.instanciaToken; zapiClientToken = conta.clientToken || null; break }
+              } catch (_) {}
+            }
+            if (zapiToken) {
+              const zapiHeaders = { 'Content-Type': 'application/json', ...(zapiClientToken ? { 'client-token': zapiClientToken } : {}) }
+              const chatsRes = await fetch(
+                `https://api.z-api.io/instances/${encodeURIComponent(instanciaId)}/token/${encodeURIComponent(zapiToken)}/chats?page=1&pageSize=100`,
+                { headers: zapiHeaders }
+              )
+              const chatsData = await chatsRes.json()
+              const lista = Array.isArray(chatsData) ? chatsData : Array.isArray(chatsData?.value) ? chatsData.value : []
+              const chat = lista.find(c => c.name === chatName)
+              if (chat?.phone) {
+                const cleaned = (chat.phone || '').replace(/@s\.whatsapp\.net$/, '').replace(/@c\.us$/, '').replace(/@lid$/, '')
+                if (cleaned && /^\d+$/.test(cleaned)) foundPhone = cleaned
+              }
+              if (foundPhone) console.log('[WH-SENT-ZAPI]', JSON.stringify({ chatName, resolvedPhone: foundPhone }))
+            }
+          } catch (_) {}
+        }
+
         if (foundPhone) {
           console.log('[WH-SENT]', JSON.stringify({ chatName, resolvedPhone: foundPhone, via: foundPhone === chatName?.replace(/[\s\-\+\(\)]/g, '') ? 'direto' : 'lookup' }))
           phone = foundPhone
