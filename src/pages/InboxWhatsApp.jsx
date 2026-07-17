@@ -705,6 +705,7 @@ export default function InboxWhatsApp({ contaId }) {
   const msgCountRef = useRef({})
   const notifPermissao = useRef(false)
   const selecionadaRef = useRef(null)
+  const conversasRef = useRef([])
   const emojiContainerRef = useRef(null)
   const pendingMsgs = useRef(new Set())
   const fotosCache = useRef((() => {
@@ -718,6 +719,8 @@ export default function InboxWhatsApp({ contaId }) {
   const lastReadRef = useRef((() => { try { return JSON.parse(localStorage.getItem('wpp_last_read') || '{}') } catch { return {} } })())
 
   useEffect(() => { selecionadaRef.current = selecionada }, [selecionada])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { conversasRef.current = conversas }, [conversas])
 
   useEffect(() => {
     if (!showEmoji) return
@@ -987,6 +990,22 @@ export default function InboxWhatsApp({ contaId }) {
         seenOwn.set(m.texto, m.tsMs)
         return true
       })
+
+      // Injeta última msg enviada do Z-API se não estiver no Supabase (webhook não disparou)
+      const convAtual = conversasRef.current.find(c => c.id === phone)
+      if (convAtual?.ultimaDeMim && convAtual.ultimaMensagem && convAtual.tsRaw) {
+        const latestTs = msgs.length > 0 ? Math.max(...msgs.map(m => m.tsMs)) : 0
+        const jaExiste = msgs.some(m => m.minha && m.texto === convAtual.ultimaMensagem && Math.abs(m.tsMs - convAtual.tsRaw) < 60000)
+        if (convAtual.tsRaw > latestTs + 5000 && !jaExiste) {
+          msgs = [...msgs, {
+            id: `zapi-last-${convAtual.tsRaw}`,
+            minha: true,
+            texto: convAtual.ultimaMensagem,
+            hora: formatTs(convAtual.tsRaw),
+            tsMs: convAtual.tsRaw,
+          }].sort((a, b) => a.tsMs - b.tsMs)
+        }
+      }
 
       // Detecta mensagens novas e notifica
       const anteriorCount = msgCountRef.current[phone] ?? -1
