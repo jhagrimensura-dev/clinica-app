@@ -757,7 +757,12 @@ function PainelOrganico({ leads, mes, ano, navMes, igConfig, onOpenSetup }) {
       setSincOk(true)
       setTimeout(() => setSincOk(false), 3000)
     } catch (e) {
-      setSincError('Token do Instagram expirado. Reconecte o Instagram para sincronizar.')
+      const msg = e.message || ''
+      if (msg.includes('access token') || msg.includes('OAuthException') || msg.includes('190') || msg.includes('Invalid') || msg.includes('expired')) {
+        setSincError('Token do Instagram expirado. Reconecte o Instagram para sincronizar.')
+      } else {
+        setSincError('Erro ao sincronizar: ' + (msg.slice(0, 80) || 'tente novamente.'))
+      }
     }
     setSincronizando(false)
   }
@@ -807,13 +812,26 @@ function PainelOrganico({ leads, mes, ano, navMes, igConfig, onOpenSetup }) {
     ]},
   ]
 
+  const agora = new Date()
+  const tokenExpirado = igConfig?.expiry && new Date(igConfig.expiry) < agora
+  const tokenExpirando = igConfig?.expiry && !tokenExpirado && (new Date(igConfig.expiry) - agora) < 7 * 24 * 60 * 60 * 1000
+  const diasRestantes = igConfig?.expiry && !tokenExpirado ? Math.ceil((new Date(igConfig.expiry) - agora) / (24 * 60 * 60 * 1000)) : 0
+
   return (
     <div className="mb-8">
+      {(tokenExpirado || tokenExpirando) && (
+        <div className={`flex items-center justify-between mb-3 px-4 py-2.5 rounded-xl text-xs ${tokenExpirado ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-yellow-50 border border-yellow-200 text-yellow-800'}`}>
+          <span>{tokenExpirado ? '⚠️ Token do Instagram expirado. A sincronização não funciona até você reconectar.' : `⚠️ Token do Instagram expira em ${diasRestantes} dia${diasRestantes !== 1 ? 's' : ''}. Renove antes de expirar.`}</span>
+          <button onClick={onOpenSetup} className={`ml-4 px-3 py-1 rounded-lg text-xs font-semibold ${tokenExpirado ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-yellow-600 text-white hover:bg-yellow-700'}`}>
+            Reconectar
+          </button>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-base font-bold text-gray-800">Painel Orgânico</h2>
           <p className="text-xs text-gray-400">
-            {igConfig ? <span className="text-green-600 font-medium">● Conectado como @{igConfig.username}</span> : 'Preenchimento manual · conecte o Instagram para sincronizar'}
+            {igConfig ? <span className={`font-medium ${tokenExpirado ? 'text-red-500' : 'text-green-600'}`}>{tokenExpirado ? '● Token expirado' : `● Conectado como @${igConfig.username}`}</span> : 'Preenchimento manual · conecte o Instagram para sincronizar'}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -822,10 +840,15 @@ function PainelOrganico({ leads, mes, ano, navMes, igConfig, onOpenSetup }) {
           <button onClick={() => navMes(1)} className="w-7 h-7 rounded-lg border border-gray-200 bg-white flex items-center justify-center text-gray-400 hover:text-gray-600">›</button>
           {igConfig ? (
             <div className="flex flex-col items-end gap-1">
-              <button onClick={sincronizar} disabled={sincronizando} className="ml-2 px-3 py-1.5 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white rounded-xl text-xs font-semibold transition-colors">
+              <button onClick={sincronizar} disabled={sincronizando || tokenExpirado} className="ml-2 px-3 py-1.5 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white rounded-xl text-xs font-semibold transition-colors">
                 {sincronizando ? 'Sincronizando...' : '🔄 Sincronizar'}
               </button>
-              {sincError && <p className="text-[10px] text-red-500 max-w-[200px] text-right leading-tight">{sincError}</p>}
+              {sincError && (
+                <div className="flex flex-col items-end gap-0.5">
+                  <p className="text-[10px] text-red-500 max-w-[200px] text-right leading-tight">{sincError}</p>
+                  <button onClick={onOpenSetup} className="text-[10px] text-brand-500 underline font-medium">Reconectar agora</button>
+                </div>
+              )}
               {sincOk && <p className="text-[10px] text-green-600 text-right">✓ Sincronizado!</p>}
             </div>
           ) : (
