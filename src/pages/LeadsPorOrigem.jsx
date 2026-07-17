@@ -49,12 +49,53 @@ function CardContagem({ label, count, pct, cor, thumbnail, permalink }) {
   )
 }
 
+function RowContagem({ label, count, pct, cor, thumbnail, permalink }) {
+  return (
+    <div className="flex items-center gap-3 px-4 py-3 bg-white rounded-2xl border border-gray-100 shadow-sm">
+      {thumbnail && (
+        permalink
+          ? <a href={permalink} target="_blank" rel="noreferrer">
+              <img src={thumbnail} className="w-10 h-10 rounded-xl object-cover shrink-0 border border-gray-100" />
+            </a>
+          : <img src={thumbnail} className="w-10 h-10 rounded-xl object-cover shrink-0 border border-gray-100" />
+      )}
+      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${cor.bg} ${cor.text}`} title={label}>{label}</span>
+      <div className="flex-1 min-w-0">
+        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: cor.bar }} />
+        </div>
+      </div>
+      <div className="text-xs text-gray-400 shrink-0 w-10 text-right">{pct.toFixed(0)}%</div>
+      <div className="text-base font-bold text-gray-800 shrink-0 w-6 text-right">{count}</div>
+    </div>
+  )
+}
+
+function IconGrid() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+      <rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/>
+      <rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/>
+    </svg>
+  )
+}
+
+function IconList() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+      <rect x="1" y="2" width="14" height="3" rx="1.5"/><rect x="1" y="6.5" width="14" height="3" rx="1.5"/>
+      <rect x="1" y="11" width="14" height="3" rx="1.5"/>
+    </svg>
+  )
+}
+
 export default function LeadsPorOrigem() {
   const { leads } = useLeads()
   const hoje = new Date()
   const [mes, setMes] = useState(hoje.getMonth())
   const [ano, setAno] = useState(hoje.getFullYear())
   const [adsEngajamento, setAdsEngajamento] = useState([])
+  const [viewCriativo, setViewCriativo] = useState('grid')
 
   useEffect(() => {
     supabase.from('configuracoes').select('valor').eq('chave', 'ads_engajamento').maybeSingle()
@@ -109,6 +150,8 @@ export default function LeadsPorOrigem() {
     .map(nome => [nome, contagemCriativo[nome] || 0])
     .sort((a, b) => b[1] - a[1])
   const totalCriativos = sortedCriativo.reduce((s, [, c]) => s + c, 0)
+
+  const corCriativo = { bg: 'bg-brand-50', text: 'text-brand-700', bar: '#a855f7' }
 
   return (
     <div className="p-6 space-y-8">
@@ -174,23 +217,61 @@ export default function LeadsPorOrigem() {
           {/* Criativo */}
           {sortedCriativo.length > 0 && (
             <section>
-              <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">Por Criativo</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {sortedCriativo.map(([criativo, count]) => {
-                  const ad = adMap[criativo]
-                  return (
-                    <CardContagem
-                      key={criativo}
-                      label={criativo}
-                      count={count}
-                      pct={totalCriativos > 0 ? (count / totalCriativos) * 100 : 0}
-                      cor={{ bg: 'bg-brand-50', text: 'text-brand-700', bar: '#a855f7' }}
-                      thumbnail={ad?.thumbnail || ''}
-                      permalink={ad?.permalink || ''}
-                    />
-                  )
-                })}
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wide">Por Criativo</h2>
+                <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+                  <button
+                    onClick={() => setViewCriativo('grid')}
+                    className={`p-1.5 rounded-lg transition-colors ${viewCriativo === 'grid' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                    title="Grade"
+                  >
+                    <IconGrid />
+                  </button>
+                  <button
+                    onClick={() => setViewCriativo('list')}
+                    className={`p-1.5 rounded-lg transition-colors ${viewCriativo === 'list' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                    title="Lista"
+                  >
+                    <IconList />
+                  </button>
+                </div>
               </div>
+
+              {viewCriativo === 'grid' ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {sortedCriativo.map(([criativo, count]) => {
+                    const ad = adMap[criativo]
+                    return (
+                      <CardContagem
+                        key={criativo}
+                        label={criativo}
+                        count={count}
+                        pct={totalCriativos > 0 ? (count / totalCriativos) * 100 : 0}
+                        cor={corCriativo}
+                        thumbnail={ad?.thumbnail || ''}
+                        permalink={ad?.permalink || ''}
+                      />
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {sortedCriativo.map(([criativo, count]) => {
+                    const ad = adMap[criativo]
+                    return (
+                      <RowContagem
+                        key={criativo}
+                        label={criativo}
+                        count={count}
+                        pct={totalCriativos > 0 ? (count / totalCriativos) * 100 : 0}
+                        cor={corCriativo}
+                        thumbnail={ad?.thumbnail || ''}
+                        permalink={ad?.permalink || ''}
+                      />
+                    )
+                  })}
+                </div>
+              )}
             </section>
           )}
         </>
