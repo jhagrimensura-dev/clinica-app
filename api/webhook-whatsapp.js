@@ -1,5 +1,9 @@
 function extrairTexto(body) {
   if (body?.text?.message) return body.text.message
+  // Formatos alternativos do Z-API para mensagens enviadas
+  if (typeof body?.message === 'string' && body.message) return body.message
+  if (body?.conversation) return body.conversation
+  if (body?.extendedTextMessage?.text) return body.extendedTextMessage.text
   if (body?.image) return body.image.caption || '[imagem]'
   if (body?.video) return body.video.caption || '[vídeo]'
   if (body?.document) return body.document.caption || body.document.fileName || '[documento]'
@@ -53,7 +57,15 @@ export default async function handler(req, res) {
     const ts = Number(tsRaw) < 10000000000 ? Number(tsRaw) * 1000 : Number(tsRaw)
 
     console.log('[WH]', JSON.stringify({ phone: rawPhone, chatId: payload?.chatId, fromMe: deMin, type: payload?.type, texto: texto?.slice(0, 50), instancia: instanciaId }))
-    if (!texto) return res.status(200).json({ ok: true, skipped: true })
+    if (deMin) {
+      // Log diagnóstico para msgs enviadas pelo celular
+      const keys = Object.keys(payload || {}).join(',')
+      console.log('[WH-SENT-DIAG]', JSON.stringify({ keys, chatId: payload?.chatId, resolvedPhone: phone, texto: texto?.slice(0,60), isLid: isLidPhone }))
+    }
+    if (!texto) {
+      console.log('[WH-SKIP]', JSON.stringify({ phone: rawPhone, type: payload?.type, keys: Object.keys(payload||{}).join(','), sample: JSON.stringify(payload).slice(0,200) }))
+      return res.status(200).json({ ok: true, skipped: true })
+    }
 
     const SUPABASE_URL = process.env.VITE_SUPABASE_URL
     const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY
