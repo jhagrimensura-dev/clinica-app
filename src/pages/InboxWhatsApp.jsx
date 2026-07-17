@@ -23,18 +23,17 @@ async function zapiFetch(conta, path, method = 'GET', body = null) {
       ...(body ? { body: JSON.stringify(body) } : {}),
     }
   )
-  if (!res.ok) {
-    const txt = await res.text().catch(() => '')
-    throw new Error(`HTTP ${res.status}: ${txt.slice(0, 100)}`)
-  }
   const text = await res.text()
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}: ${text.slice(0, 120)}`)
+  }
   if (text.startsWith('export') || text.startsWith('<!')) {
-    throw new Error('Abra o site em draamandaliima.com.br — o inbox não funciona no endereço local')
+    throw new Error(`API não acessível: ${text.slice(0, 60)}`)
   }
   try {
     return JSON.parse(text)
   } catch {
-    throw new Error(`Resposta inválida da API: ${text.slice(0, 80)}`)
+    throw new Error(`Resposta inválida: ${text.slice(0, 80)}`)
   }
 }
 
