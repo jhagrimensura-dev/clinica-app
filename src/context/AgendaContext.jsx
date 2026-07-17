@@ -33,7 +33,17 @@ export function AgendaProvider({ children }) {
         } catch (e) { console.error('Migração agendamentos:', e) }
       }
       if (lem && lem.length > 0) {
-        setLembretes(lem.map(r => r.dados))
+        const CORES_ANTIGAS = { brand: 'blue', purple: 'blue' }
+        const paraAtualizar = lem.filter(r => CORES_ANTIGAS[r.dados?.cor])
+        if (paraAtualizar.length > 0) {
+          await Promise.all(paraAtualizar.map(r => {
+            const atualizado = { ...r.dados, cor: CORES_ANTIGAS[r.dados.cor] }
+            return supabase.from('agenda_lembretes').update({ dados: atualizado }).eq('id', r.id)
+          }))
+          setLembretes(lem.map(r => ({ ...r.dados, cor: CORES_ANTIGAS[r.dados?.cor] || r.dados?.cor })))
+        } else {
+          setLembretes(lem.map(r => r.dados))
+        }
       } else if (!migratedLem) {
         migratedLem = true
         try {
