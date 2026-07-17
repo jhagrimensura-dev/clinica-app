@@ -126,6 +126,11 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
     supabase.from('configuracoes').select('valor').eq('chave', 'ads_engajamento').maybeSingle()
       .then(({ data }) => { if (Array.isArray(data?.valor)) setAdsEngajamento(data.valor) })
   }, [])
+  useEffect(() => {
+    if (!showAdsPicker) return
+    supabase.from('configuracoes').select('valor').eq('chave', 'ads_engajamento').maybeSingle()
+      .then(({ data }) => { if (Array.isArray(data?.valor) && data.valor.length > 0) setAdsEngajamento(data.valor) })
+  }, [showAdsPicker])
   const [origens, setOrigens] = useState((leadOrigens || ORIGENS_PADRAO).filter(o => o !== 'WhatsApp'))
   const [editandoOrigens, setEditandoOrigens] = useState(false)
   const [novaOrigem, setNovaOrigem] = useState('')
