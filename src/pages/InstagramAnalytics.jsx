@@ -1444,7 +1444,12 @@ export default function InstagramAnalytics() {
         return { ad_id: ad.id, nome: info.adName || ad.name || '', thumbnail: info.thumbnail || '', permalink: info.permalink || '' }
       })
       if (allAdsPayload.length > 0) {
-        supabase.from('configuracoes').upsert({ chave: 'ads_engajamento', valor: allAdsPayload }, { onConflict: 'chave' })
+        // Merge com ads já salvos de outras contas (não substitui, acumula)
+        const { data: existing } = await supabase.from('configuracoes').select('valor').eq('chave', 'ads_engajamento').maybeSingle()
+        const existingMap = {}
+        ;(existing?.valor || []).forEach(a => { existingMap[a.ad_id] = a })
+        allAdsPayload.forEach(a => { existingMap[a.ad_id] = a })
+        supabase.from('configuracoes').upsert({ chave: 'ads_engajamento', valor: Object.values(existingMap) }, { onConflict: 'chave' })
       }
     } catch (e) {
       setError(e.message)
