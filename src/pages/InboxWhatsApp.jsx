@@ -765,15 +765,42 @@ export default function InboxWhatsApp({ contaId }) {
     if (inicial) setLoadingConversas(true)
     setErro(null)
     try {
-      const data = await zapiFetch(contaAtiva, 'chats?page=1&pageSize=50')
+      // Busca Z-API (mais recentes) e histórico do Supabase em paralelo
+      const [data, supaHist] = await Promise.all([
+        zapiFetch(contaAtiva, 'chats?page=1&pageSize=100'),
+        supabase.from('whatsapp_mensagens')
+          .select('phone, nome_contato, timestamp_ms')
+          .eq('instancia_id', contaAtiva.instanciaId)
+          .order('timestamp_ms', { ascending: false })
+          .limit(500),
+      ])
       const novaLista = normalizeChats(data, contaAtiva.nome)
       if (novaLista.length === 0 && data && !Array.isArray(data) && !Array.isArray(data?.value)) {
         setErro(`Z-API: ${JSON.stringify(data).slice(0, 120)}`)
       } else {
         setErro(null)
       }
-      // Calcula não lidas via Supabase (comparando com última abertura de cada conversa)
-      const phones = novaLista.map(c => c.id)
+
+      // Complementa com conversas históricas do Supabase que não estão na lista Z-API
+      const zapiPhones = new Set(novaLista.map(c => c.id))
+      const histMap = {}
+      for (const m of supaHist.data || []) {
+        const p = (m.phone || '').replace(/\D/g, '')
+        if (!p || zapiPhones.has(m.phone)) continue
+        if (!histMap[m.phone]) histMap[m.phone] = { phone: m.phone, nome: m.nome_contato || m.phone, ts: m.timestamp_ms }
+      }
+      const historicas = Object.values(histMap).map(h => ({
+        id: h.phone,
+        contato: { nome: h.nome, telefone: h.phone, foto: null },
+        ultimaMensagem: '',
+        ultimoTs: h.ts,
+        naoLidas: 0,
+        arquivada: false,
+        isHistorica: true,
+      })).sort((a, b) => b.ultimoTs - a.ultimoTs)
+
+      const listaCombinada = [...novaLista, ...historicas]
+      const phones = listaCombinada.map(c => c.id)
       const minTs = Math.min(...phones.map(p => lastReadRef.current[p] || (Date.now() - 7 * 86400000)))
       const { data: msgData } = await supabase
         .from('whatsapp_mensagens')
@@ -792,7 +819,7 @@ export default function InboxWhatsApp({ contaId }) {
 
       setConversas(prev => {
         const arquivadas = getArquivadas()
-        return novaLista.map(nova => {
+        return listaCombinada.map(nova => {
           const existente = prev.find(c => c.id === nova.id)
           const naoLidas = selecionadaRef.current?.id === nova.id
             ? 0
@@ -813,7 +840,7 @@ export default function InboxWhatsApp({ contaId }) {
       const telefoneAbrir = sessionStorage.getItem('inbox_abrir_telefone')
       if (telefoneAbrir) {
         const digits = telefoneAbrir.replace(/\D/g, '')
-        const match = novaLista.find(c => {
+        const match = listaCombinada.find(c => {
           const cDigits = c.id.replace(/\D/g, '')
           return cDigits === digits || cDigits.endsWith(digits.slice(-9)) || digits.endsWith(cDigits.slice(-9))
         })
@@ -827,7 +854,7 @@ export default function InboxWhatsApp({ contaId }) {
         jaTemSelecao.current = true
       }
 
-      // Carrega fotos de perfil em fila (apenas quem não tem)
+      // Carrega fotos de perfil em fila (apenas conversas Z-API, não históricas)
       novaLista.forEach((conv, i) => {
         if (conv.contato.foto) return
         const cached = fotosCache.current[conv.id]
@@ -881,37 +908,23 @@ export default function InboxWhatsApp({ contaId }) {
     }).filter(m => m.texto)
   }
 
-  // Carrega mensagens do Supabase
+  // Carrega mensagens do Supabase + Z-API (sempre em paralelo para capturar msgs do celular)
   const fetchMensagens = useCallback(async (phone, chatNome) => {
     if (!contaAtiva?.instanciaId || !phone) return
     setLoadingMsgs(true)
     try {
-      // Busca por phone (mensagens recebidas + enviadas pelo app)
-      const { data: byPhone } = await supabase
-        .from('whatsapp_mensagens')
-        .select('*')
-        .eq('phone', phone)
-        .order('timestamp_ms', { ascending: true })
-        .limit(100)
-
-      // Busca mensagens enviadas pelo celular (@lid) identificadas pelo nome do contato
-      let byNome = []
-      if (chatNome && chatNome !== phone) {
-        const { data: d } = await supabase
-          .from('whatsapp_mensagens')
-          .select('*')
-          .eq('de_mim', true)
-          .eq('nome_contato', chatNome)
-          .neq('phone', phone)
-          .order('timestamp_ms', { ascending: true })
-          .limit(50)
-        byNome = d || []
-      }
-
-      // Mescla e deduplica por message_id
-      const seen = new Set()
       const normTs = t => Number(t) < 10000000000 ? Number(t) * 1000 : Number(t)
-      const toMap = m => ({
+
+      // Busca Supabase e Z-API em paralelo
+      const [supaByPhone, supaByNome, zapiResult] = await Promise.all([
+        supabase.from('whatsapp_mensagens').select('*').eq('phone', phone).order('timestamp_ms', { ascending: true }).limit(200),
+        (chatNome && chatNome !== phone)
+          ? supabase.from('whatsapp_mensagens').select('*').eq('de_mim', true).eq('nome_contato', chatNome).neq('phone', phone).order('timestamp_ms', { ascending: true }).limit(50)
+          : Promise.resolve({ data: [] }),
+        zapiFetch(contaAtiva, `messages?phone=${phone}&page=1&pageSize=50`).catch(() => null),
+      ])
+
+      const toMapSupa = m => ({
         id: m.message_id || String(m.id),
         minha: m.de_mim,
         texto: m.texto || '',
@@ -922,12 +935,20 @@ export default function InboxWhatsApp({ contaId }) {
         referralAnuncio: m.referral_anuncio || null,
         referralThumbnail: m.referral_thumbnail || null,
       })
-      let msgs = [...(byPhone || []), ...byNome]
-        .filter(m => { const k = m.message_id || m.id; const ok = !seen.has(k); seen.add(k); return ok })
-        .map(toMap)
-        .sort((a, b) => a.tsMs - b.tsMs)
 
-      // Dedup mensagens próprias duplicadas (insert do frontend + insert do webhook Z-API)
+      const supaRows = [...(supaByPhone.data || []), ...(supaByNome.data || [])]
+      const supaIds = new Set(supaRows.map(m => m.message_id).filter(Boolean))
+
+      // Mensagens da Z-API que não estão no Supabase (enviadas pelo celular sem webhook)
+      const zapiMsgs = normalizarMsgsZapi(zapiResult).filter(m => !supaIds.has(m.id))
+
+      const seen = new Set()
+      let msgs = [
+        ...supaRows.filter(m => { const k = m.message_id || m.id; const ok = !seen.has(k); seen.add(k); return ok }).map(toMapSupa),
+        ...zapiMsgs,
+      ].sort((a, b) => a.tsMs - b.tsMs)
+
+      // Dedup mensagens próprias duplicadas por texto+timestamp (~30s)
       const seenOwn = new Map()
       msgs = msgs.filter(m => {
         if (!m.minha) return true
@@ -937,20 +958,10 @@ export default function InboxWhatsApp({ contaId }) {
         return true
       })
 
-      // Fallback: se Supabase não tem msgs, busca histórico direto da Z-API (conversas pelo celular)
-      if (msgs.length === 0) {
-        try {
-          const zapiData = await zapiFetch(contaAtiva, `messages?phone=${phone}&page=1&pageSize=50`)
-          const zapiMsgs = normalizarMsgsZapi(zapiData)
-          if (zapiMsgs.length > 0) msgs = zapiMsgs.sort((a, b) => a.tsMs - b.tsMs)
-        } catch {}
-      }
-
       // Detecta mensagens novas e notifica
       const anteriorCount = msgCountRef.current[phone] ?? -1
       if (anteriorCount >= 0 && msgs.length > anteriorCount) {
-        const novas = msgs.slice(anteriorCount)
-        novas.filter(m => !m.minha).forEach(m => {
+        msgs.slice(anteriorCount).filter(m => !m.minha).forEach(m => {
           const conversa = conversas.find(c => c.id === phone)
           notificar(conversa?.contato?.nome || phone, m.texto)
         })
