@@ -935,8 +935,10 @@ export default function InboxWhatsApp({ contaId }) {
         (chatNome && chatNome !== phone)
           ? supabase.from('whatsapp_mensagens').select('*').eq('de_mim', true).eq('nome_contato', chatNome).neq('phone', phone).order('timestamp_ms', { ascending: true }).limit(50)
           : Promise.resolve({ data: [] }),
-        zapiFetch(contaAtiva, `messages?phone=${phone}&page=1&pageSize=50`).catch(() => null),
+        zapiFetch(contaAtiva, `messages?phone=${phone}&page=1&pageSize=50`).catch(e => { console.warn('[zapi-msgs error]', e); return null }),
       ])
+
+      console.log('[zapi-msgs raw]', phone, zapiResult)
 
       const toMapSupa = m => ({
         id: m.message_id || String(m.id),
