@@ -1212,7 +1212,12 @@ export default function InboxWhatsApp({ contaId }) {
   }
 
   const conversasFiltradas = conversas.filter(c => {
-    if (busca && !c.contato.nome.toLowerCase().includes(busca.toLowerCase())) return false
+    if (busca) {
+      const q = busca.toLowerCase().replace(/\D/g, '') // só dígitos para comparar telefone
+      const matchNome = c.contato.nome.toLowerCase().includes(busca.toLowerCase())
+      const matchPhone = q.length >= 4 && (c.id || '').replace(/\D/g, '').includes(q)
+      if (!matchNome && !matchPhone) return false
+    }
     if (filtro === 'nao_lidas') return c.naoLidas > 0
     if (filtro === 'arquivadas') return c.arquivada === true
     return !c.arquivada
