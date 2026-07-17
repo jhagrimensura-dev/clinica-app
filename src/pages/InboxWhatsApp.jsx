@@ -124,13 +124,22 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
   const [showAdsPicker, setShowAdsPicker] = useState(false)
   const [syncingAds, setSyncingAds] = useState(false)
   useEffect(() => {
-    supabase.from('configuracoes').select('valor').eq('chave', 'ads_engajamento').maybeSingle()
-      .then(({ data }) => { if (Array.isArray(data?.valor)) setAdsEngajamento(data.valor) })
+    // Tenta ads_picker (todos os criativos); fallback para ads_engajamento (só engajamento)
+    supabase.from('configuracoes').select('valor').eq('chave', 'ads_picker').maybeSingle()
+      .then(({ data }) => {
+        if (Array.isArray(data?.valor) && data.valor.length > 0) { setAdsEngajamento(data.valor); return }
+        return supabase.from('configuracoes').select('valor').eq('chave', 'ads_engajamento').maybeSingle()
+          .then(({ data: d2 }) => { if (Array.isArray(d2?.valor)) setAdsEngajamento(d2.valor) })
+      })
   }, [])
   useEffect(() => {
     if (!showAdsPicker) return
-    supabase.from('configuracoes').select('valor').eq('chave', 'ads_engajamento').maybeSingle()
-      .then(({ data }) => { if (Array.isArray(data?.valor) && data.valor.length > 0) setAdsEngajamento(data.valor) })
+    supabase.from('configuracoes').select('valor').eq('chave', 'ads_picker').maybeSingle()
+      .then(({ data }) => {
+        if (Array.isArray(data?.valor) && data.valor.length > 0) { setAdsEngajamento(data.valor); return }
+        return supabase.from('configuracoes').select('valor').eq('chave', 'ads_engajamento').maybeSingle()
+          .then(({ data: d2 }) => { if (Array.isArray(d2?.valor) && d2.valor.length > 0) setAdsEngajamento(d2.valor) })
+      })
   }, [showAdsPicker])
   const sincronizarAds = async () => {
     setSyncingAds(true)
@@ -170,7 +179,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
         }
       })
       if (dedup.length > 0) {
-        await supabase.from('configuracoes').upsert({ chave: 'ads_engajamento', valor: dedup }, { onConflict: 'chave' })
+        await supabase.from('configuracoes').upsert({ chave: 'ads_picker', valor: dedup }, { onConflict: 'chave' })
         setAdsEngajamento(dedup)
       }
     } catch {} finally {
@@ -564,7 +573,14 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
             </div>
             {showAdsPicker && (
               <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
-                <div className="max-h-64 overflow-y-auto">
+                <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100">
+                  <span className="text-xs text-gray-500 font-semibold">{adsEngajamento.length > 0 ? `${adsEngajamento.length} criativos` : 'Nenhum carregado'}</span>
+                  <button onClick={sincronizarAds} disabled={syncingAds}
+                    className="text-xs bg-brand-500 hover:bg-brand-600 text-white font-semibold px-2.5 py-1 rounded-lg disabled:opacity-50 flex items-center gap-1">
+                    {syncingAds ? '⏳ Buscando...' : '🔄 Atualizar'}
+                  </button>
+                </div>
+                <div className="max-h-56 overflow-y-auto">
                   <button
                     onClick={() => { setCriativo(''); setShowAdsPicker(false) }}
                     className="w-full text-left px-3 py-2 text-xs text-gray-400 hover:bg-gray-50 border-b border-gray-100"
@@ -585,8 +601,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
                 </div>
                 <div className="border-t border-gray-100 p-2">
                   <input
-                    autoFocus={false}
-                    placeholder="Digitar manualmente..."
+                    placeholder="Digitar manualmente + Enter"
                     className="w-full text-xs border border-gray-200 rounded-lg px-3 py-1.5 outline-none focus:border-brand-300"
                     onKeyDown={e => {
                       if (e.key === 'Enter' && e.target.value.trim()) {
@@ -595,16 +610,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
                       }
                     }}
                   />
-                  <p className="text-[10px] text-gray-400 mt-1 text-center">Digite e pressione Enter para confirmar</p>
                 </div>
-                {adsEngajamento.length === 0 && (
-                  <div className="border-t border-gray-100 p-2 flex justify-center">
-                    <button onClick={sincronizarAds} disabled={syncingAds}
-                      className="text-xs bg-brand-500 hover:bg-brand-600 text-white font-semibold px-3 py-1.5 rounded-lg disabled:opacity-50">
-                      {syncingAds ? '⏳ Buscando...' : '🔄 Buscar criativos'}
-                    </button>
-                  </div>
-                )}
               </div>
             )}
             {/* Campo manual sempre visível abaixo do picker */}
