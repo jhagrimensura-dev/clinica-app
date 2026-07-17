@@ -11,10 +11,8 @@ export function gerarIdLembrete() {
 const HORAS = Array.from({ length: 13 }, (_, i) => `${String(i + 8).padStart(2, '0')}:00`)
 
 const CORES = [
-  { id: 'blue',   bg: 'bg-blue-100',   text: 'text-blue-800',   border: 'border-blue-300',   solid: 'bg-blue-400'   },
   { id: 'green',  bg: 'bg-green-100',  text: 'text-green-800',  border: 'border-green-300',  solid: 'bg-green-400'  },
-  { id: 'brand',  bg: 'bg-brand-100',  text: 'text-brand-800',  border: 'border-brand-300',  solid: 'bg-brand-400'  },
-  { id: 'purple', bg: 'bg-purple-100', text: 'text-purple-800', border: 'border-purple-300', solid: 'bg-purple-400' },
+  { id: 'blue',   bg: 'bg-blue-100',   text: 'text-blue-800',   border: 'border-blue-300',   solid: 'bg-blue-400'   },
   { id: 'red',    bg: 'bg-red-100',    text: 'text-red-800',    border: 'border-red-300',    solid: 'bg-red-400'    },
   { id: 'yellow', bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-300', solid: 'bg-yellow-400' },
 ]
@@ -222,10 +220,8 @@ export default function AgendaLembretes() {
           {/* Legenda de cores */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 px-1">
             {[
-              { id: 'blue',   label: 'Lead Recorrente' },
               { id: 'green',  label: 'Lead Novo'       },
-              { id: 'brand',  label: 'Rosa'            },
-              { id: 'purple', label: 'Roxo'            },
+              { id: 'blue',   label: 'Lead Recorrente' },
               { id: 'red',    label: 'Urgente'         },
               { id: 'yellow', label: 'Aniversário 🎂'  },
             ].map(({ id, label }) => {
