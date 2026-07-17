@@ -95,7 +95,8 @@ export default async function handler(req, res) {
             let zapiClientToken = null
             for (const row of (confData || [])) {
               try {
-                const contas = JSON.parse(row.valor)
+                // valor pode ser jsonb (objeto) ou text (string) dependendo do schema
+                const contas = typeof row.valor === 'string' ? JSON.parse(row.valor) : row.valor
                 const conta = Array.isArray(contas) ? contas.find(c => c.instanciaId === instanciaId) : null
                 if (conta) { zapiToken = conta.instanciaToken; zapiClientToken = conta.clientToken || null; break }
               } catch (_) {}
