@@ -222,12 +222,12 @@ export default function AgendaLembretes() {
           {/* Legenda de cores */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 px-1">
             {[
-              { id: 'blue',   label: 'Azul'       },
-              { id: 'green',  label: 'Verde'       },
-              { id: 'brand',  label: 'Rosa'        },
-              { id: 'purple', label: 'Roxo'        },
-              { id: 'red',    label: 'Vermelho'    },
-              { id: 'yellow', label: 'Aniversário 🎂' },
+              { id: 'blue',   label: 'Lead Recorrente' },
+              { id: 'green',  label: 'Lead Novo'       },
+              { id: 'brand',  label: 'Rosa'            },
+              { id: 'purple', label: 'Roxo'            },
+              { id: 'red',    label: 'Urgente'         },
+              { id: 'yellow', label: 'Aniversário 🎂'  },
             ].map(({ id, label }) => {
               const cor = getCor(id)
               return (

@@ -1414,6 +1414,7 @@ export default function InboxWhatsApp({ contaId }) {
       novoLead = await addLead({ ...dados, status: normalizeStatus(dados.status) })
     }
     const todosLembretes = dados.lembretes?.length ? dados.lembretes : (dados.lembrete ? [{ data: dados.lembrete, hora: dados.lembreteHora || '', obs: '' }] : [])
+    const corLead = modalLead === 'leads_novos' ? 'green' : 'blue'
     todosLembretes.filter(l => l.data).forEach((l, i) => {
       addLembrete({
         id: Date.now() + i,
@@ -1422,7 +1423,7 @@ export default function InboxWhatsApp({ contaId }) {
         descricao: l.obs || dados.obs || '',
         data: l.data,
         hora: l.hora || '',
-        cor: 'blue',
+        cor: corLead,
         concluido: false,
         criadoEm: Date.now(),
       })
@@ -2164,7 +2165,8 @@ export default function InboxWhatsApp({ contaId }) {
             }
             const todosLembretes = dados.lembretes?.length ? dados.lembretes : (dados.lembrete ? [{ data: dados.lembrete, hora: dados.lembreteHora || '', obs: '' }] : [])
             todosLembretes.filter(l => l.data).forEach((l, i) => {
-              addLembrete({ id: Date.now() + i, leadNome: dados.nome, leadTelefone: dados.telefone || '', descricao: l.obs || dados.obs || '', data: l.data, hora: l.hora || '', cor: 'blue', concluido: false, criadoEm: Date.now() })
+              const corEdit = editarLeadRegistrado.tipo === 'leads_novos' ? 'green' : 'blue'
+              addLembrete({ id: Date.now() + i, leadNome: dados.nome, leadTelefone: dados.telefone || '', descricao: l.obs || dados.obs || '', data: l.data, hora: l.hora || '', cor: corEdit, concluido: false, criadoEm: Date.now() })
             })
             if (dados.aniversario) {
               const [, mes, dia] = dados.aniversario.split('-')

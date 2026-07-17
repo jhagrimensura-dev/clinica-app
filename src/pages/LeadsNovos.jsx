@@ -193,7 +193,7 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
     if (!paciente.trim()) return
     const lemsValidos = lembretes.filter(l => l.data)
     lemsValidos.forEach((l, i) => {
-      addLembrete({ id: Date.now() + i, leadNome: paciente.trim(), leadTelefone: lead.telefone || '', descricao: l.obs || obs.trim() || '', data: l.data, hora: l.hora || '', cor: 'blue', concluido: false, criadoEm: Date.now() })
+      addLembrete({ id: Date.now() + i, leadNome: paciente.trim(), leadTelefone: lead.telefone || '', descricao: l.obs || obs.trim() || '', data: l.data, hora: l.hora || '', cor: 'green', concluido: false, criadoEm: Date.now() })
     })
     onSalvar(lead.id, { nome: paciente.trim(), data, responsavel, origemCustom, midia: midia || null, linkBio: midia === 'Link da BIO' ? (linkBio || null) : null, status, agendadoPara: agendadoPara || null, proximoFollowup: lemsValidos[0]?.data || '', lembretes: lemsValidos, obs: obs.trim() })
     onClose()
