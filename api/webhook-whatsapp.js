@@ -1,6 +1,5 @@
 function extrairTexto(body) {
   if (body?.text?.message) return body.text.message
-  // Formatos alternativos do Z-API para mensagens enviadas
   if (typeof body?.message === 'string' && body.message) return body.message
   if (body?.conversation) return body.conversation
   if (body?.extendedTextMessage?.text) return body.extendedTextMessage.text
@@ -36,7 +35,6 @@ export default async function handler(req, res) {
     const rawPhone = payload?.phone || ''
     const rawChatId = (payload?.chatId || '').replace('@s.whatsapp.net', '').replace('@c.us', '').replace('@lid', '')
     const isLidPhone = rawPhone.includes('@lid')
-    // Para mensagens enviadas (fromMe), o número correto do destinatário está no chatId
     let phone = deMin
       ? (rawChatId || rawPhone.replace(/@.*/g, ''))
       : ((rawPhone && !rawPhone.includes('@') && /^\d+$/.test(rawPhone))
@@ -45,42 +43,52 @@ export default async function handler(req, res) {
     const messageId = payload?.messageId || payload?.id
     const texto = extrairTexto(payload)
     const mediaUrl = extrairMediaUrl(payload)
-    // Prioriza chatName (nome salvo no celular) para que enviados e recebidos do mesmo chat sejam consistentes
-    const nomeContato = payload?.chatName || payload?.senderName || phone
+    const chatName = payload?.chatName || null
+    const nomeContato = chatName || payload?.senderName || phone
     const tsRaw = payload?.momment || payload?.timestamp || Date.now()
-    // Anúncio de origem (Click-to-WhatsApp ads)
     const ref = payload?.referral || payload?.referralAd || null
-    const referralAnuncio = ref
-      ? (ref.headline || ref.body || ref.title || ref.source || null)
-      : null
+    const referralAnuncio = ref ? (ref.headline || ref.body || ref.title || ref.source || null) : null
     const referralThumbnail = ref?.thumbnailUrl || ref?.thumbnail || null
     const ts = Number(tsRaw) < 10000000000 ? Number(tsRaw) * 1000 : Number(tsRaw)
 
-    console.log('[WH]', JSON.stringify({ phone: rawPhone, chatId: payload?.chatId, chatName: payload?.chatName, senderName: payload?.senderName, fromMe: deMin, type: payload?.type, texto: texto?.slice(0, 50), instancia: instanciaId }))
-    if (deMin) {
-      // Log diagnóstico para msgs enviadas pelo celular
-      const keys = Object.keys(payload || {}).join(',')
-      console.log('[WH-SENT-DIAG]', JSON.stringify({ keys, chatId: payload?.chatId, resolvedPhone: phone, texto: texto?.slice(0,60), isLid: isLidPhone }))
-    }
-    if (!texto) {
-      console.log('[WH-SKIP]', JSON.stringify({ phone: rawPhone, type: payload?.type, keys: Object.keys(payload||{}).join(','), sample: JSON.stringify(payload).slice(0,200) }))
-      return res.status(200).json({ ok: true, skipped: true })
-    }
+    console.log('[WH]', JSON.stringify({ phone: rawPhone, chatId: payload?.chatId, chatName, fromMe: deMin, type: payload?.type, texto: texto?.slice(0, 60), instancia: instanciaId }))
+
+    if (!texto) return res.status(200).json({ ok: true, skipped: true })
 
     const SUPABASE_URL = process.env.VITE_SUPABASE_URL
     const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY
 
-    // Para mensagens enviadas pelo celular (@lid), busca o telefone real pelo nome do chat
-    if (deMin && isLidPhone && nomeContato && nomeContato !== phone) {
+    // Para mensagens enviadas pelo celular com phone @lid (sem chatId), resolve o telefone real do destinatário
+    if (deMin && isLidPhone) {
       try {
         const iid = encodeURIComponent(instanciaId)
-        const nc = encodeURIComponent(nomeContato)
-        const lookupRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/whatsapp_mensagens?instancia_id=eq.${iid}&nome_contato=eq.${nc}&de_mim=eq.false&select=phone&limit=1`,
-          { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
-        )
-        const lookupData = await lookupRes.json()
-        if (lookupData?.[0]?.phone) phone = lookupData[0].phone
+        let foundPhone = null
+
+        // Opção 1: chatName é um número de telefone → usa diretamente
+        if (chatName) {
+          const chatNameDigits = chatName.replace(/[\s\-\+\(\)]/g, '')
+          if (/^\d{8,15}$/.test(chatNameDigits)) {
+            foundPhone = chatNameDigits
+          }
+        }
+
+        // Opção 2: lookup por chatName no histórico de mensagens recebidas
+        if (!foundPhone && chatName && chatName !== phone) {
+          const nc = encodeURIComponent(chatName)
+          const lookupRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/whatsapp_mensagens?instancia_id=eq.${iid}&nome_contato=eq.${nc}&de_mim=eq.false&select=phone&limit=1`,
+            { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+          )
+          const lookupData = await lookupRes.json()
+          foundPhone = lookupData?.[0]?.phone || null
+        }
+
+        if (foundPhone) {
+          console.log('[WH-SENT]', JSON.stringify({ chatName, resolvedPhone: foundPhone, via: foundPhone === chatName?.replace(/[\s\-\+\(\)]/g, '') ? 'direto' : 'lookup' }))
+          phone = foundPhone
+        } else {
+          console.log('[WH-SENT-NORESOLVE]', JSON.stringify({ chatName, phone }))
+        }
       } catch (_) {}
     }
 
