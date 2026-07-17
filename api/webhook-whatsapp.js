@@ -27,14 +27,17 @@ export default async function handler(req, res) {
     const payload = req.body
     const instanciaId = req.query.i
 
+    const deMin = payload?.fromMe ?? false
     const rawPhone = payload?.phone || ''
     const rawChatId = (payload?.chatId || '').replace('@s.whatsapp.net', '').replace('@c.us', '').replace('@lid', '')
     const isLidPhone = rawPhone.includes('@lid')
-    let phone = (rawPhone && !rawPhone.includes('@') && /^\d+$/.test(rawPhone))
-      ? rawPhone
-      : rawChatId || rawPhone.replace(/@.*/g, '')
+    // Para mensagens enviadas (fromMe), o número correto do destinatário está no chatId
+    let phone = deMin
+      ? (rawChatId || rawPhone.replace(/@.*/g, ''))
+      : ((rawPhone && !rawPhone.includes('@') && /^\d+$/.test(rawPhone))
+          ? rawPhone
+          : rawChatId || rawPhone.replace(/@.*/g, ''))
     const messageId = payload?.messageId || payload?.id
-    const deMin = payload?.fromMe ?? false
     const texto = extrairTexto(payload)
     const mediaUrl = extrairMediaUrl(payload)
     // Prioriza chatName (nome salvo no celular) para que enviados e recebidos do mesmo chat sejam consistentes

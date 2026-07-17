@@ -156,6 +156,8 @@ function LeadsOrigem({ leads, periodo }) {
   const corte = new Date()
   corte.setDate(corte.getDate() - dias)
   const cutoff = corte.toISOString().slice(0, 10)
+  const [origemFiltro, setOrigemFiltro] = useState('')
+  const [busca, setBusca] = useState('')
 
   const filtrados = leads.filter(l => {
     const data = l.data || l.criadoEm?.slice(0, 10) || ''
@@ -171,33 +173,121 @@ function LeadsOrigem({ leads, periodo }) {
   const total = filtrados.length
   const sorted = Object.entries(contagem).sort((a, b) => b[1] - a[1])
 
+  const leadsFiltrados = filtrados
+    .filter(l => {
+      const origem = l.origemCustom || l.fonte || 'Não informado'
+      const matchOrigem = !origemFiltro || origem === origemFiltro
+      const matchBusca = !busca || (l.nome || '').toLowerCase().includes(busca.toLowerCase())
+      return matchOrigem && matchBusca
+    })
+    .sort((a, b) => {
+      const da = a.data || a.criadoEm?.slice(0, 10) || ''
+      const db = b.data || b.criadoEm?.slice(0, 10) || ''
+      return db.localeCompare(da)
+    })
+
+  const STATUS_COR = {
+    'agendado': 'bg-green-100 text-green-700',
+    'fechado': 'bg-green-100 text-green-700',
+    'em atendimento': 'bg-blue-100 text-blue-700',
+    'sem retorno': 'bg-gray-100 text-gray-500',
+    'não agendou': 'bg-red-100 text-red-600',
+  }
+
   return (
-    <div className="bg-white rounded-2xl border border-brand-100/60 shadow-sm p-5 mb-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-bold text-gray-700">Leads por Origem</h2>
-        <span className="text-xs text-gray-400">{total} leads nos últimos {dias} dias</span>
+    <div className="bg-white rounded-2xl border border-brand-100/60 shadow-sm mb-6 overflow-hidden">
+      {/* Header */}
+      <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-base">📊</span>
+          <h2 className="text-sm font-bold text-gray-700">Leads por Origem</h2>
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-brand-100 text-brand-600">{total} leads</span>
+        </div>
+        <span className="text-xs text-gray-400">últimos {dias} dias</span>
       </div>
 
       {total === 0 ? (
-        <p className="text-sm text-gray-400 text-center py-6">Nenhum lead registrado neste período.<br/>Ao registrar leads no WhatsApp ou em Leads Novos, eles aparecerão aqui.</p>
+        <p className="text-sm text-gray-400 text-center py-8">Nenhum lead registrado neste período.</p>
       ) : (
-        <div className="space-y-3">
-          {sorted.map(([origem, count]) => {
-            const cor = getCorOrigem(origem)
-            const pct = total > 0 ? (count / total) * 100 : 0
-            return (
-              <div key={origem}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cor.bg} ${cor.text}`}>{origem}</span>
-                  <span className="text-xs font-bold text-gray-700">{count} <span className="text-gray-400 font-normal">({pct.toFixed(0)}%)</span></span>
-                </div>
-                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                  <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: cor.bar }} />
-                </div>
-              </div>
-            )
-          })}
-        </div>
+        <>
+          {/* Cards de origem */}
+          <div className="px-5 py-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 border-b border-gray-100">
+            {sorted.map(([origem, count]) => {
+              const cor = getCorOrigem(origem)
+              const pct = total > 0 ? (count / total) * 100 : 0
+              const ativo = origemFiltro === origem
+              return (
+                <button
+                  key={origem}
+                  onClick={() => setOrigemFiltro(ativo ? '' : origem)}
+                  className={`text-left p-3 rounded-xl border transition-all ${ativo ? 'border-brand-300 bg-brand-50/60 shadow-sm' : 'border-gray-100 hover:border-brand-200 hover:bg-brand-50/30'}`}
+                >
+                  <div className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-block mb-2 ${cor.bg} ${cor.text}`}>{origem}</div>
+                  <div className="text-xl font-bold text-gray-800">{count}</div>
+                  <div className="text-xs text-gray-400">{pct.toFixed(0)}% do total</div>
+                  <div className="mt-2 h-1 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width: `${pct}%`, background: cor.bar }} />
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Barra de busca + filtro ativo */}
+          <div className="px-5 py-3 flex items-center gap-3 border-b border-gray-100">
+            <input
+              value={busca}
+              onChange={e => setBusca(e.target.value)}
+              placeholder="Buscar por nome..."
+              className="flex-1 text-xs border border-gray-200 rounded-lg px-3 py-1.5 outline-none focus:border-brand-300"
+            />
+            {origemFiltro && (
+              <button onClick={() => setOrigemFiltro('')} className="text-xs text-brand-500 hover:text-brand-700 font-medium whitespace-nowrap">
+                ✕ {origemFiltro}
+              </button>
+            )}
+            <span className="text-xs text-gray-400 whitespace-nowrap">{leadsFiltrados.length} leads</span>
+          </div>
+
+          {/* Tabela de leads */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-xs text-gray-400 font-semibold uppercase tracking-wide border-b border-gray-100">
+                  <th className="px-5 py-2.5 text-left">Nome</th>
+                  <th className="px-4 py-2.5 text-left">Data</th>
+                  <th className="px-4 py-2.5 text-left">Origem</th>
+                  <th className="px-4 py-2.5 text-left">Mídia</th>
+                  <th className="px-4 py-2.5 text-left">Criativo</th>
+                  <th className="px-4 py-2.5 text-left">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {leadsFiltrados.map((l, i) => {
+                  const origem = l.origemCustom || l.fonte || '—'
+                  const cor = getCorOrigem(origem)
+                  const statusClass = STATUS_COR[l.status?.toLowerCase()] || 'bg-gray-100 text-gray-500'
+                  const data = l.data || l.criadoEm?.slice(0, 10) || ''
+                  const dataFmt = data ? new Date(data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '—'
+                  return (
+                    <tr key={l.id || i} className="border-b border-gray-50 hover:bg-brand-50/20 transition-colors">
+                      <td className="px-5 py-2.5 font-medium text-gray-800 truncate max-w-[160px]">{l.nome || '—'}</td>
+                      <td className="px-4 py-2.5 text-gray-500 text-xs whitespace-nowrap">{dataFmt}</td>
+                      <td className="px-4 py-2.5">
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${cor.bg} ${cor.text}`}>{origem}</span>
+                      </td>
+                      <td className="px-4 py-2.5 text-xs text-gray-500 truncate max-w-[120px]">{l.midia || '—'}</td>
+                      <td className="px-4 py-2.5 text-xs text-gray-500 truncate max-w-[150px]" title={l.criativo}>{l.criativo || '—'}</td>
+                      <td className="px-4 py-2.5">
+                        {l.status ? <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${statusClass}`}>{l.status}</span> : <span className="text-gray-300 text-xs">—</span>}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   )

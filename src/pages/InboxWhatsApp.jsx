@@ -144,34 +144,34 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
       if (!cfg?.token) return
       const accountId = cfg.accounts?.[0]?.id || cfg.accountId
       const base = `https://graph.facebook.com/v21.0/act_${accountId}`
-      const [campInfoRes, adsRes] = await Promise.all([
-        fetch(`${base}/campaigns?fields=id,objective&access_token=${cfg.token}&limit=200`),
-        fetch(`${base}/ads?fields=id,campaign_id,name,creative{thumbnail_url,image_url,instagram_permalink_url}&limit=200&access_token=${cfg.token}`),
-      ])
+      const campInfoRes = await fetch(`${base}/campaigns?fields=id,objective&access_token=${cfg.token}&limit=200`)
       const campInfoJson = await campInfoRes.json()
-      const adsJson = await adsRes.json()
       const engCampaignIds = (campInfoJson.data || [])
         .filter(c => ['OUTCOME_ENGAGEMENT', 'POST_ENGAGEMENT'].includes(c.objective))
         .map(c => c.id)
-      const adThumbMap = {}
-      ;(adsJson.data || []).forEach(ad => {
-        const cr = ad.creative || {}
-        adThumbMap[ad.id] = { thumbnail: cr.thumbnail_url || cr.image_url || '', permalink: cr.instagram_permalink_url || '', nome: ad.name || '' }
-      })
       if (engCampaignIds.length === 0) return
-      const results = await Promise.all(
+      // Busca anúncios direto por campanha — garante que pega todos, sem depender da paginação da conta
+      const campAdsResults = await Promise.all(
         engCampaignIds.map(campId =>
-          fetch(`https://graph.facebook.com/v21.0/${campId}/insights?fields=ad_name,ad_id,campaign_id,campaign_name&level=ad&date_preset=last_30d&limit=200&access_token=${cfg.token}`)
+          fetch(`https://graph.facebook.com/v21.0/${campId}/ads?fields=id,name,creative{thumbnail_url,image_url,instagram_permalink_url}&limit=200&access_token=${cfg.token}`)
             .then(r => r.json()).catch(() => ({ data: [] }))
         )
       )
-      const allAds = results.flatMap(j => (!j.error && Array.isArray(j.data)) ? j.data : [])
-      const dedup = [...new Map(allAds.map(a => [a.ad_id, {
-        ad_id: a.ad_id,
-        nome: adThumbMap[a.ad_id]?.nome || a.ad_name || '',
-        thumbnail: adThumbMap[a.ad_id]?.thumbnail || '',
-        permalink: adThumbMap[a.ad_id]?.permalink || '',
-      }])).values()]
+      const allAds = campAdsResults.flatMap(j => (!j.error && Array.isArray(j.data)) ? j.data : [])
+      const seen = new Set()
+      const dedup = allAds.filter(ad => {
+        if (seen.has(ad.id)) return false
+        seen.add(ad.id)
+        return !!ad.name
+      }).map(ad => {
+        const cr = ad.creative || {}
+        return {
+          ad_id: ad.id,
+          nome: ad.name || '',
+          thumbnail: cr.thumbnail_url || cr.image_url || '',
+          permalink: cr.instagram_permalink_url || '',
+        }
+      })
       if (dedup.length > 0) {
         await supabase.from('configuracoes').upsert({ chave: 'ads_engajamento', valor: dedup }, { onConflict: 'chave' })
         setAdsEngajamento(dedup)

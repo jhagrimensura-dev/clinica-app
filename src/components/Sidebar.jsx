@@ -34,7 +34,13 @@ const menuItems = [
   { id: 'agenda',      label: 'Agenda',            icon: 'agenda'       },
   { id: 'metas',       label: 'Metas',             icon: 'metas'        },
   { id: 'social',      label: 'Social Media',      icon: 'social'       },
-  { id: 'instagram',   label: 'Análises Instagram', icon: 'instagram'    },
+  {
+    id: 'instagram_grupo', label: 'Análises Instagram', icon: 'instagram',
+    sub: [
+      { id: 'instagram',      label: 'Análises Instagram', icon: 'instagram' },
+      { id: 'leads_origem',   label: 'Leads por Origem',   icon: 'leads'     },
+    ],
+  },
   {
     id: 'comercial', label: 'WhatsApp', icon: 'comercial',
     sub: [
@@ -183,7 +189,7 @@ export default function Sidebar({ active, setActive }) {
   const podeVerItem = (item) => {
     if (!isFuncionario) return true
     if (item.id === 'relatorios') return false
-    if (item.id === 'instagram') return false
+    if (item.id === 'instagram' || item.id === 'instagram_grupo' || item.id === 'leads_origem') return false
     if (permissoes) return permissoes.includes(item.id)
     return item.id !== 'financeiro'
   }
