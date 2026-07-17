@@ -94,17 +94,21 @@ export default function LeadsPorOrigem() {
   })
   const sortedMidia = Object.entries(contagemMidia).sort((a, b) => b[1] - a[1])
 
-  // Contagem por criativo (só leads que têm criativo)
+  // Contagem por criativo — mostra TODOS os criativos cadastrados, mesmo com 0 leads
   const contagemCriativo = {}
   filtrados.forEach(l => {
     if (!l.criativo) return
     contagemCriativo[l.criativo] = (contagemCriativo[l.criativo] || 0) + 1
   })
-  const sortedCriativo = Object.entries(contagemCriativo).sort((a, b) => b[1] - a[1])
-  const totalCriativos = sortedCriativo.reduce((s, [, c]) => s + c, 0)
 
   const adMap = {}
   adsEngajamento.forEach(a => { adMap[a.nome] = a })
+
+  const todosCreativos = new Set([...Object.keys(contagemCriativo), ...adsEngajamento.map(a => a.nome)])
+  const sortedCriativo = Array.from(todosCreativos)
+    .map(nome => [nome, contagemCriativo[nome] || 0])
+    .sort((a, b) => b[1] - a[1])
+  const totalCriativos = sortedCriativo.reduce((s, [, c]) => s + c, 0)
 
   return (
     <div className="p-6 space-y-8">
@@ -125,27 +129,29 @@ export default function LeadsPorOrigem() {
         </div>
       </div>
 
-      {total === 0 ? (
+      {total === 0 && sortedCriativo.length === 0 ? (
         <div className="bg-white rounded-2xl border border-brand-100/60 shadow-sm p-12 text-center">
           <p className="text-sm text-gray-400">Nenhum lead registrado em {MESES[mes]} de {ano}.</p>
         </div>
       ) : (
         <>
           {/* Origem */}
-          <section>
-            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">Por Origem</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {sortedOrigem.map(([origem, count]) => (
-                <CardContagem
-                  key={origem}
-                  label={origem}
-                  count={count}
-                  pct={total > 0 ? (count / total) * 100 : 0}
-                  cor={getCorOrigem(origem)}
-                />
-              ))}
-            </div>
-          </section>
+          {total > 0 && (
+            <section>
+              <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">Por Origem</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {sortedOrigem.map(([origem, count]) => (
+                  <CardContagem
+                    key={origem}
+                    label={origem}
+                    count={count}
+                    pct={total > 0 ? (count / total) * 100 : 0}
+                    cor={getCorOrigem(origem)}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Mídia */}
           {sortedMidia.length > 0 && (
