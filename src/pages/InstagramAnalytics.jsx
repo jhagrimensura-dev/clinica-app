@@ -1373,6 +1373,24 @@ export default function InstagramAnalytics() {
       const campInfoJson = await campInfoRes.json()
       const adsJson = await adsRes.json()
 
+      // Salva anúncios ANTES de verificar erros (para funcionar mesmo em contas sem insights)
+      const adsPayloadEarly = (adsJson.data || []).map(ad => {
+        const cr = ad.creative || {}
+        let permalink = cr.instagram_permalink_url || ''
+        if (!permalink && cr.object_story_id) {
+          const [pageId, postId] = cr.object_story_id.split('_')
+          if (pageId && postId) permalink = `https://www.facebook.com/${pageId}/posts/${postId}`
+        }
+        return { ad_id: ad.id, nome: ad.name || '', thumbnail: cr.thumbnail_url || cr.image_url || '', permalink }
+      })
+      if (adsPayloadEarly.length > 0) {
+        const { data: existingEarly } = await supabase.from('configuracoes').select('valor').eq('chave', 'ads_engajamento').maybeSingle()
+        const earlyMap = {}
+        ;(existingEarly?.valor || []).forEach(a => { earlyMap[a.ad_id] = a })
+        adsPayloadEarly.forEach(a => { earlyMap[a.ad_id] = a })
+        supabase.from('configuracoes').upsert({ chave: 'ads_engajamento', valor: Object.values(earlyMap) }, { onConflict: 'chave' })
+      }
+
       if (overviewJson.error) throw new Error(overviewJson.error.message)
       if (campaignsJson.error) throw new Error(campaignsJson.error.message)
 
@@ -1437,20 +1455,6 @@ export default function InstagramAnalytics() {
           }))
       }
       setAdsEngajamento(engFormatados)
-
-      // Salva TODOS os anúncios (não só engajamento) para Leads por Origem
-      const allAdsPayload = (adsJson.data || []).map(ad => {
-        const info = adThumbMap[ad.id] || {}
-        return { ad_id: ad.id, nome: info.adName || ad.name || '', thumbnail: info.thumbnail || '', permalink: info.permalink || '' }
-      })
-      if (allAdsPayload.length > 0) {
-        // Merge com ads já salvos de outras contas (não substitui, acumula)
-        const { data: existing } = await supabase.from('configuracoes').select('valor').eq('chave', 'ads_engajamento').maybeSingle()
-        const existingMap = {}
-        ;(existing?.valor || []).forEach(a => { existingMap[a.ad_id] = a })
-        allAdsPayload.forEach(a => { existingMap[a.ad_id] = a })
-        supabase.from('configuracoes').upsert({ chave: 'ads_engajamento', valor: Object.values(existingMap) }, { onConflict: 'chave' })
-      }
     } catch (e) {
       setError(e.message)
     } finally {
