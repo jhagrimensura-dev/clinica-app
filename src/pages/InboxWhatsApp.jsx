@@ -934,7 +934,22 @@ export default function InboxWhatsApp({ contaId }) {
         (chatNome && chatNome !== phone)
           ? supabase.from('whatsapp_mensagens').select('*').eq('de_mim', true).eq('nome_contato', chatNome).neq('phone', phone).order('timestamp_ms', { ascending: true }).limit(50)
           : Promise.resolve({ data: [] }),
-        zapiFetch(contaAtiva, `messages?phone=${phone}&page=1&pageSize=50`).catch(e => { console.warn('[zapi-msgs error]', e); return null }),
+        // Tenta buscar histórico direto do Z-API em múltiplos formatos
+        (async () => {
+          const formats = [
+            `messages?phone=${phone}@s.whatsapp.net&page=1&pageSize=50`,
+            `messages?phone=${phone}@c.us&page=1&pageSize=50`,
+            `messages?phone=${phone}&page=1&pageSize=50`,
+          ]
+          for (const f of formats) {
+            try {
+              const r = await zapiFetch(contaAtiva, f)
+              const lista = Array.isArray(r) ? r : Array.isArray(r?.value) ? r.value : Array.isArray(r?.messages) ? r.messages : Array.isArray(r?.data) ? r.data : []
+              if (lista.length > 0) return r
+            } catch (_) {}
+          }
+          return null
+        })(),
       ])
 
       console.log('[zapi-msgs raw]', phone, zapiResult)
