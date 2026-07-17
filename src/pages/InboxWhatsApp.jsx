@@ -925,9 +925,9 @@ export default function InboxWhatsApp({ contaId }) {
   }
 
   // Carrega mensagens do Supabase + Z-API (sempre em paralelo para capturar msgs do celular)
-  const fetchMensagens = useCallback(async (phone, chatNome) => {
+  const fetchMensagens = useCallback(async (phone, chatNome, silent = false) => {
     if (!contaAtiva?.instanciaId || !phone) return
-    setLoadingMsgs(true)
+    if (!silent) setLoadingMsgs(true)
     try {
       const normTs = t => Number(t) < 10000000000 ? Number(t) * 1000 : Number(t)
 
@@ -1022,7 +1022,7 @@ export default function InboxWhatsApp({ contaId }) {
       setConversas(prev => prev.map(c => c.id === phone ? { ...c, mensagens: msgs, naoLidas: 0 } : c))
       setSelecionada(prev => prev?.id === phone ? { ...prev, mensagens: msgs, naoLidas: 0 } : prev)
     } catch {}
-    setLoadingMsgs(false)
+    if (!silent) setLoadingMsgs(false)
   }, [contaAtiva?.instanciaId])
 
   const fetchQrCode = useCallback(async () => {
@@ -1138,6 +1138,16 @@ export default function InboxWhatsApp({ contaId }) {
   useEffect(() => {
     if (selecionada?.id) fetchMensagens(selecionada.id, selecionada?.contato?.nome)
   }, [selecionada?.id])
+
+  // Polling de mensagens a cada 25s para capturar msgs enviadas do celular que o webhook não pegou
+  useEffect(() => {
+    if (!contaAtiva?.instanciaId || !selecionada?.id) return
+    const interval = setInterval(() => {
+      const conv = selecionadaRef.current
+      if (conv?.id) fetchMensagens(conv.id, conv.contato?.nome, true)
+    }, 25000)
+    return () => clearInterval(interval)
+  }, [contaAtiva?.instanciaId, selecionada?.id, fetchMensagens])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
