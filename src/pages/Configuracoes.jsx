@@ -348,7 +348,7 @@ function TabWhatsApp() {
                   : <p className="text-xs text-orange-400 mt-0.5">⚠ Instância não configurada</p>
                 }
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 relative">
                 <button onClick={() => abrirQR(conta)}
                   className="flex items-center gap-1.5 text-xs font-semibold text-white bg-green-500 hover:bg-green-600 px-3 py-1.5 rounded-lg transition-colors">
                   📱 Conectar
@@ -361,6 +361,18 @@ function TabWhatsApp() {
                     : webhookStatus[conta.id] === 'ok' ? '✓' : webhookStatus[conta.id] === 'parcial' ? '⚠' : webhookStatus[conta.id] === 'erro' ? '✗' : '🔗'}
                   {webhookStatus[conta.id] === 'ok' ? 'Webhook ok!' : webhookStatus[conta.id] === 'parcial' ? 'Parcial (sem envio)' : webhookStatus[conta.id] === 'erro' ? 'Erro' : 'Webhook'}
                 </button>
+                {webhookStatus[conta.id] === 'parcial' && (
+                  <div className="absolute right-0 top-10 z-50 bg-yellow-50 border border-yellow-300 rounded-xl p-3 shadow-lg w-80 text-xs text-yellow-800">
+                    <p className="font-semibold mb-1">⚠️ Webhook de envio não configurado</p>
+                    <p className="mb-2">Mensagens enviadas pelo celular não serão capturadas automaticamente. Para ativar, configure manualmente no painel Z-API:</p>
+                    <p className="font-semibold mb-1">1. Acesse app.z-api.io → sua instância</p>
+                    <p className="mb-1">2. Em "Webhooks", cole esta URL no campo <strong>On Send Message</strong>:</p>
+                    <code className="block bg-yellow-100 rounded p-1 break-all select-all">
+                      {`${window.location.origin}/api/webhook-whatsapp?i=${conta.instanciaId}`}
+                    </code>
+                    <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/api/webhook-whatsapp?i=${conta.instanciaId}`); }} className="mt-2 px-2 py-1 bg-yellow-600 text-white rounded-lg font-semibold">Copiar URL</button>
+                  </div>
+                )}
                 <button onClick={() => handleTestarConexao(conta)} disabled={testando === conta.id}
                   className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-green-600 font-medium transition-colors disabled:opacity-40">
                   {testando === conta.id

@@ -12,7 +12,7 @@ export default async function handler(req, res) {
 
   const results = {}
 
-  // Tenta configurar webhook de mensagens RECEBIDAS (testa PUT e POST)
+  // Webhook de mensagens RECEBIDAS
   const receivedEndpoints = [
     { method: 'PUT', path: 'update-webhook-received' },
     { method: 'POST', path: 'webhook-received' },
@@ -21,8 +21,7 @@ export default async function handler(req, res) {
   for (const { method, path } of receivedEndpoints) {
     try {
       const r = await fetch(`https://api.z-api.io/instances/${i}/token/${t}/${path}`, {
-        method,
-        headers,
+        method, headers,
         body: JSON.stringify({ value: webhookUrl, url: webhookUrl }),
       })
       const body = await r.json().catch(() => ({}))
@@ -33,18 +32,20 @@ export default async function handler(req, res) {
     }
   }
 
-  // Tenta configurar webhook de mensagens ENVIADAS (pelo celular)
+  // Webhook de mensagens ENVIADAS (pelo celular) — tenta todas as variações conhecidas
   const sendEndpoints = [
-    { method: 'PUT', path: 'update-webhook-send' },
+    { method: 'PUT',  path: 'update-webhook-send' },
     { method: 'POST', path: 'update-webhook-send' },
-    { method: 'PUT', path: 'webhook-send' },
+    { method: 'PUT',  path: 'webhook-send' },
     { method: 'POST', path: 'webhook-send' },
+    { method: 'PUT',  path: 'update-webhook-on-message-sent' },
+    { method: 'POST', path: 'update-webhook-on-message-sent' },
+    { method: 'PUT',  path: 'update-webhook-sent' },
   ]
   for (const { method, path } of sendEndpoints) {
     try {
       const r = await fetch(`https://api.z-api.io/instances/${i}/token/${t}/${path}`, {
-        method,
-        headers,
+        method, headers,
         body: JSON.stringify({ value: webhookUrl, url: webhookUrl }),
       })
       const body = await r.json().catch(() => ({}))
