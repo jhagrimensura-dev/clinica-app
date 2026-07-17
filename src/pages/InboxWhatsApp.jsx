@@ -135,7 +135,6 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
   const sincronizarAds = async () => {
     setSyncingAds(true)
     try {
-      // Tenta Supabase primeiro, fallback para localStorage
       const { data: cfgData } = await supabase.from('configuracoes').select('valor').eq('chave', 'instagram_ads_config').maybeSingle()
       let cfg = cfgData?.valor
       if (!cfg) {
@@ -144,15 +143,13 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
       if (!cfg?.token) return
       const accountId = cfg.accounts?.[0]?.id || cfg.accountId
       const base = `https://graph.facebook.com/v21.0/act_${accountId}`
-      const campInfoRes = await fetch(`${base}/campaigns?fields=id,objective&access_token=${cfg.token}&limit=200`)
+      // Busca TODAS as campanhas (não só engajamento) para capturar criativos de qualquer tipo
+      const campInfoRes = await fetch(`${base}/campaigns?fields=id&limit=200&access_token=${cfg.token}`)
       const campInfoJson = await campInfoRes.json()
-      const engCampaignIds = (campInfoJson.data || [])
-        .filter(c => ['OUTCOME_ENGAGEMENT', 'POST_ENGAGEMENT'].includes(c.objective))
-        .map(c => c.id)
-      if (engCampaignIds.length === 0) return
-      // Busca anúncios direto por campanha — garante que pega todos, sem depender da paginação da conta
+      const allCampaignIds = (campInfoJson.data || []).map(c => c.id)
+      if (allCampaignIds.length === 0) return
       const campAdsResults = await Promise.all(
-        engCampaignIds.map(campId =>
+        allCampaignIds.map(campId =>
           fetch(`https://graph.facebook.com/v21.0/${campId}/ads?fields=id,name,creative{thumbnail_url,image_url,instagram_permalink_url}&limit=200&access_token=${cfg.token}`)
             .then(r => r.json()).catch(() => ({ data: [] }))
         )
@@ -561,43 +558,62 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
                   <span className="truncate text-gray-800">{criativo}</span>
                 </div>
               ) : (
-                <span className="text-gray-400">{adsEngajamento.length > 0 ? 'Selecione o criativo...' : 'Ex: Reel botox novembro, Story antes/depois...'}</span>
+                <span className="text-gray-400">{adsEngajamento.length > 0 ? 'Selecione o criativo...' : 'Selecione ou digite abaixo...'}</span>
               )}
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${showAdsPicker ? 'rotate-180' : ''}`}><path d="M6 9l6 6 6-6"/></svg>
             </div>
             {showAdsPicker && (
               <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
-                {adsEngajamento.length === 0 ? (
-                  <div className="p-4 flex flex-col items-center gap-2">
-                    <p className="text-xs text-gray-400 text-center">Nenhum criativo carregado.</p>
+                <div className="max-h-64 overflow-y-auto">
+                  <button
+                    onClick={() => { setCriativo(''); setShowAdsPicker(false) }}
+                    className="w-full text-left px-3 py-2 text-xs text-gray-400 hover:bg-gray-50 border-b border-gray-100"
+                  >Nenhum</button>
+                  {adsEngajamento.map((ad, i) => (
+                    <button
+                      key={ad.ad_id || i}
+                      onClick={() => { setCriativo(ad.nome); setShowAdsPicker(false) }}
+                      className={`w-full text-left px-3 py-2 flex items-center gap-3 hover:bg-brand-50/40 transition-colors ${criativo === ad.nome ? 'bg-brand-50/60' : ''}`}
+                    >
+                      {ad.thumbnail
+                        ? <img src={ad.thumbnail} className="w-9 h-9 rounded-lg object-cover shrink-0" />
+                        : <div className="w-9 h-9 rounded-lg bg-pink-50 shrink-0 flex items-center justify-center text-sm">❤️</div>
+                      }
+                      <span className="text-sm text-gray-800 truncate">{ad.nome}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="border-t border-gray-100 p-2">
+                  <input
+                    autoFocus={false}
+                    placeholder="Digitar manualmente..."
+                    className="w-full text-xs border border-gray-200 rounded-lg px-3 py-1.5 outline-none focus:border-brand-300"
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && e.target.value.trim()) {
+                        setCriativo(e.target.value.trim())
+                        setShowAdsPicker(false)
+                      }
+                    }}
+                  />
+                  <p className="text-[10px] text-gray-400 mt-1 text-center">Digite e pressione Enter para confirmar</p>
+                </div>
+                {adsEngajamento.length === 0 && (
+                  <div className="border-t border-gray-100 p-2 flex justify-center">
                     <button onClick={sincronizarAds} disabled={syncingAds}
                       className="text-xs bg-brand-500 hover:bg-brand-600 text-white font-semibold px-3 py-1.5 rounded-lg disabled:opacity-50">
                       {syncingAds ? '⏳ Buscando...' : '🔄 Buscar criativos'}
                     </button>
                   </div>
-                ) : (
-                  <div className="max-h-56 overflow-y-auto">
-                    <button
-                      onClick={() => { setCriativo(''); setShowAdsPicker(false) }}
-                      className="w-full text-left px-3 py-2 text-xs text-gray-400 hover:bg-gray-50 border-b border-gray-100"
-                    >Nenhum</button>
-                    {adsEngajamento.map((ad, i) => (
-                      <button
-                        key={ad.ad_id || i}
-                        onClick={() => { setCriativo(ad.nome); setShowAdsPicker(false) }}
-                        className={`w-full text-left px-3 py-2 flex items-center gap-3 hover:bg-brand-50/40 transition-colors ${criativo === ad.nome ? 'bg-brand-50/60' : ''}`}
-                      >
-                        {ad.thumbnail
-                          ? <img src={ad.thumbnail} className="w-9 h-9 rounded-lg object-cover shrink-0" />
-                          : <div className="w-9 h-9 rounded-lg bg-pink-50 shrink-0 flex items-center justify-center text-sm">❤️</div>
-                        }
-                        <span className="text-sm text-gray-800 truncate">{ad.nome}</span>
-                      </button>
-                    ))}
-                  </div>
                 )}
               </div>
             )}
+            {/* Campo manual sempre visível abaixo do picker */}
+            <input
+              value={!adsEngajamento.find(a => a.nome === criativo) ? criativo : ''}
+              onChange={e => setCriativo(e.target.value)}
+              placeholder="Ou digitar nome do criativo..."
+              className="mt-1.5 w-full border border-gray-200 rounded-xl px-3 py-1.5 text-xs outline-none focus:border-brand-300"
+            />
           </div>
         )}
 
