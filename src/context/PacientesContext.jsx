@@ -94,9 +94,11 @@ export function PacientesProvider({ children }) {
   }
 
   const updatePaciente = async (id, updates) => {
-    setPacientes(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p))
-    const updated = pacientes.find(p => p.id === id)
-    if (updated) await supabase.from('pacientes').update(toDB({ ...updated, ...updates }, clinicaId)).eq('id', id)
+    const existing = pacientes.find(p => p.id === id)
+    if (!existing) return
+    const updated = { ...existing, ...updates }
+    setPacientes(prev => prev.map(p => p.id === id ? updated : p))
+    await supabase.from('pacientes').update(toDB(updated, clinicaId)).eq('id', id)
   }
 
   const removePaciente = async (id) => {

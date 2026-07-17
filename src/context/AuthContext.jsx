@@ -18,6 +18,7 @@ export function AuthProvider({ children }) {
       setRecoveryMode(true)
       supabase.auth.verifyOtp({ token_hash, type: 'recovery' })
         .then(({ data }) => { if (data.session) setSession(data.session) })
+        .catch(err => console.error('verifyOtp error:', err))
     }
 
     supabase.auth.getSession().then(({ data }) => setSession(data.session))

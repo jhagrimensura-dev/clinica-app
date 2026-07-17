@@ -94,9 +94,11 @@ export function VendasProvider({ children }) {
   }
 
   const updateLancamento = async (id, dados) => {
-    setLancamentos(prev => prev.map(l => l.id === id ? { ...l, ...dados } : l))
-    const updated = lancamentos.find(l => l.id === id)
-    if (updated) await supabase.from('lancamentos').update(toDB({ ...updated, ...dados }, clinicaId)).eq('id', id)
+    const existing = lancamentos.find(l => l.id === id)
+    if (!existing) return
+    const updated = { ...existing, ...dados }
+    setLancamentos(prev => prev.map(l => l.id === id ? updated : l))
+    await supabase.from('lancamentos').update(toDB(updated, clinicaId)).eq('id', id)
   }
 
   const clearLancamentos = async () => {

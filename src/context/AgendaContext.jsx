@@ -26,7 +26,7 @@ export function AgendaProvider({ children }) {
         try {
           const local = JSON.parse(localStorage.getItem('agenda_agendamentos') || '[]')
           if (local.length > 0) {
-            const rows = local.map(a => ({ id: String(a.id || Date.now()), clinica_id: clinicaId, date: a.date || '', time: a.time || '', paciente: a.paciente || '', procedimento: a.procedimento || '', status: a.status || 'agendado', duracao: a.duracao || 30, telefone: a.telefone || '' }))
+            const rows = local.map((a, i) => ({ id: String(a.id || `ag_${Date.now()}_${i}_${Math.random().toString(36).slice(2,6)}`), clinica_id: clinicaId, date: a.date || '', time: a.time || '', paciente: a.paciente || '', procedimento: a.procedimento || '', status: a.status || 'agendado', duracao: a.duracao || 30, telefone: a.telefone || '' }))
             await supabase.from('agendamentos').upsert(rows, { onConflict: 'id' })
             setAgendamentos(local)
           }
@@ -95,9 +95,11 @@ export function AgendaProvider({ children }) {
   }
 
   const updateLembrete = async (id, updates) => {
-    setLembretes(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l))
     const atual = lembretes.find(l => l.id === id)
-    if (atual) await supabase.from('agenda_lembretes').update({ dados: { ...atual, ...updates } }).eq('id', String(id))
+    if (!atual) return
+    const atualizado = { ...atual, ...updates }
+    setLembretes(prev => prev.map(l => l.id === id ? atualizado : l))
+    await supabase.from('agenda_lembretes').update({ dados: atualizado }).eq('id', String(id))
   }
 
   const deleteLembrete = async (id) => {

@@ -140,7 +140,7 @@ export function LeadsProvider({ children }) {
     const existingNames = new Set(leads.map(l => (l.nome || '').toLowerCase().trim()))
     const novos = leadsArray
       .filter(l => !existingNames.has((l.nome || '').toLowerCase().trim()))
-      .map(l => ({ id: crypto.randomUUID(), criado_em: new Date().toISOString(), status: 'perdido', origem: 'leads_novos', origemCustom: 'WhatsApp', telefone: '', obs: '', responsavel: '', fonte: '', agendadoPara: null, proximoFollowup: '', aniversario: null, ...l }))
+      .map(l => ({ id: `lead_${Date.now()}_${Math.random().toString(36).slice(2,6)}`, criado_em: new Date().toISOString(), status: 'perdido', origem: 'leads_novos', origemCustom: 'WhatsApp', telefone: '', obs: '', responsavel: '', fonte: '', agendadoPara: null, proximoFollowup: '', aniversario: null, ...l }))
     if (!novos.length) return 0
     setLeads(prev => [...prev, ...novos])
     await supabase.from('leads').insert(novos.map(n => toDB(n, clinicaId)))

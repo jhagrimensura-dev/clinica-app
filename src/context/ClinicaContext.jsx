@@ -28,7 +28,7 @@ export function ClinicaProvider({ children }) {
   // Migração única: localStorage → Supabase (roda uma vez por clinicaId)
   useEffect(() => {
     if (!clinicaId) return
-    supabase.from('clinica_metas').select('id').limit(1).then(async ({ data }) => {
+    supabase.from('clinica_metas').select('id').eq('clinica_id', clinicaId).limit(1).then(async ({ data }) => {
       if (data && data.length > 0) return // já tem dados no Supabase
       try {
         const raw = localStorage.getItem('clinica_dadosPorMes')
