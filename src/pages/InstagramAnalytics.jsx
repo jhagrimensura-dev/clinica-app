@@ -1337,12 +1337,6 @@ export default function InstagramAnalytics() {
   const [adsEngajamento, setAdsEngajamento] = useState([])
   const [filtroTipo, setFiltroTipo] = useState('')
 
-  // Salva no Supabase sempre que os criativos de engajamento forem carregados
-  useEffect(() => {
-    if (adsEngajamento.length === 0) return
-    const payload = adsEngajamento.map(a => ({ ad_id: a.ad_id, nome: a.adNameFull || a.ad_name || '', thumbnail: a.thumbnail, permalink: a.permalink }))
-    supabase.from('configuracoes').upsert({ chave: 'ads_engajamento', valor: payload }, { onConflict: 'chave' })
-  }, [adsEngajamento])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -1443,6 +1437,15 @@ export default function InstagramAnalytics() {
           }))
       }
       setAdsEngajamento(engFormatados)
+
+      // Salva TODOS os anúncios (não só engajamento) para Leads por Origem
+      const allAdsPayload = (adsJson.data || []).map(ad => {
+        const info = adThumbMap[ad.id] || {}
+        return { ad_id: ad.id, nome: info.adName || ad.name || '', thumbnail: info.thumbnail || '', permalink: info.permalink || '' }
+      })
+      if (allAdsPayload.length > 0) {
+        supabase.from('configuracoes').upsert({ chave: 'ads_engajamento', valor: allAdsPayload }, { onConflict: 'chave' })
+      }
     } catch (e) {
       setError(e.message)
     } finally {
