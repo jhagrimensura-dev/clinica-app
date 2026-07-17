@@ -81,6 +81,7 @@ export default function Metas() {
   }
 
   const toggleDia = (si, di) => {
+    if (!calendario[si] || !calendario[si][di]) return
     const dia = calendario[si][di]
     if (dia.mes) return
     const key = `${si}-${di}`

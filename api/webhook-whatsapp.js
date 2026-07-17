@@ -25,7 +25,8 @@ export default async function handler(req, res) {
 
   try {
     const payload = req.body
-    const instanciaId = req.query.i
+    const instanciaId = req.query.i || payload?.instanceId
+    if (!instanciaId) return res.status(200).json({ ok: true, skipped: true })
 
     const deMin = payload?.fromMe ?? false
     const rawPhone = payload?.phone || ''
@@ -60,7 +61,7 @@ export default async function handler(req, res) {
     // Para mensagens enviadas pelo celular (@lid), busca o telefone real pelo nome do chat
     if (deMin && isLidPhone && nomeContato && nomeContato !== phone) {
       try {
-        const iid = encodeURIComponent(instanciaId || payload?.instanceId || '')
+        const iid = encodeURIComponent(instanciaId)
         const nc = encodeURIComponent(nomeContato)
         const lookupRes = await fetch(
           `${SUPABASE_URL}/rest/v1/whatsapp_mensagens?instancia_id=eq.${iid}&nome_contato=eq.${nc}&de_mim=eq.false&select=phone&limit=1`,
@@ -82,7 +83,7 @@ export default async function handler(req, res) {
         'Prefer': 'resolution=ignore-duplicates',
       },
       body: JSON.stringify({
-        instancia_id: instanciaId || payload?.instanceId || '',
+        instancia_id: instanciaId,
         phone,
         nome_contato: nomeContato,
         message_id: messageId,
