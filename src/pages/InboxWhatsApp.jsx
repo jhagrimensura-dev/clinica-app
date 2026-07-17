@@ -892,20 +892,34 @@ export default function InboxWhatsApp({ contaId }) {
 
   // Normaliza mensagens do Z-API para o formato interno
   function normalizarMsgsZapi(data) {
-    const lista = Array.isArray(data) ? data : Array.isArray(data?.messages) ? data.messages : []
+    const lista = Array.isArray(data) ? data
+      : Array.isArray(data?.value) ? data.value
+      : Array.isArray(data?.messages) ? data.messages
+      : Array.isArray(data?.data) ? data.data
+      : []
     return lista.map(m => {
-      const texto = m.text?.message || m.body || m.caption || m.fileName || (m.audio ? '[áudio]' : '[mídia]')
+      const texto = m.text?.message || m.message?.text || m.body || m.caption
+        || m.image?.caption || m.video?.caption || m.document?.caption
+        || m.fileName || m.document?.fileName
+        || (m.audio || m.audio?.audioUrl ? '[áudio]' : null)
+        || (m.image || m.image?.imageUrl ? '[imagem]' : null)
+        || (m.video || m.video?.videoUrl ? '[vídeo]' : null)
+        || (m.document ? '[documento]' : null)
+        || (m.sticker ? '[sticker]' : null)
+        || '[mensagem]'
       const mediaUrl = m.image?.imageUrl || m.image?.url || m.video?.videoUrl || m.document?.documentUrl || m.audio?.audioUrl || m.audio?.url || null
+      const rawTs = m.momment || m.timestamp || m.messageTimestamp || 0
+      const tsMs = Number(rawTs) < 10000000000 ? Number(rawTs) * 1000 : Number(rawTs)
       return {
-        id: m.messageId || m.id || String(m.momment || m.timestamp),
+        id: m.messageId || m.id || String(rawTs),
         minha: m.fromMe ?? false,
         texto,
         tipo: m.type || 'text',
         mediaUrl,
-        hora: formatTs((m.momment || m.timestamp || 0) * (String(m.momment || m.timestamp || 0).length < 13 ? 1000 : 1)),
-        tsMs: (m.momment || m.timestamp || 0) * (String(m.momment || m.timestamp || 0).length < 13 ? 1000 : 1),
+        hora: formatTs(tsMs),
+        tsMs,
       }
-    }).filter(m => m.texto)
+    })
   }
 
   // Carrega mensagens do Supabase + Z-API (sempre em paralelo para capturar msgs do celular)
