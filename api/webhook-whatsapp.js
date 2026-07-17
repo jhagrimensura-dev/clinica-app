@@ -1,3 +1,11 @@
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '4mb',
+    },
+  },
+}
+
 function extrairTexto(body) {
   if (body?.text?.message) return body.text.message
   if (body?.image) return body.image.caption || '[imagem]'
