@@ -994,15 +994,17 @@ export default function InboxWhatsApp({ contaId }) {
       // Injeta última msg enviada do Z-API se não estiver no Supabase (webhook não disparou)
       const convAtual = conversasRef.current.find(c => c.id === phone)
       if (convAtual?.ultimaDeMim && convAtual.ultimaMensagem && convAtual.tsRaw) {
+        // tsRaw do Z-API pode vir em segundos, normaliza para ms
+        const zapiTs = convAtual.tsRaw < 10000000000 ? convAtual.tsRaw * 1000 : convAtual.tsRaw
         const latestTs = msgs.length > 0 ? Math.max(...msgs.map(m => m.tsMs)) : 0
-        const jaExiste = msgs.some(m => m.minha && m.texto === convAtual.ultimaMensagem && Math.abs(m.tsMs - convAtual.tsRaw) < 60000)
-        if (convAtual.tsRaw > latestTs + 5000 && !jaExiste) {
+        const jaExiste = msgs.some(m => m.minha && m.texto === convAtual.ultimaMensagem && Math.abs(m.tsMs - zapiTs) < 60000)
+        if (zapiTs > latestTs + 5000 && !jaExiste) {
           msgs = [...msgs, {
-            id: `zapi-last-${convAtual.tsRaw}`,
+            id: `zapi-last-${zapiTs}`,
             minha: true,
             texto: convAtual.ultimaMensagem,
-            hora: formatTs(convAtual.tsRaw),
-            tsMs: convAtual.tsRaw,
+            hora: formatTs(zapiTs),
+            tsMs: zapiTs,
           }].sort((a, b) => a.tsMs - b.tsMs)
         }
       }
