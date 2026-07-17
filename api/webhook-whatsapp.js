@@ -109,11 +109,18 @@ export default async function handler(req, res) {
               const chatsData = await chatsRes.json()
               const lista = Array.isArray(chatsData) ? chatsData : Array.isArray(chatsData?.value) ? chatsData.value : []
               const chat = lista.find(c => c.name === chatName)
+              const rawChatPhone = chat?.phone || null
+              console.log('[WH-ZAPI-DEBUG]', JSON.stringify({ chatName, hasToken: true, chatsCount: lista.length, chatFound: !!chat, chatPhone: rawChatPhone }))
               if (chat?.phone) {
-                const cleaned = (chat.phone || '').replace(/@s\.whatsapp\.net$/, '').replace(/@c\.us$/, '').replace(/@lid$/, '')
-                if (cleaned && /^\d+$/.test(cleaned)) foundPhone = cleaned
+                // Só aceita phone real (@s.whatsapp.net ou @c.us), ignora @lid
+                if (!chat.phone.includes('@lid')) {
+                  const cleaned = chat.phone.replace(/@s\.whatsapp\.net$/, '').replace(/@c\.us$/, '')
+                  if (cleaned && /^\d+$/.test(cleaned)) foundPhone = cleaned
+                }
               }
               if (foundPhone) console.log('[WH-SENT-ZAPI]', JSON.stringify({ chatName, resolvedPhone: foundPhone }))
+            } else {
+              console.log('[WH-ZAPI-DEBUG]', JSON.stringify({ chatName, hasToken: false, confRows: (confData || []).length }))
             }
           } catch (_) {}
         }
@@ -128,6 +135,8 @@ export default async function handler(req, res) {
     }
 
     if (!phone) return res.status(200).json({ ok: true, skipped: true })
+
+    console.log('[WH-SAVE]', JSON.stringify({ phone, deMin, nomeContato, texto: texto?.slice(0, 40) }))
 
     await fetch(`${SUPABASE_URL}/rest/v1/whatsapp_mensagens`, {
       method: 'POST',
