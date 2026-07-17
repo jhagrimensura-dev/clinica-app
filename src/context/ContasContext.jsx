@@ -41,7 +41,7 @@ export function ContasProvider({ children }) {
     setLoading(true)
 
     const fetchAll = async () => {
-      const { data } = await supabase.from('contas_pagar').select('*').order('vencimento', { ascending: true })
+      const { data } = await supabase.from('contas_pagar').select('*').eq('clinica_id', clinicaId).order('vencimento', { ascending: true })
       if (data) setContas(data.map(fromDB))
       setLoading(false)
     }

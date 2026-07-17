@@ -450,11 +450,11 @@ export default function Agenda() {
     setModal({ date: dateKey(day), time, dayLabel, existing: appt || null })
   }
 
-  const handleSave = ({ paciente, procedimento, status, duracao, telefone }) => {
+  const handleSave = (dados) => {
     if (modal.existing) {
-      saveAgendamento({ ...modal.existing, paciente, procedimento, status, duracao, telefone })
+      saveAgendamento({ ...modal.existing, ...dados })
     } else {
-      saveAgendamento({ id: Date.now().toString(), date: modal.date, time: modal.time, paciente, procedimento, status, duracao, telefone })
+      saveAgendamento({ id: Date.now().toString(), date: modal.date, time: modal.time, ...dados })
     }
     setModal(null)
   }

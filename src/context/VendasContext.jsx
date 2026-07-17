@@ -48,7 +48,7 @@ export function VendasProvider({ children }) {
     setLoading(true)
 
     const fetchAll = async () => {
-      const { data } = await supabase.from('lancamentos').select('*').order('data', { ascending: true })
+      const { data } = await supabase.from('lancamentos').select('*').eq('clinica_id', clinicaId).order('data', { ascending: true })
       if (data) setLancamentos(data.map(fromDB))
       setLoading(false)
     }

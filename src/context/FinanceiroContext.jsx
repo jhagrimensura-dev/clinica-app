@@ -94,7 +94,7 @@ export function FinanceiroProvider({ children }) {
   // Migração única: localStorage → Supabase (roda uma vez por clinicaId)
   useEffect(() => {
     if (!clinicaId) return
-    supabase.from('financeiro_dados').select('id').limit(1).then(async ({ data }) => {
+    supabase.from('financeiro_dados').select('id').eq('clinica_id', clinicaId).limit(1).then(async ({ data }) => {
       if (data && data.length > 0) return // já tem dados no Supabase
       try {
         const rawDados = localStorage.getItem('fin_dados')
@@ -142,6 +142,7 @@ export function FinanceiroProvider({ children }) {
     supabase
       .from('financeiro_config')
       .select('*')
+      .eq('clinica_id', clinicaId)
       .maybeSingle()
       .then(({ data }) => {
         if (data) {
@@ -158,6 +159,7 @@ export function FinanceiroProvider({ children }) {
     supabase
       .from('financeiro_dados')
       .select('*')
+      .eq('clinica_id', clinicaId)
       .eq('ano', ano)
       .then(({ data }) => {
         if (data) {
@@ -181,7 +183,7 @@ export function FinanceiroProvider({ children }) {
   useEffect(() => {
     if (!clinicaId) return
 
-    const fetchDados = () => supabase.from('financeiro_dados').select('*').eq('ano', ano).then(({ data }) => {
+    const fetchDados = () => supabase.from('financeiro_dados').select('*').eq('clinica_id', clinicaId).eq('ano', ano).then(({ data }) => {
       if (data) {
         const map = {}
         data.forEach(r => { map[`${r.ano}-${r.mes}`] = { receitas: r.receitas || {}, custos: r.custos || {}, despesas: r.despesas || {}, investimentos: r.investimentos || {}, emprestimos: r.emprestimos || {} } })
@@ -190,7 +192,7 @@ export function FinanceiroProvider({ children }) {
       }
     })
 
-    const fetchConfig = () => supabase.from('financeiro_config').select('*').maybeSingle().then(({ data }) => {
+    const fetchConfig = () => supabase.from('financeiro_config').select('*').eq('clinica_id', clinicaId).maybeSingle().then(({ data }) => {
       if (data) {
         if (data.categorias) setCategorias(data.categorias)
         if (data.ocultos) setOcultos(data.ocultos)
