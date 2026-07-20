@@ -10,31 +10,21 @@ import data from '@emoji-mart/data'
 import InfoTooltip from '../components/InfoTooltip'
 import FeriadoAviso from '../components/FeriadoAviso'
 
-// ── Proxy helper (evita CORS) ─────────────────────────────────────
-async function zapiFetch(conta, path, method = 'GET', body = null) {
-  const encodedPath = encodeURIComponent(path)
-  const ctParam = conta.clientToken ? `&ct=${encodeURIComponent(conta.clientToken)}` : ''
-  const res = await fetch(
-    `/api/zapi-proxy?i=${conta.instanciaId}&t=${conta.instanciaToken}&path=${encodedPath}${ctParam}`,
-    {
-      method,
-      cache: 'no-store',
-      headers: { 'Content-Type': 'application/json' },
-      ...(body ? { body: JSON.stringify(body) } : {}),
-    }
-  )
+// ── Evolution API helper ───────────────────────────────────────────
+const EVO_URL = 'https://evolution-api-production-1083.up.railway.app'
+const EVO_KEY = 'Amanda@2025!'
+
+async function evoFetch(conta, path, method = 'GET', body = null) {
+  const base = conta.evolutionUrl || EVO_URL
+  const apiKey = conta.evolutionApiKey || EVO_KEY
+  const res = await fetch(`${base}/${path}/${conta.instanciaId}`, {
+    method,
+    cache: 'no-store',
+    headers: { 'Content-Type': 'application/json', 'apikey': apiKey },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  })
   const text = await res.text()
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}: ${text.slice(0, 120)}`)
-  }
-  if (text.startsWith('export') || text.startsWith('<!')) {
-    throw new Error(`API não acessível: ${text.slice(0, 60)}`)
-  }
-  try {
-    return JSON.parse(text)
-  } catch {
-    throw new Error(`Resposta inválida: ${text.slice(0, 80)}`)
-  }
+  try { return JSON.parse(text) } catch { return {} }
 }
 
 function formatTs(ms) {
@@ -58,30 +48,36 @@ function getDayLabel(tsMs) {
 }
 
 function normalizeChats(data, instancia) {
-  const lista = Array.isArray(data) ? data : Array.isArray(data?.value) ? data.value : []
+  const lista = Array.isArray(data) ? data : []
   if (!lista.length) return []
-  // eslint-disable-next-line no-param-reassign
-  data = lista
   return lista
-    .filter(c => c.phone && !c.isGroupAnnouncement)
+    .filter(c => c.id && !c.id.includes('@g.us') && !c.id.includes('@broadcast') && !c.id.includes('@newsletter'))
     .map(c => {
-      const cleanPhone = (c.phone || '').replace(/@s\.whatsapp\.net$/, '').replace(/@c\.us$/, '').replace(/@lid$/, '')
-      const thumb = c.profileThumbnail || c.profilePicUrl || c.photo || null
-      const foto = !thumb ? null
-        : thumb.startsWith('http') ? thumb
-        : thumb.startsWith('data:') ? thumb
-        : `data:image/jpeg;base64,${thumb}`
+      const cleanPhone = (c.id || '').replace(/@s\.whatsapp\.net$/, '').replace(/@c\.us$/, '')
+      const foto = c.profilePicUrl || null
+      const lastMsg = c.lastMessage
+      const msgContent = lastMsg?.message
+      const ultimaMensagem = msgContent?.conversation
+        || msgContent?.extendedTextMessage?.text
+        || msgContent?.imageMessage?.caption || (msgContent?.imageMessage ? '[imagem]' : null)
+        || (msgContent?.audioMessage ? '[áudio]' : null)
+        || msgContent?.videoMessage?.caption || (msgContent?.videoMessage ? '[vídeo]' : null)
+        || msgContent?.documentMessage?.caption || msgContent?.documentMessage?.fileName || (msgContent?.documentMessage ? '[documento]' : null)
+        || ''
+      const rawTs = lastMsg?.messageTimestamp || 0
+      const tsMs = Number(rawTs) < 10000000000 ? Number(rawTs) * 1000 : Number(rawTs)
       return {
-      id: cleanPhone,
-      instancia,
-      contato: { nome: c.name || cleanPhone, telefone: cleanPhone, foto },
-      naoLidas: parseInt(c.unread || c.messagesUnread || '0', 10),
-      horario: formatTs(c.lastMessageTime),
-      tsRaw: Number(c.lastMessageTime) || 0,
-      ultimaMensagem: c.lastMessage?.body || c.lastMessage?.text?.message || c.lastMessage?.caption || '',
-      ultimaDeMim: c.lastMessage?.fromMe || false,
-      mensagens: [],
-    }})
+        id: cleanPhone,
+        instancia,
+        contato: { nome: c.name || c.pushName || cleanPhone, telefone: cleanPhone, foto },
+        naoLidas: parseInt(c.unreadCount || '0', 10),
+        horario: formatTs(tsMs),
+        tsRaw: tsMs,
+        ultimaMensagem,
+        ultimaDeMim: lastMsg?.key?.fromMe || false,
+        mensagens: [],
+      }
+    })
     .sort((a, b) => {
       const aUnread = a.naoLidas > 0 ? 1 : 0
       const bUnread = b.naoLidas > 0 ? 1 : 0
@@ -761,15 +757,15 @@ export default function InboxWhatsApp({ contaId }) {
     new Notification(`💬 ${nome}`, { body: texto, icon: '/pwa-192x192.png' })
   }
 
-  // Carrega lista de conversas da Z-API
+  // Carrega lista de conversas da Evolution API
   const fetchConversas = useCallback(async (inicial = false) => {
     if (!contaAtiva?.instanciaId) return
     if (inicial) setLoadingConversas(true)
     setErro(null)
     try {
-      // Busca Z-API (mais recentes) e histórico do Supabase em paralelo
+      // Busca Evolution API e histórico do Supabase em paralelo
       const [data, supaHist] = await Promise.all([
-        zapiFetch(contaAtiva, 'chats?page=1&pageSize=100'),
+        evoFetch(contaAtiva, 'chat/findChats'),
         supabase.from('whatsapp_mensagens')
           .select('phone, nome_contato, timestamp_ms')
           .eq('instancia_id', contaAtiva.instanciaId)
@@ -777,18 +773,26 @@ export default function InboxWhatsApp({ contaId }) {
           .limit(500),
       ])
       const novaLista = normalizeChats(data, contaAtiva.nome)
-      if (novaLista.length === 0 && data && !Array.isArray(data) && !Array.isArray(data?.value)) {
-        setErro(`Z-API: ${JSON.stringify(data).slice(0, 120)}`)
+      if (novaLista.length === 0 && data && !Array.isArray(data)) {
+        const s = data?.statusCode || data?.status || 0
+        const msg = JSON.stringify(data).toLowerCase()
+        if (s >= 400 || msg.includes('not connected') || msg.includes('disconnected') || msg.includes('closed')) {
+          setDesconectado(true)
+          setErro(null)
+          if (inicial) setLoadingConversas(false)
+          return
+        }
+        setErro(`Evolution API: ${JSON.stringify(data).slice(0, 120)}`)
       } else {
         setErro(null)
       }
 
-      // Complementa com conversas históricas do Supabase que não estão na lista Z-API
-      const zapiPhones = new Set(novaLista.map(c => c.id))
+      // Complementa com conversas históricas do Supabase que não estão na lista da API
+      const evoPhones = new Set(novaLista.map(c => c.id))
       const histMap = {}
       for (const m of supaHist.data || []) {
         const p = (m.phone || '').replace(/\D/g, '')
-        if (!p || zapiPhones.has(m.phone)) continue
+        if (!p || evoPhones.has(m.phone)) continue
         if (!histMap[m.phone]) histMap[m.phone] = { phone: m.phone, nome: m.nome_contato || m.phone, ts: m.timestamp_ms }
       }
       const historicas = Object.values(histMap).map(h => ({
@@ -856,7 +860,7 @@ export default function InboxWhatsApp({ contaId }) {
         jaTemSelecao.current = true
       }
 
-      // Carrega fotos de perfil em fila (apenas conversas Z-API, não históricas)
+      // Carrega fotos de perfil em fila para conversas sem foto
       novaLista.forEach((conv, i) => {
         if (conv.contato.foto) return
         const cached = fotosCache.current[conv.id]
@@ -866,13 +870,8 @@ export default function InboxWhatsApp({ contaId }) {
         }
         setTimeout(async () => {
           try {
-            const d = await zapiFetch(contaAtiva, `profile-picture?phone=${conv.id}`)
-            console.log('[foto]', conv.id, d)
-            const raw = d?.link || d?.value || d?.url || d?.profilePicUrl || d?.picture || d?.photo || null
-            const url = !raw ? null
-              : raw.startsWith('http') ? raw
-              : raw.startsWith('data:') ? raw
-              : `data:image/jpeg;base64,${raw}`
+            const d = await evoFetch(contaAtiva, 'chat/fetchProfilePictureUrl', 'POST', { number: conv.id })
+            const url = d?.profilePictureUrl || null
             if (url) {
               fotosCache.current[conv.id] = url
               localStorage.setItem('wpp_fotos', JSON.stringify(fotosCache.current))
@@ -882,80 +881,24 @@ export default function InboxWhatsApp({ contaId }) {
         }, i * 250)
       })
     } catch (e) {
-      if (e.message.includes('connected with whatsapp') || e.message.includes('"connected"')) {
-        setDesconectado(true)
-        setErro(null)
-      } else {
-        setErro(`Erro ao carregar conversas: ${e.message}`)
-      }
+      setErro(`Erro ao carregar conversas: ${e.message}`)
     }
     if (inicial) setLoadingConversas(false)
   }, [contaAtiva?.instanciaId, arquivadasKey])
 
-  // Normaliza mensagens do Z-API para o formato interno
-  function normalizarMsgsZapi(data) {
-    const lista = Array.isArray(data) ? data
-      : Array.isArray(data?.value) ? data.value
-      : Array.isArray(data?.messages) ? data.messages
-      : Array.isArray(data?.data) ? data.data
-      : []
-    return lista.map(m => {
-      const texto = m.text?.message || m.message?.text || m.body || m.caption
-        || m.image?.caption || m.video?.caption || m.document?.caption
-        || m.fileName || m.document?.fileName
-        || (m.audio || m.audio?.audioUrl ? '[áudio]' : null)
-        || (m.image || m.image?.imageUrl ? '[imagem]' : null)
-        || (m.video || m.video?.videoUrl ? '[vídeo]' : null)
-        || (m.document ? '[documento]' : null)
-        || (m.sticker ? '[sticker]' : null)
-        || '[mensagem]'
-      const mediaUrl = m.image?.imageUrl || m.image?.url || m.video?.videoUrl || m.document?.documentUrl || m.audio?.audioUrl || m.audio?.url || null
-      const rawTs = m.momment || m.timestamp || m.messageTimestamp || 0
-      const tsMs = Number(rawTs) < 10000000000 ? Number(rawTs) * 1000 : Number(rawTs)
-      return {
-        id: m.messageId || m.id || String(rawTs),
-        minha: m.fromMe ?? false,
-        texto,
-        tipo: m.type || 'text',
-        mediaUrl,
-        hora: formatTs(tsMs),
-        tsMs,
-      }
-    })
-  }
-
-  // Carrega mensagens do Supabase + Z-API (sempre em paralelo para capturar msgs do celular)
+  // Carrega mensagens do Supabase (Evolution API webhook salva tudo, incluindo mensagens do celular)
   const fetchMensagens = useCallback(async (phone, chatNome, silent = false) => {
     if (!contaAtiva?.instanciaId || !phone) return
     if (!silent) setLoadingMsgs(true)
     try {
       const normTs = t => Number(t) < 10000000000 ? Number(t) * 1000 : Number(t)
 
-      // Busca Supabase e Z-API em paralelo
-      const [supaByPhone, supaByNome, zapiResult] = await Promise.all([
+      const [supaByPhone, supaByNome] = await Promise.all([
         supabase.from('whatsapp_mensagens').select('*').eq('phone', phone).order('timestamp_ms', { ascending: true }).limit(200),
         (chatNome && chatNome !== phone)
           ? supabase.from('whatsapp_mensagens').select('*').eq('de_mim', true).eq('nome_contato', chatNome).neq('phone', phone).order('timestamp_ms', { ascending: true }).limit(50)
           : Promise.resolve({ data: [] }),
-        // Tenta buscar histórico direto do Z-API em múltiplos formatos
-        (async () => {
-          const formats = [
-            `messages?phone=${phone}@s.whatsapp.net&page=1&pageSize=50`,
-            `messages?phone=${phone}@c.us&page=1&pageSize=50`,
-            `messages?phone=${phone}&page=1&pageSize=50`,
-          ]
-          for (const f of formats) {
-            try {
-              const r = await zapiFetch(contaAtiva, f)
-              const lista = Array.isArray(r) ? r : Array.isArray(r?.value) ? r.value : Array.isArray(r?.messages) ? r.messages : Array.isArray(r?.data) ? r.data : []
-              if (lista.length > 0) return r
-            } catch (_) {}
-          }
-          return null
-        })(),
       ])
-
-      console.log('[zapi-msgs raw]', phone, zapiResult)
 
       const toMapSupa = m => ({
         id: m.message_id || String(m.id),
@@ -970,16 +913,11 @@ export default function InboxWhatsApp({ contaId }) {
       })
 
       const supaRows = [...(supaByPhone.data || []), ...(supaByNome.data || [])]
-      const supaIds = new Set(supaRows.map(m => m.message_id).filter(Boolean))
-
-      // Mensagens da Z-API que não estão no Supabase (enviadas pelo celular sem webhook)
-      const zapiMsgs = normalizarMsgsZapi(zapiResult).filter(m => !supaIds.has(m.id))
-
       const seen = new Set()
-      let msgs = [
-        ...supaRows.filter(m => { const k = m.message_id || m.id; const ok = !seen.has(k); seen.add(k); return ok }).map(toMapSupa),
-        ...zapiMsgs,
-      ].sort((a, b) => a.tsMs - b.tsMs)
+      let msgs = supaRows
+        .filter(m => { const k = m.message_id || m.id; const ok = !seen.has(k); seen.add(k); return ok })
+        .map(toMapSupa)
+        .sort((a, b) => a.tsMs - b.tsMs)
 
       // Dedup mensagens próprias duplicadas por texto+timestamp (~30s)
       const seenOwn = new Map()
@@ -990,24 +928,6 @@ export default function InboxWhatsApp({ contaId }) {
         seenOwn.set(m.texto, m.tsMs)
         return true
       })
-
-      // Injeta última msg enviada do Z-API se não estiver no Supabase (webhook não disparou)
-      const convAtual = conversasRef.current.find(c => c.id === phone)
-      if (convAtual?.ultimaDeMim && convAtual.ultimaMensagem && convAtual.tsRaw) {
-        // tsRaw do Z-API pode vir em segundos, normaliza para ms
-        const zapiTs = convAtual.tsRaw < 10000000000 ? convAtual.tsRaw * 1000 : convAtual.tsRaw
-        const latestTs = msgs.length > 0 ? Math.max(...msgs.map(m => m.tsMs)) : 0
-        const jaExiste = msgs.some(m => m.minha && m.texto === convAtual.ultimaMensagem && Math.abs(m.tsMs - zapiTs) < 60000)
-        if (zapiTs > latestTs + 5000 && !jaExiste) {
-          msgs = [...msgs, {
-            id: `zapi-last-${zapiTs}`,
-            minha: true,
-            texto: convAtual.ultimaMensagem,
-            hora: formatTs(zapiTs),
-            tsMs: zapiTs,
-          }].sort((a, b) => a.tsMs - b.tsMs)
-        }
-      }
 
       // Detecta mensagens novas e notifica
       const anteriorCount = msgCountRef.current[phone] ?? -1
@@ -1029,14 +949,12 @@ export default function InboxWhatsApp({ contaId }) {
     if (!contaAtiva?.instanciaId) return
     setLoadingQr(true)
     try {
-      const ctParam = contaAtiva.clientToken ? `&ct=${encodeURIComponent(contaAtiva.clientToken)}` : ''
-      const res = await fetch(`/api/zapi-qr?i=${contaAtiva.instanciaId}&t=${contaAtiva.instanciaToken}${ctParam}`)
-      const d = await res.json()
-      const qr = d?.value || d?.qrcode || d?.qr || null
+      const d = await evoFetch(contaAtiva, 'instance/connect')
+      const qr = d?.code || null
       if (qr) setQrCode(qr)
     } catch {}
     setLoadingQr(false)
-  }, [contaAtiva?.instanciaId, contaAtiva?.instanciaToken, contaAtiva?.clientToken])
+  }, [contaAtiva?.instanciaId])
 
   // Auto-fetch e refresh do QR a cada 45s quando desconectado
   useEffect(() => {
@@ -1052,10 +970,8 @@ export default function InboxWhatsApp({ contaId }) {
     if (!desconectado || !contaAtiva?.instanciaId) return
     const check = async () => {
       try {
-        const ctParam = contaAtiva.clientToken ? `&ct=${encodeURIComponent(contaAtiva.clientToken)}` : ''
-        const res = await fetch(`/api/zapi-status?i=${contaAtiva.instanciaId}&t=${contaAtiva.instanciaToken}${ctParam}`)
-        const d = await res.json()
-        if (d?.connected === true || d?.status === 'connected' || d?.value === 'connected' || d?.smartphoneConnected === true) {
+        const d = await evoFetch(contaAtiva, 'instance/connectionState')
+        if (d?.instance?.state === 'open') {
           setDesconectado(false)
           setQrCode(null)
           jaTemSelecao.current = false
@@ -1271,9 +1187,9 @@ export default function InboxWhatsApp({ contaId }) {
       reader.onload = async (e) => {
         const base64 = e.target.result
         if (tipo === 'foto') {
-          await zapiFetch(contaAtiva, 'send-image', 'POST', { phone: conversa.id, image: base64, caption: '' })
+          await evoFetch(contaAtiva, 'message/sendMedia', 'POST', { number: conversa.id, mediatype: 'image', media: base64.split(',')[1] || base64, caption: '' })
         } else {
-          await zapiFetch(contaAtiva, 'send-document', 'POST', { phone: conversa.id, document: base64, fileName: file.name, caption: '' })
+          await evoFetch(contaAtiva, 'message/sendMedia', 'POST', { number: conversa.id, mediatype: 'document', media: base64.split(',')[1] || base64, caption: '', fileName: file.name })
         }
       }
       reader.readAsDataURL(file)
@@ -1313,9 +1229,7 @@ export default function InboxWhatsApp({ contaId }) {
     setSelecionada(prev => ({ ...prev, mensagens: [...(prev?.mensagens || []), msgLocal] }))
 
     try {
-      const payload = { phone: conversa.id, message: texto }
-      if (citando?.id) payload.quoted = { messageId: citando.id }
-      await zapiFetch(contaAtiva, 'send-text', 'POST', payload)
+      await evoFetch(contaAtiva, 'message/sendText', 'POST', { number: conversa.id, text: texto })
 
       // Salva no Supabase também
       await supabase.from('whatsapp_mensagens').insert({
