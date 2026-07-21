@@ -47,13 +47,18 @@ function getDayLabel(tsMs) {
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-function normalizeChats(data, instancia) {
+function normalizeChats(data, instancia, contactNameMap = {}) {
   const lista = Array.isArray(data) ? data : []
   if (!lista.length) return []
   return lista
-    .filter(c => c.id && !c.id.includes('@g.us') && !c.id.includes('@broadcast') && !c.id.includes('@newsletter'))
+    .filter(c => {
+      const jid = c.remoteJid || c.id || ''
+      return jid && !jid.includes('@g.us') && !jid.includes('@broadcast') && !jid.includes('@newsletter')
+    })
     .map(c => {
-      const cleanPhone = (c.id || '').replace(/@s\.whatsapp\.net$/, '').replace(/@c\.us$/, '')
+      const jid = c.remoteJid || c.id || ''
+      const isLid = jid.endsWith('@lid')
+      const cleanPhone = jid.replace(/@s\.whatsapp\.net$/, '').replace(/@c\.us$/, '').replace(/@lid$/, '')
       const foto = c.profilePicUrl || null
       const lastMsg = c.lastMessage
       const msgContent = lastMsg?.message
@@ -66,10 +71,15 @@ function normalizeChats(data, instancia) {
         || ''
       const rawTs = lastMsg?.messageTimestamp || 0
       const tsMs = Number(rawTs) < 10000000000 ? Number(rawTs) * 1000 : Number(rawTs)
+      // Nome: usa pushName do chat, ou mapa lid→nome do findContacts, ou telefone (se não @lid)
+      const nomeResolvido = c.name || c.pushName || contactNameMap[jid] || (isLid ? null : cleanPhone) || cleanPhone
       return {
         id: cleanPhone,
+        jid,
+        isLid,
         instancia,
-        contato: { nome: c.name || c.pushName || cleanPhone, telefone: cleanPhone, foto },
+        // @lid: telefone fica vazio (não é número real); usuário preenche ao registrar lead
+        contato: { nome: nomeResolvido, telefone: isLid ? '' : cleanPhone, foto },
         naoLidas: parseInt(c.unreadCount || '0', 10),
         horario: formatTs(tsMs),
         tsRaw: tsMs,
@@ -763,16 +773,25 @@ export default function InboxWhatsApp({ contaId }) {
     if (inicial) setLoadingConversas(true)
     setErro(null)
     try {
-      // Busca Evolution API e histórico do Supabase em paralelo
-      const [data, supaHist] = await Promise.all([
-        evoFetch(contaAtiva, 'chat/findChats'),
+      // Busca Evolution API, contatos (para nomes) e histórico do Supabase em paralelo
+      const [data, contacts, supaHist] = await Promise.all([
+        evoFetch(contaAtiva, 'chat/findChats', 'POST', {}),
+        evoFetch(contaAtiva, 'chat/findContacts', 'POST', { where: {} }),
         supabase.from('whatsapp_mensagens')
           .select('phone, nome_contato, timestamp_ms')
           .eq('instancia_id', contaAtiva.instanciaId)
           .order('timestamp_ms', { ascending: false })
           .limit(500),
       ])
-      const novaLista = normalizeChats(data, contaAtiva.nome)
+
+      // Mapa jid→nome para resolver @lid sem pushName
+      const contactNameMap = {}
+      const contactsList = Array.isArray(contacts) ? contacts : []
+      for (const c of contactsList) {
+        if (c.remoteJid && c.pushName) contactNameMap[c.remoteJid] = c.pushName
+      }
+
+      const novaLista = normalizeChats(data, contaAtiva.nome, contactNameMap)
       if (novaLista.length === 0 && data && !Array.isArray(data)) {
         const s = data?.statusCode || data?.status || 0
         const msg = JSON.stringify(data).toLowerCase()
@@ -831,13 +850,18 @@ export default function InboxWhatsApp({ contaId }) {
             ? 0
             : naoLidasMap[nova.id] || 0
           const arquivada = arquivadas.has(nova.id) || existente?.arquivada || false
-          // Aplica nome do lead se existir
-          const tel = (nova.contato?.telefone || nova.id || '').replace(/\D/g, '')
-          const lead = tel.length > 5 ? leadsRef.current.find(l => {
+          // Aplica nome do lead se existir (por tel; fallback por nome para contatos @lid)
+          const tel = (nova.contato?.telefone || '').replace(/\D/g, '')
+          const leadPorTel = tel.length > 5 ? leadsRef.current.find(l => {
             const lt = (l.telefone || '').replace(/\D/g, '')
             return lt.length > 5 && (lt.endsWith(tel.slice(-9)) || tel.endsWith(lt.slice(-9)))
           }) : null
-          const contato = lead?.nome ? { ...nova.contato, nome: lead.nome } : nova.contato
+          const nomeContato = nova.contato?.nome
+          const leadPorNome = !leadPorTel && nova.isLid && nomeContato && nomeContato !== nova.id
+            ? leadsRef.current.find(l => l.nome && l.nome.toLowerCase().trim() === nomeContato.toLowerCase().trim())
+            : null
+          const lead = leadPorTel || leadPorNome
+          const contato = lead?.nome ? { ...nova.contato, nome: lead.nome, telefone: lead.telefone || nova.contato.telefone } : nova.contato
           return existente
             ? { ...nova, contato, mensagens: existente.mensagens, naoLidas, arquivada }
             : { ...nova, contato, naoLidas, arquivada }
@@ -870,7 +894,7 @@ export default function InboxWhatsApp({ contaId }) {
         }
         setTimeout(async () => {
           try {
-            const d = await evoFetch(contaAtiva, 'chat/fetchProfilePictureUrl', 'POST', { number: conv.id })
+            const d = await evoFetch(contaAtiva, 'chat/fetchProfilePictureUrl', 'POST', { number: conv.jid || conv.id })
             const url = d?.profilePictureUrl || null
             if (url) {
               fotosCache.current[conv.id] = url
@@ -886,8 +910,8 @@ export default function InboxWhatsApp({ contaId }) {
     if (inicial) setLoadingConversas(false)
   }, [contaAtiva?.instanciaId, arquivadasKey])
 
-  // Carrega mensagens do Supabase (Evolution API webhook salva tudo, incluindo mensagens do celular)
-  const fetchMensagens = useCallback(async (phone, chatNome, silent = false) => {
+  // Carrega mensagens do Supabase + histórico da Evolution API (na abertura inicial)
+  const fetchMensagens = useCallback(async (phone, chatNome, silent = false, jid = null) => {
     if (!contaAtiva?.instanciaId || !phone) return
     if (!silent) setLoadingMsgs(true)
     try {
@@ -928,6 +952,69 @@ export default function InboxWhatsApp({ contaId }) {
         seenOwn.set(m.texto, m.tsMs)
         return true
       })
+
+      // Busca histórico da Evolution API na abertura inicial (jid passado) para preencher msgs recebidas
+      if (jid) {
+        try {
+          const evoHistory = await evoFetch(contaAtiva, 'chat/findMessages', 'POST', {
+            where: { key: { remoteJid: jid } },
+            limit: 200,
+          })
+          const records = evoHistory?.messages?.records || []
+          const supaIds = new Set(msgs.map(m => m.id))
+          const extrairTextoEvo = (msg, type) => {
+            if (!msg) return null
+            if (msg.conversation) return msg.conversation
+            if (msg.extendedTextMessage?.text) return msg.extendedTextMessage.text
+            if (msg.imageMessage) return msg.imageMessage.caption || '[imagem]'
+            if (msg.videoMessage) return msg.videoMessage.caption || '[vídeo]'
+            if (msg.documentMessage) return msg.documentMessage.caption || msg.documentMessage.fileName || '[documento]'
+            if (msg.audioMessage) return '[áudio]'
+            return null
+          }
+          const evoMsgs = records.map(r => {
+            const msgId = r.key?.id || r.id
+            if (supaIds.has(msgId)) return null
+            const texto = extrairTextoEvo(r.message, r.messageType)
+            if (!texto) return null
+            const ts = normTs(r.messageTimestamp)
+            return {
+              id: msgId,
+              minha: r.key?.fromMe || false,
+              texto,
+              tipo: r.messageType || 'text',
+              mediaUrl: null,
+              hora: formatTs(ts),
+              tsMs: ts,
+              referralAnuncio: null,
+              referralThumbnail: null,
+              _raw: r,
+            }
+          }).filter(Boolean)
+
+          if (evoMsgs.length > 0) {
+            msgs = [...msgs, ...evoMsgs].sort((a, b) => a.tsMs - b.tsMs)
+
+            // Salva mensagens novas no Supabase para próximas consultas (fire-and-forget)
+            const toSave = evoMsgs.map(m => ({
+              instancia_id: contaAtiva.instanciaId,
+              phone,
+              nome_contato: chatNome || phone,
+              message_id: m.id,
+              de_mim: m.minha,
+              texto: m.texto,
+              tipo: m.tipo,
+              media_url: null,
+              timestamp_ms: m.tsMs,
+              referral_anuncio: null,
+              referral_thumbnail: null,
+            }))
+            supabase.from('whatsapp_mensagens').upsert(toSave, { onConflict: 'message_id', ignoreDuplicates: true }).then(() => {})
+          }
+        } catch (e) {
+          console.log('[evo history]', e.message)
+        }
+      }
 
       // Detecta mensagens novas e notifica
       const anteriorCount = msgCountRef.current[phone] ?? -1
@@ -1052,7 +1139,7 @@ export default function InboxWhatsApp({ contaId }) {
   }, [contaAtiva?.instanciaId, fetchConversas])
 
   useEffect(() => {
-    if (selecionada?.id) fetchMensagens(selecionada.id, selecionada?.contato?.nome)
+    if (selecionada?.id) fetchMensagens(selecionada.id, selecionada?.contato?.nome, false, selecionada?.jid)
   }, [selecionada?.id])
 
   // Polling de mensagens a cada 25s para capturar msgs enviadas do celular que o webhook não pegou
@@ -1187,9 +1274,9 @@ export default function InboxWhatsApp({ contaId }) {
       reader.onload = async (e) => {
         const base64 = e.target.result
         if (tipo === 'foto') {
-          await evoFetch(contaAtiva, 'message/sendMedia', 'POST', { number: conversa.id, mediatype: 'image', media: base64.split(',')[1] || base64, caption: '' })
+          await evoFetch(contaAtiva, 'message/sendMedia', 'POST', { number: conversa.jid || conversa.id, mediatype: 'image', media: base64.split(',')[1] || base64, caption: '' })
         } else {
-          await evoFetch(contaAtiva, 'message/sendMedia', 'POST', { number: conversa.id, mediatype: 'document', media: base64.split(',')[1] || base64, caption: '', fileName: file.name })
+          await evoFetch(contaAtiva, 'message/sendMedia', 'POST', { number: conversa.jid || conversa.id, mediatype: 'document', media: base64.split(',')[1] || base64, caption: '', fileName: file.name })
         }
       }
       reader.readAsDataURL(file)
@@ -1229,7 +1316,7 @@ export default function InboxWhatsApp({ contaId }) {
     setSelecionada(prev => ({ ...prev, mensagens: [...(prev?.mensagens || []), msgLocal] }))
 
     try {
-      await evoFetch(contaAtiva, 'message/sendText', 'POST', { number: conversa.id, text: texto })
+      await evoFetch(contaAtiva, 'message/sendText', 'POST', { number: conversa.jid || conversa.id, text: texto })
 
       // Salva no Supabase também
       await supabase.from('whatsapp_mensagens').insert({

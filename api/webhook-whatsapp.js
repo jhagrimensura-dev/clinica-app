@@ -41,7 +41,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, skipped: true })
     }
 
-    const phone = remoteJid.replace(/@s\.whatsapp\.net$/, '').replace(/@c\.us$/, '')
+    const phone = remoteJid.replace(/@s\.whatsapp\.net$/, '').replace(/@c\.us$/, '').replace(/@lid$/, '')
     if (!phone || !/^\d+$/.test(phone)) return res.status(200).json({ ok: true, skipped: true })
 
     const deMin = key?.fromMe ?? false
