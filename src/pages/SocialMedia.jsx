@@ -128,8 +128,11 @@ export default function SocialMedia() {
 
   const porSeguidor = seguidores > 0 ? (trafego / seguidores).toFixed(2).replace('.', ',') : '—'
   const leadsNovos = getLeadsPorOrigem('leads_novos', ano, mes)
-  const totalLeads = leadsNovos.filter(l => !String(l.fonte || '').toLowerCase().includes('follow') && !String(l.origemCustom || '').toLowerCase().includes('follow')).length
-  const porLead = totalLeads > 0 && trafego > 0 ? (trafego / totalLeads).toFixed(2).replace('.', ',') : '—'
+  const isFollow = l => String(l.fonte || '').toLowerCase().includes('follow') || String(l.origemCustom || '').toLowerCase().includes('follow')
+  const totalLeadsNovos = leadsNovos.filter(l => !isFollow(l)).length
+  const totalFollowUp = leadsNovos.filter(l => isFollow(l)).length
+  const totalLeads = totalLeadsNovos + totalFollowUp
+  const porLead = totalLeadsNovos > 0 && trafego > 0 ? (trafego / totalLeadsNovos).toFixed(2).replace('.', ',') : '—'
 
   const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
   const leadsPorDia = {}
@@ -256,8 +259,11 @@ export default function SocialMedia() {
             <span className="text-brand-400">🔗</span>
           </div>
           <p className="text-2xl font-bold text-gray-900">{totalLeads}</p>
-          <p className="text-xs text-gray-400 mt-1">{totalLeads} leads recebidos</p>
-          <p className="text-xs text-gray-400">R$ {porLead} por lead</p>
+          <div className="flex gap-3 mt-1">
+            <span className="text-xs text-green-600 font-medium">{totalLeadsNovos} novos</span>
+            <span className="text-xs text-orange-500 font-medium">{totalFollowUp} follow-up</span>
+          </div>
+          <p className="text-xs text-gray-400 mt-1">R$ {porLead} por lead novo</p>
         </div>
 
         {/* Posts */}
