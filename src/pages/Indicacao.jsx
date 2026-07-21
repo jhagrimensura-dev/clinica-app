@@ -298,7 +298,7 @@ export default function Indicacao() {
 
   const leads = getLeadsPorOrigem('indicacao', ano, mes)
   const leadsFiltrados = leads
-    .filter(l => l.nome.toLowerCase().includes(busca.toLowerCase()))
+    .filter(l => (l.nome || '').toLowerCase().includes(busca.toLowerCase()))
     .sort((a, b) => {
       const da = a.data || '', db = b.data || ''
       return ordem === 'asc' ? da.localeCompare(db) : db.localeCompare(da)

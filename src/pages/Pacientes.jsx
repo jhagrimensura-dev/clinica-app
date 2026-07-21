@@ -416,7 +416,7 @@ export default function Pacientes() {
   const handleBusca = (valor) => {
     setBusca(valor)
     if (valor.trim().length > 0) {
-      const matches = pacientes.filter(p => p.nome.toLowerCase().includes(valor.toLowerCase())).slice(0, 6)
+      const matches = pacientes.filter(p => (p.nome || '').toLowerCase().includes(valor.toLowerCase())).slice(0, 6)
       setSugestoes(matches)
       setMostrarSugestoes(matches.length > 0)
     } else {
@@ -443,7 +443,7 @@ export default function Pacientes() {
   }).length
 
   const filtrados = pacientes.filter(p => {
-    const matchBusca = p.nome.toLowerCase().includes(busca.toLowerCase())
+    const matchBusca = (p.nome || '').toLowerCase().includes(busca.toLowerCase())
     const matchFiltro = filtro === 'Todos' || p.status === filtro
     return matchBusca && matchFiltro
   })

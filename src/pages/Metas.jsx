@@ -97,7 +97,7 @@ export default function Metas() {
 
   const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
   const vendasPorDia = lancamentos
-    .filter(l => l.data.startsWith(prefix))
+    .filter(l => l.data && l.data.startsWith(prefix))
     .reduce((acc, l) => {
       const dia = parseInt(l.data.split('-')[2], 10)
       acc[dia] = (acc[dia] || 0) + (l.valorTratamento || 0) + (l.valorTaxa || 0)

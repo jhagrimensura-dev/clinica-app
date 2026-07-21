@@ -506,7 +506,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
               {criativo ? (
                 <div className="flex items-center gap-2 min-w-0">
                   {adsEngajamento.find(a => a.nome === criativo)?.thumbnail && (
-                    <img src={adsEngajamento.find(a => a.nome === criativo).thumbnail} className="w-6 h-6 rounded object-cover shrink-0" />
+                    <img src={adsEngajamento.find(a => a.nome === criativo)?.thumbnail} className="w-6 h-6 rounded object-cover shrink-0" />
                   )}
                   <span className="truncate text-gray-800">{criativo}</span>
                 </div>
@@ -1081,7 +1081,7 @@ export default function InboxWhatsApp({ contaId }) {
         const lt = (l.telefone || '').replace(/\D/g, '')
         return lt.length > 5 && (lt.endsWith(tel.slice(-9)) || tel.endsWith(lt.slice(-9)))
       })
-      if (!lead?.nome || c.contato.nome === lead.nome) return c
+      if (!lead?.nome || (c.contato?.nome) === lead.nome) return c
       return { ...c, contato: { ...c.contato, nome: lead.nome } }
     }))
   }, [leads])
@@ -1290,7 +1290,7 @@ export default function InboxWhatsApp({ contaId }) {
   const conversasFiltradas = conversas.filter(c => {
     if (busca) {
       const q = busca.toLowerCase().replace(/\D/g, '') // só dígitos para comparar telefone
-      const matchNome = c.contato.nome.toLowerCase().includes(busca.toLowerCase())
+      const matchNome = (c.contato?.nome || '').toLowerCase().includes(busca.toLowerCase())
       const matchPhone = q.length >= 4 && (c.id || '').replace(/\D/g, '').includes(q)
       if (!matchNome && !matchPhone) return false
     }

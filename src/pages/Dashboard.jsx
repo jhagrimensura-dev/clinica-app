@@ -17,7 +17,7 @@ export default function Dashboard() {
   const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
   const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
-  const lMes = lancamentos.filter(l => l.data.startsWith(prefix))
+  const lMes = lancamentos.filter(l => l.data && l.data.startsWith(prefix))
   const isConsulta = (l) => (l.procedimentos || '').toLowerCase().trim() === 'consulta'
   // lMesSemConsulta → CONTAGENS e TICKET (consultas não são "vendas")
   // lMesValidos     → VALOR TOTAL (inclui valorTaxa das consultas)

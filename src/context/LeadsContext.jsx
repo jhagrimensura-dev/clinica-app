@@ -4,26 +4,29 @@ import { useAuth } from './AuthContext'
 
 const LeadsContext = createContext()
 
-const fromDB = (r) => ({
-  id: r.id,
-  nome: r.nome || '',
-  telefone: r.telefone || '',
-  origem: r.origem || '',
-  origemCustom: r.origem_custom || '',
-  data: r.data || '',
-  responsavel: r.responsavel || '',
-  fonte: r.fonte || '',
-  status: r.status || 'em_aberto',
-  ultimoFollow: r.ultimo_follow || null,
-  agendadoPara: r.agendado_para || null,
-  proximoFollowup: r.proximo_followup || '',
-  obs: r.obs || '',
-  aniversario: r.aniversario || null,
-  criadoEm: r.criado_em,
-  midia: r.midia || null,
-  criativo: r.criativo || null,
-  linkBio: r.link_bio || null,
-})
+const fromDB = (r) => {
+  if (!r || !r.id) return null
+  return {
+    id: r.id,
+    nome: r.nome || '',
+    telefone: r.telefone || '',
+    origem: r.origem || '',
+    origemCustom: r.origem_custom || '',
+    data: r.data || '',
+    responsavel: r.responsavel || '',
+    fonte: r.fonte || '',
+    status: r.status || 'em_aberto',
+    ultimoFollow: r.ultimo_follow || null,
+    agendadoPara: r.agendado_para || null,
+    proximoFollowup: r.proximo_followup || '',
+    obs: r.obs || '',
+    aniversario: r.aniversario || null,
+    criadoEm: r.criado_em,
+    midia: r.midia || null,
+    criativo: r.criativo || null,
+    linkBio: r.link_bio || null,
+  }
+}
 
 const toDB = (l, clinicaId) => ({
   id: l.id,
@@ -79,7 +82,7 @@ export function LeadsProvider({ children }) {
     const fetchAll = async () => {
       const { data } = await supabase.from('leads').select('*').order('criado_em', { ascending: true })
       if (data && data.length > 0) {
-        setLeads(data.map(fromDB))
+        setLeads(data.map(fromDB).filter(Boolean))
       } else if (!migrated) {
         migrated = true
         const local = loadLocal()
@@ -104,9 +107,9 @@ export function LeadsProvider({ children }) {
     const channel = supabase
       .channel(`leads:${clinicaId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'leads', filter: `clinica_id=eq.${clinicaId}` }, ({ eventType, new: n, old: o }) => {
-        if (eventType === 'INSERT' && n?.id) setLeads(prev => prev.find(l => l.id === n.id) ? prev : [...prev, fromDB(n)])
-        else if (eventType === 'UPDATE' && n?.id) setLeads(prev => prev.map(l => l.id === n.id ? fromDB(n) : l))
-        else if (eventType === 'DELETE' && o?.id) setLeads(prev => prev.filter(l => l.id !== o.id))
+        if (eventType === 'INSERT' && n?.id) setLeads(prev => prev.find(l => l?.id === n.id) ? prev : [...prev, fromDB(n)].filter(Boolean))
+        else if (eventType === 'UPDATE' && n?.id) setLeads(prev => prev.map(l => l?.id === n.id ? fromDB(n) : l).filter(Boolean))
+        else if (eventType === 'DELETE' && o?.id) setLeads(prev => prev.filter(l => l?.id && l.id !== o.id))
       })
       .subscribe((status) => { if (status === 'SUBSCRIBED') fetchAll() })
 
@@ -162,7 +165,7 @@ export function LeadsProvider({ children }) {
   const getLeadsPorOrigem = (origem, ano, mes) => {
     const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
     return leads.filter(l => {
-      if (!l.data.startsWith(prefix)) return false
+      if (!l.data || !l.data.startsWith(prefix)) return false
       if (origem === 'indicacao') {
         return l.origem === 'indicacao' || l.origemCustom === 'Indicação'
       }

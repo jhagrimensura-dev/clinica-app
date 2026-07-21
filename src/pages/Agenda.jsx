@@ -189,7 +189,7 @@ function Modal({ slot, existing, onClose, onSave, onDelete, agendamentos }) {
                       const v = e.target.value
                       setPaciente(v)
                       if (v.length >= 2) {
-                        const matches = pacientes.filter(p => p.nome.toLowerCase().includes(v.toLowerCase())).slice(0, 5)
+                        const matches = pacientes.filter(p => (p.nome || '').toLowerCase().includes(v.toLowerCase())).slice(0, 5)
                         setSugestoes(matches)
                         setShowSugestoes(matches.length > 0)
                       } else {

@@ -34,7 +34,7 @@ export default function Relatorios() {
       const total = (ano) => {
         const prefix = `${ano}-${String(i + 1).padStart(2, '0')}`
         return lancamentos
-          .filter(l => l.data.startsWith(prefix) && l.tipo !== 'Paciente Modelo')
+          .filter(l => l.data && l.data.startsWith(prefix) && l.tipo !== 'Paciente Modelo')
           .reduce((acc, l) => acc + (l.valorTratamento || 0) + (l.valorTaxa || 0), 0)
       }
       return { mes, '2025': total(2025), '2026': total(2026) }

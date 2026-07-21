@@ -264,10 +264,10 @@ function PacienteCombobox({ value, onChange, pacientes, leads }) {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  const nomesPackientes = new Set(pacientes.map(p => p.nome.toLowerCase()))
+  const nomesPackientes = new Set(pacientes.filter(p => p.nome).map(p => p.nome.toLowerCase()))
   const leadsUnicos = (leads || [])
     .filter(l => l.nome && !nomesPackientes.has(l.nome.toLowerCase()))
-    .reduce((acc, l) => { if (!acc.find(x => x.nome.toLowerCase() === l.nome.toLowerCase())) acc.push(l); return acc }, [])
+    .reduce((acc, l) => { if (l.nome && !acc.find(x => (x.nome || '').toLowerCase() === l.nome.toLowerCase())) acc.push(l); return acc }, [])
 
   const todasSugestoes = [
     ...pacientes.map(p => ({ nome: p.nome, tipo: 'paciente' })),
@@ -275,7 +275,7 @@ function PacienteCombobox({ value, onChange, pacientes, leads }) {
   ].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
 
   const filtrados = busca.trim()
-    ? todasSugestoes.filter(p => p.nome.toLowerCase().includes(busca.toLowerCase()))
+    ? todasSugestoes.filter(p => (p.nome || '').toLowerCase().includes(busca.toLowerCase()))
     : todasSugestoes
 
   const selecionar = (nome) => {
@@ -777,7 +777,7 @@ export default function Faturamento() {
 
   const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
   const lancamentosMesAll = lancamentos
-    .filter(l => l.data.startsWith(prefix))
+    .filter(l => l.data && l.data.startsWith(prefix))
     .sort((a, b) => ordemFat === 'asc' ? a.data.localeCompare(b.data) : b.data.localeCompare(a.data))
   const lancamentosModelo = lancamentosMesAll.filter(l => l.tipo === 'Paciente Modelo')
   const lancamentosMes = lancamentosMesAll.filter(l => l.tipo !== 'Paciente Modelo')

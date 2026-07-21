@@ -205,13 +205,15 @@ function AppInner() {
 }
 
 class ErrorBoundary extends React.Component {
-  constructor(props) { super(props); this.state = { error: null } }
+  constructor(props) { super(props); this.state = { error: null, stack: null } }
   static getDerivedStateFromError(e) { return { error: e } }
+  componentDidCatch(e, info) { this.setState({ stack: e.stack + '\n\nComponent Stack:\n' + info.componentStack }) }
   render() {
     if (this.state.error) return (
       <div style={{ padding: 32, fontFamily: 'monospace', background: '#fff1f2', minHeight: '100vh' }}>
         <h2 style={{ color: '#e11d48' }}>Erro ao carregar o app</h2>
         <pre style={{ fontSize: 13, whiteSpace: 'pre-wrap', color: '#333' }}>{String(this.state.error)}</pre>
+        <pre style={{ fontSize: 11, whiteSpace: 'pre-wrap', color: '#666', marginTop: 8, maxHeight: 300, overflow: 'auto', background: '#fef2f2', padding: 12, borderRadius: 8 }}>{this.state.stack}</pre>
         <button onClick={() => window.location.reload()} style={{ marginTop: 16, padding: '8px 16px', background: '#e11d48', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>Recarregar</button>
       </div>
     )

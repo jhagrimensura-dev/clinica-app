@@ -261,7 +261,7 @@ function ModalNovo({ onSalvar, onFechar }) {
   const handleNomeChange = (val) => {
     setNome(val)
     if (val.trim().length < 2) { setSugestoes([]); setShowSug(false); return }
-    const matches = pacientes.filter(p => p.nome.toLowerCase().includes(val.toLowerCase())).slice(0, 6)
+    const matches = pacientes.filter(p => (p.nome || '').toLowerCase().includes(val.toLowerCase())).slice(0, 6)
     setSugestoes(matches); setShowSug(matches.length > 0)
   }
 
