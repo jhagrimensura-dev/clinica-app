@@ -486,28 +486,17 @@ export default function LeadsNovos() {
             <span className="text-orange-400 text-lg">👥</span>
           </div>
           <p className="text-3xl font-bold text-gray-800">{leads.length + contIndicacao}</p>
-          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
-            {funil.em_aberto > 0    && <span className="text-xs text-gray-500 font-medium">{funil.em_aberto} em aberto</span>}
-            {funil.conversando > 0  && <span className="text-xs text-purple-500 font-medium">{funil.conversando} conv.</span>}
-            {funil.follow1 > 0      && <span className="text-xs text-orange-500 font-medium">{funil.follow1} F#1</span>}
-            {funil.follow2 > 0      && <span className="text-xs text-yellow-600 font-medium">{funil.follow2} F#2</span>}
-            {funil.follow3 > 0      && <span className="text-xs text-amber-700 font-medium">{funil.follow3} F#3</span>}
-            {funil.agendado > 0     && <span className="text-xs text-blue-500 font-medium">{funil.agendado} agend.</span>}
-            {funil.fechado > 0      && <span className="text-xs text-green-600 font-medium">{funil.fechado} fechado</span>}
-            {funil.perdido > 0      && <span className="text-xs text-red-400 font-medium">{funil.perdido} perdido</span>}
-            {contIndicacao > 0      && <span className="text-xs text-pink-500 font-medium">{contIndicacao} indic.</span>}
+          <div className="mt-2 space-y-1">
+            {funil.em_aberto > 0   && <div className="flex justify-between text-xs"><span className="text-gray-400">Em aberto</span><span className="font-semibold text-gray-600">{funil.em_aberto}</span></div>}
+            {funil.conversando > 0 && <div className="flex justify-between text-xs"><span className="text-purple-400">Conversando</span><span className="font-semibold text-purple-500">{funil.conversando}</span></div>}
+            {funil.follow1 > 0     && <div className="flex justify-between text-xs"><span className="text-orange-400">Follow #1</span><span className="font-semibold text-orange-500">{funil.follow1}</span></div>}
+            {funil.follow2 > 0     && <div className="flex justify-between text-xs"><span className="text-yellow-500">Follow #2</span><span className="font-semibold text-yellow-600">{funil.follow2}</span></div>}
+            {funil.follow3 > 0     && <div className="flex justify-between text-xs"><span className="text-amber-500">Follow #3</span><span className="font-semibold text-amber-700">{funil.follow3}</span></div>}
+            {funil.agendado > 0    && <div className="flex justify-between text-xs"><span className="text-blue-400">Agendado</span><span className="font-semibold text-blue-500">{funil.agendado}</span></div>}
+            {funil.fechado > 0     && <div className="flex justify-between text-xs"><span className="text-green-400">Fechado</span><span className="font-semibold text-green-600">{funil.fechado}</span></div>}
+            {funil.perdido > 0     && <div className="flex justify-between text-xs"><span className="text-red-300">Perdido</span><span className="font-semibold text-red-400">{funil.perdido}</span></div>}
+            {contIndicacao > 0     && <div className="flex justify-between text-xs"><span className="text-pink-400">Indicação</span><span className="font-semibold text-pink-500">{contIndicacao}</span></div>}
           </div>
-          {(funil.agendado + funil.fechado) > 0 && (
-            <div className="mt-2 pt-2 border-t border-gray-100">
-              <p className="text-xs text-gray-400 mb-1">Converteram de:</p>
-              <div className="flex flex-wrap gap-x-3 gap-y-1">
-                {convPorFollow.direto > 0  && <span className="text-xs text-gray-500 font-medium">{convPorFollow.direto} direto</span>}
-                {convPorFollow.follow1 > 0 && <span className="text-xs text-orange-500 font-medium">{convPorFollow.follow1} F#1</span>}
-                {convPorFollow.follow2 > 0 && <span className="text-xs text-yellow-600 font-medium">{convPorFollow.follow2} F#2</span>}
-                {convPorFollow.follow3 > 0 && <span className="text-xs text-amber-700 font-medium">{convPorFollow.follow3} F#3</span>}
-              </div>
-            </div>
-          )}
         </div>
         <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
           <div className="flex justify-between items-start mb-1">
@@ -516,6 +505,18 @@ export default function LeadsNovos() {
           </div>
           <p className="text-3xl font-bold text-gray-800">{taxa}%</p>
           <p className="text-xs text-gray-400 mt-1">{agendados} agendamentos</p>
+          {(funil.agendado + funil.fechado) > 0 && (
+            <div className="mt-3 space-y-1">
+              <p className="text-xs text-gray-400 font-medium">Converteram de:</p>
+              {convPorFollow.direto > 0  && <div className="flex justify-between text-xs"><span className="text-gray-400">Sem follow</span><span className="font-semibold text-gray-500">{convPorFollow.direto}</span></div>}
+              {convPorFollow.follow1 > 0 && <div className="flex justify-between text-xs"><span className="text-orange-400">Follow #1</span><span className="font-semibold text-orange-500">{convPorFollow.follow1}</span></div>}
+              {convPorFollow.follow2 > 0 && <div className="flex justify-between text-xs"><span className="text-yellow-500">Follow #2</span><span className="font-semibold text-yellow-600">{convPorFollow.follow2}</span></div>}
+              {convPorFollow.follow3 > 0 && <div className="flex justify-between text-xs"><span className="text-amber-500">Follow #3</span><span className="font-semibold text-amber-700">{convPorFollow.follow3}</span></div>}
+            </div>
+          )}
+          {(funil.agendado + funil.fechado) === 0 && (
+            <p className="text-xs text-gray-300 mt-3">Nenhuma conversão rastreada ainda</p>
+          )}
         </div>
         <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
           <div className="flex justify-between items-start mb-1">
@@ -524,6 +525,11 @@ export default function LeadsNovos() {
           </div>
           <p className="text-3xl font-bold text-gray-800">{agendados}</p>
           <p className="text-xs text-gray-400 mt-1">de {leads.length} leads</p>
+          <div className="mt-3 space-y-1">
+            <div className="flex justify-between text-xs"><span className="text-blue-400">Agendados</span><span className="font-semibold text-blue-500">{funil.agendado}</span></div>
+            <div className="flex justify-between text-xs"><span className="text-green-400">Fechados</span><span className="font-semibold text-green-600">{funil.fechado}</span></div>
+            <div className="flex justify-between text-xs"><span className="text-red-300">Perdidos</span><span className="font-semibold text-red-400">{funil.perdido}</span></div>
+          </div>
         </div>
       </div>
 
