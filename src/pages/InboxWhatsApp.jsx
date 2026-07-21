@@ -2136,7 +2136,7 @@ export default function InboxWhatsApp({ contaId }) {
               onClick={() => {
                 const phone = novaConvTel
                 const nome = novaConvNome.trim() || phone
-                setSelecionada({ id: phone, nome, telefone: phone, lastMessage: null, unreadCount: 0 })
+                setSelecionada({ id: phone, contato: { nome, telefone: phone, foto: null }, lastMessage: null, unreadCount: 0 })
                 if (novaConvRegistrar) {
                   const hoje = new Date().toISOString().split('T')[0]
                   addLead({ nome, telefone: phone, origem: 'leads_recorrentes', data: hoje, status: 'em_aberto', responsavel: '', fonte: '', obs: '' })
