@@ -376,9 +376,9 @@ export default function LeadsNovos() {
   const leads = getLeadsPorOrigem('leads_novos', ano, mes)
   const leadsIndicacao = getLeadsPorOrigem('indicacao', ano, mes)
 
-  const isFollowStatus = s => s === 'follow1' || s === 'follow2' || s === 'follow3'
-  const contNovosPrimeiro = leads.filter(l => !isFollowStatus(l.status)).length
-  const contFollowUp = leads.filter(l => isFollowStatus(l.status)).length
+  const isFollowOrigem = l => String(l.fonte || '').toLowerCase().includes('follow') || String(l.origemCustom || '').toLowerCase().includes('follow')
+  const contNovosPrimeiro = leads.filter(l => !isFollowOrigem(l)).length
+  const contFollowUp = leads.filter(l => isFollowOrigem(l)).length
   const contIndicacao = leadsIndicacao.length
 
   const leadsFiltrados = leads
