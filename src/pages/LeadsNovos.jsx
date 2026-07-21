@@ -374,6 +374,12 @@ export default function LeadsNovos() {
   const [ordem, setOrdem] = useState('desc')
 
   const leads = getLeadsPorOrigem('leads_novos', ano, mes)
+  const leadsIndicacao = getLeadsPorOrigem('indicacao', ano, mes)
+
+  const isFollowStatus = s => s === 'follow1' || s === 'follow2' || s === 'follow3'
+  const contNovosPrimeiro = leads.filter(l => !isFollowStatus(l.status)).length
+  const contFollowUp = leads.filter(l => isFollowStatus(l.status)).length
+  const contIndicacao = leadsIndicacao.length
 
   const leadsFiltrados = leads
     .filter(l => l.nome.toLowerCase().includes(busca.toLowerCase()))
@@ -449,8 +455,12 @@ export default function LeadsNovos() {
             <p className="text-sm text-gray-500 font-medium">Total de Leads</p>
             <span className="text-orange-400 text-lg">👥</span>
           </div>
-          <p className="text-3xl font-bold text-gray-800">{leads.length}</p>
-          <p className="text-xs text-gray-400 mt-1">{leads.length} leads</p>
+          <p className="text-3xl font-bold text-gray-800">{leads.length + contIndicacao}</p>
+          <div className="flex flex-wrap gap-2 mt-1">
+            <span className="text-xs text-green-600 font-medium">{contNovosPrimeiro} novos</span>
+            <span className="text-xs text-orange-500 font-medium">{contFollowUp} follow-up</span>
+            <span className="text-xs text-purple-500 font-medium">{contIndicacao} indicação</span>
+          </div>
         </div>
         <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
           <div className="flex justify-between items-start mb-1">
