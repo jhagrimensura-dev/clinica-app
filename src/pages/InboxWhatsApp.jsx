@@ -690,6 +690,7 @@ export default function InboxWhatsApp({ contaId }) {
   const [modalNovaConversa, setModalNovaConversa] = useState(false)
   const [novaConvTel, setNovaConvTel] = useState('')
   const [novaConvNome, setNovaConvNome] = useState('')
+  const [novaConvRegistrar, setNovaConvRegistrar] = useState(true)
   const [showEmoji, setShowEmoji] = useState(false)
   const [menuOpcoes, setMenuOpcoes] = useState(null)
   const [menuMsg, setMenuMsg] = useState(null)
@@ -2108,12 +2109,6 @@ export default function InboxWhatsApp({ contaId }) {
                   onChange={e => setNovaConvTel(e.target.value.replace(/\D/g, ''))}
                   placeholder="Ex: 64999001234"
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400"
-                  onKeyDown={e => e.key === 'Enter' && novaConvTel.length >= 8 && (() => {
-                    const phone = novaConvTel
-                    const nome = novaConvNome.trim() || phone
-                    setSelecionada({ id: phone, nome, telefone: phone, lastMessage: null, unreadCount: 0 })
-                    setModalNovaConversa(false)
-                  })()}
                 />
               </div>
               <div>
@@ -2126,6 +2121,15 @@ export default function InboxWhatsApp({ contaId }) {
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400"
                 />
               </div>
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={novaConvRegistrar}
+                  onChange={e => setNovaConvRegistrar(e.target.checked)}
+                  className="w-4 h-4 accent-blue-500 rounded"
+                />
+                <span className="text-sm text-gray-700">Registrar como Lead Recorrente</span>
+              </label>
             </div>
             <button
               disabled={novaConvTel.length < 8}
@@ -2133,6 +2137,10 @@ export default function InboxWhatsApp({ contaId }) {
                 const phone = novaConvTel
                 const nome = novaConvNome.trim() || phone
                 setSelecionada({ id: phone, nome, telefone: phone, lastMessage: null, unreadCount: 0 })
+                if (novaConvRegistrar) {
+                  const hoje = new Date().toISOString().split('T')[0]
+                  addLead({ nome, telefone: phone, origem: 'leads_recorrentes', data: hoje, status: 'em_aberto', responsavel: '', fonte: '', obs: '' })
+                }
                 setModalNovaConversa(false)
               }}
               className="w-full py-2.5 rounded-xl bg-brand-400 text-white text-sm font-semibold hover:bg-brand-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
