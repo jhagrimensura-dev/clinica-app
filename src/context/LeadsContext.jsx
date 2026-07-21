@@ -14,6 +14,7 @@ const fromDB = (r) => ({
   responsavel: r.responsavel || '',
   fonte: r.fonte || '',
   status: r.status || 'em_aberto',
+  ultimoFollow: r.ultimo_follow || null,
   agendadoPara: r.agendado_para || null,
   proximoFollowup: r.proximo_followup || '',
   obs: r.obs || '',
@@ -51,6 +52,7 @@ const updatesToDB = (updates) => {
     data: 'data', responsavel: 'responsavel', fonte: 'fonte', status: 'status',
     agendadoPara: 'agendado_para', proximoFollowup: 'proximo_followup',
     obs: 'obs', aniversario: 'aniversario', midia: 'midia', criativo: 'criativo', linkBio: 'link_bio',
+    ultimoFollow: 'ultimo_follow',
   }
   const out = {}
   for (const [jsKey, dbCol] of Object.entries(fieldMap)) {

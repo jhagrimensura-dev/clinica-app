@@ -195,7 +195,10 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
     lemsValidos.forEach((l, i) => {
       addLembrete({ id: Date.now() + i, leadNome: paciente.trim(), leadTelefone: lead.telefone || '', descricao: l.obs || obs.trim() || '', data: l.data, hora: l.hora || '', cor: 'green', concluido: false, criadoEm: Date.now() })
     })
-    onSalvar(lead.id, { nome: paciente.trim(), data, responsavel, origemCustom, midia: midia || null, linkBio: midia === 'Link da BIO' ? (linkBio || null) : null, status, agendadoPara: agendadoPara || null, proximoFollowup: lemsValidos[0]?.data || '', lembretes: lemsValidos, obs: obs.trim() })
+    const CONV = ['agendado', 'fechado']
+    const FOLL = ['follow1', 'follow2', 'follow3']
+    const ultimoFollow = (CONV.includes(status) && !CONV.includes(lead.status) && FOLL.includes(lead.status)) ? lead.status : undefined
+    onSalvar(lead.id, { nome: paciente.trim(), data, responsavel, origemCustom, midia: midia || null, linkBio: midia === 'Link da BIO' ? (linkBio || null) : null, status, agendadoPara: agendadoPara || null, proximoFollowup: lemsValidos[0]?.data || '', lembretes: lemsValidos, obs: obs.trim(), ...(ultimoFollow !== undefined ? { ultimoFollow } : {}) })
     onClose()
   }
 
@@ -376,10 +379,37 @@ export default function LeadsNovos() {
   const leads = getLeadsPorOrigem('leads_novos', ano, mes)
   const leadsIndicacao = getLeadsPorOrigem('indicacao', ano, mes)
 
-  const isFollowOrigem = l => String(l.fonte || '').toLowerCase().includes('follow') || String(l.origemCustom || '').toLowerCase().includes('follow')
-  const contNovosPrimeiro = leads.filter(l => !isFollowOrigem(l)).length
-  const contFollowUp = leads.filter(l => isFollowOrigem(l)).length
   const contIndicacao = leadsIndicacao.length
+
+  const CONV_STATUS = ['agendado', 'fechado']
+  const FOLLOW_STATUS = ['follow1', 'follow2', 'follow3']
+
+  const funil = {
+    em_aberto:   leads.filter(l => l.status === 'em_aberto').length,
+    conversando: leads.filter(l => l.status === 'conversando').length,
+    follow1:     leads.filter(l => l.status === 'follow1').length,
+    follow2:     leads.filter(l => l.status === 'follow2').length,
+    follow3:     leads.filter(l => l.status === 'follow3').length,
+    agendado:    leads.filter(l => l.status === 'agendado').length,
+    fechado:     leads.filter(l => l.status === 'fechado').length,
+    perdido:     leads.filter(l => l.status === 'perdido').length,
+  }
+
+  const convertidosCom = leads.filter(l => CONV_STATUS.includes(l.status) && l.ultimoFollow)
+  const convPorFollow = {
+    direto: leads.filter(l => CONV_STATUS.includes(l.status) && !l.ultimoFollow).length,
+    follow1: convertidosCom.filter(l => l.ultimoFollow === 'follow1').length,
+    follow2: convertidosCom.filter(l => l.ultimoFollow === 'follow2').length,
+    follow3: convertidosCom.filter(l => l.ultimoFollow === 'follow3').length,
+  }
+
+  const handleStatusChange = (lead, newStatus) => {
+    const updates = { status: newStatus }
+    if (CONV_STATUS.includes(newStatus) && !CONV_STATUS.includes(lead.status)) {
+      updates.ultimoFollow = FOLLOW_STATUS.includes(lead.status) ? lead.status : null
+    }
+    updateLead(lead.id, updates)
+  }
 
   const leadsFiltrados = leads
     .filter(l => l.nome.toLowerCase().includes(busca.toLowerCase()))
@@ -456,11 +486,28 @@ export default function LeadsNovos() {
             <span className="text-orange-400 text-lg">👥</span>
           </div>
           <p className="text-3xl font-bold text-gray-800">{leads.length + contIndicacao}</p>
-          <div className="flex flex-wrap gap-2 mt-1">
-            <span className="text-xs text-green-600 font-medium">{contNovosPrimeiro} novos</span>
-            <span className="text-xs text-orange-500 font-medium">{contFollowUp} follow-up</span>
-            <span className="text-xs text-purple-500 font-medium">{contIndicacao} indicação</span>
+          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
+            {funil.em_aberto > 0    && <span className="text-xs text-gray-500 font-medium">{funil.em_aberto} em aberto</span>}
+            {funil.conversando > 0  && <span className="text-xs text-purple-500 font-medium">{funil.conversando} conv.</span>}
+            {funil.follow1 > 0      && <span className="text-xs text-orange-500 font-medium">{funil.follow1} F#1</span>}
+            {funil.follow2 > 0      && <span className="text-xs text-yellow-600 font-medium">{funil.follow2} F#2</span>}
+            {funil.follow3 > 0      && <span className="text-xs text-amber-700 font-medium">{funil.follow3} F#3</span>}
+            {funil.agendado > 0     && <span className="text-xs text-blue-500 font-medium">{funil.agendado} agend.</span>}
+            {funil.fechado > 0      && <span className="text-xs text-green-600 font-medium">{funil.fechado} fechado</span>}
+            {funil.perdido > 0      && <span className="text-xs text-red-400 font-medium">{funil.perdido} perdido</span>}
+            {contIndicacao > 0      && <span className="text-xs text-pink-500 font-medium">{contIndicacao} indic.</span>}
           </div>
+          {(funil.agendado + funil.fechado) > 0 && (
+            <div className="mt-2 pt-2 border-t border-gray-100">
+              <p className="text-xs text-gray-400 mb-1">Converteram de:</p>
+              <div className="flex flex-wrap gap-x-3 gap-y-1">
+                {convPorFollow.direto > 0  && <span className="text-xs text-gray-500 font-medium">{convPorFollow.direto} direto</span>}
+                {convPorFollow.follow1 > 0 && <span className="text-xs text-orange-500 font-medium">{convPorFollow.follow1} F#1</span>}
+                {convPorFollow.follow2 > 0 && <span className="text-xs text-yellow-600 font-medium">{convPorFollow.follow2} F#2</span>}
+                {convPorFollow.follow3 > 0 && <span className="text-xs text-amber-700 font-medium">{convPorFollow.follow3} F#3</span>}
+              </div>
+            </div>
+          )}
         </div>
         <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
           <div className="flex justify-between items-start mb-1">
@@ -522,7 +569,7 @@ export default function LeadsNovos() {
                   {lead.obs && <p className="text-xs text-gray-400 italic truncate max-w-[180px] hidden md:block">{lead.obs}</p>}
                   <select
                     value={lead.status}
-                    onChange={e => { e.stopPropagation(); updateLead(lead.id, { status: e.target.value }) }}
+                    onChange={e => { e.stopPropagation(); handleStatusChange(lead, e.target.value) }}
                     onClick={e => e.stopPropagation()}
                     className={`text-xs font-semibold px-3 py-1 rounded-full border-0 outline-none cursor-pointer ${follow.bg} ${follow.text}`}
                   >
@@ -561,7 +608,7 @@ export default function LeadsNovos() {
                   onDrop={e => {
                     e.preventDefault()
                     const leadId = e.dataTransfer.getData('leadId')
-                    if (leadId) updateLead(leadId, { status: col.key })
+                    if (leadId) { const lead = leads.find(l => l.id === leadId); if (lead) handleStatusChange(lead, col.key) }
                     setDragOver(null)
                   }}>
                   <div className="flex items-center justify-between mb-3">
@@ -589,7 +636,7 @@ export default function LeadsNovos() {
                         <div className="flex items-center justify-between mt-2">
                           <select
                             value={lead.status}
-                            onChange={e => { e.stopPropagation(); updateLead(lead.id, { status: e.target.value }) }}
+                            onChange={e => { e.stopPropagation(); handleStatusChange(lead, e.target.value) }}
                             onClick={e => e.stopPropagation()}
                             className="text-xs text-gray-400 outline-none bg-transparent cursor-pointer"
                           >
