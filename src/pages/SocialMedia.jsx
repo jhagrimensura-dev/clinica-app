@@ -128,8 +128,7 @@ export default function SocialMedia() {
 
   const porSeguidor = seguidores > 0 ? (trafego / seguidores).toFixed(2).replace('.', ',') : '—'
   const leadsNovos = getLeadsPorOrigem('leads_novos', ano, mes)
-  const leadsIndicacao = getLeadsPorOrigem('indicacao', ano, mes)
-  const totalLeads = leadsNovos.length + leadsIndicacao.length
+  const totalLeads = leadsNovos.filter(l => !String(l.fonte || '').toLowerCase().includes('follow') && !String(l.origemCustom || '').toLowerCase().includes('follow')).length
   const porLead = totalLeads > 0 && trafego > 0 ? (trafego / totalLeads).toFixed(2).replace('.', ',') : '—'
 
   const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
