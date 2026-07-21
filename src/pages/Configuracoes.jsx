@@ -116,23 +116,19 @@ function TokenInput({ label, value, onChange, optional }) {
   )
 }
 
-const EMPTY_CONTA = { nome: '', tipo: 'Leads Novos', instanciaId: '' }
+const EMPTY_CONTA = { nome: '', tipo: 'Leads Novos', instanciaId: '', instanciaToken: '', clientToken: '' }
 
-const EVO_URL = 'https://evolution-api-production-1083.up.railway.app'
-const EVO_KEY = 'Amanda@2025!'
+const ZAPI_BASE = 'https://api.z-api.io'
 
 async function testarConexao(conta) {
-  const base = conta.evolutionUrl || EVO_URL
-  const apiKey = conta.evolutionApiKey || EVO_KEY
-  const res = await fetch(`${base}/instance/connectionState/${conta.instanciaId}`, {
-    cache: 'no-store',
-    headers: { 'apikey': apiKey },
-  })
+  const ctParam = conta.clientToken ? `&ct=${encodeURIComponent(conta.clientToken)}` : ''
+  const res = await fetch(`/api/zapi-status?i=${conta.instanciaId}&t=${conta.instanciaToken}${ctParam}`)
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   const data = await res.json()
-  const state = data?.instance?.state
-  if (state === 'open') return 'open'
-  return state || 'disconnected'
+  const v = (data?.value || '').toLowerCase()
+  if (v === 'connected' || v === 'open' || data?.connected === true) return 'open'
+  if (v === 'disconnected' || v === 'qrcode') return v
+  return data?.value || JSON.stringify(data).slice(0, 60)
 }
 
 function TabWhatsApp() {
@@ -170,7 +166,7 @@ function TabWhatsApp() {
   const [qrStatus, setQrStatus] = useState('aguardando')
   const [qrValue, setQrValue] = useState(null)
   const [qrErro, setQrErro] = useState(null)
-  const [qrContagem, setQrContagem] = useState(45)
+  const [qrContagem, setQrContagem] = useState(20)
 
   const setF = (campo, val) => setForm(f => ({ ...f, [campo]: val }))
 
@@ -185,26 +181,56 @@ function TabWhatsApp() {
   }
 
   const adicionar = () => {
-    if (!form.nome.trim() || !form.instanciaId.trim()) return
+    if (!form.nome.trim() || !form.instanciaId.trim() || !form.instanciaToken.trim()) return
     salvarContas([...contas, { ...form, id: gerarId(), nome: form.nome.trim() }])
     setForm(EMPTY_CONTA); setModal(false)
   }
 
   const remover = (id) => salvarContas(contas.filter(c => c.id !== id))
 
-  const salvarEdicao = (id, nome, tipo, instanciaId) => {
-    salvarContas(contas.map(c => c.id === id ? { ...c, nome, tipo, instanciaId } : c))
+  const salvarEdicao = (id, nome, tipo, clientToken, instanciaId, instanciaToken) => {
+    salvarContas(contas.map(c => c.id === id ? { ...c, nome, tipo, clientToken, instanciaId, instanciaToken } : c))
     setEditando(null)
   }
 
-  const copiarWebhook = (url) => {
-    navigator.clipboard.writeText(url).catch(() => {})
-    setCopiado(url)
+  const [configurandoWebhook, setConfigurandoWebhook] = useState(null)
+  const [webhookStatus, setWebhookStatus] = useState({})
+
+  const configurarWebhook = async (conta) => {
+    setConfigurandoWebhook(conta.id)
+    try {
+      const res = await fetch('/api/zapi-setup-webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          i: conta.instanciaId,
+          t: conta.instanciaToken,
+          ct: conta.clientToken || '',
+          baseUrl: window.location.origin,
+        }),
+      })
+      const data = await res.json()
+      const receivedOk = data.results?.received?.status === 200 && !data.results?.received?.body?.error
+      const sendOk = data.results?.send?.status === 200 && !data.results?.send?.body?.error
+      console.log('[webhook-setup]', { received: data.results?.received, send: data.results?.send })
+      const ok = receivedOk
+      const status = receivedOk && sendOk ? 'ok' : receivedOk ? 'parcial' : 'erro'
+      setWebhookStatus(s => ({ ...s, [conta.id]: status }))
+      setTimeout(() => setWebhookStatus(s => ({ ...s, [conta.id]: null })), 6000)
+    } catch {
+      setWebhookStatus(s => ({ ...s, [conta.id]: 'erro' }))
+    }
+    setConfigurandoWebhook(null)
+  }
+
+  const copiarWebhook = (id) => {
+    navigator.clipboard.writeText(id).catch(() => {})
+    setCopiado(id)
     setTimeout(() => setCopiado(null), 2000)
   }
 
   const handleTestarConexao = async (conta) => {
-    if (!conta.instanciaId) {
+    if (!conta.instanciaId || !conta.instanciaToken) {
       setStatusConexao(s => ({ ...s, [conta.id]: 'sem_config' }))
       return
     }
@@ -221,17 +247,15 @@ function TabWhatsApp() {
   const buscarQR = async (conta) => {
     setQrValue(null)
     setQrErro(null)
-    setQrContagem(45)
+    setQrContagem(20)
     try {
-      const base = conta.evolutionUrl || EVO_URL
-      const apiKey = conta.evolutionApiKey || EVO_KEY
-      const res = await fetch(`${base}/instance/connect/${conta.instanciaId}`, {
-        cache: 'no-store',
-        headers: { 'apikey': apiKey },
-      })
+      const ctParam = conta.clientToken ? `&ct=${encodeURIComponent(conta.clientToken)}` : ''
+      const res = await fetch(`/api/zapi-qr?i=${conta.instanciaId}&t=${conta.instanciaToken}${ctParam}`)
       const data = await res.json()
-      if (data?.code) {
-        setQrValue(data.code)
+      if (data?.connected === true) {
+        setQrStatus('conectado')
+      } else if (data?.value) {
+        setQrValue(data.value)
       } else {
         setQrErro(JSON.stringify(data).slice(0, 300))
       }
@@ -255,7 +279,7 @@ function TabWhatsApp() {
       setQrContagem(c => {
         if (c <= 1) {
           buscarQR(modalQR)
-          return 45
+          return 20
         }
         return c - 1
       })
@@ -320,15 +344,35 @@ function TabWhatsApp() {
                   )}
                 </div>
                 {conta.instanciaId
-                  ? <p className="text-xs text-gray-400 mt-0.5 font-mono">Evolution API · {conta.instanciaId}</p>
+                  ? <p className="text-xs text-gray-400 mt-0.5 font-mono">Z-API · {conta.instanciaId.slice(0, 16)}...</p>
                   : <p className="text-xs text-orange-400 mt-0.5">⚠ Instância não configurada</p>
                 }
               </div>
               <div className="flex items-center gap-3 relative">
                 <button onClick={() => abrirQR(conta)}
                   className="flex items-center gap-1.5 text-xs font-semibold text-white bg-green-500 hover:bg-green-600 px-3 py-1.5 rounded-lg transition-colors">
-                  📱 Reconectar QR
+                  📱 Conectar
                 </button>
+                <button onClick={() => configurarWebhook(conta)} disabled={configurandoWebhook === conta.id}
+                  title="Reconfigura os webhooks de mensagens recebidas e enviadas na Z-API"
+                  className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors disabled:opacity-40 border-blue-300 text-blue-600 hover:bg-blue-50">
+                  {configurandoWebhook === conta.id
+                    ? <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                    : webhookStatus[conta.id] === 'ok' ? '✓' : webhookStatus[conta.id] === 'parcial' ? '⚠' : webhookStatus[conta.id] === 'erro' ? '✗' : '🔗'}
+                  {webhookStatus[conta.id] === 'ok' ? 'Webhook ok!' : webhookStatus[conta.id] === 'parcial' ? 'Parcial (sem envio)' : webhookStatus[conta.id] === 'erro' ? 'Erro' : 'Webhook'}
+                </button>
+                {webhookStatus[conta.id] === 'parcial' && (
+                  <div className="absolute right-0 top-10 z-50 bg-yellow-50 border border-yellow-300 rounded-xl p-3 shadow-lg w-80 text-xs text-yellow-800">
+                    <p className="font-semibold mb-1">⚠️ Webhook de envio não configurado</p>
+                    <p className="mb-2">Mensagens enviadas pelo celular não serão capturadas automaticamente. Para ativar, configure manualmente no painel Z-API:</p>
+                    <p className="font-semibold mb-1">1. Acesse app.z-api.io → sua instância</p>
+                    <p className="mb-1">2. Em "Webhooks", cole esta URL no campo <strong>On Send Message</strong>:</p>
+                    <code className="block bg-yellow-100 rounded p-1 break-all select-all">
+                      {`${window.location.origin}/api/webhook-whatsapp?i=${conta.instanciaId}`}
+                    </code>
+                    <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/api/webhook-whatsapp?i=${conta.instanciaId}`); }} className="mt-2 px-2 py-1 bg-yellow-600 text-white rounded-lg font-semibold">Copiar URL</button>
+                  </div>
+                )}
                 <button onClick={() => handleTestarConexao(conta)} disabled={testando === conta.id}
                   className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-green-600 font-medium transition-colors disabled:opacity-40">
                   {testando === conta.id
@@ -336,14 +380,12 @@ function TabWhatsApp() {
                     : <span>⚡</span>}
                   Testar
                 </button>
-                <button
-                  onClick={() => copiarWebhook(`${window.location.origin}/api/webhook-whatsapp?i=${conta.instanciaId}`)}
-                  className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-amber-600 font-medium transition-colors"
-                  title="Copiar URL do webhook (configure no Evolution Manager)">
+                <button onClick={() => copiarWebhook(conta.id)}
+                  className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-amber-600 font-medium transition-colors">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
-                  {copiado ? 'Copiado!' : 'URL Webhook'}
+                  {copiado === conta.id ? 'Copiado!' : 'Webhook'}
                 </button>
                 <button onClick={() => setEditando(conta)}
                   className="text-gray-300 hover:text-amber-500 transition-colors">
@@ -377,23 +419,24 @@ function TabWhatsApp() {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-gray-900">Adicionar Conta WhatsApp</h3>
-                <p className="text-xs text-gray-400 mt-0.5">Conectado via Evolution API</p>
+                <p className="text-xs text-gray-400 mt-0.5">Conectado via Z-API</p>
               </div>
               <button onClick={() => { setModal(false); setForm(EMPTY_CONTA) }} className="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
             </div>
 
+            {/* Passo a passo Z-API */}
             <div className="bg-green-50 border border-green-100 rounded-xl p-3 text-xs text-green-700 space-y-1">
-              <p className="font-semibold">Como adicionar uma instância:</p>
-              <p>1. Acesse o <strong>Evolution Manager</strong> e crie uma nova instância</p>
-              <p>2. Copie o <strong>nome da instância</strong> (ex: leads-novos)</p>
-              <p>3. Configure o webhook no Evolution Manager apontando para a URL abaixo</p>
-              <p>4. Após adicionar, clique em <strong>"Reconectar QR"</strong> para escanear</p>
+              <p className="font-semibold">Como obter as credenciais:</p>
+              <p>1. Acesse <strong>z-api.io</strong> e crie uma conta gratuita</p>
+              <p>2. Clique em <strong>"Criar instância"</strong></p>
+              <p>3. Copie o <strong>ID da Instância</strong> e o <strong>Token</strong> do painel</p>
+              <p>4. Clique em <strong>"QR Code"</strong> no painel Z-API e escaneie com o WhatsApp Business</p>
             </div>
 
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">Nome da conta <span className="text-red-400">*</span></label>
               <input autoFocus value={form.nome} onChange={e => setF('nome', e.target.value)}
-                placeholder="Ex: Leads Novos"
+                placeholder="Ex: Comercial"
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400" />
             </div>
             <div>
@@ -404,15 +447,21 @@ function TabWhatsApp() {
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Nome da Instância <span className="text-red-400">*</span></label>
+              <label className="text-sm font-medium text-gray-700 mb-1.5 block">ID da Instância <span className="text-red-400">*</span></label>
               <input value={form.instanciaId} onChange={e => setF('instanciaId', e.target.value)}
-                placeholder="Ex: leads-novos"
+                placeholder="Ex: 3D6F50ACA2288238F61C661707F5575A"
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400 font-mono" />
-              <p className="text-xs text-gray-400 mt-1">Nome exato da instância no Evolution Manager</p>
+              <p className="text-xs text-gray-400 mt-1">Encontrado no painel Z-API → sua instância → "Instance ID"</p>
+            </div>
+            <TokenInput label="Token da Instância" value={form.instanciaToken} onChange={v => setF('instanciaToken', v)} />
+            <TokenInput label="Security Token (Client Token)" value={form.clientToken} onChange={v => setF('clientToken', v)} optional />
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-xs text-blue-700 space-y-1">
+              <p className="font-semibold">Como obter o Security Token:</p>
+              <p>No painel Z-API → clique no seu nome (canto superior) → <strong>Segurança</strong> → <strong>Token de segurança da conta</strong> → <strong>Configurar agora</strong> → copie o token gerado.</p>
             </div>
             <div className="flex justify-end gap-3 pt-1">
               <button onClick={() => { setModal(false); setForm(EMPTY_CONTA) }} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
-              <button onClick={adicionar} disabled={!form.nome.trim() || !form.instanciaId.trim()}
+              <button onClick={adicionar} disabled={!form.nome.trim() || !form.instanciaId.trim() || !form.instanciaToken.trim()}
                 className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl disabled:opacity-40">Adicionar</button>
             </div>
           </div>
@@ -482,7 +531,11 @@ function TabWhatsApp() {
 function EditarConta({ conta, onSalvar, onCancelar }) {
   const [nome, setNome] = useState(conta.nome)
   const [tipo, setTipo] = useState(conta.tipo)
+  const [clientToken, setClientToken] = useState(conta.clientToken || '')
   const [instanciaId, setInstanciaId] = useState(conta.instanciaId || '')
+  const [instanciaToken, setInstanciaToken] = useState(conta.instanciaToken || '')
+  const [showToken, setShowToken] = useState(false)
+  const [showInstToken, setShowInstToken] = useState(false)
   return (
     <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl space-y-3">
       <div className="grid grid-cols-2 gap-3">
@@ -495,14 +548,38 @@ function EditarConta({ conta, onSalvar, onCancelar }) {
         </select>
       </div>
       <div>
-        <p className="text-xs font-semibold text-gray-500 mb-1">Nome da Instância (Evolution API)</p>
+        <p className="text-xs font-semibold text-gray-500 mb-1">ID da Instância Z-API</p>
         <input value={instanciaId} onChange={e => setInstanciaId(e.target.value)}
-          placeholder="Ex: leads-novos"
+          placeholder="Ex: 3F4668F862E81E850C762328E0209A4"
           className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400 bg-white font-mono" />
+      </div>
+      <div>
+        <p className="text-xs font-semibold text-gray-500 mb-1">Token da Instância Z-API</p>
+        <div className="relative">
+          <input type={showInstToken ? 'text' : 'password'} value={instanciaToken} onChange={e => setInstanciaToken(e.target.value)}
+            placeholder="Ex: 98EF89C1B2987C6883196E5"
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 pr-10 text-sm outline-none focus:border-amber-400 bg-white font-mono" />
+          <button type="button" onClick={() => setShowInstToken(v => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs">
+            {showInstToken ? '🙈' : '👁️'}
+          </button>
+        </div>
+      </div>
+      <div>
+        <p className="text-xs font-semibold text-gray-500 mb-1">Security Token (opcional)</p>
+        <div className="relative">
+          <input type={showToken ? 'text' : 'password'} value={clientToken} onChange={e => setClientToken(e.target.value)}
+            placeholder="Token de segurança da conta Z-API"
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 pr-10 text-sm outline-none focus:border-amber-400 bg-white font-mono" />
+          <button type="button" onClick={() => setShowToken(v => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs">
+            {showToken ? '🙈' : '👁️'}
+          </button>
+        </div>
       </div>
       <div className="flex justify-end gap-3">
         <button onClick={onCancelar} className="text-xs text-gray-400 hover:text-gray-600">Cancelar</button>
-        <button onClick={() => onSalvar(conta.id, nome, tipo, instanciaId)}
+        <button onClick={() => onSalvar(conta.id, nome, tipo, clientToken, instanciaId, instanciaToken)}
           className="text-xs bg-amber-500 text-white font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-600">Salvar</button>
       </div>
     </div>

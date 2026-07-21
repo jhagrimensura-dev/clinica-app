@@ -1,22 +1,25 @@
-function extrairTexto(message, messageType) {
-  if (!message) return null
-  if (message.conversation) return message.conversation
-  if (message.extendedTextMessage?.text) return message.extendedTextMessage.text
-  if (message.imageMessage) return message.imageMessage.caption || '[imagem]'
-  if (message.videoMessage) return message.videoMessage.caption || '[vídeo]'
-  if (message.documentMessage) return message.documentMessage.caption || message.documentMessage.fileName || '[documento]'
-  if (message.audioMessage) return '[áudio]'
-  if (message.stickerMessage) return '[sticker]'
-  if (message.reactionMessage) return null
-  if (messageType === 'conversation') return null
+function extrairTexto(body) {
+  if (body?.text?.message) return body.text.message
+  if (typeof body?.message === 'string' && body.message) return body.message
+  if (body?.conversation) return body.conversation
+  if (body?.extendedTextMessage?.text) return body.extendedTextMessage.text
+  if (body?.image) return body.image.caption || '[imagem]'
+  if (body?.video) return body.video.caption || '[vídeo]'
+  if (body?.document) return body.document.caption || body.document.fileName || '[documento]'
+  if (body?.audio) return '[áudio]'
+  if (body?.sticker) return '[sticker]'
   return null
 }
 
-function extrairMediaUrl(message) {
-  if (message?.imageMessage?.url) return message.imageMessage.url
-  if (message?.videoMessage?.url) return message.videoMessage.url
-  if (message?.documentMessage?.url) return message.documentMessage.url
-  if (message?.audioMessage?.url) return message.audioMessage.url
+function extrairMediaUrl(body) {
+  if (body?.image?.imageUrl) return body.image.imageUrl
+  if (body?.image?.url) return body.image.url
+  if (body?.video?.videoUrl) return body.video.videoUrl
+  if (body?.video?.url) return body.video.url
+  if (body?.document?.documentUrl) return body.document.documentUrl
+  if (body?.document?.url) return body.document.url
+  if (body?.audio?.audioUrl) return body.audio.audioUrl
+  if (body?.audio?.url) return body.audio.url
   return null
 }
 
@@ -25,89 +28,114 @@ export default async function handler(req, res) {
 
   try {
     const payload = req.body
-    const event = payload?.event
+    const instanciaId = req.query.i || payload?.instanceId
+    if (!instanciaId) return res.status(200).json({ ok: true, skipped: true })
+
+    const deMin = payload?.fromMe ?? false
+    const rawPhone = payload?.phone || ''
+    const rawChatId = (payload?.chatId || '').replace('@s.whatsapp.net', '').replace('@c.us', '').replace('@lid', '')
+    const isLidPhone = rawPhone.includes('@lid')
+    let phone = deMin
+      ? (rawChatId || rawPhone.replace(/@.*/g, ''))
+      : ((rawPhone && !rawPhone.includes('@') && /^\d+$/.test(rawPhone))
+          ? rawPhone
+          : rawChatId || rawPhone.replace(/@.*/g, ''))
+    const messageId = payload?.messageId || payload?.id
+    const texto = extrairTexto(payload)
+    const mediaUrl = extrairMediaUrl(payload)
+    const chatName = payload?.chatName || null
+    const nomeContato = chatName || payload?.senderName || phone
+    const tsRaw = payload?.momment || payload?.timestamp || Date.now()
+    const ref = payload?.referral || payload?.referralAd || null
+    const referralAnuncio = ref ? (ref.headline || ref.body || ref.title || ref.source || null) : null
+    const referralThumbnail = ref?.thumbnailUrl || ref?.thumbnail || null
+    const ts = Number(tsRaw) < 10000000000 ? Number(tsRaw) * 1000 : Number(tsRaw)
+
+    console.log('[WH]', JSON.stringify({ phone: rawPhone, chatId: payload?.chatId, chatName, fromMe: deMin, type: payload?.type, texto: texto?.slice(0, 60), instancia: instanciaId }))
+
+    if (!texto) return res.status(200).json({ ok: true, skipped: true })
 
     const SUPABASE_URL = process.env.VITE_SUPABASE_URL
     const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY
 
-    // Captura contatos novos/atualizados para resolver @lid → nome
-    if (event === 'CONTACTS_UPSERT' || event === 'contacts.upsert') {
-      const instanciaId = payload?.instance || req.query.i
-      const contatos = Array.isArray(payload?.data) ? payload.data : []
-      const novoMapa = {}
-      for (const c of contatos) {
-        const jid = c.id || c.remoteJid || ''
-        const nome = c.name || c.notify || c.pushName || ''
-        // Filtra: precisa ter JID válido e nome real (não só dígitos = lid sem nome)
-        if (!jid || !nome || /^\d{10,}$/.test(nome)) continue
-        novoMapa[jid] = nome
-      }
-      if (Object.keys(novoMapa).length > 0) {
-        const chave = `whatsapp_contacts_${instanciaId}`
-        // Lê mapa atual, faz merge e salva de volta
-        const resAtual = await fetch(`${SUPABASE_URL}/rest/v1/configuracoes?chave=eq.${chave}&select=valor`, {
-          headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-        })
-        const atual = await resAtual.json()
-        const mapaAtual = atual?.[0]?.valor || {}
-        const mapaMerged = { ...mapaAtual, ...novoMapa }
-        await fetch(`${SUPABASE_URL}/rest/v1/configuracoes`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': SUPABASE_KEY,
-            'Authorization': `Bearer ${SUPABASE_KEY}`,
-            'Prefer': 'resolution=merge-duplicates',
-          },
-          body: JSON.stringify({ chave, valor: mapaMerged }),
-        })
-        console.log('[WH-CONTACTS]', instanciaId, 'merge', Object.keys(novoMapa).length, 'contatos')
-      }
-      return res.status(200).json({ ok: true })
+    // Para mensagens enviadas pelo celular com phone @lid (sem chatId), resolve o telefone real do destinatário
+    if (deMin && isLidPhone) {
+      try {
+        const iid = encodeURIComponent(instanciaId)
+        let foundPhone = null
+
+        // Opção 1: chatName é um número de telefone → usa diretamente
+        if (chatName) {
+          const chatNameDigits = chatName.replace(/[\s\-\+\(\)]/g, '')
+          if (/^\d{8,15}$/.test(chatNameDigits)) {
+            foundPhone = chatNameDigits
+          }
+        }
+
+        // Opção 2: lookup por chatName no histórico de mensagens recebidas
+        if (!foundPhone && chatName && chatName !== phone) {
+          const nc = encodeURIComponent(chatName)
+          const lookupRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/whatsapp_mensagens?instancia_id=eq.${iid}&nome_contato=eq.${nc}&de_mim=eq.false&select=phone&limit=1`,
+            { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+          )
+          const lookupData = await lookupRes.json()
+          foundPhone = lookupData?.[0]?.phone || null
+        }
+
+        // Opção 3: busca no chat list do Z-API pelo nome do contato
+        if (!foundPhone && chatName) {
+          try {
+            const confRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/configuracoes?chave=eq.config_whatsapp_contas&select=valor`,
+              { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+            )
+            const confData = await confRes.json()
+            let zapiToken = null
+            let zapiClientToken = null
+            for (const row of (confData || [])) {
+              try {
+                // valor pode ser jsonb (objeto) ou text (string) dependendo do schema
+                const contas = typeof row.valor === 'string' ? JSON.parse(row.valor) : row.valor
+                const conta = Array.isArray(contas) ? contas.find(c => c.instanciaId === instanciaId) : null
+                if (conta) { zapiToken = conta.instanciaToken; zapiClientToken = conta.clientToken || null; break }
+              } catch (_) {}
+            }
+            if (zapiToken) {
+              const zapiHeaders = { 'Content-Type': 'application/json', ...(zapiClientToken ? { 'client-token': zapiClientToken } : {}) }
+              const chatsRes = await fetch(
+                `https://api.z-api.io/instances/${encodeURIComponent(instanciaId)}/token/${encodeURIComponent(zapiToken)}/chats?page=1&pageSize=100`,
+                { headers: zapiHeaders }
+              )
+              const chatsData = await chatsRes.json()
+              const lista = Array.isArray(chatsData) ? chatsData : Array.isArray(chatsData?.value) ? chatsData.value : []
+              const chat = lista.find(c => c.name === chatName)
+              const rawChatPhone = chat?.phone || null
+              console.log('[WH-ZAPI-DEBUG]', JSON.stringify({ chatName, hasToken: true, chatsCount: lista.length, chatFound: !!chat, chatPhone: rawChatPhone }))
+              if (chat?.phone) {
+                // Só aceita phone real (@s.whatsapp.net ou @c.us), ignora @lid
+                if (!chat.phone.includes('@lid')) {
+                  const cleaned = chat.phone.replace(/@s\.whatsapp\.net$/, '').replace(/@c\.us$/, '')
+                  if (cleaned && /^\d+$/.test(cleaned)) foundPhone = cleaned
+                }
+              }
+              if (foundPhone) console.log('[WH-SENT-ZAPI]', JSON.stringify({ chatName, resolvedPhone: foundPhone }))
+            } else {
+              console.log('[WH-ZAPI-DEBUG]', JSON.stringify({ chatName, hasToken: false, confRows: (confData || []).length }))
+            }
+          } catch (_) {}
+        }
+
+        if (foundPhone) {
+          console.log('[WH-SENT]', JSON.stringify({ chatName, resolvedPhone: foundPhone, via: foundPhone === chatName?.replace(/[\s\-\+\(\)]/g, '') ? 'direto' : 'lookup' }))
+          phone = foundPhone
+        } else {
+          console.log('[WH-SENT-NORESOLVE]', JSON.stringify({ chatName, phone }))
+        }
+      } catch (_) {}
     }
 
-    if (event !== 'MESSAGES_UPSERT' && event !== 'messages.upsert') {
-      return res.status(200).json({ ok: true, skipped: true })
-    }
-
-    const instanciaId = payload?.instance || req.query.i
-    if (!instanciaId) return res.status(200).json({ ok: true, skipped: true })
-
-    const data = payload?.data
-    const key = data?.key
-    const remoteJid = key?.remoteJid || ''
-
-    // Ignora grupos
-    if (remoteJid.includes('@g.us') || remoteJid.includes('@broadcast')) {
-      return res.status(200).json({ ok: true, skipped: true })
-    }
-
-    const phone = remoteJid.replace(/@s\.whatsapp\.net$/, '').replace(/@c\.us$/, '').replace(/@lid$/, '')
-    if (!phone || !/^\d+$/.test(phone)) return res.status(200).json({ ok: true, skipped: true })
-
-    const deMin = key?.fromMe ?? false
-    const messageId = key?.id
-    const message = data?.message
-    const messageType = data?.messageType
-    const texto = extrairTexto(message, messageType)
-    const mediaUrl = extrairMediaUrl(message)
-    // Ignora pushName que é só o número (lid sem nome real)
-    const pushName = data?.pushName && !/^\d{10,}$/.test(data.pushName) ? data.pushName : null
-    const nomeContato = pushName || phone
-    const tsRaw = data?.messageTimestamp || Date.now()
-    const ts = Number(tsRaw) < 10000000000 ? Number(tsRaw) * 1000 : Number(tsRaw)
-
-    // Referral de anúncio
-    const ctxInfo = message?.extendedTextMessage?.contextInfo
-      || message?.imageMessage?.contextInfo
-      || message?.videoMessage?.contextInfo
-      || null
-    const referralAnuncio = ctxInfo?.externalAdReply?.title || ctxInfo?.externalAdReply?.body || null
-    const referralThumbnail = ctxInfo?.externalAdReply?.thumbnailUrl || null
-
-    console.log('[WH-EVO]', JSON.stringify({ phone, fromMe: deMin, type: messageType, texto: texto?.slice(0, 60), instancia: instanciaId }))
-
-    if (!texto) return res.status(200).json({ ok: true, skipped: true })
+    if (!phone) return res.status(200).json({ ok: true, skipped: true })
 
     console.log('[WH-SAVE]', JSON.stringify({ phone, deMin, nomeContato, texto: texto?.slice(0, 40) }))
 
@@ -126,9 +154,9 @@ export default async function handler(req, res) {
         message_id: messageId,
         de_mim: deMin,
         texto,
-        tipo: messageType || 'text',
+        tipo: payload?.type || 'text',
         media_url: mediaUrl || null,
-        timestamp_ms: ts,
+        timestamp_ms: Number(ts),
         referral_anuncio: referralAnuncio || null,
         referral_thumbnail: referralThumbnail || null,
       }),
