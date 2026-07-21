@@ -687,6 +687,9 @@ export default function InboxWhatsApp({ contaId }) {
   const [respostasRapidas, setRespostasRapidas] = useState([])
   useEffect(() => { if (Array.isArray(respostasConfig)) setRespostasRapidas(respostasConfig) }, [respostasConfig])
   const [novaResposta, setNovaResposta] = useState('')
+  const [modalNovaConversa, setModalNovaConversa] = useState(false)
+  const [novaConvTel, setNovaConvTel] = useState('')
+  const [novaConvNome, setNovaConvNome] = useState('')
   const [showEmoji, setShowEmoji] = useState(false)
   const [menuOpcoes, setMenuOpcoes] = useState(null)
   const [menuMsg, setMenuMsg] = useState(null)
@@ -1503,7 +1506,7 @@ export default function InboxWhatsApp({ contaId }) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-            <button className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-brand-50 text-gray-400 hover:text-brand-500 text-lg font-light transition-colors flex-shrink-0">+</button>
+            <button onClick={() => { setNovaConvTel(''); setNovaConvNome(''); setModalNovaConversa(true) }} title="Nova conversa" className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-brand-50 text-gray-400 hover:text-brand-500 text-lg font-light transition-colors flex-shrink-0">+</button>
           </div>
 
           <div className="flex gap-2 mt-2">
@@ -2084,6 +2087,58 @@ export default function InboxWhatsApp({ contaId }) {
           <div className="text-center">
             <p className="text-4xl mb-3">💬</p>
             <p className="text-sm">Selecione uma conversa para começar</p>
+          </div>
+        </div>
+      )}
+
+      {modalNovaConversa && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-gray-900">Nova conversa</h3>
+              <button onClick={() => setModalNovaConversa(false)} className="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">Telefone (com DDD, sem espaços)</label>
+                <input
+                  autoFocus
+                  type="tel"
+                  value={novaConvTel}
+                  onChange={e => setNovaConvTel(e.target.value.replace(/\D/g, ''))}
+                  placeholder="Ex: 64999001234"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400"
+                  onKeyDown={e => e.key === 'Enter' && novaConvTel.length >= 8 && (() => {
+                    const phone = novaConvTel
+                    const nome = novaConvNome.trim() || phone
+                    setSelecionada({ id: phone, nome, telefone: phone, lastMessage: null, unreadCount: 0 })
+                    setModalNovaConversa(false)
+                  })()}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">Nome (opcional)</label>
+                <input
+                  type="text"
+                  value={novaConvNome}
+                  onChange={e => setNovaConvNome(e.target.value)}
+                  placeholder="Nome do contato"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400"
+                />
+              </div>
+            </div>
+            <button
+              disabled={novaConvTel.length < 8}
+              onClick={() => {
+                const phone = novaConvTel
+                const nome = novaConvNome.trim() || phone
+                setSelecionada({ id: phone, nome, telefone: phone, lastMessage: null, unreadCount: 0 })
+                setModalNovaConversa(false)
+              }}
+              className="w-full py-2.5 rounded-xl bg-brand-400 text-white text-sm font-semibold hover:bg-brand-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Abrir conversa
+            </button>
           </div>
         </div>
       )}
