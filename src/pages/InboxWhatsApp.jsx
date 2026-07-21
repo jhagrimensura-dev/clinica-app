@@ -71,8 +71,8 @@ function normalizeChats(data, instancia, contactNameMap = {}) {
         || ''
       const rawTs = lastMsg?.messageTimestamp || 0
       const tsMs = Number(rawTs) < 10000000000 ? Number(rawTs) * 1000 : Number(rawTs)
-      // Nome: usa pushName do chat, ou mapa lid→nome do findContacts, ou telefone (se não @lid)
-      const nomeResolvido = c.name || c.pushName || contactNameMap[jid] || (isLid ? null : cleanPhone) || cleanPhone
+      // Nome: usa pushName do chat, ou mapa lid→nome do findContacts, ou telefone (se não @lid), ou "Contato"
+      const nomeResolvido = c.name || c.pushName || contactNameMap[jid] || (isLid ? 'Contato' : cleanPhone) || cleanPhone
       return {
         id: cleanPhone,
         jid,
@@ -773,8 +773,8 @@ export default function InboxWhatsApp({ contaId }) {
     if (inicial) setLoadingConversas(true)
     setErro(null)
     try {
-      // Busca Evolution API, contatos (para nomes) e histórico do Supabase em paralelo
-      const [data, contacts, supaHist] = await Promise.all([
+      // Busca Evolution API, contatos (para nomes), mapa salvo e histórico em paralelo
+      const [data, contacts, supaHist, supaContacts] = await Promise.all([
         evoFetch(contaAtiva, 'chat/findChats', 'POST', {}),
         evoFetch(contaAtiva, 'chat/findContacts', 'POST', { where: {} }),
         supabase.from('whatsapp_mensagens')
@@ -782,10 +782,16 @@ export default function InboxWhatsApp({ contaId }) {
           .eq('instancia_id', contaAtiva.instanciaId)
           .order('timestamp_ms', { ascending: false })
           .limit(500),
+        supabase.from('configuracoes')
+          .select('valor')
+          .eq('chave', `whatsapp_contacts_${contaAtiva.instanciaId}`)
+          .maybeSingle(),
       ])
 
-      // Mapa jid→nome para resolver @lid sem pushName
+      // Mapa jid→nome: findContacts + mapa salvo pelo webhook (contacts.upsert)
       const contactNameMap = {}
+      const savedMap = supaContacts?.data?.valor || {}
+      Object.assign(contactNameMap, savedMap)
       const contactsList = Array.isArray(contacts) ? contacts : []
       for (const c of contactsList) {
         if (c.remoteJid && c.pushName) contactNameMap[c.remoteJid] = c.pushName

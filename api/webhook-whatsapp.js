@@ -27,7 +27,48 @@ export default async function handler(req, res) {
     const payload = req.body
     const event = payload?.event
 
-    if (event !== 'messages.upsert') return res.status(200).json({ ok: true, skipped: true })
+    const SUPABASE_URL = process.env.VITE_SUPABASE_URL
+    const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY
+
+    // Captura contatos novos/atualizados para resolver @lid → nome
+    if (event === 'CONTACTS_UPSERT' || event === 'contacts.upsert') {
+      const instanciaId = payload?.instance || req.query.i
+      const contatos = Array.isArray(payload?.data) ? payload.data : []
+      const novoMapa = {}
+      for (const c of contatos) {
+        const jid = c.id || c.remoteJid || ''
+        const nome = c.name || c.notify || c.pushName || ''
+        // Filtra: precisa ter JID válido e nome real (não só dígitos = lid sem nome)
+        if (!jid || !nome || /^\d{10,}$/.test(nome)) continue
+        novoMapa[jid] = nome
+      }
+      if (Object.keys(novoMapa).length > 0) {
+        const chave = `whatsapp_contacts_${instanciaId}`
+        // Lê mapa atual, faz merge e salva de volta
+        const resAtual = await fetch(`${SUPABASE_URL}/rest/v1/configuracoes?chave=eq.${chave}&select=valor`, {
+          headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+        })
+        const atual = await resAtual.json()
+        const mapaAtual = atual?.[0]?.valor || {}
+        const mapaMerged = { ...mapaAtual, ...novoMapa }
+        await fetch(`${SUPABASE_URL}/rest/v1/configuracoes`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Prefer': 'resolution=merge-duplicates',
+          },
+          body: JSON.stringify({ chave, valor: mapaMerged }),
+        })
+        console.log('[WH-CONTACTS]', instanciaId, 'merge', Object.keys(novoMapa).length, 'contatos')
+      }
+      return res.status(200).json({ ok: true })
+    }
+
+    if (event !== 'MESSAGES_UPSERT' && event !== 'messages.upsert') {
+      return res.status(200).json({ ok: true, skipped: true })
+    }
 
     const instanciaId = payload?.instance || req.query.i
     if (!instanciaId) return res.status(200).json({ ok: true, skipped: true })
@@ -50,7 +91,9 @@ export default async function handler(req, res) {
     const messageType = data?.messageType
     const texto = extrairTexto(message, messageType)
     const mediaUrl = extrairMediaUrl(message)
-    const nomeContato = data?.pushName || phone
+    // Ignora pushName que é só o número (lid sem nome real)
+    const pushName = data?.pushName && !/^\d{10,}$/.test(data.pushName) ? data.pushName : null
+    const nomeContato = pushName || phone
     const tsRaw = data?.messageTimestamp || Date.now()
     const ts = Number(tsRaw) < 10000000000 ? Number(tsRaw) * 1000 : Number(tsRaw)
 
@@ -65,9 +108,6 @@ export default async function handler(req, res) {
     console.log('[WH-EVO]', JSON.stringify({ phone, fromMe: deMin, type: messageType, texto: texto?.slice(0, 60), instancia: instanciaId }))
 
     if (!texto) return res.status(200).json({ ok: true, skipped: true })
-
-    const SUPABASE_URL = process.env.VITE_SUPABASE_URL
-    const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY
 
     console.log('[WH-SAVE]', JSON.stringify({ phone, deMin, nomeContato, texto: texto?.slice(0, 40) }))
 
