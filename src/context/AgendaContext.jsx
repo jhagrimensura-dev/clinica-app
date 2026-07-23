@@ -40,9 +40,17 @@ export function AgendaProvider({ children }) {
             const atualizado = { ...r.dados, cor: CORES_ANTIGAS[r.dados.cor] }
             return supabase.from('agenda_lembretes').update({ dados: atualizado }).eq('id', r.id)
           }))
-          setLembretes(lem.map(r => ({ ...r.dados, cor: CORES_ANTIGAS[r.dados?.cor] || r.dados?.cor })))
+          const fromDB = lem.map(r => ({ ...r.dados, cor: CORES_ANTIGAS[r.dados?.cor] || r.dados?.cor }))
+          setLembretes(prev => {
+            const dbIds = new Set(fromDB.map(l => l.id))
+            return [...fromDB, ...prev.filter(l => !dbIds.has(l.id))]
+          })
         } else {
-          setLembretes(lem.map(r => r.dados))
+          const fromDB = lem.map(r => r.dados)
+          setLembretes(prev => {
+            const dbIds = new Set(fromDB.map(l => l.id))
+            return [...fromDB, ...prev.filter(l => !dbIds.has(l.id))]
+          })
         }
       } else if (!migratedLem) {
         migratedLem = true
@@ -101,7 +109,12 @@ export function AgendaProvider({ children }) {
 
   const addLembrete = async (l) => {
     setLembretes(prev => [...prev, l])
-    await supabase.from('agenda_lembretes').insert({ id: String(l.id), clinica_id: clinicaId, dados: l })
+    const { error } = await supabase.from('agenda_lembretes').insert({ id: String(l.id), clinica_id: clinicaId, dados: l })
+    if (error) {
+      console.error('Erro ao salvar lembrete:', error)
+      setLembretes(prev => prev.filter(x => x.id !== l.id))
+      alert('Erro ao salvar lembrete. Verifique sua conexão e tente novamente.')
+    }
   }
 
   const updateLembrete = async (id, updates) => {
