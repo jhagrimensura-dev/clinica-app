@@ -708,6 +708,7 @@ export default function InboxWhatsApp({ contaId }) {
   const jaTemSelecao = useRef(false)
   const msgCountRef = useRef({})
   const notifPermissao = useRef(false)
+  const [mutado, setMutado] = useState(() => localStorage.getItem('inbox_mutado') === '1')
   const selecionadaRef = useRef(null)
   const conversasRef = useRef([])
   const emojiContainerRef = useRef(null)
@@ -761,7 +762,7 @@ export default function InboxWhatsApp({ contaId }) {
   }, [menuMsg])
 
   function notificar(nome, texto) {
-    if (!notifPermissao.current || document.visibilityState === 'visible') return
+    if (mutado || !notifPermissao.current || document.visibilityState === 'visible') return
     new Notification(`💬 ${nome}`, { body: texto, icon: '/pwa-192x192.png' })
   }
 
@@ -1491,12 +1492,28 @@ export default function InboxWhatsApp({ contaId }) {
                 }`}>{contaAtiva.tipo}</span>
               )}
             </div>
-            <button onClick={fetchConversas} disabled={loadingConversas} title="Atualizar"
-              className="text-gray-300 hover:text-brand-400 transition-colors disabled:opacity-40">
-              <svg className={`w-4 h-4 ${loadingConversas ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setMutado(v => { localStorage.setItem('inbox_mutado', v ? '0' : '1'); return !v })}
+                title={mutado ? 'Notificações silenciadas — clique para ativar' : 'Silenciar notificações'}
+                className={`transition-colors ${mutado ? 'text-red-400 hover:text-red-500' : 'text-gray-300 hover:text-gray-500'}`}>
+                {mutado ? (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 5.586A2 2 0 005 7v4a7 7 0 007 7 7 7 0 001.536-.169M15 9a3 3 0 00-3-3V3l-3 3M3 3l18 18" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                )}
+              </button>
+              <button onClick={fetchConversas} disabled={loadingConversas} title="Atualizar"
+                className="text-gray-300 hover:text-brand-400 transition-colors disabled:opacity-40">
+                <svg className={`w-4 h-4 ${loadingConversas ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+            </div>
           </div>
           <div className="relative flex items-center gap-2">
             <div className="relative flex-1">
