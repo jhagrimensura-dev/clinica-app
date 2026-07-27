@@ -72,6 +72,7 @@ export function LeadsProvider({ children }) {
   const { clinicaId } = useAuth()
   const [leads, setLeads] = useState([])
   const leadsRef = useRef([])
+  const pendingUpdates = useRef(new Map())
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -82,7 +83,18 @@ export function LeadsProvider({ children }) {
     const fetchAll = async () => {
       const { data } = await supabase.from('leads').select('*').order('criado_em', { ascending: true })
       if (data && data.length > 0) {
-        setLeads(data.map(fromDB).filter(Boolean))
+        const fromDBData = data.map(fromDB).filter(Boolean)
+        setLeads(prev => {
+          const dbIds = new Set(fromDBData.map(l => l.id))
+          // Preserva leads pendentes (otimistas) ainda não confirmados no banco
+          const pending = prev.filter(l => !dbIds.has(l.id))
+          // Aplica atualizações pendentes por cima dos dados do banco
+          const merged = fromDBData.map(l => {
+            const upd = pendingUpdates.current.get(l.id)
+            return upd ? { ...l, ...upd } : l
+          })
+          return [...merged, ...pending]
+        })
       } else if (!migrated) {
         migrated = true
         const local = loadLocal()
@@ -127,7 +139,13 @@ export function LeadsProvider({ children }) {
       criadoEm: new Date().toISOString(),
     }
     setLeads(prev => [...prev, novo])
-    await supabase.from('leads').insert(toDB(novo, clinicaId))
+    const { error } = await supabase.from('leads').insert(toDB(novo, clinicaId))
+    if (error) {
+      console.error('addLead error:', error)
+      setLeads(prev => prev.filter(l => l.id !== novo.id))
+      alert('Erro ao salvar. Verifique sua conexão e tente novamente.')
+      return null
+    }
     return novo
   }
 
@@ -137,7 +155,9 @@ export function LeadsProvider({ children }) {
     setLeads(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l))
     const dbUpdates = updatesToDB(updates)
     if (Object.keys(dbUpdates).length === 0) return
+    pendingUpdates.current.set(id, { ...(pendingUpdates.current.get(id) || {}), ...updates })
     const { error } = await supabase.from('leads').update(dbUpdates).eq('id', id).eq('clinica_id', clinicaId)
+    pendingUpdates.current.delete(id)
     if (error) console.error('updateLead error:', error, id, updates)
   }
 
