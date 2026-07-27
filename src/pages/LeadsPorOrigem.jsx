@@ -23,6 +23,8 @@ const COR_MIDIA = {
   'WhatsApp Direto':               { bg: 'bg-teal-100',   text: 'text-teal-700',   bar: '#14b8a6' },
 }
 
+const MIDIAS_INSTAGRAM = ['Link da BIO', 'Link dos Stories']
+
 function getCorOrigem(o) {
   return COR_ORIGEM[o] || { bg: 'bg-gray-100', text: 'text-gray-600', bar: '#9ca3af' }
 }
@@ -30,7 +32,7 @@ function getCorMidia(m) {
   return COR_MIDIA[m] || { bg: 'bg-gray-100', text: 'text-gray-600', bar: '#9ca3af' }
 }
 
-function CardContagem({ label, count, pct, cor, thumbnail, permalink }) {
+function CardContagem({ label, count, pct, cor, thumbnail, permalink, subItems }) {
   return (
     <div className="text-left p-4 rounded-2xl border bg-white border-gray-100 shadow-sm flex flex-col gap-1">
       <div className="flex items-center gap-2 mb-1">
@@ -48,6 +50,16 @@ function CardContagem({ label, count, pct, cor, thumbnail, permalink }) {
       <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
         <div className="h-full rounded-full" style={{ width: `${pct}%`, background: cor.bar }} />
       </div>
+      {subItems?.length > 0 && (
+        <div className="mt-2 pt-2 border-t border-gray-100 flex flex-col gap-1.5">
+          {subItems.map(({ label: sl, count: sc, cor: scor }) => (
+            <div key={sl} className="flex items-center justify-between gap-1">
+              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${scor.bg} ${scor.text} truncate max-w-[110px]`} title={sl}>{sl}</span>
+              <span className="text-xs font-semibold text-gray-600">{sc}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -137,10 +149,21 @@ export default function LeadsPorOrigem() {
   })
   const sortedOrigem = Object.entries(contagemOrigem).sort((a, b) => b[1] - a[1])
 
-  // Contagem por mídia (só leads que têm mídia)
+  // Sub-breakdown de mídia para o card do Instagram
+  const instagramMidias = {}
+  filtrados.filter(l => (l.origemCustom || l.fonte) === 'Instagram').forEach(l => {
+    if (l.midia && MIDIAS_INSTAGRAM.includes(l.midia)) {
+      instagramMidias[l.midia] = (instagramMidias[l.midia] || 0) + 1
+    }
+  })
+  const instagramSubItems = Object.entries(instagramMidias)
+    .sort((a, b) => b[1] - a[1])
+    .map(([label, count]) => ({ label, count, cor: getCorMidia(label) }))
+
+  // Contagem por mídia — exclui mídias que aparecem dentro do card do Instagram
   const contagemMidia = {}
   filtrados.forEach(l => {
-    if (!l.midia || l.midia === 'Campanha de msg para Whatsapp') return
+    if (!l.midia || l.midia === 'Campanha de msg para Whatsapp' || MIDIAS_INSTAGRAM.includes(l.midia)) return
     contagemMidia[l.midia] = (contagemMidia[l.midia] || 0) + 1
   })
   const sortedMidia = Object.entries(contagemMidia).sort((a, b) => b[1] - a[1])
@@ -200,6 +223,7 @@ export default function LeadsPorOrigem() {
                     count={count}
                     pct={total > 0 ? (count / total) * 100 : 0}
                     cor={getCorOrigem(origem)}
+                    subItems={origem === 'Instagram' ? instagramSubItems : undefined}
                   />
                 ))}
               </div>
