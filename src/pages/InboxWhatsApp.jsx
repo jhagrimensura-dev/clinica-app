@@ -305,6 +305,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
                 const nova = e.target.value
                 setOrigemCustom(nova)
                 if (nova.toLowerCase().includes('instagram') && !['Link da BIO', 'Link dos Stories'].includes(midia)) setMidia('')
+                if (nova === 'Tráfego' && midia !== 'Campanha de msg para Whatsapp') setMidia('')
               }}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 bg-white">
                 {origens.map(o => <option key={o}>{o}</option>)}
@@ -497,7 +498,9 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
               <option value="">Não informado</option>
               {(origemCustom.toLowerCase().includes('instagram')
                 ? midiaOpcoes.filter(m => ['Link da BIO', 'Link dos Stories'].includes(m))
-                : midiaOpcoes
+                : origemCustom === 'Tráfego'
+                  ? midiaOpcoes.filter(m => m === 'Campanha de msg para Whatsapp')
+                  : midiaOpcoes
               ).map(m => <option key={m} value={m}>{m}</option>)}
             </select>
           )}
