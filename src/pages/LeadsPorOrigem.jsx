@@ -140,7 +140,7 @@ export default function LeadsPorOrigem() {
   // Contagem por mídia (só leads que têm mídia)
   const contagemMidia = {}
   filtrados.forEach(l => {
-    if (!l.midia) return
+    if (!l.midia || l.midia === 'Campanha de msg para Whatsapp') return
     contagemMidia[l.midia] = (contagemMidia[l.midia] || 0) + 1
   })
   const sortedMidia = Object.entries(contagemMidia).sort((a, b) => b[1] - a[1])
