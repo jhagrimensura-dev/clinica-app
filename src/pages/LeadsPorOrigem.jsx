@@ -5,12 +5,15 @@ import { supabase } from '../lib/supabase'
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
 const COR_ORIGEM = {
-  'Instagram Anúncio':  { bg: 'bg-pink-100',   text: 'text-pink-700',   bar: '#ee2a7b' },
-  'Instagram Orgânico': { bg: 'bg-purple-100',  text: 'text-purple-700', bar: '#6228d7' },
-  'WhatsApp':           { bg: 'bg-green-100',   text: 'text-green-700',  bar: '#25d366' },
-  'Indicação':          { bg: 'bg-yellow-100',  text: 'text-yellow-700', bar: '#f59e0b' },
-  'Tráfego':            { bg: 'bg-blue-100',    text: 'text-blue-700',   bar: '#3b82f6' },
-  'Instagram':          { bg: 'bg-pink-100',    text: 'text-pink-700',   bar: '#ee2a7b' },
+  'Instagram Anúncio':    { bg: 'bg-pink-100',   text: 'text-pink-700',   bar: '#ee2a7b' },
+  'Instagram Orgânico':   { bg: 'bg-purple-100',  text: 'text-purple-700', bar: '#6228d7' },
+  'WhatsApp':             { bg: 'bg-green-100',   text: 'text-green-700',  bar: '#25d366' },
+  'Indicação':            { bg: 'bg-yellow-100',  text: 'text-yellow-700', bar: '#f59e0b' },
+  'Tráfego':              { bg: 'bg-blue-100',    text: 'text-blue-700',   bar: '#3b82f6' },
+  'Instagram':            { bg: 'bg-pink-100',    text: 'text-pink-700',   bar: '#ee2a7b' },
+  'Fornecedores':         { bg: 'bg-orange-100',  text: 'text-orange-700', bar: '#f97316' },
+  'Outros':               { bg: 'bg-gray-100',    text: 'text-gray-600',   bar: '#9ca3af' },
+  'Fornecedores / Outros':{ bg: 'bg-orange-100',  text: 'text-orange-700', bar: '#f97316' },
 }
 const COR_MIDIA = {
   'Campanha de msg para Whatsapp': { bg: 'bg-green-100',  text: 'text-green-700',  bar: '#25d366' },
@@ -112,7 +115,7 @@ export default function LeadsPorOrigem() {
 
   const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
 
-  const ORIGENS_PERMITIDAS = ['Instagram', 'Tráfego', 'Indicação']
+  const ORIGENS_PERMITIDAS = ['Instagram', 'Tráfego', 'Indicação', 'Fornecedores', 'Outros', 'Fornecedores / Outros']
 
   const filtrados = leads.filter(l => {
     const d = l.data || l.criadoEm?.slice(0, 10) || ''
