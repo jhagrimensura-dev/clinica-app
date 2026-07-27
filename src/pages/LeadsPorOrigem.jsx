@@ -125,11 +125,15 @@ export default function LeadsPorOrigem() {
 
   const total = filtrados.length
 
-  // Contagem por origem
-  const contagemOrigem = {}
+  // Contagem por origem — agrupa Fornecedores/Outros em um único label
+  const contagemOrigem = { 'Fornecedores / Outros': 0 }
   filtrados.forEach(l => {
     const o = l.origemCustom || l.fonte || 'Não informado'
-    contagemOrigem[o] = (contagemOrigem[o] || 0) + 1
+    if (o === 'Fornecedores' || o === 'Outros' || o === 'Fornecedores / Outros') {
+      contagemOrigem['Fornecedores / Outros'] = (contagemOrigem['Fornecedores / Outros'] || 0) + 1
+    } else {
+      contagemOrigem[o] = (contagemOrigem[o] || 0) + 1
+    }
   })
   const sortedOrigem = Object.entries(contagemOrigem).sort((a, b) => b[1] - a[1])
 
