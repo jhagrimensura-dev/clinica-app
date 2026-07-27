@@ -301,7 +301,11 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
                 </div>
               </div>
             ) : (
-              <select value={origemCustom} onChange={e => setOrigemCustom(e.target.value)}
+              <select value={origemCustom} onChange={e => {
+                const nova = e.target.value
+                setOrigemCustom(nova)
+                if (nova.toLowerCase().includes('instagram') && !['Link da BIO', 'Link dos Stories'].includes(midia)) setMidia('')
+              }}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 bg-white">
                 {origens.map(o => <option key={o}>{o}</option>)}
               </select>
@@ -491,7 +495,10 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
             <select value={midia} onChange={e => { setMidia(e.target.value); if (e.target.value !== 'Campanha de msg para Whatsapp') setCriativo(''); if (e.target.value !== 'Link da BIO') setLinkBio('') }}
               className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 bg-white">
               <option value="">Não informado</option>
-              {midiaOpcoes.map(m => <option key={m} value={m}>{m}</option>)}
+              {(origemCustom.toLowerCase().includes('instagram')
+                ? midiaOpcoes.filter(m => ['Link da BIO', 'Link dos Stories'].includes(m))
+                : midiaOpcoes
+              ).map(m => <option key={m} value={m}>{m}</option>)}
             </select>
           )}
         </div>
