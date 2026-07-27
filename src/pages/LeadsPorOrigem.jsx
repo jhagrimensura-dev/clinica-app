@@ -104,6 +104,96 @@ function IconList() {
   )
 }
 
+function ModalGerenciarCriativos({ criativos, onSalvar, onFechar }) {
+  const [lista, setLista] = useState(criativos)
+  const [form, setForm] = useState({ nome: '', thumbnail: '', permalink: '' })
+  const [editIdx, setEditIdx] = useState(null)
+
+  const salvarForm = () => {
+    if (!form.nome.trim()) return
+    const novaLista = editIdx !== null
+      ? lista.map((c, i) => i === editIdx ? { ...form } : c)
+      : [...lista, { ...form }]
+    setLista(novaLista)
+    setForm({ nome: '', thumbnail: '', permalink: '' })
+    setEditIdx(null)
+  }
+
+  const excluir = (i) => setLista(l => l.filter((_, idx) => idx !== i))
+
+  const editar = (i) => { setForm({ ...lista[i] }); setEditIdx(i) }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-bold text-gray-900">Gerenciar Criativos</h2>
+          <button onClick={onFechar} className="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
+        </div>
+
+        {/* Lista */}
+        {lista.length > 0 ? (
+          <div className="space-y-2">
+            {lista.map((c, i) => (
+              <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                {c.thumbnail && <img src={c.thumbnail} className="w-10 h-10 rounded-lg object-cover shrink-0 border border-gray-200" />}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-800 truncate">{c.nome}</p>
+                  {c.permalink && <p className="text-xs text-gray-400 truncate">{c.permalink}</p>}
+                </div>
+                <button onClick={() => editar(i)} className="text-gray-400 hover:text-blue-500 text-xs px-2 py-1 rounded-lg hover:bg-blue-50 transition-colors">✏️</button>
+                <button onClick={() => excluir(i)} className="text-gray-400 hover:text-red-500 text-xs px-2 py-1 rounded-lg hover:bg-red-50 transition-colors">🗑️</button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-400 text-center py-4">Nenhum criativo cadastrado</p>
+        )}
+
+        {/* Formulário */}
+        <div className="border-t border-gray-100 pt-4 space-y-3">
+          <p className="text-xs font-bold text-gray-500 uppercase">{editIdx !== null ? 'Editando criativo' : 'Novo criativo'}</p>
+          <input
+            value={form.nome}
+            onChange={e => setForm(f => ({ ...f, nome: e.target.value }))}
+            placeholder="Nome do criativo *"
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400"
+          />
+          <input
+            value={form.thumbnail}
+            onChange={e => setForm(f => ({ ...f, thumbnail: e.target.value }))}
+            placeholder="URL da imagem (thumbnail)"
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400"
+          />
+          <input
+            value={form.permalink}
+            onChange={e => setForm(f => ({ ...f, permalink: e.target.value }))}
+            placeholder="Link do anúncio (permalink)"
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400"
+          />
+          <div className="flex gap-2">
+            {editIdx !== null && (
+              <button onClick={() => { setForm({ nome: '', thumbnail: '', permalink: '' }); setEditIdx(null) }}
+                className="flex-1 px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">
+                Cancelar
+              </button>
+            )}
+            <button onClick={salvarForm} disabled={!form.nome.trim()}
+              className="flex-1 px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl disabled:opacity-40 transition-colors">
+              {editIdx !== null ? 'Salvar edição' : '+ Adicionar'}
+            </button>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 border-t border-gray-100 pt-4">
+          <button onClick={onFechar} className="px-5 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
+          <button onClick={() => onSalvar(lista)} className="px-6 py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition-colors">Salvar tudo</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function LeadsPorOrigem() {
   const { leads } = useLeads()
   const hoje = new Date()
@@ -111,11 +201,18 @@ export default function LeadsPorOrigem() {
   const [ano, setAno] = useState(hoje.getFullYear())
   const [adsEngajamento, setAdsEngajamento] = useState([])
   const [viewCriativo, setViewCriativo] = useState('grid')
+  const [modalCriativos, setModalCriativos] = useState(false)
 
   useEffect(() => {
     supabase.from('configuracoes').select('valor').eq('chave', 'ads_engajamento').maybeSingle()
       .then(({ data }) => { if (data?.valor) setAdsEngajamento(data.valor) })
   }, [])
+
+  const salvarCriativos = async (lista) => {
+    setAdsEngajamento(lista)
+    setModalCriativos(false)
+    await supabase.from('configuracoes').upsert({ chave: 'ads_engajamento', valor: lista }, { onConflict: 'chave' })
+  }
 
   function navMes(dir) {
     if (dir === -1) {
@@ -235,6 +332,8 @@ export default function LeadsPorOrigem() {
             <section>
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wide">Por Criativo</h2>
+                <div className="flex items-center gap-2">
+                <button onClick={() => setModalCriativos(true)} className="text-xs text-brand-500 hover:text-brand-700 font-semibold border border-brand-200 px-3 py-1 rounded-xl hover:bg-brand-50 transition-colors">⚙ Gerenciar</button>
                 <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
                   <button
                     onClick={() => setViewCriativo('grid')}
@@ -250,6 +349,7 @@ export default function LeadsPorOrigem() {
                   >
                     <IconList />
                   </button>
+                </div>
                 </div>
               </div>
 
@@ -292,6 +392,14 @@ export default function LeadsPorOrigem() {
           )}
 
         </>
+      )}
+
+      {modalCriativos && (
+        <ModalGerenciarCriativos
+          criativos={adsEngajamento}
+          onSalvar={salvarCriativos}
+          onFechar={() => setModalCriativos(false)}
+        />
       )}
     </div>
   )
