@@ -112,9 +112,12 @@ export default function LeadsPorOrigem() {
 
   const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
 
+  const ORIGENS_EXCLUIDAS = ['Fornecedores', 'Outros']
+
   const filtrados = leads.filter(l => {
     const d = l.data || l.criadoEm?.slice(0, 10) || ''
-    return d.startsWith(prefix)
+    const origem = l.origemCustom || l.fonte || ''
+    return d.startsWith(prefix) && !ORIGENS_EXCLUIDAS.includes(origem)
   })
 
   const total = filtrados.length
