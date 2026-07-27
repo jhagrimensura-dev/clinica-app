@@ -230,6 +230,66 @@ export default function LeadsPorOrigem() {
             </section>
           )}
 
+          {/* Criativo */}
+          {sortedCriativo.length > 0 && (
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wide">Por Criativo</h2>
+                <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+                  <button
+                    onClick={() => setViewCriativo('grid')}
+                    className={`p-1.5 rounded-lg transition-colors ${viewCriativo === 'grid' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                    title="Grade"
+                  >
+                    <IconGrid />
+                  </button>
+                  <button
+                    onClick={() => setViewCriativo('list')}
+                    className={`p-1.5 rounded-lg transition-colors ${viewCriativo === 'list' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                    title="Lista"
+                  >
+                    <IconList />
+                  </button>
+                </div>
+              </div>
+
+              {viewCriativo === 'grid' ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {sortedCriativo.map(([criativo, count]) => {
+                    const ad = adMap[criativo]
+                    return (
+                      <CardContagem
+                        key={criativo}
+                        label={criativo}
+                        count={count}
+                        pct={totalCriativos > 0 ? (count / totalCriativos) * 100 : 0}
+                        cor={corCriativo}
+                        thumbnail={ad?.thumbnail || ''}
+                        permalink={ad?.permalink || ''}
+                      />
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {sortedCriativo.map(([criativo, count]) => {
+                    const ad = adMap[criativo]
+                    return (
+                      <RowContagem
+                        key={criativo}
+                        label={criativo}
+                        count={count}
+                        pct={totalCriativos > 0 ? (count / totalCriativos) * 100 : 0}
+                        cor={corCriativo}
+                        thumbnail={ad?.thumbnail || ''}
+                        permalink={ad?.permalink || ''}
+                      />
+                    )
+                  })}
+                </div>
+              )}
+            </section>
+          )}
 
         </>
       )}
