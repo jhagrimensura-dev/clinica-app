@@ -230,23 +230,6 @@ export default function LeadsPorOrigem() {
             </section>
           )}
 
-          {/* Mídia */}
-          {sortedMidia.length > 0 && (
-            <section>
-              <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">Por Mídia</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {sortedMidia.map(([midia, count]) => (
-                  <CardContagem
-                    key={midia}
-                    label={midia}
-                    count={count}
-                    pct={total > 0 ? (count / total) * 100 : 0}
-                    cor={getCorMidia(midia)}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
 
           {/* Criativo */}
           {sortedCriativo.length > 0 && (
