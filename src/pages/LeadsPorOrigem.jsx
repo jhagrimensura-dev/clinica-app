@@ -108,6 +108,16 @@ function ModalGerenciarCriativos({ criativos, onSalvar, onFechar }) {
   const [lista, setLista] = useState(criativos)
   const [form, setForm] = useState({ nome: '', thumbnail: '', permalink: '' })
   const [editIdx, setEditIdx] = useState(null)
+  const [limpando, setLimpando] = useState(false)
+  const [confirmLimpar, setConfirmLimpar] = useState(false)
+
+  const limparTodosLeads = async () => {
+    setLimpando(true)
+    await supabase.from('leads').update({ criativo: null }).not('criativo', 'is', null)
+    setLimpando(false)
+    setConfirmLimpar(false)
+    alert('Criativos removidos de todos os leads.')
+  }
 
   const salvarForm = () => {
     if (!form.nome.trim()) return
@@ -185,9 +195,26 @@ function ModalGerenciarCriativos({ criativos, onSalvar, onFechar }) {
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 border-t border-gray-100 pt-4">
-          <button onClick={onFechar} className="px-5 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
-          <button onClick={() => onSalvar(lista)} className="px-6 py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition-colors">Salvar tudo</button>
+        <div className="border-t border-gray-100 pt-4">
+          {confirmLimpar ? (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-center justify-between gap-3 mb-3">
+              <p className="text-xs text-red-600 font-semibold">Remover criativo de todos os leads?</p>
+              <div className="flex gap-2">
+                <button onClick={limparTodosLeads} disabled={limpando} className="text-xs font-bold text-white bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-lg disabled:opacity-50">
+                  {limpando ? 'Limpando...' : 'Sim, limpar'}
+                </button>
+                <button onClick={() => setConfirmLimpar(false)} className="text-xs text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-100">Não</button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setConfirmLimpar(true)} className="w-full mb-3 px-4 py-2 text-xs text-red-500 border border-red-200 rounded-xl hover:bg-red-50 font-semibold transition-colors">
+              🗑 Limpar criativo de todos os leads
+            </button>
+          )}
+          <div className="flex justify-end gap-3">
+            <button onClick={onFechar} className="px-5 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
+            <button onClick={() => onSalvar(lista)} className="px-6 py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition-colors">Salvar tudo</button>
+          </div>
         </div>
       </div>
     </div>
