@@ -112,7 +112,7 @@ export default function LeadsPorOrigem() {
 
   const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
 
-  const ORIGENS_EXCLUIDAS = ['Fornecedores', 'Outros']
+  const ORIGENS_EXCLUIDAS = ['Fornecedores', 'Outros', 'WhatsApp']
 
   const filtrados = leads.filter(l => {
     const d = l.data || l.criadoEm?.slice(0, 10) || ''
