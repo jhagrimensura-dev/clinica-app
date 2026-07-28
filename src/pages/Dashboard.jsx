@@ -35,7 +35,7 @@ export default function Dashboard() {
   const totalConsultas = lConsultas.reduce((acc, l) => acc + (l.valorTaxa || 0), 0)
   const countConsultas = lConsultas.length
   const ticketGeral = lMesValidos.length > 0 ? totalGeral / lMesValidos.length : 0
-  const ticketNovos = countNovos > 0 ? totalNovos / countNovos : 0
+  const ticketNovos = (countNovos + countIndicacaoLanc) > 0 ? (totalNovos + totalIndicacaoLanc) / (countNovos + countIndicacaoLanc) : 0
   const ticketRecorrentes = countRecorrentes > 0 ? totalRecorrentes / countRecorrentes : 0
   const ticketIndicacao = countIndicacaoLanc > 0 ? totalIndicacaoLanc / countIndicacaoLanc : 0
   const ticketDiario = diasAtendimento > 0 ? totalGeral / diasAtendimento : 0
@@ -133,7 +133,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-5 gap-4">
           {[
             { label: 'Geral', value: fmt(ticketGeral), sub: `${lMesValidos.length} lançamento(s)` },
-            { label: 'Novos', value: fmt(ticketNovos), sub: `${countNovos} novo(s)` },
+            { label: 'Novos', value: fmt(ticketNovos), sub: `${countNovos + countIndicacaoLanc} novo(s) + indicação` },
             { label: 'Recorrência', value: fmt(ticketRecorrentes), sub: `${countRecorrentes} recorrente(s)` },
             { label: 'Indicação', value: fmt(ticketIndicacao), sub: `${countIndicacaoLanc} indicação(ões)` },
             { label: 'Diário', value: fmt(ticketDiario), sub: `${diasAtendimento} dias úteis` },
