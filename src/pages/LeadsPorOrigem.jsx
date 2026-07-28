@@ -104,12 +104,14 @@ function IconList() {
   )
 }
 
-function ModalGerenciarCriativos({ criativos, onSalvar, onFechar }) {
+function ModalGerenciarCriativos({ criativos, contagemCriativo, onSalvar, onFechar }) {
   const [lista, setLista] = useState(criativos)
   const [form, setForm] = useState({ nome: '', thumbnail: '', permalink: '' })
   const [editIdx, setEditIdx] = useState(null)
   const [limpando, setLimpando] = useState(false)
   const [confirmLimpar, setConfirmLimpar] = useState(false)
+  const [limpandoNome, setLimpandoNome] = useState(null)
+  const [confirmLimparNome, setConfirmLimparNome] = useState(null)
 
   const limparTodosLeads = async () => {
     setLimpando(true)
@@ -117,6 +119,13 @@ function ModalGerenciarCriativos({ criativos, onSalvar, onFechar }) {
     setLimpando(false)
     setConfirmLimpar(false)
     alert('Criativos removidos de todos os leads.')
+  }
+
+  const limparLeadsPorNome = async (nome) => {
+    setLimpandoNome(nome)
+    await supabase.from('leads').update({ criativo: null }).eq('criativo', nome)
+    setLimpandoNome(null)
+    setConfirmLimparNome(null)
   }
 
   const salvarForm = () => {
@@ -133,6 +142,10 @@ function ModalGerenciarCriativos({ criativos, onSalvar, onFechar }) {
 
   const editar = (i) => { setForm({ ...lista[i] }); setEditIdx(i) }
 
+  // Nomes de criativos nos leads mas que não estão na lista cadastrada
+  const nomesNaLista = new Set(lista.map(c => c.nome))
+  const nomesForaDaLista = Object.keys(contagemCriativo).filter(n => !nomesNaLista.has(n))
+
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
@@ -144,20 +157,65 @@ function ModalGerenciarCriativos({ criativos, onSalvar, onFechar }) {
         {/* Lista */}
         {lista.length > 0 ? (
           <div className="space-y-2">
-            {lista.map((c, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                {c.thumbnail && <img src={c.thumbnail} className="w-10 h-10 rounded-lg object-cover shrink-0 border border-gray-200" />}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-800 truncate">{c.nome}</p>
-                  {c.permalink && <p className="text-xs text-gray-400 truncate">{c.permalink}</p>}
+            {lista.map((c, i) => {
+              const qtd = contagemCriativo[c.nome] || 0
+              return (
+                <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                  {c.thumbnail && <img src={c.thumbnail} className="w-10 h-10 rounded-lg object-cover shrink-0 border border-gray-200" />}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-800 truncate">{c.nome}</p>
+                    {c.permalink && <p className="text-xs text-gray-400 truncate">{c.permalink}</p>}
+                  </div>
+                  {qtd > 0 && (
+                    confirmLimparNome === c.nome ? (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <span className="text-xs text-red-500">Limpar {qtd} leads?</span>
+                        <button onClick={() => limparLeadsPorNome(c.nome)} disabled={limpandoNome === c.nome} className="text-xs font-bold text-white bg-red-500 hover:bg-red-600 px-2 py-0.5 rounded-lg disabled:opacity-50">
+                          {limpandoNome === c.nome ? '...' : 'Sim'}
+                        </button>
+                        <button onClick={() => setConfirmLimparNome(null)} className="text-xs text-gray-500 px-1.5 py-0.5 rounded-lg hover:bg-gray-100">Não</button>
+                      </div>
+                    ) : (
+                      <span onClick={() => setConfirmLimparNome(c.nome)} className="text-xs text-gray-400 hover:text-red-500 cursor-pointer shrink-0 bg-gray-100 hover:bg-red-50 px-2 py-0.5 rounded-lg transition-colors" title="Limpar criativo dos leads com este nome">
+                        {qtd} leads ✕
+                      </span>
+                    )
+                  )}
+                  <button onClick={() => editar(i)} className="text-gray-400 hover:text-blue-500 text-xs px-2 py-1 rounded-lg hover:bg-blue-50 transition-colors">✏️</button>
+                  <button onClick={() => excluir(i)} className="text-gray-400 hover:text-red-500 text-xs px-2 py-1 rounded-lg hover:bg-red-50 transition-colors">🗑️</button>
                 </div>
-                <button onClick={() => editar(i)} className="text-gray-400 hover:text-blue-500 text-xs px-2 py-1 rounded-lg hover:bg-blue-50 transition-colors">✏️</button>
-                <button onClick={() => excluir(i)} className="text-gray-400 hover:text-red-500 text-xs px-2 py-1 rounded-lg hover:bg-red-50 transition-colors">🗑️</button>
-              </div>
-            ))}
+              )
+            })}
           </div>
         ) : (
           <p className="text-sm text-gray-400 text-center py-4">Nenhum criativo cadastrado</p>
+        )}
+
+        {/* Criativos com nome errado (existem nos leads mas não na lista) */}
+        {nomesForaDaLista.length > 0 && (
+          <div className="border border-orange-100 rounded-xl p-3 bg-orange-50 space-y-2">
+            <p className="text-xs font-bold text-orange-600 uppercase">Criativos com nome incorreto nos leads</p>
+            {nomesForaDaLista.map(nome => {
+              const qtd = contagemCriativo[nome]
+              return (
+                <div key={nome} className="flex items-center gap-2">
+                  <span className="text-xs text-orange-800 flex-1 truncate" title={nome}>"{nome}" — {qtd} lead{qtd !== 1 ? 's' : ''}</span>
+                  {confirmLimparNome === nome ? (
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button onClick={() => limparLeadsPorNome(nome)} disabled={limpandoNome === nome} className="text-xs font-bold text-white bg-red-500 hover:bg-red-600 px-2 py-0.5 rounded-lg disabled:opacity-50">
+                        {limpandoNome === nome ? '...' : 'Limpar'}
+                      </button>
+                      <button onClick={() => setConfirmLimparNome(null)} className="text-xs text-gray-500 px-1.5 py-0.5 rounded-lg hover:bg-gray-100">Não</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setConfirmLimparNome(nome)} className="text-xs text-red-500 hover:text-red-700 font-semibold px-2 py-0.5 rounded-lg hover:bg-red-50 border border-red-200 transition-colors shrink-0">
+                      Apagar
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         )}
 
         {/* Formulário */}
@@ -424,6 +482,7 @@ export default function LeadsPorOrigem() {
       {modalCriativos && (
         <ModalGerenciarCriativos
           criativos={adsEngajamento}
+          contagemCriativo={contagemCriativo}
           onSalvar={salvarCriativos}
           onFechar={() => setModalCriativos(false)}
         />

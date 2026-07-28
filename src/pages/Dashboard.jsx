@@ -47,6 +47,7 @@ export default function Dashboard() {
   const leadsRecorrentes = getLeadsPorOrigem('leads_recorrentes', ano, mes)
   const leadsIndicacao = getLeadsPorOrigem('indicacao', ano, mes)
   const totalLeads = leadsNovos.length + leadsIndicacao.length
+  const leadsNovosReais = leadsNovos.filter(l => !String(l.fonte || '').toLowerCase().includes('follow') && !String(l.origemCustom || '').toLowerCase().includes('follow')).length
 
   const agendNovos = leadsNovos.filter(l => l.status === 'agendado' || l.status === 'fechado').length
   const agendRecorrentes = leadsRecorrentes.filter(l => l.status === 'agendado' || l.status === 'fechado').length
@@ -174,7 +175,7 @@ export default function Dashboard() {
               value: custoLead > 0 ? fmt(custoLead) : '—',
               icon: '🎯',
               color: 'text-teal-500',
-              sub: totalLeads > 0 ? `${totalLeads} leads recebidos` : 'sem leads no mês',
+              sub: leadsNovosReais > 0 ? `${leadsNovosReais} leads recebidos` : 'sem leads no mês',
             },
           ].map((card, i) => (
             <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
@@ -194,7 +195,7 @@ export default function Dashboard() {
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Funil de Conversão</p>
         <div className="grid grid-cols-4 gap-4">
           {[
-            { label: 'Social Media', icon: '🔗', color: 'text-brand-500', value: String(seguidores.toLocaleString('pt-BR')), sub: 'seguidores', extras: [`${totalLeads} leads recebidos`, `${convComercial}% conversão`] },
+            { label: 'Social Media', icon: '🔗', color: 'text-brand-500', value: String(seguidores.toLocaleString('pt-BR')), sub: 'seguidores', extras: [`${leadsNovosReais} leads recebidos`, `${convComercial}% conversão`] },
             { label: 'Leads Novos', icon: '🏢', color: 'text-blue-500', value: String(totalLeads), sub: `leads (${leadsNovos.length} novos · ${leadsIndicacao.length} indicações)`, extras: [`${totalAgend} agendamentos`, `${convComercial}% conversão`] },
             { label: 'Leads Recorrência', icon: '🔄', color: 'text-teal-500', value: String(leadsRecorrentes.length), sub: 'contatos recorrentes', extras: [`${agendRecorrentes} agendamentos`, `${convRecorrencia}% conversão`] },
             { label: 'Vendas', icon: '📊', color: 'text-green-500', value: String(lMesSemConsulta.length), sub: 'lançamentos no mês', extras: [`${countNovos} novos · ${countRecorrentes} recorrentes`, lMesSemConsulta.length > 0 ? `${fmt(ticketGeral)} ticket médio` : '—'] },
