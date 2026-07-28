@@ -63,7 +63,7 @@ export default function Dashboard() {
   const { trafego: trafegoInvestido, seguidores } = getMes(ano, mes)
   const totalPosts = posts.length
   const totalImpulsionados = posts.filter(p => p.impulsionado).length
-  const custoLead = totalLeads > 0 && trafegoInvestido > 0 ? trafegoInvestido / totalLeads : 0
+  const custoLead = leadsNovosReais > 0 && trafegoInvestido > 0 ? trafegoInvestido / leadsNovosReais : 0
   const custoPorSeguidor = seguidores > 0 && trafegoInvestido > 0 ? trafegoInvestido / seguidores : 0
 
   return (
