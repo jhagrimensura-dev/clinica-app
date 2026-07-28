@@ -33,28 +33,76 @@ function CustomTooltip({ active, payload, label }) {
   )
 }
 
+const CORES = [
+  { bg: '#f9fafb', borda: '#e5e7eb', cor: '#6b7280' },
+  { bg: '#eff6ff', borda: '#bfdbfe', cor: '#3b82f6' },
+  { bg: '#f0fdf4', borda: '#bbf7d0', cor: '#16a34a' },
+  { bg: '#fef2f2', borda: '#fecaca', cor: '#ef4444' },
+  { bg: '#fff7ed', borda: '#fed7aa', cor: '#f97316' },
+  { bg: '#fefce8', borda: '#fde68a', cor: '#ca8a04' },
+  { bg: '#faf5ff', borda: '#e9d5ff', cor: '#9333ea' },
+  { bg: '#fdf2f8', borda: '#f5d0e8', cor: '#db2777' },
+  { bg: '#f0f9ff', borda: '#bae6fd', cor: '#0284c7' },
+  { bg: '#1e293b', borda: '#334155', cor: '#f1f5f9' },
+]
+
+function PaletaCores({ onEscolher }) {
+  return (
+    <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex gap-1 bg-white rounded-xl shadow-lg border border-gray-100 px-2 py-1.5 z-50"
+      onMouseDown={e => e.stopPropagation()}>
+      {CORES.map((c, i) => (
+        <button key={i} onClick={() => onEscolher(c)}
+          className="w-5 h-5 rounded-full border-2 border-white shadow-sm hover:scale-125 transition-transform flex-shrink-0"
+          style={{ backgroundColor: c.bg, outline: `2px solid ${c.borda}` }} />
+      ))}
+    </div>
+  )
+}
+
 // Nó customizado editável com duplo clique
 function NodoLead({ id, data, selected }) {
   const [editando, setEditando] = useState(false)
+  const [hover, setHover] = useState(false)
   const [texto, setTexto] = useState(data.label)
+  const [bg, setBg] = useState(data.bg || '#f9fafb')
+  const [borda, setBorda] = useState(data.borda || '#e5e7eb')
+  const [cor, setCor] = useState(data.cor || '#6b7280')
 
   const confirmar = () => {
     setEditando(false)
     data.onLabelChange?.(id, texto)
   }
 
+  const bigHandleStyle = {
+    width: 20, height: 20,
+    background: '#3b82f6',
+    border: '3px solid white',
+    borderRadius: '50%',
+    opacity: hover ? 1 : 0,
+    transition: 'opacity 0.15s',
+    cursor: 'crosshair',
+    zIndex: 10,
+  }
+
   return (
     <div
       className="rounded-2xl border-2 px-5 py-3 text-center min-w-[120px] cursor-grab active:cursor-grabbing transition-all"
       style={{
-        borderColor: selected ? '#3b82f6' : data.borda,
-        backgroundColor: selected ? '#dbeafe' : data.bg,
+        borderColor: selected ? '#3b82f6' : borda,
+        backgroundColor: selected ? '#dbeafe' : bg,
         boxShadow: selected ? '0 0 0 3px #93c5fd' : '0 2px 6px rgba(0,0,0,0.08)',
       }}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
       onDoubleClick={() => setEditando(true)}
     >
-      <Handle id="t" type="target" position={Position.Top} className="!bg-gray-300 !w-3 !h-3 !border-2 !border-white" />
-      <Handle id="l" type="target" position={Position.Left} className="!bg-gray-300 !w-3 !h-3 !border-2 !border-white" />
+      {selected && (
+        <PaletaCores onEscolher={c => { setBg(c.bg); setBorda(c.borda); setCor(c.cor); data.onColorChange?.(id, c) }} />
+      )}
+      <Handle id="t" type="source" position={Position.Top}    style={bigHandleStyle} />
+      <Handle id="l" type="source" position={Position.Left}   style={bigHandleStyle} />
+      <Handle id="b" type="source" position={Position.Bottom} style={bigHandleStyle} />
+      <Handle id="r" type="source" position={Position.Right}  style={bigHandleStyle} />
       {data.emoji && <div className="text-xl mb-0.5">{data.emoji}</div>}
       {editando ? (
         <input
@@ -70,11 +118,9 @@ function NodoLead({ id, data, selected }) {
         <div className="text-xs font-bold text-gray-600">{texto}</div>
       )}
       {data.count != null && (
-        <div className="text-2xl font-black mt-1" style={{ color: data.cor }}>{data.count}</div>
+        <div className="text-2xl font-black mt-1" style={{ color: cor }}>{data.count}</div>
       )}
       {!editando && <div className="text-[9px] text-gray-300 mt-1">duplo clique para editar</div>}
-      <Handle id="b" type="source" position={Position.Bottom} className="!bg-gray-400 !w-3 !h-3 !border-2 !border-white" />
-      <Handle id="r" type="source" position={Position.Right} className="!bg-gray-400 !w-3 !h-3 !border-2 !border-white" />
     </div>
   )
 }
@@ -82,7 +128,21 @@ function NodoLead({ id, data, selected }) {
 // Nó de texto livre (post-it)
 function NodoTexto({ id, data, selected }) {
   const [editando, setEditando] = useState(false)
+  const [hover, setHover] = useState(false)
   const [texto, setTexto] = useState(data.label || '')
+  const [bg, setBg] = useState(data.bg || '#fefce8')
+  const [borda, setBorda] = useState(data.borda || '#fde68a')
+
+  const bigHandleStyle = {
+    width: 20, height: 20,
+    background: '#eab308',
+    border: '3px solid white',
+    borderRadius: '50%',
+    opacity: hover ? 1 : 0,
+    transition: 'opacity 0.15s',
+    cursor: 'crosshair',
+    zIndex: 10,
+  }
 
   const confirmar = () => {
     setEditando(false)
@@ -93,14 +153,19 @@ function NodoTexto({ id, data, selected }) {
     <div
       className="rounded-xl px-4 py-3 min-w-[140px] max-w-[280px] cursor-grab active:cursor-grabbing transition-all shadow-md"
       style={{
-        backgroundColor: selected ? '#fef9c3' : (data.cor || '#fefce8'),
-        border: `2px solid ${selected ? '#facc15' : '#fde68a'}`,
+        backgroundColor: bg,
+        border: `2px solid ${selected ? '#facc15' : borda}`,
         boxShadow: selected ? '0 0 0 3px #fcd34d' : '0 2px 6px rgba(0,0,0,0.08)',
       }}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
       onDoubleClick={() => setEditando(true)}
     >
-      <Handle id="t" type="target"  position={Position.Top}    className="!bg-yellow-300 !w-3 !h-3 !border-2 !border-white" />
-      <Handle id="l" type="target"  position={Position.Left}   className="!bg-yellow-300 !w-3 !h-3 !border-2 !border-white" />
+      {selected && (
+        <PaletaCores onEscolher={c => { setBg(c.bg); setBorda(c.borda); data.onColorChange?.(id, c) }} />
+      )}
+      <Handle id="t" type="source" position={Position.Top}    style={bigHandleStyle} />
+      <Handle id="l" type="source" position={Position.Left}   style={bigHandleStyle} />
       {editando ? (
         <textarea
           autoFocus
@@ -116,18 +181,18 @@ function NodoTexto({ id, data, selected }) {
       ) : (
         <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">{texto || <span className="text-gray-400 italic text-xs">duplo clique para editar</span>}</p>
       )}
-      <Handle id="b" type="source" position={Position.Bottom}  className="!bg-yellow-400 !w-3 !h-3 !border-2 !border-white" />
-      <Handle id="r" type="source" position={Position.Right}   className="!bg-yellow-400 !w-3 !h-3 !border-2 !border-white" />
+      <Handle id="b" type="source" position={Position.Bottom} style={bigHandleStyle} />
+      <Handle id="r" type="source" position={Position.Right}  style={bigHandleStyle} />
     </div>
   )
 }
 
 const nodeTypes = { lead: NodoLead, texto: NodoTexto }
 
-function criarNosIniciais(funil, labelChangeRef) {
+function criarNosIniciais(funil, labelChangeRef, colorChangeRef) {
   const mk = (id, label, pos, extra = {}) => ({
     id, type: 'lead', position: pos,
-    data: { label, onLabelChange: (id, v) => labelChangeRef.current?.(id, v), ...extra },
+    data: { label, onLabelChange: (id, v) => labelChangeRef.current?.(id, v), onColorChange: (id, c) => colorChangeRef.current?.(id, c), ...extra },
   })
   return [
     mk('em_aberto',   'Em Aberto',   { x: 0,   y: 0   }, { count: funil.em_aberto,   cor: '#6b7280', bg: '#f9fafb', borda: '#e5e7eb' }),
@@ -158,12 +223,13 @@ const STORAGE_KEY = 'relatorios_fluxo'
 
 function QuadroBranco({ funil }) {
   const labelChangeRef = useRef(null)
+  const colorChangeRef = useRef(null)
   const nosIniciais = useMemo(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')
-      if (saved.nos?.length) return saved.nos.map(n => ({ ...n, data: { ...n.data, onLabelChange: (id, v) => labelChangeRef.current?.(id, v) } }))
+      if (saved.nos?.length) return saved.nos.map(n => ({ ...n, data: { ...n.data, onLabelChange: (id, v) => labelChangeRef.current?.(id, v), onColorChange: (id, c) => colorChangeRef.current?.(id, c) } }))
     } catch {}
-    return criarNosIniciais(funil, labelChangeRef)
+    return criarNosIniciais(funil, labelChangeRef, colorChangeRef)
   }, [])
   const arestasIniciais2 = useMemo(() => {
     try {
@@ -177,7 +243,7 @@ function QuadroBranco({ funil }) {
 
   useEffect(() => {
     try {
-      const nosSemFn = nos.map(n => ({ ...n, data: { ...n.data, onLabelChange: undefined } }))
+      const nosSemFn = nos.map(n => ({ ...n, data: { ...n.data, onLabelChange: undefined, onColorChange: undefined } }))
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ nos: nosSemFn, arestas }))
     } catch {}
   }, [nos, arestas])
@@ -185,17 +251,33 @@ function QuadroBranco({ funil }) {
   const onConnect = useCallback((params) => setArestas(eds => addEdge({ ...params, style: { stroke: '#d1d5db', strokeWidth: 2.5 } }, eds)), [])
   const onReconnect = useCallback((oldEdge, newConnection) => setArestas(eds => reconnectEdge(oldEdge, newConnection, eds)), [])
 
+  const [arestaSelecionada, setArestaSelecionada] = useState(null)
+
   const onEdgeClick = useCallback((_, edge) => {
+    setArestaSelecionada(edge.id)
     setArestas(eds => eds.map(e => ({
       ...e,
-      style: { ...e.style, stroke: e.id === edge.id ? '#3b82f6' : (e.style?._base || e.style?.stroke || '#d1d5db'), strokeWidth: e.id === edge.id ? 3 : 2.5 },
+      style: { ...e.style, stroke: e.id === edge.id ? '#3b82f6' : (e.style?.stroke || '#d1d5db'), strokeWidth: e.id === edge.id ? 3.5 : 2.5 },
     })))
   }, [])
+
+  const mudarCorAresta = useCallback((cor) => {
+    if (!arestaSelecionada) return
+    setArestas(eds => eds.map(e => e.id === arestaSelecionada
+      ? { ...e, style: { ...e.style, stroke: cor.cor, strokeWidth: 3 } }
+      : e
+    ))
+  }, [arestaSelecionada])
 
   const onLabelChange = useCallback((id, novoLabel) => {
     setNos(prev => prev.map(n => n.id === id ? { ...n, data: { ...n.data, label: novoLabel } } : n))
   }, [])
   labelChangeRef.current = onLabelChange
+
+  const onColorChange = useCallback((id, c) => {
+    setNos(prev => prev.map(n => n.id === id ? { ...n, data: { ...n.data, bg: c.bg, borda: c.borda, cor: c.cor } } : n))
+  }, [])
+  colorChangeRef.current = onColorChange
 
   const { deleteElements } = useReactFlow()
 
@@ -210,7 +292,7 @@ function QuadroBranco({ funil }) {
     setNos(prev => [...prev, {
       id, type: 'lead',
       position: { x: 200 + Math.random() * 300, y: 200 + Math.random() * 200 },
-      data: { label: 'Novo passo', cor: '#6b7280', bg: '#f9fafb', borda: '#e5e7eb', onLabelChange: (id, v) => labelChangeRef.current?.(id, v) },
+      data: { label: 'Novo passo', cor: '#6b7280', bg: '#f9fafb', borda: '#e5e7eb', onLabelChange: (id, v) => labelChangeRef.current?.(id, v), onColorChange: (id, c) => colorChangeRef.current?.(id, c) },
     }])
   }
 
@@ -219,13 +301,13 @@ function QuadroBranco({ funil }) {
     setNos(prev => [...prev, {
       id, type: 'texto',
       position: { x: 200 + Math.random() * 300, y: 200 + Math.random() * 200 },
-      data: { label: '', onLabelChange: (id, v) => labelChangeRef.current?.(id, v) },
+      data: { label: '', bg: '#fefce8', borda: '#fde68a', onLabelChange: (id, v) => labelChangeRef.current?.(id, v), onColorChange: (id, c) => colorChangeRef.current?.(id, c) },
     }])
   }
 
   const resetar = () => {
     localStorage.removeItem(STORAGE_KEY)
-    setNos(criarNosIniciais(funil, labelChangeRef))
+    setNos(criarNosIniciais(funil, labelChangeRef, colorChangeRef))
     setArestas(arestasIniciais)
   }
 
@@ -264,12 +346,28 @@ function QuadroBranco({ funil }) {
           edgesReconnectable
           onReconnect={onReconnect}
           onEdgeClick={onEdgeClick}
+          onPaneClick={() => setArestaSelecionada(null)}
           deleteKeyCode={['Delete', 'Backspace']}
           connectionMode="loose"
         >
           <Background color="#f3f4f6" gap={20} size={1} />
           <Controls />
           <MiniMap nodeColor={(n) => n.data?.borda || '#e5e7eb'} maskColor="rgba(255,255,255,0.7)" />
+          {arestaSelecionada && (
+            <Panel position="top-center">
+              <div className="bg-white rounded-xl shadow-lg border border-gray-100 px-3 py-2 flex items-center gap-2">
+                <span className="text-xs text-gray-500 font-semibold">Cor da linha:</span>
+                <div className="flex gap-1">
+                  {CORES.map((c, i) => (
+                    <button key={i} onClick={() => mudarCorAresta(c)}
+                      className="w-5 h-5 rounded-full border-2 border-white shadow-sm hover:scale-125 transition-transform"
+                      style={{ backgroundColor: c.cor }} />
+                  ))}
+                </div>
+                <button onClick={() => setArestaSelecionada(null)} className="text-xs text-gray-400 hover:text-gray-600 ml-2">✕</button>
+              </div>
+            </Panel>
+          )}
           <Panel position="top-right">
             <div className="bg-white/90 backdrop-blur text-[10px] text-gray-400 rounded-lg px-2 py-1 border border-gray-100 shadow-sm">
               Delete para apagar · arrastar borda para conectar
