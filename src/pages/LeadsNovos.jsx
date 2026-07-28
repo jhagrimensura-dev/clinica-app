@@ -413,17 +413,8 @@ export default function LeadsNovos() {
   const leadsIndicacao = getLeadsPorOrigem('indicacao', ano, mes)
 
   const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
-  const isFollowUp = (lead) => {
-    const dataRef = lead.dataOrigem || lead.data || ''
-    return dataRef && !dataRef.startsWith(prefix)
-      && lead.proximoFollowup && lead.proximoFollowup.startsWith(prefix)
-  }
-  const mesOrigem = (lead) => {
-    const dataRef = lead.dataOrigem || lead.data || ''
-    if (!dataRef) return ''
-    const [y, m] = dataRef.split('-')
-    return `${MESES_FULL[parseInt(m, 10) - 1]?.slice(0, 3)}/${y?.slice(2)}`
-  }
+  const isFollowUp = (_lead) => false
+  const mesOrigem = (_lead) => ''
 
   const contIndicacao = leadsIndicacao.length
 
