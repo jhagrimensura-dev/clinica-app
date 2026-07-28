@@ -64,6 +64,7 @@ export default function Dashboard() {
   const totalPosts = posts.length
   const totalImpulsionados = posts.filter(p => p.impulsionado).length
   const custoLead = totalLeads > 0 && trafegoInvestido > 0 ? trafegoInvestido / totalLeads : 0
+  const custoPorSeguidor = seguidores > 0 && trafegoInvestido > 0 ? trafegoInvestido / seguidores : 0
 
   return (
     <div className="p-6 space-y-6">
@@ -157,7 +158,7 @@ export default function Dashboard() {
               value: seguidores.toLocaleString('pt-BR'),
               icon: '👥',
               color: 'text-brand-500',
-              sub: 'total de seguidores',
+              sub: custoPorSeguidor > 0 ? `${fmt(custoPorSeguidor)} por seguidor` : 'total de seguidores',
             },
             {
               label: 'Posts no Mês',
