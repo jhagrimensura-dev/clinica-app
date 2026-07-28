@@ -151,7 +151,7 @@ export default function Dashboard() {
       {/* SOCIAL MEDIA */}
       <div>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Social Media</p>
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-5 gap-4">
           {[
             {
               label: 'Seguidores',
@@ -180,6 +180,13 @@ export default function Dashboard() {
               icon: '🎯',
               color: 'text-teal-500',
               sub: leadsNovosReais > 0 ? `${leadsNovosReais} leads recebidos` : 'sem leads no mês',
+            },
+            {
+              label: 'CAC',
+              value: totalAgend > 0 && trafegoInvestido > 0 ? fmt(trafegoInvestido / totalAgend) : '—',
+              icon: '💰',
+              color: 'text-orange-500',
+              sub: totalAgend > 0 ? `${totalAgend} clientes adquiridos` : 'sem agendamentos',
             },
           ].map((card, i) => (
             <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
