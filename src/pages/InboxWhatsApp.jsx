@@ -387,7 +387,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
               <div className="space-y-1.5">
                 {existentes.map(l => (
                   <div key={l.id} className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 cursor-pointer hover:bg-amber-100 transition-colors"
-                    onClick={() => { sessionStorage.setItem('agenda_abrir_data', l.data); window.dispatchEvent(new CustomEvent('navegarAgenda', { detail: { data: l.data } })) }}>
+                    onClick={() => { sessionStorage.setItem('agenda_abrir_data', l.data); sessionStorage.setItem('agenda_abrir_vista', 'dia'); window.dispatchEvent(new CustomEvent('navegarAgenda', { detail: { data: l.data } })) }}>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-amber-800">
                         {l.data} {l.hora ? `às ${l.hora}` : ''}

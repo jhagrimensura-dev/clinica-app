@@ -61,8 +61,12 @@ export default function AgendaLembretes() {
     if (stored) { sessionStorage.removeItem('agenda_abrir_data'); return stored }
     return hoje
   })
+  const [vista, setVista] = useState(() => {
+    const irDia = sessionStorage.getItem('agenda_abrir_vista')
+    if (irDia) { sessionStorage.removeItem('agenda_abrir_vista'); return 'dia' }
+    return 'mes'
+  })
   const [modal, setModal] = useState(null)
-  const [vista, setVista] = useState('mes')
 
   const [fNome, setFNome] = useState('')
   const [fTel, setFTel] = useState('')
