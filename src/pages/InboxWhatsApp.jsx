@@ -1643,7 +1643,13 @@ export default function InboxWhatsApp({ contaId }) {
                       </div>
                       {(() => {
                         const tel = (c.contato?.telefone || '').replace(/\D/g, '')
-                        const count = tel.length > 5 ? todosLembretesAgenda.filter(l => !l.concluido && (l.leadTelefone || '').replace(/\D/g, '').endsWith(tel.slice(-8))).length : 0
+                        const nome = c.contato?.nome || ''
+                        const count = todosLembretesAgenda.filter(l => {
+                          if (l.concluido) return false
+                          const telLemb = (l.leadTelefone || '').replace(/\D/g, '')
+                          if (tel.length > 5 && telLemb.length > 5) return telLemb.endsWith(tel.slice(-8)) || tel.endsWith(telLemb.slice(-8))
+                          return nome.length > 0 && l.leadNome === nome
+                        }).length
                         return count > 0 ? (
                           <span className="flex items-center gap-0.5 text-amber-500" title={`${count} lembrete${count > 1 ? 's' : ''}`}>
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3.5 h-3.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>

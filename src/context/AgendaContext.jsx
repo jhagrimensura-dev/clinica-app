@@ -16,8 +16,8 @@ export function AgendaProvider({ children }) {
 
     const fetchAll = async () => {
       const [{ data: ag }, { data: lem }] = await Promise.all([
-        supabase.from('agendamentos').select('*'),
-        supabase.from('agenda_lembretes').select('*'),
+        supabase.from('agendamentos').select('*').eq('clinica_id', clinicaId),
+        supabase.from('agenda_lembretes').select('*').eq('clinica_id', clinicaId),
       ])
       if (ag && ag.length > 0) {
         setAgendamentos(ag)
@@ -34,22 +34,23 @@ export function AgendaProvider({ children }) {
       }
       if (lem && lem.length > 0) {
         const CORES_ANTIGAS = { brand: 'blue', purple: 'blue' }
-        const paraAtualizar = lem.filter(r => CORES_ANTIGAS[r.dados?.cor])
+        const lemValidos = lem.filter(r => r && r.dados)
+        const paraAtualizar = lemValidos.filter(r => CORES_ANTIGAS[r.dados?.cor])
         if (paraAtualizar.length > 0) {
           await Promise.all(paraAtualizar.map(r => {
             const atualizado = { ...r.dados, cor: CORES_ANTIGAS[r.dados.cor] }
             return supabase.from('agenda_lembretes').update({ dados: atualizado }).eq('id', r.id)
           }))
-          const fromDB = lem.map(r => ({ ...r.dados, cor: CORES_ANTIGAS[r.dados?.cor] || r.dados?.cor }))
+          const fromDB = lemValidos.map(r => ({ ...r.dados, cor: CORES_ANTIGAS[r.dados?.cor] || r.dados?.cor }))
           setLembretes(prev => {
             const dbIds = new Set(fromDB.map(l => l.id))
-            return [...fromDB, ...prev.filter(l => !dbIds.has(l.id))]
+            return [...fromDB, ...prev.filter(l => l && !dbIds.has(l.id))]
           })
         } else {
-          const fromDB = lem.map(r => r.dados)
+          const fromDB = lemValidos.map(r => r.dados)
           setLembretes(prev => {
             const dbIds = new Set(fromDB.map(l => l.id))
-            return [...fromDB, ...prev.filter(l => !dbIds.has(l.id))]
+            return [...fromDB, ...prev.filter(l => l && !dbIds.has(l.id))]
           })
         }
       } else if (!migratedLem) {
