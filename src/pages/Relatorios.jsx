@@ -64,9 +64,10 @@ function NodoLead({ id, data, selected }) {
   const [editando, setEditando] = useState(false)
   const [hover, setHover] = useState(false)
   const [texto, setTexto] = useState(data.label)
-  const [bg, setBg] = useState(data.bg || '#f9fafb')
-  const [borda, setBorda] = useState(data.borda || '#e5e7eb')
-  const [cor, setCor] = useState(data.cor || '#6b7280')
+
+  const bg = data.bg || '#f9fafb'
+  const borda = data.borda || '#e5e7eb'
+  const cor = data.cor || '#6b7280'
 
   const confirmar = () => {
     setEditando(false)
@@ -96,9 +97,6 @@ function NodoLead({ id, data, selected }) {
       onMouseLeave={() => setHover(false)}
       onDoubleClick={() => setEditando(true)}
     >
-      {selected && (
-        <PaletaCores onEscolher={c => { setBg(c.bg); setBorda(c.borda); setCor(c.cor); data.onColorChange?.(id, c) }} />
-      )}
       <Handle id="t" type="source" position={Position.Top}    style={bigHandleStyle} />
       <Handle id="l" type="source" position={Position.Left}   style={bigHandleStyle} />
       <Handle id="b" type="source" position={Position.Bottom} style={bigHandleStyle} />
@@ -130,8 +128,9 @@ function NodoTexto({ id, data, selected }) {
   const [editando, setEditando] = useState(false)
   const [hover, setHover] = useState(false)
   const [texto, setTexto] = useState(data.label || '')
-  const [bg, setBg] = useState(data.bg || '#fefce8')
-  const [borda, setBorda] = useState(data.borda || '#fde68a')
+
+  const bg = data.bg || '#fefce8'
+  const borda = data.borda || '#fde68a'
 
   const bigHandleStyle = {
     width: 20, height: 20,
@@ -161,9 +160,6 @@ function NodoTexto({ id, data, selected }) {
       onMouseLeave={() => setHover(false)}
       onDoubleClick={() => setEditando(true)}
     >
-      {selected && (
-        <PaletaCores onEscolher={c => { setBg(c.bg); setBorda(c.borda); data.onColorChange?.(id, c) }} />
-      )}
       <Handle id="t" type="source" position={Position.Top}    style={bigHandleStyle} />
       <Handle id="l" type="source" position={Position.Left}   style={bigHandleStyle} />
       {editando ? (
@@ -269,6 +265,10 @@ function QuadroBranco({ funil }) {
     ))
   }, [arestaSelecionada])
 
+  const mudarCorNo = useCallback((c) => {
+    setNos(prev => prev.map(n => n.selected ? { ...n, data: { ...n.data, bg: c.bg, borda: c.borda, cor: c.cor } } : n))
+  }, [])
+
   const onLabelChange = useCallback((id, novoLabel) => {
     setNos(prev => prev.map(n => n.id === id ? { ...n, data: { ...n.data, label: novoLabel } } : n))
   }, [])
@@ -313,24 +313,46 @@ function QuadroBranco({ funil }) {
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+      <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-base font-bold text-gray-800">Fluxo de Leads</h2>
           <p className="text-xs text-gray-400 mt-0.5">Arraste os blocos · conecte puxando as bolinhas · scroll para zoom</p>
         </div>
-        <div className="flex gap-2">
-          <button onClick={adicionarNo} className="text-xs font-semibold px-3 py-2 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-600 transition-colors">
-            + Novo bloco
-          </button>
-          <button onClick={adicionarTexto} className="text-xs font-semibold px-3 py-2 rounded-xl border border-yellow-200 hover:bg-yellow-50 text-yellow-600 transition-colors">
-            📝 Texto livre
-          </button>
-          <button onClick={apagarSelecionados} className="text-xs font-semibold px-3 py-2 rounded-xl border border-red-200 hover:bg-red-50 text-red-400 transition-colors">
-            🗑 Apagar selecionado
-          </button>
-          <button onClick={resetar} className="text-xs font-semibold px-3 py-2 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-500 transition-colors">
-            Resetar
-          </button>
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1.5 border border-gray-200 rounded-xl px-3 py-2">
+            <span className="text-xs text-gray-500 font-semibold whitespace-nowrap">Bloco:</span>
+            <div className="flex gap-1">
+              {CORES.map((c, i) => (
+                <button key={i} onClick={() => mudarCorNo(c)}
+                  className="w-4 h-4 rounded-full border-2 border-white shadow-sm hover:scale-125 transition-transform"
+                  style={{ backgroundColor: c.bg, outline: `2px solid ${c.borda}` }} />
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 border border-gray-200 rounded-xl px-3 py-2">
+            <span className="text-xs text-gray-500 font-semibold whitespace-nowrap">Linha:</span>
+            <div className="flex gap-1">
+              {CORES.map((c, i) => (
+                <button key={i} onClick={() => mudarCorAresta(c)}
+                  className="w-4 h-4 rounded-full border-2 border-white shadow-sm hover:scale-125 transition-transform"
+                  style={{ backgroundColor: c.cor }} />
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={adicionarNo} className="text-xs font-semibold px-3 py-2 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-600 transition-colors">
+              + Novo bloco
+            </button>
+            <button onClick={adicionarTexto} className="text-xs font-semibold px-3 py-2 rounded-xl border border-yellow-200 hover:bg-yellow-50 text-yellow-600 transition-colors">
+              📝 Texto livre
+            </button>
+            <button onClick={apagarSelecionados} className="text-xs font-semibold px-3 py-2 rounded-xl border border-red-200 hover:bg-red-50 text-red-400 transition-colors">
+              🗑 Apagar selecionado
+            </button>
+            <button onClick={resetar} className="text-xs font-semibold px-3 py-2 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-500 transition-colors">
+              Resetar
+            </button>
+          </div>
         </div>
       </div>
       <div style={{ height: 520 }}>
@@ -353,21 +375,6 @@ function QuadroBranco({ funil }) {
           <Background color="#f3f4f6" gap={20} size={1} />
           <Controls />
           <MiniMap nodeColor={(n) => n.data?.borda || '#e5e7eb'} maskColor="rgba(255,255,255,0.7)" />
-          {arestaSelecionada && (
-            <Panel position="top-center">
-              <div className="bg-white rounded-xl shadow-lg border border-gray-100 px-3 py-2 flex items-center gap-2">
-                <span className="text-xs text-gray-500 font-semibold">Cor da linha:</span>
-                <div className="flex gap-1">
-                  {CORES.map((c, i) => (
-                    <button key={i} onClick={() => mudarCorAresta(c)}
-                      className="w-5 h-5 rounded-full border-2 border-white shadow-sm hover:scale-125 transition-transform"
-                      style={{ backgroundColor: c.cor }} />
-                  ))}
-                </div>
-                <button onClick={() => setArestaSelecionada(null)} className="text-xs text-gray-400 hover:text-gray-600 ml-2">✕</button>
-              </div>
-            </Panel>
-          )}
           <Panel position="top-right">
             <div className="bg-white/90 backdrop-blur text-[10px] text-gray-400 rounded-lg px-2 py-1 border border-gray-100 shadow-sm">
               Delete para apagar · arrastar borda para conectar
