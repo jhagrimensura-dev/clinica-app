@@ -1456,17 +1456,21 @@ export default function InboxWhatsApp({ contaId }) {
       let anoAniv = hoje.getFullYear()
       const dataAniv = new Date(`${anoAniv}-${mes}-${dia}`)
       if (dataAniv <= hoje) anoAniv += 1
-      addLembrete({
-        id: Date.now() + 1,
-        leadNome: dados.nome,
-        leadTelefone: dados.telefone || '',
-        descricao: `🎂 Aniversário de ${dados.nome}`,
-        data: `${anoAniv}-${mes}-${dia}`,
-        hora: '09:00',
-        cor: 'yellow',
-        concluido: false,
-        criadoEm: Date.now(),
-      })
+      const dataAnivStr = `${anoAniv}-${mes}-${dia}`
+      const jaTemAniversario = todosLembretesAgenda.some(l => l.leadNome === dados.nome && l.data === dataAnivStr && (l.descricao || '').includes('Aniversário'))
+      if (!jaTemAniversario) {
+        addLembrete({
+          id: Date.now() + 1,
+          leadNome: dados.nome,
+          leadTelefone: dados.telefone || '',
+          descricao: `🎂 Aniversário de ${dados.nome}`,
+          data: dataAnivStr,
+          hora: '09:00',
+          cor: 'yellow',
+          concluido: false,
+          criadoEm: Date.now(),
+        })
+      }
     }
     setLeadRegistrado(prev => ({ ...prev, [conversa.id]: { tipo: dados.origem, lead: novoLead || { ...dados, status: normalizeStatus(dados.status) } } }))
     // Atualiza nome imediatamente na conversa selecionada e na lista
@@ -2277,7 +2281,11 @@ export default function InboxWhatsApp({ contaId }) {
               let anoAniv = hoje.getFullYear()
               const dataAniv = new Date(`${anoAniv}-${mes}-${dia}`)
               if (dataAniv <= hoje) anoAniv += 1
-              addLembrete({ id: Date.now() + 99, leadNome: dados.nome, leadTelefone: dados.telefone || '', descricao: `🎂 Aniversário de ${dados.nome}`, data: `${anoAniv}-${mes}-${dia}`, hora: '09:00', cor: 'yellow', concluido: false, criadoEm: Date.now() })
+              const dataAnivStr = `${anoAniv}-${mes}-${dia}`
+              const jaTemAniversario = todosLembretesAgenda.some(l => l.leadNome === dados.nome && l.data === dataAnivStr && (l.descricao || '').includes('Aniversário'))
+              if (!jaTemAniversario) {
+                addLembrete({ id: Date.now() + 99, leadNome: dados.nome, leadTelefone: dados.telefone || '', descricao: `🎂 Aniversário de ${dados.nome}`, data: dataAnivStr, hora: '09:00', cor: 'yellow', concluido: false, criadoEm: Date.now() })
+              }
             }
             setEditarLeadRegistrado(null)
           }}

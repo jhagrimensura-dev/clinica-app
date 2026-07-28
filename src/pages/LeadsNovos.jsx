@@ -412,6 +412,19 @@ export default function LeadsNovos() {
   const leads = getLeadsPorOrigem('leads_novos', ano, mes)
   const leadsIndicacao = getLeadsPorOrigem('indicacao', ano, mes)
 
+  const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
+  const isFollowUp = (lead) => {
+    const dataRef = lead.dataOrigem || lead.data || ''
+    return dataRef && !dataRef.startsWith(prefix)
+      && lead.proximoFollowup && lead.proximoFollowup.startsWith(prefix)
+  }
+  const mesOrigem = (lead) => {
+    const dataRef = lead.dataOrigem || lead.data || ''
+    if (!dataRef) return ''
+    const [y, m] = dataRef.split('-')
+    return `${MESES_FULL[parseInt(m, 10) - 1]?.slice(0, 3)}/${y?.slice(2)}`
+  }
+
   const contIndicacao = leadsIndicacao.length
 
   const CONV_STATUS = ['agendado', 'fechado']
@@ -609,7 +622,12 @@ export default function LeadsNovos() {
                     {lead.nome.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-800 truncate">{lead.nome}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-semibold text-gray-800 truncate">{lead.nome}</p>
+                      {isFollowUp(lead) && (
+                        <span className="text-xs bg-amber-100 text-amber-600 font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap">↩ {mesOrigem(lead)}</span>
+                      )}
+                    </div>
                     {lead.status === 'agendado' && lead.agendadoPara ? (
                       <p className="text-xs text-blue-500 font-semibold">📅 {dataFormatada(lead.agendadoPara)}</p>
                     ) : (
@@ -677,7 +695,12 @@ export default function LeadsNovos() {
                         onDragEnd={() => setDragOver(null)}
                         className="bg-white rounded-xl p-3 shadow-sm border border-gray-100 cursor-grab active:cursor-grabbing hover:border-amber-200 transition-colors"
                         onClick={() => setModalEditar(lead)}>
-                        <p className="text-sm font-semibold text-gray-800 truncate">{lead.nome}</p>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="text-sm font-semibold text-gray-800 truncate">{lead.nome}</p>
+                          {isFollowUp(lead) && (
+                            <span className="text-xs bg-amber-100 text-amber-600 font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0">↩ {mesOrigem(lead)}</span>
+                          )}
+                        </div>
                         {lead.status === 'agendado' && lead.agendadoPara ? (
                           <p className="text-xs text-blue-500 font-semibold mt-0.5">📅 {dataFormatada(lead.agendadoPara)}</p>
                         ) : (

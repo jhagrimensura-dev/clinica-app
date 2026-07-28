@@ -187,13 +187,19 @@ export function LeadsProvider({ children }) {
   const getLeadsPorOrigem = (origem, ano, mes) => {
     const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
     return leads.filter(l => {
-      if (!l.data || !l.data.startsWith(prefix)) return false
       if (origem === 'indicacao') {
+        if (!l.data || !l.data.startsWith(prefix)) return false
         return l.origem === 'indicacao' || l.origemCustom === 'Indicação'
       }
-      // nas outras abas, exclui leads com origemCustom=Indicação (aparecem na aba Indicação)
       if (l.origemCustom === 'Indicação' && l.origem !== 'indicacao') return false
-      return l.origem === origem
+      if (l.origem !== origem) return false
+      const dataInMonth = l.data && l.data.startsWith(prefix)
+      const dataRef = l.dataOrigem || l.data || ''
+      // aparece via follow-up se o próximo follow-up é neste mês mas a origem é de outro mês
+      const followupInMonth = l.proximoFollowup
+        && l.proximoFollowup.startsWith(prefix)
+        && dataRef && !dataRef.startsWith(prefix)
+      return dataInMonth || !!followupInMonth
     })
   }
 

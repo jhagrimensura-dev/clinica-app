@@ -49,7 +49,11 @@ export default function Dashboard() {
   const totalLeads = leadsNovos.length + leadsIndicacao.length
   const leadsNovosReais = leadsNovos.filter(l => !String(l.fonte || '').toLowerCase().includes('follow') && !String(l.origemCustom || '').toLowerCase().includes('follow')).length
 
-  const isFollowLead = l => String(l.fonte || '').toLowerCase().includes('follow') || String(l.origemCustom || '').toLowerCase().includes('follow')
+  const isFollowLead = l => {
+    const dataRef = l.dataOrigem || l.data || ''
+    if (dataRef && !dataRef.startsWith(prefix)) return true
+    return String(l.fonte || '').toLowerCase().includes('follow') || String(l.origemCustom || '').toLowerCase().includes('follow')
+  }
   const agendNovosReais = leadsNovos.filter(l => !isFollowLead(l) && (l.status === 'agendado' || l.status === 'fechado')).length
   const agendFollowUp = leadsNovos.filter(l => isFollowLead(l) && (l.status === 'agendado' || l.status === 'fechado')).length
   const agendNovos = agendNovosReais + agendFollowUp
