@@ -370,10 +370,12 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
 
         {leadInicial && (() => {
           const telLead = (leadInicial.telefone || '').replace(/\D/g, '')
+          const nomeLead = (leadInicial.nome || '').trim()
           const existentes = lembretesDaAgenda.filter(l => {
             if (l.concluido) return false
             const telLemb = (l.leadTelefone || '').replace(/\D/g, '')
-            return telLead.length > 5 && telLemb.length > 5 && (telLemb.endsWith(telLead.slice(-8)) || telLead.endsWith(telLemb.slice(-8)))
+            if (telLead.length > 5 && telLemb.length > 5) return telLemb.endsWith(telLead.slice(-8)) || telLead.endsWith(telLemb.slice(-8))
+            return nomeLead.length > 0 && l.leadNome === nomeLead
           })
           if (existentes.length === 0) return null
           return (
