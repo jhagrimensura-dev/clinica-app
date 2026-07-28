@@ -371,6 +371,7 @@ export default function LeadsNovos() {
   const [modal, setModal] = useState(false)
   const [modalEditar, setModalEditar] = useState(null)
   const [busca, setBusca] = useState('')
+  const [filtroOrigem, setFiltroOrigem] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [visao, setVisao] = useState('lista')
   const [dragOver, setDragOver] = useState(null)
@@ -411,8 +412,11 @@ export default function LeadsNovos() {
     updateLead(lead.id, updates)
   }
 
+  const origensDisponiveis = [...new Set(leads.map(l => l.origemCustom || l.fonte || '').filter(Boolean))].sort()
+
   const leadsFiltrados = leads
     .filter(l => (l.nome || '').toLowerCase().includes(busca.toLowerCase()))
+    .filter(l => !filtroOrigem || (l.origemCustom || l.fonte || '') === filtroOrigem)
     .sort((a, b) => {
       const da = a.data || ''
       const db = b.data || ''
@@ -476,6 +480,14 @@ export default function LeadsNovos() {
             className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-orange-400 bg-white"
           />
         </div>
+        <select
+          value={filtroOrigem}
+          onChange={e => setFiltroOrigem(e.target.value)}
+          className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400 bg-white text-gray-600"
+        >
+          <option value="">Todas as origens</option>
+          {origensDisponiveis.map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
       </div>
 
       {/* Cards de resumo */}
