@@ -59,7 +59,11 @@ export default async function handler(req, res) {
     const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY
 
     // Para mensagens enviadas pelo celular com phone @lid (sem chatId), resolve o telefone real do destinatário
-    if (deMin && isLidPhone) {
+    // Verifica se o rawChatId (após strip @lid) é um número de telefone válido
+    const rawChatIdIsPhone = /^\d{8,15}$/.test(rawChatId)
+
+    if (deMin && isLidPhone && !rawChatIdIsPhone) {
+      // rawChatId é um hash @lid — precisa resolver o telefone real
       try {
         const iid = encodeURIComponent(instanciaId)
         let foundPhone = null
@@ -72,11 +76,22 @@ export default async function handler(req, res) {
           }
         }
 
-        // Opção 2: lookup por chatName no histórico de mensagens recebidas
+        // Opção 2a: lookup por chatName (exato) no histórico de mensagens recebidas
         if (!foundPhone && chatName && chatName !== phone) {
           const nc = encodeURIComponent(chatName)
           const lookupRes = await fetch(
             `${SUPABASE_URL}/rest/v1/whatsapp_mensagens?instancia_id=eq.${iid}&nome_contato=eq.${nc}&de_mim=eq.false&select=phone&limit=1`,
+            { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+          )
+          const lookupData = await lookupRes.json()
+          foundPhone = lookupData?.[0]?.phone || null
+        }
+
+        // Opção 2b: lookup por chatName (case-insensitive) sem filtro de instancia
+        if (!foundPhone && chatName && chatName !== phone) {
+          const nc = encodeURIComponent(chatName)
+          const lookupRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/whatsapp_mensagens?nome_contato=ilike.${nc}&de_mim=eq.false&select=phone&limit=1`,
             { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
           )
           const lookupData = await lookupRes.json()
@@ -95,7 +110,6 @@ export default async function handler(req, res) {
             let zapiClientToken = null
             for (const row of (confData || [])) {
               try {
-                // valor pode ser jsonb (objeto) ou text (string) dependendo do schema
                 const contas = typeof row.valor === 'string' ? JSON.parse(row.valor) : row.valor
                 const conta = Array.isArray(contas) ? contas.find(c => c.instanciaId === instanciaId) : null
                 if (conta) { zapiToken = conta.instanciaToken; zapiClientToken = conta.clientToken || null; break }
@@ -109,15 +123,12 @@ export default async function handler(req, res) {
               )
               const chatsData = await chatsRes.json()
               const lista = Array.isArray(chatsData) ? chatsData : Array.isArray(chatsData?.value) ? chatsData.value : []
-              const chat = lista.find(c => c.name === chatName)
-              const rawChatPhone = chat?.phone || null
-              console.log('[WH-ZAPI-DEBUG]', JSON.stringify({ chatName, hasToken: true, chatsCount: lista.length, chatFound: !!chat, chatPhone: rawChatPhone }))
-              if (chat?.phone) {
-                // Só aceita phone real (@s.whatsapp.net ou @c.us), ignora @lid
-                if (!chat.phone.includes('@lid')) {
-                  const cleaned = chat.phone.replace(/@s\.whatsapp\.net$/, '').replace(/@c\.us$/, '')
-                  if (cleaned && /^\d+$/.test(cleaned)) foundPhone = cleaned
-                }
+              const chatNameLower = (chatName || '').toLowerCase()
+              const chat = lista.find(c => (c.name || '').toLowerCase() === chatNameLower)
+              console.log('[WH-ZAPI-DEBUG]', JSON.stringify({ chatName, hasToken: true, chatsCount: lista.length, chatFound: !!chat, chatPhone: chat?.phone }))
+              if (chat?.phone && !chat.phone.includes('@lid')) {
+                const cleaned = chat.phone.replace(/@s\.whatsapp\.net$/, '').replace(/@c\.us$/, '')
+                if (cleaned && /^\d+$/.test(cleaned)) foundPhone = cleaned
               }
               if (foundPhone) console.log('[WH-SENT-ZAPI]', JSON.stringify({ chatName, resolvedPhone: foundPhone }))
             } else {
@@ -127,10 +138,12 @@ export default async function handler(req, res) {
         }
 
         if (foundPhone) {
-          console.log('[WH-SENT]', JSON.stringify({ chatName, resolvedPhone: foundPhone, via: foundPhone === chatName?.replace(/[\s\-\+\(\)]/g, '') ? 'direto' : 'lookup' }))
+          console.log('[WH-SENT]', JSON.stringify({ chatName, resolvedPhone: foundPhone }))
           phone = foundPhone
         } else {
-          console.log('[WH-SENT-NORESOLVE]', JSON.stringify({ chatName, phone }))
+          // Não conseguiu resolver o telefone real — descarta para não salvar com hash errado
+          console.log('[WH-SENT-NORESOLVE-SKIP]', JSON.stringify({ chatName, rawChatId }))
+          return res.status(200).json({ ok: true, skipped: true })
         }
       } catch (_) {}
     }
