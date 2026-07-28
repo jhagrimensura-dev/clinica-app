@@ -133,7 +133,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-5 gap-4">
           {[
             { label: 'Geral', value: fmt(ticketGeral), sub: `${lMesValidos.length} lançamento(s)` },
-            { label: 'Novos', value: fmt(ticketNovos), sub: `${countNovos + countIndicacaoLanc} novo(s) + indicação` },
+            { label: 'Novos', value: fmt(ticketNovos), sub: `${countNovos} novos + ${countIndicacaoLanc} indicação` },
             { label: 'Recorrência', value: fmt(ticketRecorrentes), sub: `${countRecorrentes} recorrente(s)` },
             { label: 'Indicação', value: fmt(ticketIndicacao), sub: `${countIndicacaoLanc} indicação(ões)` },
             { label: 'Diário', value: fmt(ticketDiario), sub: `${diasAtendimento} dias úteis` },
