@@ -109,6 +109,11 @@ export function AgendaProvider({ children }) {
   }
 
   const addLembrete = async (l) => {
+    // Evita duplicata: mesmo nome + mesma data + mesma descrição
+    const duplicado = lembretes.some(x =>
+      x.leadNome === l.leadNome && x.data === l.data && x.descricao === l.descricao && !x.concluido
+    )
+    if (duplicado) return
     setLembretes(prev => [...prev, l])
     const { error } = await supabase.from('agenda_lembretes').insert({ id: String(l.id), clinica_id: clinicaId, dados: l })
     if (error) {
