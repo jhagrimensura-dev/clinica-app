@@ -196,7 +196,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-4 gap-4">
           {[
             { label: 'Social Media', icon: '🔗', color: 'text-brand-500', value: String(seguidores.toLocaleString('pt-BR')), sub: 'seguidores', extras: [`${leadsNovosReais} leads recebidos`, `${convComercial}% conversão`] },
-            { label: 'Leads Novos', icon: '🏢', color: 'text-blue-500', value: String(totalLeads), sub: `leads (${leadsNovos.length} novos · ${leadsIndicacao.length} indicações)`, extras: [`${totalAgend} agendamentos`, `${convComercial}% conversão`] },
+            { label: 'Leads Novos', icon: '🏢', color: 'text-blue-500', value: String(totalLeads), sub: `leads`, extras: [`${leadsNovosReais} novos · ${leadsNovos.length - leadsNovosReais} follow-up · ${leadsIndicacao.length} indicações`, `${totalAgend} agendamentos`, `${convComercial}% conversão`] },
             { label: 'Leads Recorrência', icon: '🔄', color: 'text-teal-500', value: String(leadsRecorrentes.length), sub: 'contatos recorrentes', extras: [`${agendRecorrentes} agendamentos`, `${convRecorrencia}% conversão`] },
             { label: 'Vendas', icon: '📊', color: 'text-green-500', value: String(lMesSemConsulta.length), sub: 'lançamentos no mês', extras: [`${countNovos} novos · ${countRecorrentes} recorrentes`, lMesSemConsulta.length > 0 ? `${fmt(ticketGeral)} ticket médio` : '—'] },
           ].map((card, i) => (
