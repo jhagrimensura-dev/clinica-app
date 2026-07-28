@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useLeads } from '../context/LeadsContext'
 import { useFinanceiro } from '../context/FinanceiroContext'
 import { useAuth } from '../context/AuthContext'
 import { useConfig } from '../context/ConfigContext'
 import { useAgenda } from '../context/AgendaContext'
 import FeriadoAviso from '../components/FeriadoAviso'
+import { supabase } from '../lib/supabase'
 
 const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
@@ -170,8 +171,15 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
   const [paciente, setPaciente] = useState(lead.nome || '')
   const { addLembrete, lembretes: todosLembretes, deleteLembrete } = useAgenda()
   const [origemCustom, setOrigemCustom] = useState(lead.origemCustom || lead.fonte || '')
-  const [midia, setMidia] = useState(lead.midia || '')
+  const [midia, setMidia] = useState(lead.midia || (lead.origemCustom === 'Tráfego' ? 'Campanha de msg para Whatsapp' : ''))
   const [linkBio, setLinkBio] = useState(lead.linkBio || '')
+  const [criativo, setCriativo] = useState(lead.criativo || '')
+  const [adsEngajamento, setAdsEngajamento] = useState([])
+
+  useEffect(() => {
+    supabase.from('configuracoes').select('valor').eq('chave', 'ads_engajamento').maybeSingle()
+      .then(({ data }) => { if (data?.valor) setAdsEngajamento(data.valor) })
+  }, [])
   const [status, setStatus] = useState(lead.status || 'em_aberto')
   const [agendadoPara, setAgendadoPara] = useState(lead.agendadoPara || '')
   const [obs, setObs] = useState(lead.obs || '')
@@ -198,7 +206,7 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
     const CONV = ['agendado', 'fechado']
     const FOLL = ['follow1', 'follow2', 'follow3']
     const ultimoFollow = (CONV.includes(status) && !CONV.includes(lead.status) && FOLL.includes(lead.status)) ? lead.status : undefined
-    onSalvar(lead.id, { nome: paciente.trim(), data, responsavel, origemCustom, midia: midia || null, linkBio: midia === 'Link da BIO' ? (linkBio || null) : null, status, agendadoPara: agendadoPara || null, proximoFollowup: lemsValidos[0]?.data || '', lembretes: lemsValidos, obs: obs.trim(), ...(ultimoFollow !== undefined ? { ultimoFollow } : {}) })
+    onSalvar(lead.id, { nome: paciente.trim(), data, responsavel, origemCustom, midia: midia || null, linkBio: midia === 'Link da BIO' ? (linkBio || null) : null, criativo: criativo || null, status, agendadoPara: agendadoPara || null, proximoFollowup: lemsValidos[0]?.data || '', lembretes: lemsValidos, obs: obs.trim(), ...(ultimoFollow !== undefined ? { ultimoFollow } : {}) })
     onClose()
   }
 
@@ -238,7 +246,11 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="text-sm font-medium text-gray-700 mb-1.5 block">Origem</label>
-            <select value={origemCustom} onChange={e => setOrigemCustom(e.target.value)}
+            <select value={origemCustom} onChange={e => {
+              const nova = e.target.value
+              setOrigemCustom(nova)
+              if (nova === 'Tráfego') setMidia('Campanha de msg para Whatsapp')
+            }}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400 bg-white">
               <option value="">Não informado</option>
               {origens.map(o => <option key={o} value={o}>{o}</option>)}
@@ -253,14 +265,27 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
           </div>
         </div>
 
-        <div>
-          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Mídia</label>
-          <select value={midia} onChange={e => { setMidia(e.target.value); if (e.target.value !== 'Link da BIO') setLinkBio('') }}
-            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400 bg-white">
-            <option value="">Não informado</option>
-            {midias.map(m => <option key={m} value={m}>{m}</option>)}
-          </select>
-        </div>
+        {origemCustom !== 'Tráfego' && (
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Mídia</label>
+            <select value={midia} onChange={e => { setMidia(e.target.value); if (e.target.value !== 'Link da BIO') setLinkBio('') }}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400 bg-white">
+              <option value="">Não informado</option>
+              {midias.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+        )}
+
+        {origemCustom === 'Tráfego' && (
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Criativo</label>
+            <select value={criativo} onChange={e => setCriativo(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400 bg-white">
+              <option value="">Não informado</option>
+              {adsEngajamento.map(a => <option key={a.nome} value={a.nome}>{a.nome}</option>)}
+            </select>
+          </div>
+        )}
 
         {midia === 'Link da BIO' && (
           <div>
