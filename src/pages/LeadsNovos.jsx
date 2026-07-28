@@ -166,6 +166,7 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
   const origens = (leadOrigens || ORIGENS_PADRAO).filter(o => o !== 'WhatsApp')
   const midias = leadMidias || MIDIAS_PADRAO
 
+  const [dataOrigem, setDataOrigem] = useState(lead.dataOrigem || lead.data || '')
   const [data, setData] = useState(lead.data || '')
   const [responsavel, setResponsavel] = useState(lead.responsavel || '')
   const [paciente, setPaciente] = useState(lead.nome || '')
@@ -206,7 +207,7 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
     const CONV = ['agendado', 'fechado']
     const FOLL = ['follow1', 'follow2', 'follow3']
     const ultimoFollow = (CONV.includes(status) && !CONV.includes(lead.status) && FOLL.includes(lead.status)) ? lead.status : undefined
-    onSalvar(lead.id, { nome: paciente.trim(), data, responsavel, origemCustom, midia: midia || null, linkBio: midia === 'Link da BIO' ? (linkBio || null) : null, criativo: criativo || null, status, agendadoPara: agendadoPara || null, proximoFollowup: lemsValidos[0]?.data || '', lembretes: lemsValidos, obs: obs.trim(), ...(ultimoFollow !== undefined ? { ultimoFollow } : {}) })
+    onSalvar(lead.id, { nome: paciente.trim(), dataOrigem: dataOrigem || data, data, responsavel, origemCustom, midia: midia || null, linkBio: midia === 'Link da BIO' ? (linkBio || null) : null, criativo: criativo || null, status, agendadoPara: agendadoPara || null, proximoFollowup: lemsValidos[0]?.data || '', lembretes: lemsValidos, obs: obs.trim(), ...(ultimoFollow !== undefined ? { ultimoFollow } : {}) })
     onClose()
   }
 
@@ -216,6 +217,12 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-gray-900">Editar Lead</h2>
           <button onClick={onClose} className="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
+        </div>
+
+        <div className="mb-1">
+          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Data de Origem <span className="text-xs text-gray-400 font-normal">(primeiro contato)</span></label>
+          <input type="date" value={dataOrigem} onChange={e => setDataOrigem(e.target.value)}
+            className="w-full border border-amber-200 bg-amber-50/40 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400" />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
