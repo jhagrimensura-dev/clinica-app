@@ -49,7 +49,10 @@ export default function Dashboard() {
   const totalLeads = leadsNovos.length + leadsIndicacao.length
   const leadsNovosReais = leadsNovos.filter(l => !String(l.fonte || '').toLowerCase().includes('follow') && !String(l.origemCustom || '').toLowerCase().includes('follow')).length
 
-  const agendNovos = leadsNovos.filter(l => l.status === 'agendado' || l.status === 'fechado').length
+  const isFollowLead = l => String(l.fonte || '').toLowerCase().includes('follow') || String(l.origemCustom || '').toLowerCase().includes('follow')
+  const agendNovosReais = leadsNovos.filter(l => !isFollowLead(l) && (l.status === 'agendado' || l.status === 'fechado')).length
+  const agendFollowUp = leadsNovos.filter(l => isFollowLead(l) && (l.status === 'agendado' || l.status === 'fechado')).length
+  const agendNovos = agendNovosReais + agendFollowUp
   const agendRecorrentes = leadsRecorrentes.filter(l => l.status === 'agendado' || l.status === 'fechado').length
   const agendIndicacao = leadsIndicacao.filter(l => l.status === 'agendado' || l.status === 'fechado').length
   const totalAgend = agendNovos + agendIndicacao
@@ -196,7 +199,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-4 gap-4">
           {[
             { label: 'Social Media', icon: '🔗', color: 'text-brand-500', value: String(seguidores.toLocaleString('pt-BR')), sub: 'seguidores', extras: [`${leadsNovosReais} leads recebidos`, `${convComercial}% conversão`] },
-            { label: 'Leads Novos', icon: '🏢', color: 'text-blue-500', value: String(totalLeads), sub: `leads`, extras: [`${leadsNovosReais} novos · ${leadsNovos.length - leadsNovosReais} follow-up · ${leadsIndicacao.length} indicações`, `${totalAgend} agendamentos`, `${convComercial}% conversão`] },
+            { label: 'Leads Novos', icon: '🏢', color: 'text-blue-500', value: String(totalLeads), sub: `leads`, extras: [`${leadsNovosReais} novos · ${leadsNovos.length - leadsNovosReais} follow-up · ${leadsIndicacao.length} indicações`, `${totalAgend} agendamentos (${agendNovosReais} novos · ${agendFollowUp} follow · ${agendIndicacao} ind.)`, `${convComercial}% conversão`] },
             { label: 'Leads Recorrência', icon: '🔄', color: 'text-teal-500', value: String(leadsRecorrentes.length), sub: 'contatos recorrentes', extras: [`${agendRecorrentes} agendamentos`, `${convRecorrencia}% conversão`] },
             { label: 'Vendas', icon: '📊', color: 'text-green-500', value: String(lMesSemConsulta.length), sub: 'lançamentos no mês', extras: [`${countNovos} novos · ${countRecorrentes} recorrentes`, lMesSemConsulta.length > 0 ? `${fmt(ticketGeral)} ticket médio` : '—'] },
           ].map((card, i) => (
