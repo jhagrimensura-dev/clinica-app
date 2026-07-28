@@ -114,13 +114,12 @@ export function AgendaProvider({ children }) {
       x.leadNome === l.leadNome && x.data === l.data && x.descricao === l.descricao && !x.concluido
     )
     if (duplicado) return
-    setLembretes(prev => [...prev, l])
-    const { error } = await supabase.from('agenda_lembretes').insert({ id: String(l.id), clinica_id: clinicaId, dados: l })
-    if (error) {
-      console.error('Erro ao salvar lembrete:', error)
-      setLembretes(prev => prev.filter(x => x.id !== l.id))
-      alert('Erro ao salvar lembrete. Verifique sua conexão e tente novamente.')
-    }
+    setLembretes(prev => prev.some(x => x.id === l.id) ? prev : [...prev, l])
+    const { error } = await supabase.from('agenda_lembretes').upsert(
+      { id: String(l.id), clinica_id: clinicaId, dados: l },
+      { onConflict: 'id' }
+    )
+    if (error) console.error('Erro ao salvar lembrete:', error)
   }
 
   const updateLembrete = async (id, updates) => {
