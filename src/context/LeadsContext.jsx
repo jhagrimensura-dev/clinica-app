@@ -13,6 +13,7 @@ const fromDB = (r) => {
     origem: r.origem || '',
     origemCustom: r.origem_custom || '',
     data: r.data || '',
+    dataOrigem: r.data_origem || r.data || '',
     responsavel: r.responsavel || '',
     fonte: r.fonte || '',
     status: r.status || 'em_aberto',
@@ -36,6 +37,7 @@ const toDB = (l, clinicaId) => ({
   origem: l.origem || '',
   origem_custom: l.origemCustom || '',
   data: l.data || '',
+  data_origem: l.dataOrigem || l.data || null,
   responsavel: l.responsavel || '',
   fonte: l.fonte || '',
   status: l.status || 'em_aberto',
@@ -52,7 +54,7 @@ const toDB = (l, clinicaId) => ({
 const updatesToDB = (updates) => {
   const fieldMap = {
     nome: 'nome', telefone: 'telefone', origem: 'origem', origemCustom: 'origem_custom',
-    data: 'data', responsavel: 'responsavel', fonte: 'fonte', status: 'status',
+    data: 'data', dataOrigem: 'data_origem', responsavel: 'responsavel', fonte: 'fonte', status: 'status',
     agendadoPara: 'agendado_para', proximoFollowup: 'proximo_followup',
     obs: 'obs', aniversario: 'aniversario', midia: 'midia', criativo: 'criativo', linkBio: 'link_bio',
     ultimoFollow: 'ultimo_follow',
