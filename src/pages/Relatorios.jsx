@@ -8,6 +8,8 @@ import '@xyflow/react/dist/style.css'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { useVendas } from '../context/VendasContext'
 import { useLeads } from '../context/LeadsContext'
+import { useAuth } from '../context/AuthContext'
+import { supabase } from '../lib/supabase'
 
 const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 
@@ -215,33 +217,37 @@ const arestasIniciais = [
   { id: 'e8', source: 'perdido',     target: 'follow1',     style: { stroke: '#f97316', strokeWidth: 2.5, strokeDasharray: '6 3' }, label: 'retoma follow' },
 ]
 
-const STORAGE_KEY = 'relatorios_fluxo'
-
-function QuadroBranco({ funil }) {
+function QuadroBranco({ funil, clinicaId }) {
   const labelChangeRef = useRef(null)
   const colorChangeRef = useRef(null)
-  const nosIniciais = useMemo(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')
-      if (saved.nos?.length) return saved.nos.map(n => ({ ...n, data: { ...n.data, onLabelChange: (id, v) => labelChangeRef.current?.(id, v), onColorChange: (id, c) => colorChangeRef.current?.(id, c) } }))
-    } catch {}
-    return criarNosIniciais(funil, labelChangeRef, colorChangeRef)
-  }, [])
-  const arestasIniciais2 = useMemo(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')
-      if (saved.arestas?.length) return saved.arestas
-    } catch {}
-    return arestasIniciais
-  }, [])
-  const [nos, setNos, onNosChange] = useNodesState(nosIniciais)
-  const [arestas, setArestas, onArestasChange] = useEdgesState(arestasIniciais2)
+  const saveTimerRef = useRef(null)
+  const [carregado, setCarregado] = useState(false)
+
+  const [nos, setNos, onNosChange] = useNodesState(() => criarNosIniciais(funil, labelChangeRef, colorChangeRef))
+  const [arestas, setArestas, onArestasChange] = useEdgesState(arestasIniciais)
 
   useEffect(() => {
-    try {
+    if (!clinicaId) return
+    supabase.from('relatorios_fluxo').select('dados').eq('clinica_id', clinicaId).single()
+      .then(({ data }) => {
+        if (data?.dados?.nos?.length) {
+          setNos(data.dados.nos.map(n => ({
+            ...n,
+            data: { ...n.data, onLabelChange: (id, v) => labelChangeRef.current?.(id, v), onColorChange: (id, c) => colorChangeRef.current?.(id, c) },
+          })))
+        }
+        if (data?.dados?.arestas?.length) setArestas(data.dados.arestas)
+        setCarregado(true)
+      })
+  }, [clinicaId])
+
+  useEffect(() => {
+    if (!carregado || !clinicaId) return
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = setTimeout(() => {
       const nosSemFn = nos.map(n => ({ ...n, data: { ...n.data, onLabelChange: undefined, onColorChange: undefined } }))
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ nos: nosSemFn, arestas }))
-    } catch {}
+      supabase.from('relatorios_fluxo').upsert({ clinica_id: clinicaId, dados: { nos: nosSemFn, arestas } }, { onConflict: 'clinica_id' })
+    }, 1500)
   }, [nos, arestas])
 
   const onConnect = useCallback((params) => setArestas(eds => addEdge({ ...params, style: { stroke: '#d1d5db', strokeWidth: 2.5 } }, eds)), [])
@@ -306,7 +312,6 @@ function QuadroBranco({ funil }) {
   }
 
   const resetar = () => {
-    localStorage.removeItem(STORAGE_KEY)
     setNos(criarNosIniciais(funil, labelChangeRef, colorChangeRef))
     setArestas(arestasIniciais)
   }
@@ -387,6 +392,7 @@ function QuadroBranco({ funil }) {
 }
 
 export default function Relatorios() {
+  const { clinicaId } = useAuth()
   const { lancamentos } = useVendas()
   const { leads } = useLeads()
 
@@ -417,7 +423,7 @@ export default function Relatorios() {
       </div>
 
       <ReactFlowProvider>
-        <QuadroBranco funil={funil} />
+        <QuadroBranco funil={funil} clinicaId={clinicaId} />
       </ReactFlowProvider>
 
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
