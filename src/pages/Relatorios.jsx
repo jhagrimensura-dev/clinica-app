@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useState, useRef } from 'react'
+import { useMemo, useCallback, useState, useRef, useEffect } from 'react'
 import {
   ReactFlow, Background, Controls, MiniMap,
   addEdge, reconnectEdge, useNodesState, useEdgesState,
@@ -111,11 +111,33 @@ const arestasIniciais = [
   { id: 'e8', source: 'perdido',     target: 'follow1',     style: { stroke: '#f97316', strokeWidth: 2.5, strokeDasharray: '6 3' }, label: 'retoma follow' },
 ]
 
+const STORAGE_KEY = 'relatorios_fluxo'
+
 function QuadroBranco({ funil }) {
   const labelChangeRef = useRef(null)
-  const nosIniciais = useMemo(() => criarNosIniciais(funil, labelChangeRef), [])
+  const nosIniciais = useMemo(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')
+      if (saved.nos?.length) return saved.nos.map(n => ({ ...n, data: { ...n.data, onLabelChange: (id, v) => labelChangeRef.current?.(id, v) } }))
+    } catch {}
+    return criarNosIniciais(funil, labelChangeRef)
+  }, [])
+  const arestasIniciais2 = useMemo(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')
+      if (saved.arestas?.length) return saved.arestas
+    } catch {}
+    return arestasIniciais
+  }, [])
   const [nos, setNos, onNosChange] = useNodesState(nosIniciais)
-  const [arestas, setArestas, onArestasChange] = useEdgesState(arestasIniciais)
+  const [arestas, setArestas, onArestasChange] = useEdgesState(arestasIniciais2)
+
+  useEffect(() => {
+    try {
+      const nosSemFn = nos.map(n => ({ ...n, data: { ...n.data, onLabelChange: undefined } }))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ nos: nosSemFn, arestas }))
+    } catch {}
+  }, [nos, arestas])
 
   const onConnect = useCallback((params) => setArestas(eds => addEdge({ ...params, style: { stroke: '#d1d5db', strokeWidth: 2.5 } }, eds)), [])
   const onReconnect = useCallback((oldEdge, newConnection) => setArestas(eds => reconnectEdge(oldEdge, newConnection, eds)), [])
@@ -150,6 +172,7 @@ function QuadroBranco({ funil }) {
   }
 
   const resetar = () => {
+    localStorage.removeItem(STORAGE_KEY)
     setNos(criarNosIniciais(funil, labelChangeRef))
     setArestas(arestasIniciais)
   }
