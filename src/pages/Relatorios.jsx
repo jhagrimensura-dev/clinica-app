@@ -79,7 +79,50 @@ function NodoLead({ id, data, selected }) {
   )
 }
 
-const nodeTypes = { lead: NodoLead }
+// Nó de texto livre (post-it)
+function NodoTexto({ id, data, selected }) {
+  const [editando, setEditando] = useState(false)
+  const [texto, setTexto] = useState(data.label || '')
+
+  const confirmar = () => {
+    setEditando(false)
+    data.onLabelChange?.(id, texto)
+  }
+
+  return (
+    <div
+      className="rounded-xl px-4 py-3 min-w-[140px] max-w-[280px] cursor-grab active:cursor-grabbing transition-all shadow-md"
+      style={{
+        backgroundColor: selected ? '#fef9c3' : (data.cor || '#fefce8'),
+        border: `2px solid ${selected ? '#facc15' : '#fde68a'}`,
+        boxShadow: selected ? '0 0 0 3px #fcd34d' : '0 2px 6px rgba(0,0,0,0.08)',
+      }}
+      onDoubleClick={() => setEditando(true)}
+    >
+      <Handle id="t" type="target"  position={Position.Top}    className="!bg-yellow-300 !w-3 !h-3 !border-2 !border-white" />
+      <Handle id="l" type="target"  position={Position.Left}   className="!bg-yellow-300 !w-3 !h-3 !border-2 !border-white" />
+      {editando ? (
+        <textarea
+          autoFocus
+          value={texto}
+          onChange={e => setTexto(e.target.value)}
+          onBlur={confirmar}
+          onKeyDown={e => { if (e.key === 'Enter' && e.metaKey) confirmar() }}
+          onClick={e => e.stopPropagation()}
+          rows={3}
+          className="text-sm text-gray-700 bg-transparent outline-none w-full resize-none"
+          placeholder="Escreva aqui..."
+        />
+      ) : (
+        <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">{texto || <span className="text-gray-400 italic text-xs">duplo clique para editar</span>}</p>
+      )}
+      <Handle id="b" type="source" position={Position.Bottom}  className="!bg-yellow-400 !w-3 !h-3 !border-2 !border-white" />
+      <Handle id="r" type="source" position={Position.Right}   className="!bg-yellow-400 !w-3 !h-3 !border-2 !border-white" />
+    </div>
+  )
+}
+
+const nodeTypes = { lead: NodoLead, texto: NodoTexto }
 
 function criarNosIniciais(funil, labelChangeRef) {
   const mk = (id, label, pos, extra = {}) => ({
@@ -171,6 +214,15 @@ function QuadroBranco({ funil }) {
     }])
   }
 
+  const adicionarTexto = () => {
+    const id = `txt_${Date.now()}`
+    setNos(prev => [...prev, {
+      id, type: 'texto',
+      position: { x: 200 + Math.random() * 300, y: 200 + Math.random() * 200 },
+      data: { label: '', onLabelChange: (id, v) => labelChangeRef.current?.(id, v) },
+    }])
+  }
+
   const resetar = () => {
     localStorage.removeItem(STORAGE_KEY)
     setNos(criarNosIniciais(funil, labelChangeRef))
@@ -187,6 +239,9 @@ function QuadroBranco({ funil }) {
         <div className="flex gap-2">
           <button onClick={adicionarNo} className="text-xs font-semibold px-3 py-2 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-600 transition-colors">
             + Novo bloco
+          </button>
+          <button onClick={adicionarTexto} className="text-xs font-semibold px-3 py-2 rounded-xl border border-yellow-200 hover:bg-yellow-50 text-yellow-600 transition-colors">
+            📝 Texto livre
           </button>
           <button onClick={apagarSelecionados} className="text-xs font-semibold px-3 py-2 rounded-xl border border-red-200 hover:bg-red-50 text-red-400 transition-colors">
             🗑 Apagar selecionado
@@ -210,6 +265,7 @@ function QuadroBranco({ funil }) {
           onReconnect={onReconnect}
           onEdgeClick={onEdgeClick}
           deleteKeyCode={['Delete', 'Backspace']}
+          connectionMode="loose"
         >
           <Background color="#f3f4f6" gap={20} size={1} />
           <Controls />
