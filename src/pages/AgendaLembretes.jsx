@@ -51,8 +51,16 @@ export default function AgendaLembretes() {
   const hoje = new Date().toISOString().split('T')[0]
   const { lembretes, addLembrete, updateLembrete, deleteLembrete } = useAgenda()
   const { leads } = useLeads()
-  const [mesRef, setMesRef] = useState(() => ({ ano: new Date().getFullYear(), mes: new Date().getMonth() }))
-  const [diaSel, setDiaSel] = useState(hoje)
+  const [mesRef, setMesRef] = useState(() => {
+    const stored = sessionStorage.getItem('agenda_abrir_data')
+    if (stored) { const [y, m] = stored.split('-'); return { ano: Number(y), mes: Number(m) - 1 } }
+    return { ano: new Date().getFullYear(), mes: new Date().getMonth() }
+  })
+  const [diaSel, setDiaSel] = useState(() => {
+    const stored = sessionStorage.getItem('agenda_abrir_data')
+    if (stored) { sessionStorage.removeItem('agenda_abrir_data'); return stored }
+    return hoje
+  })
   const [modal, setModal] = useState(null)
   const [vista, setVista] = useState('mes')
 

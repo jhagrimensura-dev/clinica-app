@@ -386,7 +386,8 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
               </label>
               <div className="space-y-1.5">
                 {existentes.map(l => (
-                  <div key={l.id} className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                  <div key={l.id} className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 cursor-pointer hover:bg-amber-100 transition-colors"
+                    onClick={() => { sessionStorage.setItem('agenda_abrir_data', l.data); window.dispatchEvent(new CustomEvent('navegarAgenda', { detail: { data: l.data } })) }}>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-amber-800">
                         {l.data} {l.hora ? `às ${l.hora}` : ''}
@@ -396,7 +397,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
                     {onDeletarLembrete && (
                       <button
                         type="button"
-                        onClick={() => onDeletarLembrete(l.id)}
+                        onClick={e => { e.stopPropagation(); onDeletarLembrete(l.id) }}
                         className="text-amber-400 hover:text-red-500 flex-shrink-0 transition-colors"
                         title="Apagar lembrete">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>

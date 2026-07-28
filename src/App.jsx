@@ -274,11 +274,18 @@ function AppContent() {
       setActiveRaw(targetPage)
       window.history.pushState({ page: targetPage }, '', `#/${targetPage}`)
     }
+    const handlerAgenda = (e) => {
+      if (e.detail?.data) sessionStorage.setItem('agenda_abrir_data', e.detail.data)
+      setActiveRaw('agenda_lembretes')
+      window.history.pushState({ page: 'agenda_lembretes' }, '', '#/agenda_lembretes')
+    }
     window.addEventListener('popstate', onPop)
     window.addEventListener('navegarInbox', handler)
+    window.addEventListener('navegarAgenda', handlerAgenda)
     return () => {
       window.removeEventListener('popstate', onPop)
       window.removeEventListener('navegarInbox', handler)
+      window.removeEventListener('navegarAgenda', handlerAgenda)
     }
   }, [])
   const [view, setView] = useState('mensal')
