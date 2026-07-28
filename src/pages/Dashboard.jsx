@@ -151,7 +151,7 @@ export default function Dashboard() {
       {/* SOCIAL MEDIA */}
       <div>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Social Media</p>
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-4 gap-4">
           {[
             {
               label: 'Seguidores',
@@ -159,13 +159,6 @@ export default function Dashboard() {
               icon: '👥',
               color: 'text-brand-500',
               sub: custoPorSeguidor > 0 ? `${fmt(custoPorSeguidor)} por seguidor` : 'total de seguidores',
-            },
-            {
-              label: 'Posts no Mês',
-              value: String(totalPosts),
-              icon: '📸',
-              color: 'text-purple-500',
-              sub: `${totalImpulsionados} impulsionado${totalImpulsionados !== 1 ? 's' : ''}`,
             },
             {
               label: 'Tráfego Investido',
