@@ -592,10 +592,7 @@ export default function LeadsNovos() {
       {/* Lista / Quadro */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-bold text-gray-800">Leads do Mês — {MESES_FULL[mes]}</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Data de Origem visível ao lado de cada nome</p>
-          </div>
+          <h2 className="text-base font-bold text-gray-800">Leads do Mês — {MESES_FULL[mes]}</h2>
           <div className="flex items-center gap-3">
             <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full">{leadsFiltrados.length} leads</span>
             <button onClick={() => setOrdem(o => o === 'desc' ? 'asc' : 'desc')} title={ordem === 'desc' ? 'Mais recentes primeiro' : 'Mais antigos primeiro'} className="text-xs text-gray-500 hover:text-orange-500 border border-gray-200 rounded-xl px-2.5 py-1.5 flex items-center gap-1 transition-colors hover:bg-gray-50">
@@ -616,6 +613,15 @@ export default function LeadsNovos() {
           </div>
         ) : visao === 'lista' ? (
           <div className="divide-y divide-gray-50">
+            {/* Cabeçalho da tabela */}
+            <div className="flex items-center gap-4 px-5 py-2 bg-gray-50 text-[11px] font-semibold text-gray-400 uppercase tracking-wide select-none">
+              <div className="w-8 flex-shrink-0" />
+              <div className="flex-1 min-w-0">Nome</div>
+              <div className="w-24 flex-shrink-0">Data de Origem</div>
+              <div className="w-40 hidden md:block flex-shrink-0">Obs</div>
+              <div className="w-28 flex-shrink-0">Status</div>
+              <div className="w-6 flex-shrink-0" />
+            </div>
             {leadsFiltrados.map(lead => {
               const follow = getFollow(lead.status)
               return (
@@ -624,26 +630,24 @@ export default function LeadsNovos() {
                     {lead.nome.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold text-gray-800 truncate">{lead.nome}</p>
-                      {mesOrigem(lead) && (
-                        <span className={`text-xs font-semibold flex-shrink-0 px-1.5 py-0.5 rounded-md ${isFollowUp(lead) ? 'bg-amber-50 text-amber-500' : 'bg-gray-100 text-gray-400'}`}>
-                          {mesOrigem(lead)}
-                        </span>
-                      )}
-                    </div>
+                    <p className="text-sm font-semibold text-gray-800 truncate">{lead.nome}</p>
                     {lead.status === 'agendado' && lead.agendadoPara ? (
                       <p className="text-xs text-blue-500 font-semibold">📅 {dataFormatada(lead.agendadoPara)}</p>
                     ) : (
                       <p className="text-xs text-gray-400">Lead {dataFormatada(lead.data)}</p>
                     )}
                   </div>
-                  {lead.obs && <p className="text-xs text-gray-400 italic truncate max-w-[180px] hidden md:block">{lead.obs}</p>}
+                  <div className="w-24 flex-shrink-0">
+                    <span className={`text-xs font-semibold ${isFollowUp(lead) ? 'text-amber-500' : 'text-gray-400'}`}>
+                      {mesOrigem(lead) || '—'}
+                    </span>
+                  </div>
+                  <p className="w-40 hidden md:block flex-shrink-0 text-xs text-gray-400 italic truncate">{lead.obs || ''}</p>
                   <select
                     value={lead.status}
                     onChange={e => { e.stopPropagation(); handleStatusChange(lead, e.target.value) }}
                     onClick={e => e.stopPropagation()}
-                    className={`text-xs font-semibold px-3 py-1 rounded-full border-0 outline-none cursor-pointer ${follow.bg} ${follow.text}`}
+                    className={`w-28 flex-shrink-0 text-xs font-semibold px-2 py-1 rounded-full border-0 outline-none cursor-pointer ${follow.bg} ${follow.text}`}
                   >
                     {FOLLOWS.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
                   </select>
