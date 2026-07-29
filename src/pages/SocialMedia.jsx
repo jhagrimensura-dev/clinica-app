@@ -127,14 +127,17 @@ export default function SocialMedia() {
   }
 
   const porSeguidor = seguidores > 0 ? (trafego / seguidores).toFixed(2).replace('.', ',') : '—'
+  const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
   const leadsNovos = getLeadsPorOrigem('leads_novos', ano, mes)
-  const isFollow = l => String(l.fonte || '').toLowerCase().includes('follow') || String(l.origemCustom || '').toLowerCase().includes('follow')
+  const isFollow = l => {
+    const dataRef = l.dataOrigem || l.data || ''
+    if (dataRef && !dataRef.startsWith(prefix)) return true
+    return String(l.fonte || '').toLowerCase().includes('follow') || String(l.origemCustom || '').toLowerCase().includes('follow')
+  }
   const totalLeadsNovos = leadsNovos.filter(l => !isFollow(l)).length
   const totalFollowUp = leadsNovos.filter(l => isFollow(l)).length
   const totalLeads = totalLeadsNovos + totalFollowUp
   const porLead = totalLeadsNovos > 0 && trafego > 0 ? (trafego / totalLeadsNovos).toFixed(2).replace('.', ',') : '—'
-
-  const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
   const leadsPorDia = {}
   const leadsDetalhadosPorDia = {}
   leads.filter(l => l.origem === 'leads_novos' && l.data && l.data.startsWith(prefix) && !String(l.fonte || '').toLowerCase().includes('follow') && !String(l.origemCustom || '').toLowerCase().includes('follow')).forEach(l => {
