@@ -192,8 +192,11 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
           </div>
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Mídia</label>
+          <label className="text-sm font-medium text-gray-700 mb-1.5 block">
+            Mídia {origemCustom === 'Instagram' && <span className="text-red-400">*</span>}
+          </label>
           <select value={midia} onChange={e => { setMidia(e.target.value); if (e.target.value !== 'Link da BIO') setLinkBio('') }}
+            style={origemCustom === 'Instagram' && !['Link da BIO', 'Link dos Stories'].includes(midia) ? { borderColor: '#fca5a5' } : {}}
             className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-teal-400 bg-white">
             <option value="">Não informado</option>
             {midias.map(m => <option key={m} value={m}>{m}</option>)}
@@ -282,7 +285,7 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
           )}
           <div className="flex gap-3">
             <button onClick={onClose} className="px-5 py-2.5 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
-            <button onClick={() => { const lemsValidos = lembretes.filter(l => l.data); lemsValidos.forEach((l) => addLembrete({ id: crypto.randomUUID(), leadNome: paciente.trim(), leadTelefone: lead.telefone || '', descricao: l.obs || obs || '', data: l.data, hora: l.hora || '', cor: 'blue', concluido: false, criadoEm: Date.now() })); onSalvar(lead.id, { nome: paciente.trim(), data, responsavel, origemCustom, midia: midia || null, linkBio: midia === 'Link da BIO' ? (linkBio || null) : null, status, agendadoPara: agendadoPara || null, proximoFollowup: lemsValidos[0]?.data || '', lembretes: lemsValidos, obs: obs.trim() }); onClose() }}
+            <button onClick={() => { if (origemCustom === 'Instagram' && !['Link da BIO', 'Link dos Stories'].includes(midia)) { alert('Para origem Instagram, a mídia é obrigatória: selecione "Link da BIO" ou "Link dos Stories".'); return } const lemsValidos = lembretes.filter(l => l.data); lemsValidos.forEach((l) => addLembrete({ id: crypto.randomUUID(), leadNome: paciente.trim(), leadTelefone: lead.telefone || '', descricao: l.obs || obs || '', data: l.data, hora: l.hora || '', cor: 'blue', concluido: false, criadoEm: Date.now() })); onSalvar(lead.id, { nome: paciente.trim(), data, responsavel, origemCustom, midia: midia || null, linkBio: midia === 'Link da BIO' ? (linkBio || null) : null, status, agendadoPara: agendadoPara || null, proximoFollowup: lemsValidos[0]?.data || '', lembretes: lemsValidos, obs: obs.trim() }); onClose() }}
               disabled={!paciente.trim()}
               className="px-6 py-2.5 bg-teal-500 hover:bg-teal-600 text-white text-sm font-semibold rounded-xl disabled:opacity-40">Salvar</button>
           </div>

@@ -206,6 +206,10 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
 
   const handleSalvar = () => {
     if (!paciente.trim()) return
+    if (origemCustom === 'Instagram' && !['Link da BIO', 'Link dos Stories'].includes(midia)) {
+      alert('Para origem Instagram, a mídia é obrigatória: selecione "Link da BIO" ou "Link dos Stories".')
+      return
+    }
     const lemsValidos = lembretes.filter(l => l.data)
     lemsValidos.forEach((l) => {
       addLembrete({ id: crypto.randomUUID(), leadNome: paciente.trim(), leadTelefone: lead.telefone || '', descricao: l.obs || obs.trim() || '', data: l.data, hora: l.hora || '', cor: 'green', concluido: false, criadoEm: Date.now() })
@@ -280,8 +284,11 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
 
         {origemCustom !== 'Tráfego' && (
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Mídia</label>
+            <label className="text-sm font-medium text-gray-700 mb-1.5 block">
+              Mídia {origemCustom === 'Instagram' && <span className="text-red-400">*</span>}
+            </label>
             <select value={midia} onChange={e => { setMidia(e.target.value); if (e.target.value !== 'Link da BIO') setLinkBio('') }}
+              style={origemCustom === 'Instagram' && !['Link da BIO', 'Link dos Stories'].includes(midia) ? { borderColor: '#fca5a5' } : {}}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400 bg-white">
               <option value="">Não informado</option>
               {midias.map(m => <option key={m} value={m}>{m}</option>)}
