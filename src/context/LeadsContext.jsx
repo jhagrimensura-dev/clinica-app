@@ -193,13 +193,7 @@ export function LeadsProvider({ children }) {
       }
       if (l.origemCustom === 'Indicação' && l.origem !== 'indicacao') return false
       if (l.origem !== origem) return false
-      const dataInMonth = l.data && l.data.startsWith(prefix)
-      const dataRef = l.dataOrigem || l.data || ''
-      // aparece via follow-up se o próximo follow-up é neste mês mas a origem é de outro mês
-      const followupInMonth = l.proximoFollowup
-        && l.proximoFollowup.startsWith(prefix)
-        && dataRef && !dataRef.startsWith(prefix)
-      return dataInMonth || !!followupInMonth
+      return l.data && l.data.startsWith(prefix)
     })
   }
 
