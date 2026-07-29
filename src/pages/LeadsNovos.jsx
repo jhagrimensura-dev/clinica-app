@@ -4,6 +4,7 @@ import { useFinanceiro } from '../context/FinanceiroContext'
 import { useAuth } from '../context/AuthContext'
 import { useConfig } from '../context/ConfigContext'
 import { useAgenda } from '../context/AgendaContext'
+import { useVendas } from '../context/VendasContext'
 import FeriadoAviso from '../components/FeriadoAviso'
 import { supabase } from '../lib/supabase'
 
@@ -425,6 +426,8 @@ export default function LeadsNovos() {
   }
 
   const contIndicacao = leadsIndicacao.length
+  const leadsNovosCount = leads.filter(l => !isFollowUp(l)).length
+  const leadsEmFollowCount = leads.filter(l => isFollowUp(l)).length
 
   const CONV_STATUS = ['agendado', 'fechado']
   const FOLLOW_STATUS = ['follow1', 'follow2', 'follow3']
@@ -541,17 +544,10 @@ export default function LeadsNovos() {
             <p className="text-sm text-gray-500 font-medium">Total de Leads</p>
             <span className="text-orange-400 text-lg">👥</span>
           </div>
-          <p className="text-3xl font-bold text-gray-800">{leads.length + contIndicacao}</p>
-          <div className="mt-2 space-y-1">
-            {funil.em_aberto > 0   && <div className="flex justify-between text-xs"><span className="text-gray-400">Em aberto</span><span className="font-semibold text-gray-600">{funil.em_aberto}</span></div>}
-            {funil.conversando > 0 && <div className="flex justify-between text-xs"><span className="text-purple-400">Conversando</span><span className="font-semibold text-purple-500">{funil.conversando}</span></div>}
-            {funil.follow1 > 0     && <div className="flex justify-between text-xs"><span className="text-orange-400">Follow #1</span><span className="font-semibold text-orange-500">{funil.follow1}</span></div>}
-            {funil.follow2 > 0     && <div className="flex justify-between text-xs"><span className="text-yellow-500">Follow #2</span><span className="font-semibold text-yellow-600">{funil.follow2}</span></div>}
-            {funil.follow3 > 0     && <div className="flex justify-between text-xs"><span className="text-amber-500">Follow #3</span><span className="font-semibold text-amber-700">{funil.follow3}</span></div>}
-            {funil.agendado > 0    && <div className="flex justify-between text-xs"><span className="text-blue-400">Agendado</span><span className="font-semibold text-blue-500">{funil.agendado}</span></div>}
-            {funil.fechado > 0     && <div className="flex justify-between text-xs"><span className="text-green-400">Fechado</span><span className="font-semibold text-green-600">{funil.fechado}</span></div>}
-            {funil.perdido > 0     && <div className="flex justify-between text-xs"><span className="text-red-300">Perdido</span><span className="font-semibold text-red-400">{funil.perdido}</span></div>}
-            {contIndicacao > 0     && <div className="flex justify-between text-xs"><span className="text-pink-400">Indicação</span><span className="font-semibold text-pink-500">{contIndicacao}</span></div>}
+          <p className="text-3xl font-bold text-gray-800">{leads.length}</p>
+          <div className="mt-2 space-y-1 pt-2 border-t border-gray-50">
+            <div className="flex justify-between text-xs"><span className="text-blue-400">Novos este mês</span><span className="font-semibold text-blue-600">{leadsNovosCount}</span></div>
+            <div className="flex justify-between text-xs"><span className="text-amber-500">Em follow-up</span><span className="font-semibold text-amber-600">{leadsEmFollowCount}</span></div>
           </div>
         </div>
         <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">

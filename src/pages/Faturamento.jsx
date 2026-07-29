@@ -755,7 +755,7 @@ export default function Faturamento() {
   const { ano, setAno, mes, setMes } = useFinanceiro()
   const { lancamentos, addLancamento, removeLancamento, updateLancamento } = useVendas()
   const { pacientes } = usePacientes()
-  const { leads } = useLeads()
+  const { leads, updateLead } = useLeads()
   const { procedimentos: procsFromDB, setProcedimentos } = useConfig()
   const { userRole } = useAuth()
   const procs = (procsFromDB || PROCS_DEFAULT).map(p =>
@@ -765,8 +765,14 @@ export default function Faturamento() {
   const [editando, setEditando] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [ordemFat, setOrdemFat] = useState('desc')
+  const [procAberto, setProcAberto] = useState(null)
+  const [consultasAberto, setConsultasAberto] = useState(false)
   const isAdmin = userRole !== 'Funcionário'
   const handleProcsChange = (novos) => setProcedimentos(novos)
+
+  const handleAddLancamento = async (lancamento) => {
+    await addLancamento(lancamento)
+  }
 
   const navMes = (delta) => {
     const novo = mes + delta
@@ -831,7 +837,13 @@ export default function Faturamento() {
         })
       }
     })
-    return { ...p, total, totalMl, count, cor: CORES_PROC[i % CORES_PROC.length] }
+    const pacientes = lancamentosMes
+      .filter(l => {
+        if (!l.procedimentos) return false
+        return l.procedimentos.split(' e ').some(s => parseLinhaProc(s, procs).nome === p.nome)
+      })
+      .map(l => l.paciente).filter(Boolean)
+    return { ...p, total, totalMl, count, pacientes, cor: CORES_PROC[i % CORES_PROC.length] }
   }).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
   const maxReceita = Math.max(...receitaPorProc.map(p => p.total), 1)
 
@@ -864,10 +876,20 @@ export default function Faturamento() {
             {lancamentosMes.filter(l => l.tipo === 'Recorrência' && (l.valorTratamento || 0) > 0).length} recorrentes
           </p>
         </div>
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <p className="text-sm text-gray-500 font-medium mb-1">Consultas (R$)</p>
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 cursor-pointer" onClick={() => setConsultasAberto(o => !o)}>
+          <div className="flex justify-between items-start">
+            <p className="text-sm text-gray-500 font-medium mb-1">Consultas (R$)</p>
+            <span className="text-xs text-gray-400">{consultasAberto ? '▲' : '▼'}</span>
+          </div>
           <p className="text-2xl font-bold text-yellow-500">R$ {fmt(totalTaxas)}</p>
           <p className="text-xs text-gray-400 mt-1">{lancamentosMes.filter(l => (l.valorTaxa || 0) > 0).length} consulta(s) paga(s) — não contabilizado(s)</p>
+          {consultasAberto && (
+            <div className="mt-3 pt-2 border-t border-gray-100 space-y-1">
+              {lancamentosMes.filter(l => (l.valorTaxa || 0) > 0).map((l, i) => (
+                <p key={i} className="text-xs text-gray-500">· {l.paciente}</p>
+              ))}
+            </div>
+          )}
         </div>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 font-medium mb-1">Paciente Modelo</p>
@@ -883,26 +905,40 @@ export default function Faturamento() {
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <h2 className="text-base font-bold text-gray-800 mb-4">Receita por Procedimento</h2>
           <div className="space-y-3">
-            {receitaPorProc.map((p, i) => (
-              <div key={i}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-600 flex items-center gap-1.5">
-                    {p.nome}
-                    {p.count > 0 && (
-                      <span className="text-xs font-semibold text-brand-500 bg-brand-50 px-1.5 py-0.5 rounded-md">{p.count}x</span>
-                    )}
-                    {p.mostraQtd && p.totalMl > 0 && (
-                      <span className="text-xs font-semibold text-brand-500 bg-brand-50 px-1.5 py-0.5 rounded-md">{p.totalMl}ml</span>
-                    )}
-                  </span>
-                  <span className="font-semibold text-gray-800">R$ {fmt(p.total)}</span>
+            {receitaPorProc.map((p, i) => {
+              const aberto = procAberto === p.nome
+              return (
+                <div key={i}>
+                  <div
+                    className={`flex justify-between text-sm mb-1 ${p.count > 0 ? 'cursor-pointer hover:opacity-80' : ''}`}
+                    onClick={() => p.count > 0 && setProcAberto(aberto ? null : p.nome)}
+                  >
+                    <span className="text-gray-600 flex items-center gap-1.5">
+                      {p.nome}
+                      {p.count > 0 && (
+                        <span className="text-xs font-semibold text-brand-500 bg-brand-50 px-1.5 py-0.5 rounded-md">{p.count}x</span>
+                      )}
+                      {p.mostraQtd && p.totalMl > 0 && (
+                        <span className="text-xs font-semibold text-brand-500 bg-brand-50 px-1.5 py-0.5 rounded-md">{p.totalMl}ml</span>
+                      )}
+                      {p.count > 0 && <span className="text-xs text-gray-400">{aberto ? '▲' : '▼'}</span>}
+                    </span>
+                    <span className="font-semibold text-gray-800">R$ {fmt(p.total)}</span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-2">
+                    <div className={`${p.cor} h-2 rounded-full transition-all`}
+                      style={{ width: `${(p.total / maxReceita) * 100}%` }}></div>
+                  </div>
+                  {aberto && p.pacientes.length > 0 && (
+                    <div className="mt-2 ml-1 space-y-1 pb-1">
+                      {p.pacientes.map((nome, j) => (
+                        <p key={j} className="text-xs text-gray-500">· {nome}</p>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="w-full bg-gray-100 rounded-full h-2">
-                  <div className={`${p.cor} h-2 rounded-full transition-all`}
-                    style={{ width: `${(p.total / maxReceita) * 100}%` }}></div>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </div>
@@ -999,7 +1035,7 @@ export default function Faturamento() {
         )}
       </div>
 
-      {modal && <ModalNovoLancamento onClose={() => setModal(false)} onSalvar={addLancamento} ano={ano} mes={mes} pacientes={pacientes} leads={leads} procs={procs} onProcsChange={handleProcsChange} />}
+      {modal && <ModalNovoLancamento onClose={() => setModal(false)} onSalvar={handleAddLancamento} ano={ano} mes={mes} pacientes={pacientes} leads={leads} procs={procs} onProcsChange={handleProcsChange} />}
       {editando && <ModalEditarLancamento lancamento={editando} onClose={() => setEditando(null)} onAtualizar={updateLancamento} onExcluir={removeLancamento} pacientes={pacientes} leads={leads} procs={procs} onProcsChange={handleProcsChange} />}
     </div>
   )
