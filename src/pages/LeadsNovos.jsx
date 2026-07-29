@@ -621,18 +621,18 @@ export default function LeadsNovos() {
                     {lead.nome.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-semibold text-gray-800 truncate">{lead.nome}</p>
-                      {mesOrigem(lead) && (
-                        <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap ${isFollowUp(lead) ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-400'}`}>
-                          {mesOrigem(lead)}
-                        </span>
-                      )}
-                    </div>
+                    <p className="text-sm font-semibold text-gray-800 truncate">{lead.nome}</p>
                     {lead.status === 'agendado' && lead.agendadoPara ? (
                       <p className="text-xs text-blue-500 font-semibold">📅 {dataFormatada(lead.agendadoPara)}</p>
                     ) : (
-                      <p className="text-xs text-gray-400">Lead {dataFormatada(lead.data)}</p>
+                      <p className="text-xs text-gray-400">
+                        Lead {dataFormatada(lead.data)}
+                        {mesOrigem(lead) && (
+                          <span className={`ml-2 font-semibold ${isFollowUp(lead) ? 'text-amber-500' : 'text-gray-400'}`}>
+                            · Origem {mesOrigem(lead)}
+                          </span>
+                        )}
+                      </p>
                     )}
                   </div>
                   {lead.obs && <p className="text-xs text-gray-400 italic truncate max-w-[180px] hidden md:block">{lead.obs}</p>}
@@ -696,18 +696,18 @@ export default function LeadsNovos() {
                         onDragEnd={() => setDragOver(null)}
                         className="bg-white rounded-xl p-3 shadow-sm border border-gray-100 cursor-grab active:cursor-grabbing hover:border-amber-200 transition-colors"
                         onClick={() => setModalEditar(lead)}>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <p className="text-sm font-semibold text-gray-800 truncate">{lead.nome}</p>
-                          {mesOrigem(lead) && (
-                            <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 ${isFollowUp(lead) ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-400'}`}>
-                              {mesOrigem(lead)}
-                            </span>
-                          )}
-                        </div>
+                        <p className="text-sm font-semibold text-gray-800 truncate">{lead.nome}</p>
                         {lead.status === 'agendado' && lead.agendadoPara ? (
                           <p className="text-xs text-blue-500 font-semibold mt-0.5">📅 {dataFormatada(lead.agendadoPara)}</p>
                         ) : (
-                          <p className="text-xs text-gray-400 mt-0.5">Lead {dataFormatada(lead.data)}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            Lead {dataFormatada(lead.data)}
+                            {mesOrigem(lead) && (
+                              <span className={`ml-1.5 font-semibold ${isFollowUp(lead) ? 'text-amber-500' : 'text-gray-400'}`}>
+                                · Origem {mesOrigem(lead)}
+                              </span>
+                            )}
+                          </p>
                         )}
                         <div className="flex items-center justify-between mt-2">
                           <select
