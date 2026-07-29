@@ -350,12 +350,11 @@ export default function LeadsPorOrigem() {
   })
   const sortedOrigem = Object.entries(contagemOrigem).sort((a, b) => b[1] - a[1])
 
-  // Sub-breakdown de mídia para o card do Instagram
+  // Sub-breakdown de mídia para o card do Instagram — todos os leads, sem exceção
   const instagramMidias = {}
   filtrados.filter(l => (l.origemCustom || l.fonte) === 'Instagram').forEach(l => {
-    if (l.midia && MIDIAS_INSTAGRAM.includes(l.midia)) {
-      instagramMidias[l.midia] = (instagramMidias[l.midia] || 0) + 1
-    }
+    const key = l.midia || 'Sem mídia'
+    instagramMidias[key] = (instagramMidias[key] || 0) + 1
   })
   const instagramSubItems = Object.entries(instagramMidias)
     .sort((a, b) => b[1] - a[1])
@@ -435,7 +434,17 @@ export default function LeadsPorOrigem() {
           {sortedCriativo.length > 0 && (
             <section>
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wide">Por Criativo</h2>
+                <div className="flex items-center gap-1.5">
+                  <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wide">Por Criativo</h2>
+                  <div className="relative group">
+                    <svg className="w-4 h-4 text-gray-400 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div className="absolute left-1/2 -translate-x-1/2 bottom-6 bg-gray-800 text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 whitespace-nowrap shadow-lg">
+                      Contabiliza Leads novos com origem dos criativos abaixo listados
+                    </div>
+                  </div>
+                </div>
                 <div className="flex items-center gap-2">
                 <button onClick={() => setModalCriativos(true)} className="text-xs text-brand-500 hover:text-brand-700 font-semibold border border-brand-200 px-3 py-1 rounded-xl hover:bg-brand-50 transition-colors">⚙ Gerenciar</button>
                 <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
