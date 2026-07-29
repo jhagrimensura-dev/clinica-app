@@ -312,9 +312,9 @@ export default function LeadsPorOrigem() {
   const ORIGENS_PERMITIDAS = ['Instagram', 'Tráfego', 'Indicação', 'Fornecedores', 'Outros', 'Fornecedores / Outros']
 
   const filtrados = leads.filter(l => {
-    const d = l.data || l.criadoEm?.slice(0, 10) || ''
+    const d = l.dataOrigem || l.data || l.criadoEm?.slice(0, 10) || ''
     const origem = l.origemCustom || l.fonte || ''
-    return d.startsWith(prefix) && ORIGENS_PERMITIDAS.includes(origem)
+    return l.origem !== 'leads_recorrentes' && d.startsWith(prefix) && ORIGENS_PERMITIDAS.includes(origem)
   })
 
   const total = filtrados.length
