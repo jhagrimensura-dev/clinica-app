@@ -476,7 +476,7 @@ export default function LeadsNovos() {
       return ordem === 'asc' ? da.localeCompare(db) : db.localeCompare(da)
     })
 
-  const agendados = leads.filter(l => l.status === 'agendado' || l.status === 'fechado').length
+  const agendados = consultasMes.length
   const taxa = leads.length > 0 ? ((agendados / leads.length) * 100).toFixed(1) : '0.0'
 
   const dataFormatada = (data) => {
@@ -563,7 +563,7 @@ export default function LeadsNovos() {
           </div>
           <p className="text-3xl font-bold text-gray-800">{taxa}%</p>
           <p className="text-xs text-gray-400 mt-1">{agendados} agendamentos</p>
-          {(funil.agendado + funil.fechado) > 0 && (
+          {agendados > 0 && (
             <div className="mt-3 space-y-1">
               <p className="text-xs text-gray-400 font-medium">Converteram de:</p>
               {convPorFollow.direto > 0  && <div className="flex justify-between text-xs"><span className="text-gray-400">Sem follow</span><span className="font-semibold text-gray-500">{convPorFollow.direto}</span></div>}
@@ -572,7 +572,7 @@ export default function LeadsNovos() {
               {convPorFollow.follow3 > 0 && <div className="flex justify-between text-xs"><span className="text-amber-500">Follow #3</span><span className="font-semibold text-amber-700">{convPorFollow.follow3}</span></div>}
             </div>
           )}
-          {(funil.agendado + funil.fechado) === 0 && (
+          {agendados === 0 && (
             <p className="text-xs text-gray-300 mt-3">Nenhuma conversão rastreada ainda</p>
           )}
         </div>
