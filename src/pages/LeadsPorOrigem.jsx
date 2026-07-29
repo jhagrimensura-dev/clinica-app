@@ -434,7 +434,7 @@ export default function LeadsPorOrigem() {
                     pct={total > 0 ? (count / total) * 100 : 0}
                     cor={getCorOrigem(origem)}
                     subItems={origem === 'Instagram' ? instagramSubItems : undefined}
-                    info={origem === 'Tráfego' ? 'Contabiliza Leads novos com origem dos criativos abaixo listados' : undefined}
+                    info={origem === 'Tráfego' ? 'Contabiliza quantos leads novos vieram de anúncios pagos no mês, e a seção abaixo mostra qual anúncio trouxe mais leads' : undefined}
                   />
                 ))}
               </div>
