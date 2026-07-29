@@ -112,6 +112,19 @@ function ModalGerenciarCriativos({ criativos, contagemCriativo, onSalvar, onFech
   const [confirmLimpar, setConfirmLimpar] = useState(false)
   const [limpandoNome, setLimpandoNome] = useState(null)
   const [confirmLimparNome, setConfirmLimparNome] = useState(null)
+  const [uploading, setUploading] = useState(false)
+
+  const uploadImagem = async (file) => {
+    if (!file) return
+    setUploading(true)
+    const ext = file.name.split('.').pop()
+    const path = `criativos/${Date.now()}.${ext}`
+    const { error } = await supabase.storage.from('criativos').upload(path, file)
+    if (error) { alert('Erro ao fazer upload: ' + error.message); setUploading(false); return }
+    const { data } = supabase.storage.from('criativos').getPublicUrl(path)
+    setForm(f => ({ ...f, thumbnail: data.publicUrl }))
+    setUploading(false)
+  }
 
   const limparTodosLeads = async () => {
     setLimpando(true)
@@ -227,12 +240,18 @@ function ModalGerenciarCriativos({ criativos, contagemCriativo, onSalvar, onFech
             placeholder="Nome do criativo *"
             className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400"
           />
-          <input
-            value={form.thumbnail}
-            onChange={e => setForm(f => ({ ...f, thumbnail: e.target.value }))}
-            placeholder="URL da imagem (thumbnail)"
-            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400"
-          />
+          <div className="flex items-center gap-3">
+            {form.thumbnail && (
+              <img src={form.thumbnail} className="w-14 h-14 rounded-xl object-cover shrink-0 border border-gray-200" />
+            )}
+            <label className={`flex-1 flex items-center justify-center gap-2 border-2 border-dashed rounded-xl px-3 py-3 cursor-pointer transition-colors text-sm ${uploading ? 'border-brand-300 bg-brand-50 text-brand-500' : 'border-gray-200 hover:border-brand-300 hover:bg-brand-50 text-gray-400 hover:text-brand-500'}`}>
+              <input type="file" accept="image/*" className="hidden" onChange={e => uploadImagem(e.target.files[0])} disabled={uploading} />
+              {uploading ? '⏳ Enviando...' : form.thumbnail ? '🖼 Trocar imagem' : '📷 Adicionar imagem'}
+            </label>
+            {form.thumbnail && (
+              <button onClick={() => setForm(f => ({ ...f, thumbnail: '' }))} className="text-gray-300 hover:text-red-400 text-lg leading-none shrink-0">×</button>
+            )}
+          </div>
           <input
             value={form.permalink}
             onChange={e => setForm(f => ({ ...f, permalink: e.target.value }))}

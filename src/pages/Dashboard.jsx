@@ -54,12 +54,7 @@ export default function Dashboard() {
     return String(l.fonte || '').toLowerCase().includes('follow') || String(l.origemCustom || '').toLowerCase().includes('follow')
   }
   const leadsNovosReais = leadsNovos.filter(l => !isFollowLead(l)).length
-  const agendNovosReais = leadsNovos.filter(l => !isFollowLead(l) && (l.status === 'agendado' || l.status === 'fechado')).length
-  const agendFollowUp = leadsNovos.filter(l => isFollowLead(l) && (l.status === 'agendado' || l.status === 'fechado')).length
-  const agendNovos = agendNovosReais + agendFollowUp
   const agendRecorrentes = countRecorrentes
-  const agendIndicacao = leadsIndicacao.filter(l => l.status === 'agendado' || l.status === 'fechado').length
-  const totalAgend = agendNovos + agendIndicacao
 
   // Consultas pagas = clientes que de fato compareceram (fonte verdadeira para CAC e conversão)
   const totalAgendReal = countConsultas
