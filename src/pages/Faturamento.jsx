@@ -877,10 +877,7 @@ export default function Faturamento() {
           </p>
         </div>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 cursor-pointer" onClick={() => setConsultasAberto(o => !o)}>
-          <div className="flex justify-between items-start">
-            <p className="text-sm text-gray-500 font-medium mb-1">Consultas (R$)</p>
-            <span className="text-xs text-gray-400">{consultasAberto ? '▲' : '▼'}</span>
-          </div>
+          <p className="text-sm text-gray-500 font-medium mb-1">Consultas (R$)</p>
           <p className="text-2xl font-bold text-yellow-500">R$ {fmt(totalTaxas)}</p>
           <p className="text-xs text-gray-400 mt-1">{lancamentosMes.filter(l => (l.valorTaxa || 0) > 0).length} consulta(s) paga(s) — não contabilizado(s)</p>
           {consultasAberto && (
