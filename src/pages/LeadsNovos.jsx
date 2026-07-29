@@ -578,7 +578,7 @@ export default function LeadsNovos() {
             <p className="text-sm text-gray-500 font-medium">Taxa de Conversão</p>
             <span className="text-green-400 text-lg">📈</span>
           </div>
-          <p className="text-3xl font-bold text-gray-800">{taxa}%</p>
+          <p className={`text-3xl font-bold ${parseFloat(taxa) > 15 ? 'text-green-600' : parseFloat(taxa) >= 10 ? 'text-orange-500' : 'text-red-500'}`}>{taxa}%</p>
           <p className="text-xs text-gray-400 mt-1">{agendados} agendamentos</p>
           {agendados > 0 && (
             <div className="mt-3 space-y-1">
