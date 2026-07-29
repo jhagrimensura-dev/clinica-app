@@ -209,9 +209,14 @@ export default function Dashboard() {
               <p className="text-3xl font-bold text-gray-900 mb-1">{card.value}</p>
               <p className="text-xs text-gray-400 mb-3">{card.sub}</p>
               <div className="space-y-1">
-                {card.extras.map((e, j) => (
-                  <p key={j} className="text-xs text-gray-500">{e}</p>
-                ))}
+                {card.extras.map((e, j) => {
+                  if (typeof e === 'string' && e.includes('conversão')) {
+                    const pct = parseFloat(e)
+                    const cor = pct > 15 ? 'text-green-600' : pct >= 10 ? 'text-orange-500' : 'text-red-500'
+                    return <p key={j} className={`text-xs font-semibold ${cor}`}>{e}</p>
+                  }
+                  return <p key={j} className="text-xs text-gray-500">{e}</p>
+                })}
               </div>
             </div>
           ))}
