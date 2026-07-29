@@ -188,12 +188,14 @@ export function LeadsProvider({ children }) {
     const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
     return leads.filter(l => {
       if (origem === 'indicacao') {
-        if (!l.data || !l.data.startsWith(prefix)) return false
+        const d = l.dataOrigem || l.data || ''
+        if (!d.startsWith(prefix)) return false
         return l.origem === 'indicacao' || l.origemCustom === 'Indicação'
       }
       if (l.origemCustom === 'Indicação' && l.origem !== 'indicacao') return false
       if (l.origem !== origem) return false
-      return l.data && l.data.startsWith(prefix)
+      const d = l.dataOrigem || l.data || ''
+      return d.startsWith(prefix)
     })
   }
 
