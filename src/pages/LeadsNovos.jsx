@@ -477,7 +477,8 @@ export default function LeadsNovos() {
     })
 
   const agendados = consultasMes.length
-  const taxa = leads.length > 0 ? ((agendados / leads.length) * 100).toFixed(1) : '0.0'
+  const totalLeadsCard = leads.length + contIndicacao
+  const taxa = totalLeadsCard > 0 ? ((agendados / totalLeadsCard) * 100).toFixed(1) : '0.0'
 
   const dataFormatada = (data) => {
     const [, m, d] = data.split('-')
