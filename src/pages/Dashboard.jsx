@@ -87,21 +87,19 @@ export default function Dashboard() {
             <div className="bg-brand-400 h-2 rounded-full transition-all" style={{ width: `${pct}%` }}></div>
           </div>
           <p className="text-xs text-brand-500 font-medium mb-4">{pct}% da meta</p>
-          <div className="space-y-2 pt-2 border-t border-gray-100">
+          <div className="pt-2 border-t border-gray-100" style={{ display: 'grid', gridTemplateColumns: '1fr auto auto auto', columnGap: '0.5rem', rowGap: '0.4rem', alignItems: 'baseline' }}>
             {[
               { label: 'Novos',       valor: totalNovos,        count: countNovos,        unit: 'venda(s)' },
               { label: 'Recorrência', valor: totalRecorrentes,  count: countRecorrentes,  unit: 'venda(s)' },
               { label: 'Indicação',   valor: totalIndicacaoLanc,count: countIndicacaoLanc,unit: 'venda(s)' },
               ...(totalConsultas > 0 ? [{ label: 'Consultas', valor: totalConsultas, count: countConsultas, unit: 'consulta(s)' }] : []),
             ].map(({ label, valor, count, unit }) => (
-              <div key={label} className="flex justify-between items-baseline text-sm">
-                <span className="text-gray-500">{label}</span>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="font-medium text-gray-800 tabular-nums">{fmt(valor)}</span>
-                  <span className="text-brand-400 text-xs whitespace-nowrap">{count} {unit}</span>
-                  <span className="text-gray-400 text-xs whitespace-nowrap">({totalGeral > 0 ? ((valor / totalGeral) * 100).toFixed(1) : 0}%)</span>
-                </div>
-              </div>
+              <>
+                <span key={label+'-l'} className="text-gray-500 text-sm">{label}</span>
+                <span key={label+'-v'} className="font-medium text-gray-800 text-sm tabular-nums text-right">{fmt(valor)}</span>
+                <span key={label+'-c'} className="text-brand-400 text-xs whitespace-nowrap text-right">{count} {unit}</span>
+                <span key={label+'-p'} className="text-gray-400 text-xs whitespace-nowrap text-right">({totalGeral > 0 ? ((valor / totalGeral) * 100).toFixed(1) : 0}%)</span>
+              </>
             ))}
           </div>
         </div>
