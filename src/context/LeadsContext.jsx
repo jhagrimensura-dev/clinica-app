@@ -194,8 +194,7 @@ export function LeadsProvider({ children }) {
       }
       if (l.origemCustom === 'Indicação' && l.origem !== 'indicacao') return false
       if (l.origem !== origem) return false
-      const d = l.dataOrigem || l.data || ''
-      return d.startsWith(prefix)
+      return l.data && l.data.startsWith(prefix)
     })
   }
 
