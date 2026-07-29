@@ -89,16 +89,18 @@ export default function Dashboard() {
           <p className="text-xs text-brand-500 font-medium mb-4">{pct}% da meta</p>
           <div className="space-y-2 pt-2 border-t border-gray-100">
             {[
-              { label: 'Novos',      valor: totalNovos,       count: countNovos,       unit: 'venda(s)' },
-              { label: 'Recorrência',valor: totalRecorrentes, count: countRecorrentes, unit: 'venda(s)' },
-              { label: 'Indicação',  valor: totalIndicacaoLanc, count: countIndicacaoLanc, unit: 'venda(s)' },
+              { label: 'Novos',       valor: totalNovos,        count: countNovos,        unit: 'venda(s)' },
+              { label: 'Recorrência', valor: totalRecorrentes,  count: countRecorrentes,  unit: 'venda(s)' },
+              { label: 'Indicação',   valor: totalIndicacaoLanc,count: countIndicacaoLanc,unit: 'venda(s)' },
               ...(totalConsultas > 0 ? [{ label: 'Consultas', valor: totalConsultas, count: countConsultas, unit: 'consulta(s)' }] : []),
             ].map(({ label, valor, count, unit }) => (
-              <div key={label} className="flex items-center gap-2 text-sm">
-                <span className="text-gray-500 flex-1">{label}</span>
-                <span className="font-medium text-gray-800 tabular-nums text-right min-w-[7rem]">{fmt(valor)}</span>
-                <span className="text-brand-400 text-xs tabular-nums text-right w-16">{count} {unit}</span>
-                <span className="text-gray-400 text-xs tabular-nums text-right w-10">({totalGeral > 0 ? ((valor / totalGeral) * 100).toFixed(1) : 0}%)</span>
+              <div key={label} className="flex justify-between items-baseline text-sm">
+                <span className="text-gray-500">{label}</span>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="font-medium text-gray-800 tabular-nums">{fmt(valor)}</span>
+                  <span className="text-brand-400 text-xs whitespace-nowrap">{count} {unit}</span>
+                  <span className="text-gray-400 text-xs whitespace-nowrap">({totalGeral > 0 ? ((valor / totalGeral) * 100).toFixed(1) : 0}%)</span>
+                </div>
               </div>
             ))}
           </div>
