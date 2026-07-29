@@ -413,8 +413,16 @@ export default function LeadsNovos() {
   const leadsIndicacao = getLeadsPorOrigem('indicacao', ano, mes)
 
   const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
-  const isFollowUp = (_lead) => false
-  const mesOrigem = (_lead) => ''
+  const isFollowUp = (lead) => {
+    const dataRef = lead.dataOrigem || lead.data || ''
+    return dataRef && !dataRef.startsWith(prefix)
+  }
+  const mesOrigem = (lead) => {
+    const dataRef = lead.dataOrigem || lead.data || ''
+    if (!dataRef) return ''
+    const [y, m] = dataRef.split('-')
+    return `${MESES_FULL[parseInt(m, 10) - 1]?.slice(0, 3)}/${y?.slice(2)}`
+  }
 
   const contIndicacao = leadsIndicacao.length
 
@@ -615,8 +623,10 @@ export default function LeadsNovos() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-sm font-semibold text-gray-800 truncate">{lead.nome}</p>
-                      {isFollowUp(lead) && (
-                        <span className="text-xs bg-amber-100 text-amber-600 font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap">↩ {mesOrigem(lead)}</span>
+                      {mesOrigem(lead) && (
+                        <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap ${isFollowUp(lead) ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-400'}`}>
+                          {mesOrigem(lead)}
+                        </span>
                       )}
                     </div>
                     {lead.status === 'agendado' && lead.agendadoPara ? (
@@ -688,8 +698,10 @@ export default function LeadsNovos() {
                         onClick={() => setModalEditar(lead)}>
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <p className="text-sm font-semibold text-gray-800 truncate">{lead.nome}</p>
-                          {isFollowUp(lead) && (
-                            <span className="text-xs bg-amber-100 text-amber-600 font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0">↩ {mesOrigem(lead)}</span>
+                          {mesOrigem(lead) && (
+                            <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 ${isFollowUp(lead) ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-400'}`}>
+                              {mesOrigem(lead)}
+                            </span>
                           )}
                         </div>
                         {lead.status === 'agendado' && lead.agendadoPara ? (
