@@ -550,7 +550,7 @@ export default function LeadsNovos() {
             <p className="text-sm text-gray-500 font-medium">Total de Leads</p>
             <span className="text-orange-400 text-lg">👥</span>
           </div>
-          <p className="text-3xl font-bold text-gray-800">{leads.length}</p>
+          <p className="text-3xl font-bold text-gray-800">{leads.length + contIndicacao}</p>
           <div className="mt-2 space-y-1 pt-2 border-t border-gray-50">
             <div className="flex justify-between text-xs"><span className="text-blue-400">Novos este mês</span><span className="font-semibold text-blue-600">{leadsNovosCount}</span></div>
             <div className="flex justify-between text-xs"><span className="text-amber-500">Em follow-up</span><span className="font-semibold text-amber-600">{leadsEmFollowCount}</span></div>
