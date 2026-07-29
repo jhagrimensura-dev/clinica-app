@@ -1,4 +1,12 @@
 import { useState, useMemo } from 'react'
+
+const genUUID = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID()
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16)
+  })
+}
 import { useLeads } from '../context/LeadsContext'
 import { useAgenda } from '../context/AgendaContext'
 import { useAuth } from '../context/AuthContext'
@@ -250,7 +258,7 @@ export default function Resgates({ onNavigate }) {
     const novoLead = await addLead(dados)
     if (dados.proximoFollowup && novoLead) {
       addLembrete({
-        id: Date.now(),
+        id: genUUID(),
         leadNome: dados.nome,
         leadTelefone: dados.telefone || '',
         descricao: `Follow-up resgate — ${dados.nome}`,
@@ -268,7 +276,7 @@ export default function Resgates({ onNavigate }) {
     await updateLead(lead.id, { status, proximoFollowup: proximoFollowup || '', ...(obs ? { obs } : {}) })
     if (proximoFollowup) {
       addLembrete({
-        id: Date.now(),
+        id: genUUID(),
         leadNome: lead.nome,
         leadTelefone: lead.telefone || '',
         descricao: `Contato reativado — ${lead.nome}`,
@@ -292,7 +300,7 @@ export default function Resgates({ onNavigate }) {
     for (const lem of (dados.lembretes || [])) {
       if (!lem.data) continue
       addLembrete({
-        id: Date.now() + Math.random(),
+        id: genUUID(),
         leadNome: lead.nome,
         leadTelefone: lead.telefone || '',
         descricao: `Manutenção — ${lead.nome}${lem.obs ? ': ' + lem.obs : ''}`,

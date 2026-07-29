@@ -1,4 +1,12 @@
 import { useState } from 'react'
+
+const genUUID = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID()
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16)
+  })
+}
 import { useLeads } from '../context/LeadsContext'
 import { useFinanceiro } from '../context/FinanceiroContext'
 import { useAuth } from '../context/AuthContext'
@@ -274,7 +282,7 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
           )}
           <div className="flex gap-3">
             <button onClick={onClose} className="px-5 py-2.5 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
-            <button onClick={() => { const lemsValidos = lembretes.filter(l => l.data); lemsValidos.forEach((l, i) => addLembrete({ id: Date.now() + i, leadNome: paciente.trim(), leadTelefone: lead.telefone || '', descricao: l.obs || obs || '', data: l.data, hora: l.hora || '', cor: 'green', concluido: false, criadoEm: Date.now() })); onSalvar(lead.id, { nome: paciente.trim(), data, responsavel, indicadoPor: indicadoPor.trim(), midia: midia || null, linkBio: midia === 'Link da BIO' ? (linkBio || null) : null, status, agendadoPara: agendadoPara || null, proximoFollowup: lemsValidos[0]?.data || '', lembretes: lemsValidos, obs }); onClose() }}
+            <button onClick={() => { const lemsValidos = lembretes.filter(l => l.data); lemsValidos.forEach((l) => addLembrete({ id: genUUID(), leadNome: paciente.trim(), leadTelefone: lead.telefone || '', descricao: l.obs || obs || '', data: l.data, hora: l.hora || '', cor: 'green', concluido: false, criadoEm: Date.now() })); onSalvar(lead.id, { nome: paciente.trim(), data, responsavel, indicadoPor: indicadoPor.trim(), midia: midia || null, linkBio: midia === 'Link da BIO' ? (linkBio || null) : null, status, agendadoPara: agendadoPara || null, proximoFollowup: lemsValidos[0]?.data || '', lembretes: lemsValidos, obs }); onClose() }}
               disabled={!paciente.trim()}
               className="px-6 py-2.5 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded-xl disabled:opacity-40">Salvar</button>
           </div>

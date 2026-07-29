@@ -4,8 +4,16 @@ import { useLeads } from '../context/LeadsContext'
 import { getFeriado } from '../lib/feriados'
 import FeriadoAviso from '../components/FeriadoAviso'
 
+const genUUID = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID()
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16)
+  })
+}
+
 export function gerarIdLembrete() {
-  return `lem_${Date.now()}_${Math.random().toString(36).slice(2)}`
+  return genUUID()
 }
 
 const HORAS = Array.from({ length: 13 }, (_, i) => `${String(i + 8).padStart(2, '0')}:00`)

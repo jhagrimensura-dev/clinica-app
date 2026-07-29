@@ -1,4 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+
+const genUUID = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID()
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16)
+  })
+}
 import QRCodeSVG from 'react-qr-code'
 import { useLeads } from '../context/LeadsContext'
 import { useConfig } from '../context/ConfigContext'
@@ -1442,7 +1450,7 @@ export default function InboxWhatsApp({ contaId }) {
     const corLead = modalLead === 'leads_novos' ? 'green' : 'blue'
     todosLembretes.filter(l => l.data).forEach((l, i) => {
       addLembrete({
-        id: Date.now() + i,
+        id: genUUID(),
         leadNome: dados.nome,
         leadTelefone: dados.telefone || '',
         descricao: l.obs || dados.obs || '',
@@ -1463,7 +1471,7 @@ export default function InboxWhatsApp({ contaId }) {
       const jaTemAniversario = todosLembretesAgenda.some(l => l.leadNome === dados.nome && l.data === dataAnivStr && (l.descricao || '').includes('Aniversário'))
       if (!jaTemAniversario) {
         addLembrete({
-          id: Date.now() + 1,
+          id: genUUID(),
           leadNome: dados.nome,
           leadTelefone: dados.telefone || '',
           descricao: `🎂 Aniversário de ${dados.nome}`,
@@ -2276,7 +2284,7 @@ export default function InboxWhatsApp({ contaId }) {
             const todosLembretes = dados.lembretes?.length ? dados.lembretes : (dados.lembrete ? [{ data: dados.lembrete, hora: dados.lembreteHora || '', obs: '' }] : [])
             todosLembretes.filter(l => l.data).forEach((l, i) => {
               const corEdit = editarLeadRegistrado.tipo === 'leads_novos' ? 'green' : 'blue'
-              addLembrete({ id: Date.now() + i, leadNome: dados.nome, leadTelefone: dados.telefone || '', descricao: l.obs || dados.obs || '', data: l.data, hora: l.hora || '', cor: corEdit, concluido: false, criadoEm: Date.now() })
+              addLembrete({ id: genUUID(), leadNome: dados.nome, leadTelefone: dados.telefone || '', descricao: l.obs || dados.obs || '', data: l.data, hora: l.hora || '', cor: corEdit, concluido: false, criadoEm: Date.now() })
             })
             if (dados.aniversario) {
               const [, mes, dia] = dados.aniversario.split('-')
@@ -2287,7 +2295,7 @@ export default function InboxWhatsApp({ contaId }) {
               const dataAnivStr = `${anoAniv}-${mes}-${dia}`
               const jaTemAniversario = todosLembretesAgenda.some(l => l.leadNome === dados.nome && l.data === dataAnivStr && (l.descricao || '').includes('Aniversário'))
               if (!jaTemAniversario) {
-                addLembrete({ id: Date.now() + 99, leadNome: dados.nome, leadTelefone: dados.telefone || '', descricao: `🎂 Aniversário de ${dados.nome}`, data: dataAnivStr, hora: '09:00', cor: 'yellow', concluido: false, criadoEm: Date.now() })
+                addLembrete({ id: genUUID(), leadNome: dados.nome, leadTelefone: dados.telefone || '', descricao: `🎂 Aniversário de ${dados.nome}`, data: dataAnivStr, hora: '09:00', cor: 'yellow', concluido: false, criadoEm: Date.now() })
               }
             }
             setEditarLeadRegistrado(null)
