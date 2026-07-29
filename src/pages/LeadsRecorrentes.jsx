@@ -29,7 +29,7 @@ function IconeWpp({ ativo }) {
   )
 }
 
-function ModalNovoLead({ onClose, onSalvar, ano, mes }) {
+function ModalNovoLead({ onClose, onSalvar, ano, mes, leads }) {
   const hoje = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`
   const [data, setData] = useState(hoje)
   const [responsavel, setResponsavel] = useState('')
@@ -41,6 +41,11 @@ function ModalNovoLead({ onClose, onSalvar, ano, mes }) {
 
   const handleSalvar = () => {
     if (!paciente.trim()) return
+    const jaExiste = (leads || []).some(l => (l.nome || '').toLowerCase().trim() === paciente.toLowerCase().trim())
+    if (jaExiste) {
+      alert(`Já existe um lead com o nome "${paciente.trim()}" neste mês.`)
+      return
+    }
     onSalvar({ nome: paciente.trim(), data, responsavel, fonte, status, proximoFollowup, obs: obs.trim(), origem: 'leads_recorrentes' })
     onClose()
   }
@@ -482,7 +487,7 @@ export default function LeadsRecorrentes() {
         )}
       </div>
 
-      {modal && <ModalNovoLead onClose={() => setModal(false)} onSalvar={addLead} ano={ano} mes={mes} />}
+      {modal && <ModalNovoLead onClose={() => setModal(false)} onSalvar={addLead} ano={ano} mes={mes} leads={leads} />}
       {modalEditar && (
         <ModalEditarLead lead={modalEditar} onClose={() => setModalEditar(null)} onSalvar={updateLead} onExcluir={removeLead} />
       )}

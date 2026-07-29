@@ -25,7 +25,7 @@ function getFollow(key) {
   return FOLLOWS.find(f => f.key === key) || FOLLOWS[0]
 }
 
-function ModalNovoLead({ onClose, onSalvar, ano, mes }) {
+function ModalNovoLead({ onClose, onSalvar, ano, mes, leads }) {
   const hoje = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`
   const amanha = (() => { const d = new Date(hoje); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0] })()
 
@@ -39,6 +39,11 @@ function ModalNovoLead({ onClose, onSalvar, ano, mes }) {
 
   const handleSalvar = () => {
     if (!paciente.trim()) return
+    const jaExiste = (leads || []).some(l => (l.nome || '').toLowerCase().trim() === paciente.toLowerCase().trim())
+    if (jaExiste) {
+      alert(`Já existe um lead com o nome "${paciente.trim()}" neste mês.`)
+      return
+    }
     onSalvar({ nome: paciente.trim(), data, responsavel, fonte, status, proximoFollowup, obs: obs.trim(), origem: 'leads_novos' })
     onClose()
   }
@@ -764,6 +769,7 @@ export default function LeadsNovos() {
           onSalvar={addLead}
           ano={ano}
           mes={mes}
+          leads={leads}
         />
       )}
       {modalEditar && (
