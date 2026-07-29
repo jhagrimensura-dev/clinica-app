@@ -32,7 +32,7 @@ function getCorMidia(m) {
   return COR_MIDIA[m] || { bg: 'bg-gray-100', text: 'text-gray-600', bar: '#9ca3af' }
 }
 
-function CardContagem({ label, count, pct, cor, thumbnail, permalink, subItems }) {
+function CardContagem({ label, count, pct, cor, thumbnail, permalink, subItems, info }) {
   return (
     <div className="text-left p-4 rounded-2xl border bg-white border-gray-100 shadow-sm flex flex-col gap-1">
       <div className="flex items-center gap-2 mb-1">
@@ -44,6 +44,16 @@ function CardContagem({ label, count, pct, cor, thumbnail, permalink, subItems }
             : <img src={thumbnail} className="w-8 h-8 rounded-lg object-cover shrink-0 border border-gray-100" />
         )}
         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cor.bg} ${cor.text} truncate max-w-[160px]`} title={label}>{label}</span>
+        {info && (
+          <div className="relative group ml-auto shrink-0">
+            <svg className="w-3.5 h-3.5 text-gray-300 hover:text-gray-500 cursor-help transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="absolute right-0 bottom-5 bg-gray-800 text-white text-[11px] rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 w-52 leading-relaxed shadow-lg">
+              {info}
+            </div>
+          </div>
+        )}
       </div>
       <div className="text-2xl font-bold text-gray-800">{count}</div>
       <div className="text-xs text-gray-400 mb-1">{pct.toFixed(0)}% do total</div>
@@ -424,6 +434,7 @@ export default function LeadsPorOrigem() {
                     pct={total > 0 ? (count / total) * 100 : 0}
                     cor={getCorOrigem(origem)}
                     subItems={origem === 'Instagram' ? instagramSubItems : undefined}
+                    info={origem === 'Tráfego' ? 'Contabiliza Leads novos com origem dos criativos abaixo listados' : undefined}
                   />
                 ))}
               </div>
