@@ -57,7 +57,7 @@ export default function Dashboard() {
   const agendNovosReais = leadsNovos.filter(l => !isFollowLead(l) && (l.status === 'agendado' || l.status === 'fechado')).length
   const agendFollowUp = leadsNovos.filter(l => isFollowLead(l) && (l.status === 'agendado' || l.status === 'fechado')).length
   const agendNovos = agendNovosReais + agendFollowUp
-  const agendRecorrentes = leadsRecorrentes.filter(l => l.status === 'agendado' || l.status === 'fechado').length
+  const agendRecorrentes = countRecorrentes
   const agendIndicacao = leadsIndicacao.filter(l => l.status === 'agendado' || l.status === 'fechado').length
   const totalAgend = agendNovos + agendIndicacao
 

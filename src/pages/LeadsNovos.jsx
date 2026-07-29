@@ -449,13 +449,16 @@ export default function LeadsNovos() {
     perdido:     leads.filter(l => l.status === 'perdido').length,
   }
 
-  const convertidosCom = leads.filter(l => CONV_STATUS.includes(l.status) && l.ultimoFollow)
-  const convPorFollow = {
-    direto: leads.filter(l => CONV_STATUS.includes(l.status) && !l.ultimoFollow).length,
-    follow1: convertidosCom.filter(l => l.ultimoFollow === 'follow1').length,
-    follow2: convertidosCom.filter(l => l.ultimoFollow === 'follow2').length,
-    follow3: convertidosCom.filter(l => l.ultimoFollow === 'follow3').length,
-  }
+  const convPorFollow = consultasMes.reduce((acc, lanc) => {
+    const nome = (lanc.paciente || '').toLowerCase().trim()
+    const lead = leads.find(l => (l.nome || '').toLowerCase().trim() === nome)
+    const stage = lead?.ultimoFollow || null
+    if (stage === 'follow1') acc.follow1++
+    else if (stage === 'follow2') acc.follow2++
+    else if (stage === 'follow3') acc.follow3++
+    else acc.direto++
+    return acc
+  }, { direto: 0, follow1: 0, follow2: 0, follow3: 0 })
 
   const handleStatusChange = (lead, newStatus) => {
     const updates = { status: newStatus }
