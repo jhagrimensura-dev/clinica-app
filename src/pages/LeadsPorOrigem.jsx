@@ -438,6 +438,9 @@ export default function LeadsPorOrigem() {
                   />
                 ))}
               </div>
+              <div className="flex justify-end mt-2">
+                <span className="text-xs text-gray-400">Total: <span className="font-bold text-gray-600">{total}</span> leads</span>
+              </div>
             </section>
           )}
 
