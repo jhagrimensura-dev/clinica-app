@@ -554,6 +554,7 @@ export default function LeadsNovos() {
           <div className="mt-2 space-y-1 pt-2 border-t border-gray-50">
             <div className="flex justify-between text-xs"><span className="text-blue-400">Novos este mês</span><span className="font-semibold text-blue-600">{leadsNovosCount}</span></div>
             <div className="flex justify-between text-xs"><span className="text-amber-500">Em follow-up</span><span className="font-semibold text-amber-600">{leadsEmFollowCount}</span></div>
+            {contIndicacao > 0 && <div className="flex justify-between text-xs"><span className="text-pink-400">Indicações</span><span className="font-semibold text-pink-500">{contIndicacao}</span></div>}
           </div>
         </div>
         <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
