@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useLeads } from '../context/LeadsContext'
 import { useFinanceiro } from '../context/FinanceiroContext'
 import { useAuth } from '../context/AuthContext'
@@ -400,7 +400,7 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
 export default function LeadsNovos() {
   const { userRole } = useAuth()
   const { ano, setAno, mes, setMes, MESES } = useFinanceiro()
-  const { getLeadsPorOrigem, addLead, updateLead, removeLead, leads: todosLeads } = useLeads()
+  const { getLeadsPorOrigem, addLead, updateLead, removeLead } = useLeads()
   const { lancamentos } = useVendas()
   const [modal, setModal] = useState(false)
   const [modalEditar, setModalEditar] = useState(null)
@@ -429,18 +429,6 @@ export default function LeadsNovos() {
   const contIndicacao = leadsIndicacao.length
   const leadsNovosCount = leads.filter(l => !isFollowUp(l)).length
   const leadsEmFollowCount = leads.filter(l => isFollowUp(l)).length
-
-  // Reverter leads incorretamente marcados como fechado pelo sync
-  const revertRef = useRef(false)
-  useEffect(() => {
-    if (revertRef.current || todosLeads.length === 0) return
-    revertRef.current = true
-    todosLeads.forEach(l => {
-      if ((l.origem === 'leads_novos' || l.origem === 'indicacao') && l.status === 'fechado') {
-        updateLead(l.id, { status: 'em_aberto' })
-      }
-    })
-  }, [todosLeads])
 
   // Consultas pagas neste mês (direto do Faturamento, sem alterar status de leads)
   const consultasMes = lancamentos.filter(l =>

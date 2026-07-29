@@ -755,7 +755,7 @@ export default function Faturamento() {
   const { ano, setAno, mes, setMes } = useFinanceiro()
   const { lancamentos, addLancamento, removeLancamento, updateLancamento } = useVendas()
   const { pacientes } = usePacientes()
-  const { leads, updateLead } = useLeads()
+  const { leads } = useLeads()
   const { procedimentos: procsFromDB, setProcedimentos } = useConfig()
   const { userRole } = useAuth()
   const procs = (procsFromDB || PROCS_DEFAULT).map(p =>
@@ -770,9 +770,6 @@ export default function Faturamento() {
   const isAdmin = userRole !== 'Funcionário'
   const handleProcsChange = (novos) => setProcedimentos(novos)
 
-  const handleAddLancamento = async (lancamento) => {
-    await addLancamento(lancamento)
-  }
 
   const navMes = (delta) => {
     const novo = mes + delta
@@ -1032,7 +1029,7 @@ export default function Faturamento() {
         )}
       </div>
 
-      {modal && <ModalNovoLancamento onClose={() => setModal(false)} onSalvar={handleAddLancamento} ano={ano} mes={mes} pacientes={pacientes} leads={leads} procs={procs} onProcsChange={handleProcsChange} />}
+      {modal && <ModalNovoLancamento onClose={() => setModal(false)} onSalvar={addLancamento} ano={ano} mes={mes} pacientes={pacientes} leads={leads} procs={procs} onProcsChange={handleProcsChange} />}
       {editando && <ModalEditarLancamento lancamento={editando} onClose={() => setEditando(null)} onAtualizar={updateLancamento} onExcluir={removeLancamento} pacientes={pacientes} leads={leads} procs={procs} onProcsChange={handleProcsChange} />}
     </div>
   )
