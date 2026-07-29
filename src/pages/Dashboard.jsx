@@ -88,24 +88,19 @@ export default function Dashboard() {
           </div>
           <p className="text-xs text-brand-500 font-medium mb-4">{pct}% da meta</p>
           <div className="space-y-2 pt-2 border-t border-gray-100">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Novos</span>
-              <span className="font-medium text-gray-800">{fmt(totalNovos)} <span className="text-brand-400 text-xs ml-1">{countNovos} venda(s)</span> <span className="text-gray-400 text-xs">({totalGeral > 0 ? ((totalNovos / totalGeral) * 100).toFixed(1) : 0}%)</span></span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Recorrência</span>
-              <span className="font-medium text-gray-800">{fmt(totalRecorrentes)} <span className="text-brand-400 text-xs ml-1">{countRecorrentes} venda(s)</span> <span className="text-gray-400 text-xs">({totalGeral > 0 ? ((totalRecorrentes / totalGeral) * 100).toFixed(1) : 0}%)</span></span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Indicação</span>
-              <span className="font-medium text-gray-800">{fmt(totalIndicacaoLanc)} <span className="text-brand-400 text-xs ml-1">{countIndicacaoLanc} venda(s)</span> <span className="text-gray-400 text-xs">({totalGeral > 0 ? ((totalIndicacaoLanc / totalGeral) * 100).toFixed(1) : 0}%)</span></span>
-            </div>
-            {totalConsultas > 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Consultas</span>
-                <span className="font-medium text-gray-800">{fmt(totalConsultas)} <span className="text-brand-400 text-xs ml-1">{countConsultas} consulta(s)</span> <span className="text-gray-400 text-xs">({totalGeral > 0 ? ((totalConsultas / totalGeral) * 100).toFixed(1) : 0}%)</span></span>
+            {[
+              { label: 'Novos',      valor: totalNovos,       count: countNovos,       unit: 'venda(s)' },
+              { label: 'Recorrência',valor: totalRecorrentes, count: countRecorrentes, unit: 'venda(s)' },
+              { label: 'Indicação',  valor: totalIndicacaoLanc, count: countIndicacaoLanc, unit: 'venda(s)' },
+              ...(totalConsultas > 0 ? [{ label: 'Consultas', valor: totalConsultas, count: countConsultas, unit: 'consulta(s)' }] : []),
+            ].map(({ label, valor, count, unit }) => (
+              <div key={label} className="flex items-center gap-2 text-sm">
+                <span className="text-gray-500 flex-1">{label}</span>
+                <span className="font-medium text-gray-800 tabular-nums text-right min-w-[7rem]">{fmt(valor)}</span>
+                <span className="text-brand-400 text-xs tabular-nums text-right w-16">{count} {unit}</span>
+                <span className="text-gray-400 text-xs tabular-nums text-right w-10">({totalGeral > 0 ? ((valor / totalGeral) * 100).toFixed(1) : 0}%)</span>
               </div>
-            )}
+            ))}
           </div>
         </div>
 
