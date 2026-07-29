@@ -119,7 +119,10 @@ export function AgendaProvider({ children }) {
       { id: String(l.id), clinica_id: clinicaId, dados: l },
       { onConflict: 'id' }
     )
-    if (error) console.error('Erro ao salvar lembrete:', error)
+    if (error) {
+      console.error('Erro ao salvar lembrete:', error)
+      alert('Erro ao salvar lembrete no banco: ' + error.message)
+    }
   }
 
   const updateLembrete = async (id, updates) => {

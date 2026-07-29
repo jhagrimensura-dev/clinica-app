@@ -207,8 +207,8 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
   const handleSalvar = () => {
     if (!paciente.trim()) return
     const lemsValidos = lembretes.filter(l => l.data)
-    lemsValidos.forEach((l, i) => {
-      addLembrete({ id: Date.now() + i, leadNome: paciente.trim(), leadTelefone: lead.telefone || '', descricao: l.obs || obs.trim() || '', data: l.data, hora: l.hora || '', cor: 'green', concluido: false, criadoEm: Date.now() })
+    lemsValidos.forEach((l) => {
+      addLembrete({ id: crypto.randomUUID(), leadNome: paciente.trim(), leadTelefone: lead.telefone || '', descricao: l.obs || obs.trim() || '', data: l.data, hora: l.hora || '', cor: 'green', concluido: false, criadoEm: Date.now() })
     })
     const CONV = ['agendado', 'fechado']
     const FOLL = ['follow1', 'follow2', 'follow3']
