@@ -613,6 +613,14 @@ export default function LeadsNovos() {
           </div>
         ) : visao === 'lista' ? (
           <div className="divide-y divide-gray-50">
+            <div className="flex items-center gap-4 px-5 py-2 bg-gray-50 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
+              <div className="w-8 flex-shrink-0" />
+              <div className="flex-1">Nome</div>
+              <div className="w-24 hidden sm:block">Data de Origem</div>
+              <div className="hidden md:block w-44" />
+              <div className="w-24" />
+              <div className="w-6" />
+            </div>
             {leadsFiltrados.map(lead => {
               const follow = getFollow(lead.status)
               return (
@@ -625,14 +633,14 @@ export default function LeadsNovos() {
                     {lead.status === 'agendado' && lead.agendadoPara ? (
                       <p className="text-xs text-blue-500 font-semibold">📅 {dataFormatada(lead.agendadoPara)}</p>
                     ) : (
-                      <p className="text-xs text-gray-400">
-                        Lead {dataFormatada(lead.data)}
-                        {mesOrigem(lead) && (
-                          <span className={`ml-2 font-semibold ${isFollowUp(lead) ? 'text-amber-500' : 'text-gray-400'}`}>
-                            · Origem {mesOrigem(lead)}
-                          </span>
-                        )}
-                      </p>
+                      <p className="text-xs text-gray-400">Lead {dataFormatada(lead.data)}</p>
+                    )}
+                  </div>
+                  <div className="w-24 hidden sm:block flex-shrink-0">
+                    {mesOrigem(lead) && (
+                      <span className={`text-xs font-semibold ${isFollowUp(lead) ? 'text-amber-500' : 'text-gray-400'}`}>
+                        {mesOrigem(lead)}
+                      </span>
                     )}
                   </div>
                   {lead.obs && <p className="text-xs text-gray-400 italic truncate max-w-[180px] hidden md:block">{lead.obs}</p>}
