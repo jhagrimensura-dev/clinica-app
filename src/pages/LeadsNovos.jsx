@@ -614,22 +614,26 @@ export default function LeadsNovos() {
         ) : visao === 'lista' ? (
           <div className="divide-y divide-gray-50">
             {/* Cabeçalho da tabela */}
-            <div className="flex items-center gap-4 px-5 py-2 bg-gray-50 text-[11px] font-semibold text-gray-400 uppercase tracking-wide select-none">
-              <div className="w-8 flex-shrink-0" />
-              <div className="flex-1 min-w-0">Nome</div>
-              <div className="w-24 flex-shrink-0">Data de Origem</div>
-              <div className="w-40 hidden md:block flex-shrink-0">Obs</div>
-              <div className="w-28 flex-shrink-0">Status</div>
-              <div className="w-6 flex-shrink-0" />
+            <div className="grid items-center px-5 py-2 bg-gray-50 text-[11px] font-semibold text-gray-400 uppercase tracking-wide select-none"
+              style={{ gridTemplateColumns: '2rem 1fr 5.5rem 7rem 1.5rem 1.5rem', gap: '1rem' }}>
+              <div />
+              <div>Nome</div>
+              <div>Data de Origem</div>
+              <div>Status</div>
+              <div />
+              <div />
             </div>
             {leadsFiltrados.map(lead => {
               const follow = getFollow(lead.status)
               return (
-                <div key={lead.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 transition-colors group cursor-pointer" onClick={() => setModalEditar(lead)}>
-                  <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-500 font-bold text-sm flex-shrink-0">
+                <div key={lead.id}
+                  className="grid items-center px-5 py-3.5 hover:bg-gray-50 transition-colors group cursor-pointer"
+                  style={{ gridTemplateColumns: '2rem 1fr 5.5rem 7rem 1.5rem 1.5rem', gap: '1rem' }}
+                  onClick={() => setModalEditar(lead)}>
+                  <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-500 font-bold text-sm">
                     {lead.nome.charAt(0).toUpperCase()}
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0">
                     <p className="text-sm font-semibold text-gray-800 truncate">{lead.nome}</p>
                     {lead.status === 'agendado' && lead.agendadoPara ? (
                       <p className="text-xs text-blue-500 font-semibold">📅 {dataFormatada(lead.agendadoPara)}</p>
@@ -637,35 +641,38 @@ export default function LeadsNovos() {
                       <p className="text-xs text-gray-400">Lead {dataFormatada(lead.data)}</p>
                     )}
                   </div>
-                  <div className="w-24 flex-shrink-0">
+                  <div>
                     <span className={`text-xs font-semibold ${isFollowUp(lead) ? 'text-amber-500' : 'text-gray-400'}`}>
                       {mesOrigem(lead) || '—'}
                     </span>
                   </div>
-                  <p className="w-40 hidden md:block flex-shrink-0 text-xs text-gray-400 italic truncate">{lead.obs || ''}</p>
                   <select
                     value={lead.status}
                     onChange={e => { e.stopPropagation(); handleStatusChange(lead, e.target.value) }}
                     onClick={e => e.stopPropagation()}
-                    className={`w-28 flex-shrink-0 text-xs font-semibold px-2 py-1 rounded-full border-0 outline-none cursor-pointer ${follow.bg} ${follow.text}`}
+                    className={`w-full text-xs font-semibold px-2 py-1 rounded-full border-0 outline-none cursor-pointer ${follow.bg} ${follow.text}`}
                   >
                     {FOLLOWS.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
                   </select>
-                  <button onClick={e => abrirInboxContato(lead.telefone, e)} disabled={!lead.telefone} title={lead.telefone ? `Abrir conversa: ${lead.telefone}` : 'Sem telefone'} className="flex-shrink-0 cursor-pointer disabled:cursor-not-allowed">
-                    <IconeWpp ativo={!!lead.telefone} />
-                  </button>
-                  {userRole !== 'Funcionário' && (confirmDelete === lead.id ? (
-                    <div className="flex flex-col items-end gap-1" onClick={e => e.stopPropagation()}>
-                      <p className="text-xs text-gray-400 whitespace-nowrap">Excluir do sistema?</p>
-                      <p className="text-xs text-gray-300 whitespace-nowrap">WhatsApp não é afetado</p>
-                      <div className="flex gap-1">
-                        <button onClick={() => { removeLead(lead.id); setConfirmDelete(null) }} className="text-xs text-red-500 font-semibold px-2 py-1 rounded hover:bg-red-50">Sim</button>
-                        <button onClick={() => setConfirmDelete(null)} className="text-xs text-gray-400 px-2 py-1 rounded hover:bg-gray-100">Não</button>
+                  <div className="flex items-center justify-center">
+                    <button onClick={e => abrirInboxContato(lead.telefone, e)} disabled={!lead.telefone} title={lead.telefone ? `Abrir conversa: ${lead.telefone}` : 'Sem telefone'} className="cursor-pointer disabled:cursor-not-allowed">
+                      <IconeWpp ativo={!!lead.telefone} />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-center">
+                    {userRole !== 'Funcionário' && (confirmDelete === lead.id ? (
+                      <div className="absolute z-10 bg-white shadow-lg rounded-xl p-3 right-5 flex flex-col gap-1" onClick={e => e.stopPropagation()}>
+                        <p className="text-xs text-gray-400 whitespace-nowrap">Excluir do sistema?</p>
+                        <p className="text-xs text-gray-300 whitespace-nowrap">WhatsApp não é afetado</p>
+                        <div className="flex gap-1">
+                          <button onClick={() => { removeLead(lead.id); setConfirmDelete(null) }} className="text-xs text-red-500 font-semibold px-2 py-1 rounded hover:bg-red-50">Sim</button>
+                          <button onClick={() => setConfirmDelete(null)} className="text-xs text-gray-400 px-2 py-1 rounded hover:bg-gray-100">Não</button>
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <button onClick={e => { e.stopPropagation(); setConfirmDelete(lead.id) }} title="Excluir lead do sistema (WhatsApp não é afetado)" className="opacity-20 group-hover:opacity-70 hover:!opacity-100 text-gray-400 hover:text-red-400 text-sm transition-all">✕</button>
-                  ))}
+                    ) : (
+                      <button onClick={e => { e.stopPropagation(); setConfirmDelete(lead.id) }} title="Excluir lead do sistema" className="opacity-20 group-hover:opacity-70 hover:!opacity-100 text-gray-400 hover:text-red-400 text-sm transition-all">✕</button>
+                    ))}
+                  </div>
                 </div>
               )
             })}
