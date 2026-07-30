@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 
 const genUUID = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID()
@@ -417,19 +417,131 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
   )
 }
 
+const STATUS_PRIORITY = { perdido: 0, em_aberto: 1, conversando: 2, follow1: 3, follow2: 4, follow3: 5, agendado: 6, fechado: 7 }
+
+function ModalMesclarDuplicata({ grupo, onMesclar, onFechar }) {
+  const [a, b] = grupo
+  const getFollow = k => FOLLOWS.find(f => f.key === k) || FOLLOWS[0]
+
+  const merged = useMemo(() => {
+    const origemA = a.origemCustom || ''
+    const origemB = b.origemCustom || ''
+    const melhorOrigem = (origemA && origemA !== 'WhatsApp') ? origemA : (origemB && origemB !== 'WhatsApp') ? origemB : (origemA || origemB)
+    const priorA = STATUS_PRIORITY[a.status] ?? 0
+    const priorB = STATUS_PRIORITY[b.status] ?? 0
+    const dataOrigemMelhor = (a.dataOrigem && b.dataOrigem) ? (a.dataOrigem < b.dataOrigem ? a.dataOrigem : b.dataOrigem) : (a.dataOrigem || b.dataOrigem)
+    const dataMelhor = (a.data && b.data) ? (a.data > b.data ? a.data : b.data) : (a.data || b.data)
+    const obsMerged = [a.obs, b.obs].filter(Boolean).join(' | ')
+    return {
+      nome: a.nome || b.nome,
+      telefone: a.telefone || b.telefone,
+      origemCustom: melhorOrigem,
+      status: priorA >= priorB ? a.status : b.status,
+      dataOrigem: dataOrigemMelhor,
+      data: dataMelhor,
+      responsavel: a.responsavel || b.responsavel,
+      midia: a.midia || b.midia,
+      linkBio: a.linkBio || b.linkBio,
+      criativo: a.criativo || b.criativo,
+      obs: obsMerged,
+      aniversario: a.aniversario || b.aniversario,
+      agendadoPara: a.agendadoPara || b.agendadoPara,
+      origem: a.origem || b.origem,
+    }
+  }, [a, b])
+
+  const fa = getFollow(a.status)
+  const fb = getFollow(b.status)
+  const fm = getFollow(merged.status)
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl p-6 max-h-[90vh] overflow-y-auto space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-bold text-gray-900">Mesclar Leads Duplicados</h3>
+            <p className="text-xs text-gray-400 mt-0.5">O melhor dado de cada campo será mantido automaticamente</p>
+          </div>
+          <button onClick={onFechar} className="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          {[{ lead: a, fa }, { lead: b, fa: fb }].map(({ lead, fa: f }, i) => (
+            <div key={i} className={`rounded-xl p-3 border ${i === 0 ? 'bg-orange-50 border-orange-100' : 'bg-blue-50 border-blue-100'}`}>
+              <p className={`text-[10px] font-bold uppercase tracking-wide mb-2 ${i === 0 ? 'text-orange-500' : 'text-blue-500'}`}>Lead {i === 0 ? 'A' : 'B'}</p>
+              <p className="text-sm font-semibold text-gray-800 truncate">{lead.nome}</p>
+              <p className="text-xs text-gray-400">{lead.telefone || '—'}</p>
+              <p className="text-xs text-gray-500 mt-1">Origem: <strong>{lead.origemCustom || '—'}</strong></p>
+              <p className="text-xs text-gray-500">Data: <strong>{lead.data || '—'}</strong></p>
+              <span className={`inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${f.bg} ${f.text}`}>{f.label}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="bg-green-50 border border-green-100 rounded-xl p-4">
+          <p className="text-xs font-bold text-green-700 mb-2">✓ Resultado após mesclar</p>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600">
+            <span>Nome: <strong>{merged.nome}</strong></span>
+            <span>Telefone: <strong>{merged.telefone || '—'}</strong></span>
+            <span>Origem: <strong>{merged.origemCustom || '—'}</strong></span>
+            <span>Responsável: <strong>{merged.responsavel || '—'}</strong></span>
+            <span>Data de Origem: <strong>{merged.dataOrigem || '—'}</strong></span>
+            <span className="flex items-center gap-1">Status: <span className={`font-semibold px-1.5 py-0.5 rounded-full text-[10px] ${fm.bg} ${fm.text}`}>{fm.label}</span></span>
+            {merged.obs && <span className="col-span-2">Obs: <strong>{merged.obs}</strong></span>}
+          </div>
+        </div>
+
+        <div className="flex gap-3 pt-1">
+          <button onClick={onFechar} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-500 hover:bg-gray-50">Cancelar</button>
+          <button onClick={() => onMesclar(a, b, merged)} className="flex-1 py-2.5 rounded-xl bg-orange-400 hover:bg-orange-500 text-white text-sm font-semibold">Mesclar e excluir duplicata</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function LeadsNovos() {
   const { userRole } = useAuth()
   const { ano, setAno, mes, setMes, MESES } = useFinanceiro()
-  const { getLeadsPorOrigem, addLead, updateLead, removeLead } = useLeads()
+  const { getLeadsPorOrigem, addLead, updateLead, removeLead, leads: todosLeads } = useLeads()
   const { lancamentos } = useVendas()
   const [modal, setModal] = useState(false)
   const [modalEditar, setModalEditar] = useState(null)
+  const [modalMesclar, setModalMesclar] = useState(null)
   const [busca, setBusca] = useState('')
   const [filtroOrigem, setFiltroOrigem] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [visao, setVisao] = useState('lista')
   const [dragOver, setDragOver] = useState(null)
   const [ordem, setOrdem] = useState('desc')
+
+  const gruposDuplicatas = useMemo(() => {
+    const groups = {}
+    todosLeads.forEach(l => {
+      const tel = (l.telefone || '').replace(/\D/g, '')
+      if (tel.length < 6) return
+      if (!groups[tel]) groups[tel] = []
+      groups[tel].push(l)
+    })
+    return Object.values(groups).filter(g => g.length >= 2)
+  }, [todosLeads])
+
+  const telesDuplicados = useMemo(() => new Set(gruposDuplicatas.flat().map(l => (l.telefone || '').replace(/\D/g, ''))), [gruposDuplicatas])
+
+  const isDuplicata = (lead) => {
+    const tel = (lead.telefone || '').replace(/\D/g, '')
+    return tel.length >= 6 && telesDuplicados.has(tel)
+  }
+
+  const mesclarLeads = async (a, b, merged) => {
+    const priorA = STATUS_PRIORITY[a.status] ?? 0
+    const priorB = STATUS_PRIORITY[b.status] ?? 0
+    const manter = priorA >= priorB ? a : b
+    const excluir = manter.id === a.id ? b : a
+    await updateLead(manter.id, merged)
+    await removeLead(excluir.id)
+    setModalMesclar(null)
+  }
 
   const leads = getLeadsPorOrigem('leads_novos', ano, mes)
   const leadsIndicacao = getLeadsPorOrigem('indicacao', ano, mes)
@@ -567,6 +679,33 @@ export default function LeadsNovos() {
         </select>
       </div>
 
+      {/* Banner duplicatas */}
+      {gruposDuplicatas.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-amber-500 text-lg">⚠️</span>
+            <div>
+              <p className="text-sm font-semibold text-amber-800">{gruposDuplicatas.length} {gruposDuplicatas.length === 1 ? 'lead duplicado detectado' : 'leads duplicados detectados'}</p>
+              <p className="text-xs text-amber-600">Mesmo telefone cadastrado mais de uma vez no sistema</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {gruposDuplicatas.slice(0, 3).map((grupo, i) => (
+              <button key={i} onClick={() => setModalMesclar(grupo)}
+                className="text-xs bg-amber-400 hover:bg-amber-500 text-white font-semibold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+                {grupo[0].nome}
+              </button>
+            ))}
+            {gruposDuplicatas.length > 3 && (
+              <button onClick={() => setModalMesclar(gruposDuplicatas[3])}
+                className="text-xs bg-amber-200 hover:bg-amber-300 text-amber-800 font-semibold px-3 py-1.5 rounded-lg transition-colors">
+                +{gruposDuplicatas.length - 3} mais
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Cards de resumo */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
@@ -661,7 +800,14 @@ export default function LeadsNovos() {
                     {lead.nome.charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-gray-800 truncate">{lead.nome}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-semibold text-gray-800 truncate">{lead.nome}</p>
+                      {isDuplicata(lead) && (
+                        <button onClick={e => { e.stopPropagation(); setModalMesclar(gruposDuplicatas.find(g => g.some(l => l.id === lead.id))) }}
+                          title="Lead duplicado — clique para mesclar"
+                          className="flex-shrink-0 text-amber-500 hover:text-amber-600 text-xs font-bold leading-none">⚠️</button>
+                      )}
+                    </div>
                     {lead.status === 'agendado' && lead.agendadoPara ? (
                       <p className="text-xs text-blue-500 font-semibold">📅 {dataFormatada(lead.agendadoPara)}</p>
                     ) : (
@@ -793,6 +939,13 @@ export default function LeadsNovos() {
           onClose={() => setModalEditar(null)}
           onSalvar={updateLead}
           onExcluir={removeLead}
+        />
+      )}
+      {modalMesclar && (
+        <ModalMesclarDuplicata
+          grupo={modalMesclar}
+          onMesclar={mesclarLeads}
+          onFechar={() => setModalMesclar(null)}
         />
       )}
     </div>
