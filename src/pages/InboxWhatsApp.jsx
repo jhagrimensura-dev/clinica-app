@@ -1335,7 +1335,8 @@ export default function InboxWhatsApp({ contaId }) {
         const tel = (l.telefone || '').replace(/\D/g, '')
         if (phonesDasConversas.has(tel)) return false
         const q = busca.toLowerCase()
-        return (l.nome || '').toLowerCase().includes(q) || tel.includes(q.replace(/\D/g, ''))
+        const qDigits = busca.replace(/\D/g, '')
+        return (l.nome || '').toLowerCase().includes(q) || (qDigits.length >= 4 && tel.includes(qDigits))
       })
     : []
 
