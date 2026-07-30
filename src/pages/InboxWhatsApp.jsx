@@ -1328,6 +1328,27 @@ export default function InboxWhatsApp({ contaId }) {
     return !c.arquivada
   })
 
+  const phonesDasConversas = new Set(conversas.map(c => (c.id || '').replace(/\D/g, '')))
+  const leadsSugestoes = busca.trim().length >= 2
+    ? leads.filter(l => {
+        if (!l.telefone) return false
+        const tel = (l.telefone || '').replace(/\D/g, '')
+        if (phonesDasConversas.has(tel)) return false
+        const q = busca.toLowerCase()
+        return (l.nome || '').toLowerCase().includes(q) || tel.includes(q.replace(/\D/g, ''))
+      })
+    : []
+
+  const abrirConversaLead = (lead) => {
+    const phone = (lead.telefone || '').replace(/\D/g, '')
+    if (!phone) return
+    const jaExiste = conversas.find(c => (c.id || '').replace(/\D/g, '') === phone)
+    if (jaExiste) { abrirConversa(jaExiste); setBusca(''); return }
+    const novaConv = { id: phone, contato: { nome: lead.nome || phone, telefone: phone, foto: null }, mensagens: [], naoLidas: 0, arquivada: false }
+    setSelecionada(novaConv)
+    setBusca('')
+  }
+
   const enviarMensagem = async () => {
     if (!mensagem.trim() || !conversa || !contaAtiva?.instanciaId) return
     const texto = mensagem.trim()
@@ -1613,10 +1634,12 @@ export default function InboxWhatsApp({ contaId }) {
               </svg>
               Carregando conversas...
             </div>
-          ) : conversasFiltradas.length === 0 ? (
-            <div className="p-8 text-center text-gray-400 text-sm">Nenhuma conversa encontrada</div>
           ) : (
-            conversasFiltradas.map(c => (
+            <>
+            {conversasFiltradas.length === 0 && leadsSugestoes.length === 0 && (
+              <div className="p-8 text-center text-gray-400 text-sm">Nenhuma conversa encontrada</div>
+            )}
+            {conversasFiltradas.map(c => (
               <div key={c.id}
                 onClick={() => abrirConversa(c)}
                 className={`relative w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-brand-50 transition-colors cursor-pointer group ${selecionada?.id === c.id ? 'bg-brand-50 border-l-4 border-l-brand-400' : ''}`}>
@@ -1697,7 +1720,28 @@ export default function InboxWhatsApp({ contaId }) {
                   </div>
                 </div>
               </div>
-            ))
+            ))}
+            {busca.trim().length >= 2 && leadsSugestoes.length > 0 && (
+              <>
+                <div className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide bg-gray-50 border-b border-gray-100">Leads cadastrados</div>
+                {leadsSugestoes.map(lead => (
+                  <div key={lead.id} onClick={() => abrirConversaLead(lead)}
+                    className="w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-brand-50 transition-colors cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold flex-shrink-0 text-lg">
+                        {(lead.nome || '?').charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-800 truncate">{lead.nome}</p>
+                        <p className="text-xs text-gray-400">{lead.telefone}</p>
+                      </div>
+                      <span className="text-xs bg-blue-100 text-blue-600 font-semibold px-2 py-0.5 rounded-full flex-shrink-0">Lead</span>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+            </>
           )}
         </div>
       </div>
