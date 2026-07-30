@@ -109,6 +109,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
   const { leadOrigens, setLeadOrigens, leadStatus, setLeadStatus, leadMidias, setLeadMidias } = useConfig()
   const { userRole } = useAuth()
   const isAdmin = userRole !== 'Funcionário'
+  const [confirmandoDelete, setConfirmandoDelete] = useState(false)
   const hoje = new Date().toISOString().split('T')[0]
   const [nome, setNome] = useState(leadInicial?.nome || contato.nome)
   const [telefone, setTelefone] = useState(leadInicial?.telefone || contato.telefone || '')
@@ -606,10 +607,18 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
 
         <div className="flex justify-between items-center pt-1">
           {leadInicial && onDeletar && isAdmin ? (
-            <button onClick={() => { if (window.confirm('Excluir este lead?')) onDeletar(leadInicial.id) }}
-              className="px-4 py-2 text-sm text-red-500 border border-red-200 rounded-xl hover:bg-red-50">
-              Excluir lead
-            </button>
+            confirmandoDelete ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">Remover dos leads?</span>
+                <button onClick={() => { onDeletar(leadInicial.id) }} className="text-xs text-red-500 font-semibold px-2 py-1 rounded hover:bg-red-50">Sim</button>
+                <button onClick={() => setConfirmandoDelete(false)} className="text-xs text-gray-400 px-2 py-1 rounded hover:bg-gray-100">Não</button>
+              </div>
+            ) : (
+              <button onClick={() => setConfirmandoDelete(true)}
+                className="px-4 py-2 text-sm text-red-500 border border-red-200 rounded-xl hover:bg-red-50">
+                Excluir lead
+              </button>
+            )
           ) : <div />}
           <div className="flex gap-3">
           <button onClick={onFechar} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
