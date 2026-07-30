@@ -698,12 +698,21 @@ export default function LeadsNovos() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            {gruposDuplicatas.slice(0, 3).map((grupo, i) => (
-              <button key={i} onClick={() => setModalMesclar(grupo)}
-                className="text-xs bg-amber-400 hover:bg-amber-500 text-white font-semibold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
-                {grupo[0].nome}
-              </button>
-            ))}
+            {gruposDuplicatas.slice(0, 3).map((grupo, i) => {
+              const meses = [...new Set(grupo.map(l => {
+                const d = l.data || ''
+                if (!d) return null
+                const [y, m] = d.split('-')
+                return `${MESES_FULL[parseInt(m, 10) - 1]?.slice(0, 3)}/${y?.slice(2)}`
+              }).filter(Boolean))].join(' · ')
+              return (
+                <button key={i} onClick={() => setModalMesclar(grupo)}
+                  className="text-xs bg-amber-400 hover:bg-amber-500 text-white font-semibold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap text-left leading-tight">
+                  <span className="block">{grupo[0].nome}</span>
+                  {meses && <span className="block text-[10px] opacity-75 font-normal">{meses}</span>}
+                </button>
+              )
+            })}
             {gruposDuplicatas.length > 3 && (
               <button onClick={() => setModalMesclar(gruposDuplicatas[3])}
                 className="text-xs bg-amber-200 hover:bg-amber-300 text-amber-800 font-semibold px-3 py-1.5 rounded-lg transition-colors">
