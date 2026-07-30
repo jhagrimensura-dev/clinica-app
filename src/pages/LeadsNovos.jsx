@@ -184,6 +184,7 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
   const [data, setData] = useState(lead.data || '')
   const [responsavel, setResponsavel] = useState(lead.responsavel || '')
   const [paciente, setPaciente] = useState(lead.nome || '')
+  const [telefone, setTelefone] = useState(lead.telefone || '')
   const { addLembrete, lembretes: todosLembretes, deleteLembrete } = useAgenda()
   const [origemCustom, setOrigemCustom] = useState(lead.origemCustom || lead.fonte || '')
   const [midia, setMidia] = useState(lead.midia || (lead.origemCustom === 'Tráfego' ? 'Campanha de msg para Whatsapp' : ''))
@@ -225,7 +226,7 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
     const CONV = ['agendado', 'fechado']
     const FOLL = ['follow1', 'follow2', 'follow3']
     const ultimoFollow = (CONV.includes(status) && !CONV.includes(lead.status) && FOLL.includes(lead.status)) ? lead.status : undefined
-    onSalvar(lead.id, { nome: paciente.trim(), dataOrigem: dataOrigem || data, data, responsavel, origemCustom, midia: midia || null, linkBio: midia === 'Link da BIO' ? (linkBio || null) : null, criativo: criativo || null, status, agendadoPara: agendadoPara || null, proximoFollowup: lemsValidos[0]?.data || '', lembretes: lemsValidos, obs: obs.trim(), ...(ultimoFollow !== undefined ? { ultimoFollow } : {}) })
+    onSalvar(lead.id, { nome: paciente.trim(), telefone: telefone || null, dataOrigem: dataOrigem || data, data, responsavel, origemCustom, midia: midia || null, linkBio: midia === 'Link da BIO' ? (linkBio || null) : null, criativo: criativo || null, status, agendadoPara: agendadoPara || null, proximoFollowup: lemsValidos[0]?.data || '', lembretes: lemsValidos, obs: obs.trim(), ...(ultimoFollow !== undefined ? { ultimoFollow } : {}) })
     onClose()
   }
 
@@ -265,6 +266,13 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
         <div>
           <label className="text-sm font-medium text-gray-700 mb-1.5 block">Nome *</label>
           <input autoFocus value={paciente} onChange={e => setPaciente(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400" />
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Telefone</label>
+          <input type="tel" value={telefone} onChange={e => setTelefone(e.target.value.replace(/\D/g, ''))}
+            placeholder="Ex: 64999001234"
             className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-400" />
         </div>
 
@@ -808,7 +816,6 @@ export default function LeadsNovos() {
                           className="flex-shrink-0 text-amber-500 hover:text-amber-600 text-xs font-bold leading-none">⚠️</button>
                       )}
                     </div>
-                    {lead.telefone && <p className="text-xs text-gray-300">{lead.telefone}</p>}
                     {lead.status === 'agendado' && lead.agendadoPara ? (
                       <p className="text-xs text-blue-500 font-semibold">📅 {dataFormatada(lead.agendadoPara)}</p>
                     ) : (
