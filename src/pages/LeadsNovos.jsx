@@ -808,6 +808,7 @@ export default function LeadsNovos() {
                           className="flex-shrink-0 text-amber-500 hover:text-amber-600 text-xs font-bold leading-none">⚠️</button>
                       )}
                     </div>
+                    {lead.telefone && <p className="text-xs text-gray-300">{lead.telefone}</p>}
                     {lead.status === 'agendado' && lead.agendadoPara ? (
                       <p className="text-xs text-blue-500 font-semibold">📅 {dataFormatada(lead.agendadoPara)}</p>
                     ) : (
