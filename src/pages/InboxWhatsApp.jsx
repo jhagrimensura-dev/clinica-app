@@ -919,7 +919,6 @@ export default function InboxWhatsApp({ contaId }) {
         setTimeout(async () => {
           try {
             const d = await zapiFetch(contaAtiva, `profile-picture?phone=${conv.id}`)
-            console.log('[foto]', conv.id, d)
             const raw = d?.link || d?.value || d?.url || d?.profilePicUrl || d?.picture || d?.photo || null
             const url = !raw ? null
               : raw.startsWith('http') ? raw
@@ -930,7 +929,7 @@ export default function InboxWhatsApp({ contaId }) {
               localStorage.setItem('wpp_fotos', JSON.stringify(fotosCache.current))
               setConversas(prev => prev.map(c => c.id === conv.id ? { ...c, contato: { ...c.contato, foto: url } } : c))
             }
-          } catch (e) { console.log('[foto erro]', conv.id, e.message) }
+          } catch (_) {}
         }, i * 250)
       })
     } catch (e) {
@@ -1007,7 +1006,6 @@ export default function InboxWhatsApp({ contaId }) {
         })(),
       ])
 
-      console.log('[zapi-msgs raw]', phone, zapiResult)
 
       const toMapSupa = m => ({
         id: m.message_id || String(m.id),
