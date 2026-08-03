@@ -8,7 +8,7 @@ import { useSocial } from '../context/SocialContext'
 export default function Dashboard() {
   const { metaValor, diasAtendimento, metaDiaria, posts } = useClinica()
   const { lancamentos } = useVendas()
-  const { mes, ano } = useFinanceiro()
+  const { mes, ano, MESES } = useFinanceiro()
   const { leads, getLeadsPorOrigem } = useLeads()
   const { getMes, carregarMes } = useSocial()
 
@@ -58,13 +58,25 @@ export default function Dashboard() {
   const leadsNovosReais = leadsNovos.filter(l => !isFollowLead(l)).length
   const agendRecorrentes = countRecorrentes
 
-  const leadsFollowAtivos = leads.filter(l => l.origem === 'leads_novos' && ['follow1', 'follow2', 'follow3'].includes(l.status))
+  // Follow backlog: todos leads_novos ainda em follow (pipeline ativo)
+  const leadsFollowAtivos = leads.filter(l =>
+    l.origem === 'leads_novos' &&
+    ['follow1', 'follow2', 'follow3'].includes(l.status)
+  )
   const follow1Count = leadsFollowAtivos.filter(l => l.status === 'follow1').length
   const follow2Count = leadsFollowAtivos.filter(l => l.status === 'follow2').length
   const follow3Count = leadsFollowAtivos.filter(l => l.status === 'follow3').length
-  const leadsFollowPipeline = leads.filter(l => l.origem === 'leads_novos' && !(l.data || '').startsWith(prefix))
-  const followConvertidos = leadsFollowPipeline.filter(l => l.status === 'agendado').length
-  const convFollow = leadsFollowPipeline.length > 0 ? ((followConvertidos / leadsFollowPipeline.length) * 100).toFixed(1) : '0.0'
+
+  // Follow convertidos este mês: leads_novos de meses anteriores, agendados para este mês
+  const followConvertidosMes = leads.filter(l =>
+    l.origem === 'leads_novos' &&
+    !(l.dataOrigem || l.data || '').startsWith(prefix) &&
+    l.status === 'agendado' &&
+    (l.agendadoPara || '').startsWith(prefix)
+  )
+  const convFollow = leadsFollowAtivos.length > 0
+    ? ((followConvertidosMes.length / leadsFollowAtivos.length) * 100).toFixed(1)
+    : '0.0'
 
   // Consultas pagas = clientes que de fato compareceram (fonte verdadeira para CAC e conversão)
   const totalAgendReal = countConsultas
@@ -210,7 +222,7 @@ export default function Dashboard() {
           {[
             { label: 'Social Media', icon: '🔗', color: 'text-brand-500', value: String(seguidores.toLocaleString('pt-BR')), sub: 'seguidores', extras: [`${leadsNovosReais} leads recebidos`, `${convComercial}% conversão`] },
             { label: 'Leads Novos', icon: '🏢', color: 'text-blue-500', value: String(leadsNovosReais + leadsIndicacao.length), sub: 'novos este mês', extras: [`${leadsNovosReais} novos`, `${leadsIndicacao.length} indicações`, `${totalAgendReal} consultas agendadas`, `${convNovos}% conversão`] },
-            { label: 'Leads Follow', icon: '🔁', color: 'text-purple-500', value: String(leadsFollowAtivos.length), sub: 'em acompanhamento', extras: [`${follow1Count} follow #1`, `${follow2Count} follow #2`, `${follow3Count} follow #3`, `${convFollow}% conversão`] },
+            { label: 'Leads Follow', icon: '🔁', color: 'text-purple-500', value: String(followConvertidosMes.length), sub: `convertidos em ${MESES[mes]}`, extras: [`${leadsFollowAtivos.length} em acompanhamento`, `${follow1Count} follow #1 · ${follow2Count} follow #2 · ${follow3Count} follow #3`, `${convFollow}% conversão`] },
             { label: 'Leads Recorrência', icon: '🔄', color: 'text-teal-500', value: String(leadsRecorrentes.length), sub: 'contatos recorrentes', extras: [`${agendRecorrentes} agendamentos`, `${convRecorrencia}% conversão`] },
           ].map((card, i) => (
             <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
