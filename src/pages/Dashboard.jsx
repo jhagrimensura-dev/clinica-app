@@ -9,7 +9,7 @@ export default function Dashboard() {
   const { metaValor, diasAtendimento, metaDiaria, posts } = useClinica()
   const { lancamentos } = useVendas()
   const { mes, ano } = useFinanceiro()
-  const { getLeadsPorOrigem } = useLeads()
+  const { leads, getLeadsPorOrigem } = useLeads()
   const { getMes, carregarMes } = useSocial()
 
   useEffect(() => { carregarMes(ano, mes) }, [ano, mes])
@@ -26,9 +26,11 @@ export default function Dashboard() {
 
   const totalGeral = lMesValidos.reduce((acc, l) => acc + (l.valorTratamento || 0) + (l.valorTaxa || 0), 0)
   const totalNovos = lMesSemConsulta.filter(l => l.tipo === 'Novo').reduce((acc, l) => acc + (l.valorTratamento || 0), 0)
+  const totalNovoFollow = lMesSemConsulta.filter(l => l.tipo === 'Novo Follow').reduce((acc, l) => acc + (l.valorTratamento || 0), 0)
   const totalRecorrentes = lMesSemConsulta.filter(l => l.tipo === 'Recorrência').reduce((acc, l) => acc + (l.valorTratamento || 0), 0)
   const totalIndicacaoLanc = lMesSemConsulta.filter(l => l.tipo === 'Indicação').reduce((acc, l) => acc + (l.valorTratamento || 0), 0)
   const countNovos = lMesSemConsulta.filter(l => l.tipo === 'Novo').length
+  const countNovoFollow = lMesSemConsulta.filter(l => l.tipo === 'Novo Follow').length
   const countRecorrentes = lMesSemConsulta.filter(l => l.tipo === 'Recorrência').length
   const countIndicacaoLanc = lMesSemConsulta.filter(l => l.tipo === 'Indicação').length
   const lConsultas = lMesValidos.filter(l => isConsulta(l))
@@ -56,10 +58,19 @@ export default function Dashboard() {
   const leadsNovosReais = leadsNovos.filter(l => !isFollowLead(l)).length
   const agendRecorrentes = countRecorrentes
 
+  const leadsFollowAtivos = leads.filter(l => l.origem === 'leads_novos' && ['follow1', 'follow2', 'follow3'].includes(l.status))
+  const follow1Count = leadsFollowAtivos.filter(l => l.status === 'follow1').length
+  const follow2Count = leadsFollowAtivos.filter(l => l.status === 'follow2').length
+  const follow3Count = leadsFollowAtivos.filter(l => l.status === 'follow3').length
+  const leadsFollowPipeline = leads.filter(l => l.origem === 'leads_novos' && !(l.data || '').startsWith(prefix))
+  const followConvertidos = leadsFollowPipeline.filter(l => l.status === 'agendado').length
+  const convFollow = leadsFollowPipeline.length > 0 ? ((followConvertidos / leadsFollowPipeline.length) * 100).toFixed(1) : '0.0'
+
   // Consultas pagas = clientes que de fato compareceram (fonte verdadeira para CAC e conversão)
   const totalAgendReal = countConsultas
 
   const convComercial = totalLeads > 0 ? ((totalAgendReal / totalLeads) * 100).toFixed(1) : '0.0'
+  const convNovos = (leadsNovosReais + leadsIndicacao.length) > 0 ? ((totalAgendReal / (leadsNovosReais + leadsIndicacao.length)) * 100).toFixed(1) : '0.0'
   const convRecorrencia = leadsRecorrentes.length > 0 ? ((agendRecorrentes / leadsRecorrentes.length) * 100).toFixed(1) : '0.0'
 
   const { trafego: trafegoInvestido, seguidores } = getMes(ano, mes)
@@ -89,7 +100,8 @@ export default function Dashboard() {
           <p className="text-xs text-brand-500 font-medium mb-4">{pct}% da meta</p>
           <div className="pt-2 border-t border-gray-100" style={{ display: 'grid', gridTemplateColumns: '1fr auto auto auto', columnGap: '0.5rem', rowGap: '0.4rem', alignItems: 'baseline' }}>
             {[
-              { label: 'Novos',       valor: totalNovos,        count: countNovos,        unit: 'venda(s)' },
+              { label: 'Novos',        valor: totalNovos,       count: countNovos,       unit: 'venda(s)' },
+              ...(countNovoFollow > 0 ? [{ label: 'Novo Follow', valor: totalNovoFollow, count: countNovoFollow, unit: 'venda(s)' }] : []),
               { label: 'Recorrência', valor: totalRecorrentes,  count: countRecorrentes,  unit: 'venda(s)' },
               { label: 'Indicação',   valor: totalIndicacaoLanc,count: countIndicacaoLanc,unit: 'venda(s)' },
               ...(totalConsultas > 0 ? [{ label: 'Consultas', valor: totalConsultas, count: countConsultas, unit: 'consulta(s)' }] : []),
@@ -194,12 +206,12 @@ export default function Dashboard() {
       {/* FUNIL DE CONVERSÃO */}
       <div>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Funil de Conversão</p>
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-5 gap-4">
           {[
             { label: 'Social Media', icon: '🔗', color: 'text-brand-500', value: String(seguidores.toLocaleString('pt-BR')), sub: 'seguidores', extras: [`${leadsNovosReais} leads recebidos`, `${convComercial}% conversão`] },
-            { label: 'Leads Novos', icon: '🏢', color: 'text-blue-500', value: String(totalLeads), sub: `leads`, extras: [`${leadsNovosReais} novos este mês`, `${leadsNovos.length - leadsNovosReais} em follow-up`, `${leadsIndicacao.length} indicações`, `${totalAgendReal} consultas agendadas`, `${convComercial}% conversão`] },
+            { label: 'Leads Novos', icon: '🏢', color: 'text-blue-500', value: String(leadsNovosReais + leadsIndicacao.length), sub: 'novos este mês', extras: [`${leadsNovosReais} novos`, `${leadsIndicacao.length} indicações`, `${totalAgendReal} consultas agendadas`, `${convNovos}% conversão`] },
+            { label: 'Leads Follow', icon: '🔁', color: 'text-purple-500', value: String(leadsFollowAtivos.length), sub: 'em acompanhamento', extras: [`${follow1Count} follow #1`, `${follow2Count} follow #2`, `${follow3Count} follow #3`, `${convFollow}% conversão`] },
             { label: 'Leads Recorrência', icon: '🔄', color: 'text-teal-500', value: String(leadsRecorrentes.length), sub: 'contatos recorrentes', extras: [`${agendRecorrentes} agendamentos`, `${convRecorrencia}% conversão`] },
-            { label: 'Vendas', icon: '📊', color: 'text-green-500', value: String(lMesSemConsulta.length), sub: 'lançamentos no mês', extras: [`${countNovos} novos · ${countRecorrentes} recorrentes`, lMesSemConsulta.length > 0 ? `${fmt(ticketGeral)} ticket médio` : '—'] },
           ].map((card, i) => (
             <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
               <div className="flex justify-between items-start mb-1">
@@ -220,6 +232,38 @@ export default function Dashboard() {
               </div>
             </div>
           ))}
+
+          {/* Card Conversão */}
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+            <div className="flex justify-between items-start mb-1">
+              <p className="text-sm text-gray-500 font-medium">Conversão</p>
+              <span className="text-lg text-green-500">📈</span>
+            </div>
+            {(() => {
+              const pctTotal = parseFloat(convComercial)
+              const corTotal = pctTotal > 15 ? 'text-green-600' : pctTotal >= 10 ? 'text-orange-500' : 'text-red-500'
+              return (
+                <>
+                  <p className={`text-2xl font-bold mb-0.5 ${corTotal}`}>{convComercial}%</p>
+                  <p className="text-xs text-gray-400 mb-3">taxa geral</p>
+                  <div className="space-y-1.5">
+                    {[
+                      { label: 'Leads Novos', pct: convNovos },
+                      { label: 'Leads Follow', pct: convFollow },
+                    ].map(({ label, pct: p }) => {
+                      const v = parseFloat(p)
+                      const cor = v > 15 ? 'text-green-600' : v >= 10 ? 'text-orange-500' : 'text-red-500'
+                      return (
+                        <p key={label} className="text-xs text-gray-500">
+                          {label}: <span className={`font-semibold ${cor}`}>{p}%</span>
+                        </p>
+                      )
+                    })}
+                  </div>
+                </>
+              )
+            })()}
+          </div>
         </div>
       </div>
     </div>

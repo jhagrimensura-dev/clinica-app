@@ -161,7 +161,7 @@ export default function Colaboradoras() {
     const totais = [0, 0, 0, 0]
     const prefixo = `${ano}-${String(mes + 1).padStart(2, '0')}-`
     lancamentos
-      .filter(l => l.tipo === 'Novo' && l.data?.startsWith(prefixo) && !l.tipo?.includes('Modelo'))
+      .filter(l => (l.tipo === 'Novo' || l.tipo === 'Novo Follow') && l.data?.startsWith(prefixo) && !l.tipo?.includes('Modelo'))
       .forEach(l => {
         const dia = parseInt(l.data.slice(8, 10), 10)
         const idx = semanaDoMes(dia)
