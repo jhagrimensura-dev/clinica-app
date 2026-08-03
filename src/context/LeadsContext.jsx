@@ -83,7 +83,7 @@ export function LeadsProvider({ children }) {
     let migrated = false
 
     const fetchAll = async () => {
-      const { data } = await supabase.from('leads').select('*').order('criado_em', { ascending: true })
+      const { data } = await supabase.from('leads').select('*').order('criado_em', { ascending: false })
       if (data && data.length > 0) {
         const fromDBData = data.map(fromDB).filter(Boolean)
         setLeads(prev => {
@@ -158,9 +158,9 @@ export function LeadsProvider({ children }) {
     const dbUpdates = updatesToDB(updates)
     if (Object.keys(dbUpdates).length === 0) return
     pendingUpdates.current.set(id, { ...(pendingUpdates.current.get(id) || {}), ...updates })
-    const { error } = await supabase.from('leads').update(dbUpdates).eq('id', id).eq('clinica_id', clinicaId)
+    const { error } = await supabase.from('leads').update(dbUpdates).eq('id', id)
     pendingUpdates.current.delete(id)
-    if (error) console.error('updateLead error:', error, id, updates)
+    if (error) console.error('updateLead error:', error, id)
   }
 
   const importLeads = async (leadsArray) => {

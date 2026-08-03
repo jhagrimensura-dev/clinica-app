@@ -17,7 +17,7 @@ export function AgendaProvider({ children }) {
     const fetchAll = async () => {
       const [{ data: ag, error: agErr }, { data: lem, error: lemErr }] = await Promise.all([
         supabase.from('agendamentos').select('*').eq('clinica_id', clinicaId),
-        supabase.from('agenda_lembretes').select('*').eq('clinica_id', clinicaId).neq('dados->>concluido', 'true').gte('dados->>data', (() => { const d = new Date(); d.setMonth(d.getMonth() - 2); return d.toISOString().split('T')[0] })()).limit(5000),
+        supabase.from('agenda_lembretes').select('*').eq('clinica_id', clinicaId).limit(5000),
       ])
       if (agErr) console.error('[agenda] agendamentos fetch error:', agErr)
       if (lemErr) console.error('[agenda] lembretes fetch error:', lemErr)
@@ -38,8 +38,8 @@ export function AgendaProvider({ children }) {
       if (lemErr || lem === null) return
       if (lem.length > 0) {
         const CORES_ANTIGAS = { brand: 'blue', purple: 'blue' }
-        const lemValidos = lem.filter(r => r && r.dados)
-        if (lemValidos.length === 0) return
+        const lemValidos = lem.filter(r => r && r.dados && !r.dados.concluido)
+        if (lemValidos.length === 0) { setLembretes([]); return }
         const paraAtualizar = lemValidos.filter(r => CORES_ANTIGAS[r.dados?.cor])
         if (paraAtualizar.length > 0) {
           await Promise.all(paraAtualizar.map(r => {

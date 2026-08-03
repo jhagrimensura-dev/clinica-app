@@ -647,7 +647,7 @@ const TIPO_PARA_ORIGEM = {
 
 // ── Página principal ──────────────────────────────────────────────
 export default function InboxWhatsApp({ contaId }) {
-  const { leads, addLead, updateLead } = useLeads()
+  const { leads, addLead, updateLead, removeLead } = useLeads()
   const leadsRef = useRef(leads)
   useEffect(() => { leadsRef.current = leads }, [leads])
   const { addLembrete, lembretes: todosLembretesAgenda, deleteLembrete } = useAgenda()
