@@ -115,7 +115,17 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
   const [telefone, setTelefone] = useState(leadInicial?.telefone || contato.telefone || '')
   const [responsavel, setResponsavel] = useState(leadInicial?.responsavel || '')
   const [origemCustom, setOrigemCustom] = useState(leadInicial?.origemCustom || 'WhatsApp')
-  const [status, setStatus] = useState(STATUS_DENORMALIZE[leadInicial?.status] || leadInicial?.status || 'Em aberto')
+  const [status, setStatus] = useState(() => {
+    const lista = leadStatus || STATUS_PADRAO
+    const stdLabel = STATUS_DENORMALIZE[leadInicial?.status]
+    if (stdLabel) {
+      const match = lista.find(opt => opt.toLowerCase().startsWith(stdLabel.toLowerCase()))
+      if (match) return match
+      if (lista.includes(stdLabel)) return stdLabel
+    }
+    if (lista.includes(leadInicial?.status)) return leadInicial.status
+    return leadInicial?.status || 'Em aberto'
+  })
   const [dataOrigem, setDataOrigem] = useState(leadInicial?.dataOrigem || leadInicial?.data || hoje)
   const [data, setData] = useState(leadInicial?.data || hoje)
   const [agendadoPara, setAgendadoPara] = useState(leadInicial?.agendadoPara || '')

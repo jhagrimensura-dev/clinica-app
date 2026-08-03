@@ -4,6 +4,21 @@ import { useAuth } from './AuthContext'
 
 const LeadsContext = createContext()
 
+const VALID_STATUSES = new Set(['em_aberto', 'conversando', 'follow1', 'follow2', 'follow3', 'agendado', 'fechado', 'perdido'])
+
+const normalizeStatusKey = (raw) => {
+  if (!raw) return 'em_aberto'
+  if (VALID_STATUSES.has(raw)) return raw
+  const low = raw.toLowerCase()
+  if (low.startsWith('follow #1') || low.startsWith('follow 1') || (low.includes('follow') && low.includes('1'))) return 'follow1'
+  if (low.startsWith('follow #2') || low.startsWith('follow 2') || (low.includes('follow') && low.includes('2'))) return 'follow2'
+  if (low.startsWith('follow #3') || low.startsWith('follow 3') || (low.includes('follow') && low.includes('3'))) return 'follow3'
+  if (low.startsWith('agend') || low === 'agendou') return 'agendado'
+  if (low.startsWith('perd')) return 'perdido'
+  if (low.startsWith('convers')) return 'conversando'
+  return 'em_aberto'
+}
+
 const fromDB = (r) => {
   if (!r || !r.id) return null
   return {
@@ -16,7 +31,7 @@ const fromDB = (r) => {
     dataOrigem: r.data_origem || r.data || '',
     responsavel: r.responsavel || '',
     fonte: r.fonte || '',
-    status: r.status || 'em_aberto',
+    status: normalizeStatusKey(r.status),
     ultimoFollow: r.ultimo_follow || null,
     agendadoPara: r.agendado_para || null,
     proximoFollowup: r.proximo_followup || '',
