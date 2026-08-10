@@ -318,8 +318,10 @@ export default function Metas() {
 
               const valorVendas = vendasPorDia[dia.dia] || 0
               const temVendas = valorVendas > 0
-              const metaDoDia = metaDinamicaPorDia[dia.dia] || metaDiariaOriginal
               const isFuturo = dia.dia >= diaHoje
+              const metaDoDia = isFuturo
+                ? (metaDiariaAjustada > 0 ? metaDiariaAjustada : metaDiariaOriginal)
+                : (metaDinamicaPorDia[dia.dia] || metaDiariaOriginal)
               const dateStr = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(dia.dia).padStart(2, '0')}`
               const feriado = getFeriado(dateStr)
 
