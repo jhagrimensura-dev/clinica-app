@@ -140,8 +140,12 @@ export default function SocialMedia() {
   const porLead = totalLeadsNovos > 0 && trafego > 0 ? (trafego / totalLeadsNovos).toFixed(2).replace('.', ',') : '—'
   const leadsPorDia = {}
   const leadsDetalhadosPorDia = {}
-  leads.filter(l => l.origem === 'leads_novos' && l.data && l.data.startsWith(prefix) && !String(l.fonte || '').toLowerCase().includes('follow') && !String(l.origemCustom || '').toLowerCase().includes('follow')).forEach(l => {
-    const dia = parseInt(l.data.split('-')[2], 10)
+  leads.filter(l => {
+    if (l.origem !== 'leads_novos') return false
+    const d = l.dataOrigem || l.data || ''
+    return d.startsWith(prefix) && !isFollow(l)
+  }).forEach(l => {
+    const dia = parseInt((l.dataOrigem || l.data || '').split('-')[2], 10)
     if (!isNaN(dia)) {
       leadsPorDia[dia] = (leadsPorDia[dia] || 0) + 1
       if (!leadsDetalhadosPorDia[dia]) leadsDetalhadosPorDia[dia] = []

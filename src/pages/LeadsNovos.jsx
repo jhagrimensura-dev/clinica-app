@@ -609,7 +609,7 @@ export default function LeadsNovos() {
   }
 
   const leadsFollowMes = todosLeads
-    .filter(l => l.origem === 'leads_novos' && ['follow1', 'follow2', 'follow3'].includes(l.status))
+    .filter(l => l.origem === 'leads_novos' && ['follow1', 'follow2', 'follow3'].includes(l.status) && !(l.dataOrigem || l.data || '').startsWith(prefix))
     .sort((a, b) => (a.proximoFollowup || '').localeCompare(b.proximoFollowup || ''))
 
   const origensDisponiveis = [...new Set(leads.map(l => l.origemCustom || l.fonte || '').filter(Boolean))].sort()

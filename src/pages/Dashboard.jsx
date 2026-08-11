@@ -61,18 +61,20 @@ export default function Dashboard() {
   // Follow backlog: todos leads_novos ainda em follow (pipeline ativo)
   const leadsFollowAtivos = leads.filter(l =>
     l.origem === 'leads_novos' &&
-    ['follow1', 'follow2', 'follow3'].includes(l.status)
+    ['follow1', 'follow2', 'follow3'].includes(l.status) &&
+    !(l.dataOrigem || l.data || '').startsWith(prefix)
   )
   const follow1Count = leadsFollowAtivos.filter(l => l.status === 'follow1').length
   const follow2Count = leadsFollowAtivos.filter(l => l.status === 'follow2').length
   const follow3Count = leadsFollowAtivos.filter(l => l.status === 'follow3').length
 
-  // Follow convertidos este mês: leads_novos de meses anteriores, agendados para este mês
+  // Follow convertidos este mês: leads_novos de meses anteriores, agendados para este mês, que passaram por follow
   const followConvertidosMes = leads.filter(l =>
     l.origem === 'leads_novos' &&
     !(l.dataOrigem || l.data || '').startsWith(prefix) &&
     l.status === 'agendado' &&
-    (l.agendadoPara || '').startsWith(prefix)
+    (l.agendadoPara || '').startsWith(prefix) &&
+    l.ultimoFollow
   )
   const convFollow = leadsFollowAtivos.length > 0
     ? ((followConvertidosMes.length / leadsFollowAtivos.length) * 100).toFixed(1)

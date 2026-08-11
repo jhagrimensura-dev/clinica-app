@@ -338,18 +338,18 @@ export default function LeadsPorOrigem() {
 
   const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
 
-  const ORIGENS_PERMITIDAS = ['Instagram', 'Tráfego', 'Indicação', 'Fornecedores', 'Outros', 'Fornecedores / Outros']
+  const isInstagramOrigem = (o) => (o || '').toLowerCase().includes('instagram')
 
   const filtrados = leads.filter(l => {
     const d = l.dataOrigem || l.data || l.criadoEm?.slice(0, 10) || ''
     const origem = l.origemCustom || l.fonte || ''
-    return l.origem !== 'leads_recorrentes' && d.startsWith(prefix) && ORIGENS_PERMITIDAS.includes(origem)
+    return l.origem !== 'leads_recorrentes' && d.startsWith(prefix) && origem !== ''
   })
 
   const total = filtrados.length
 
   // Contagem por origem — agrupa Fornecedores/Outros em um único label
-  const contagemOrigem = { 'Fornecedores / Outros': 0 }
+  const contagemOrigem = {}
   filtrados.forEach(l => {
     const o = l.origemCustom || l.fonte || 'Não informado'
     if (o === 'Fornecedores' || o === 'Outros' || o === 'Fornecedores / Outros') {
@@ -360,15 +360,20 @@ export default function LeadsPorOrigem() {
   })
   const sortedOrigem = Object.entries(contagemOrigem).sort((a, b) => b[1] - a[1])
 
-  // Sub-breakdown de mídia para o card do Instagram — todos os leads, sem exceção
-  const instagramMidias = {}
-  filtrados.filter(l => (l.origemCustom || l.fonte) === 'Instagram').forEach(l => {
-    const key = l.midia || 'Sem mídia'
-    instagramMidias[key] = (instagramMidias[key] || 0) + 1
+  // Sub-breakdown de mídia por origem (para qualquer card)
+  const midiasPorOrigem = {}
+  filtrados.forEach(l => {
+    if (!l.midia || l.midia === 'Campanha de msg para Whatsapp') return
+    let key = l.origemCustom || l.fonte || 'Não informado'
+    if (key === 'Fornecedores' || key === 'Outros') key = 'Fornecedores / Outros'
+    if (!midiasPorOrigem[key]) midiasPorOrigem[key] = {}
+    midiasPorOrigem[key][l.midia] = (midiasPorOrigem[key][l.midia] || 0) + 1
   })
-  const instagramSubItems = Object.entries(instagramMidias)
-    .sort((a, b) => b[1] - a[1])
-    .map(([label, count]) => ({ label, count, cor: getCorMidia(label) }))
+  const getMidiaSubItems = (origemKey) => {
+    const midias = midiasPorOrigem[origemKey] || {}
+    if (!Object.keys(midias).length) return undefined
+    return Object.entries(midias).sort((a, b) => b[1] - a[1]).map(([label, count]) => ({ label, count, cor: getCorMidia(label) }))
+  }
 
   // Contagem por mídia — exclui mídias que aparecem dentro do card do Instagram
   const contagemMidia = {}
@@ -433,7 +438,7 @@ export default function LeadsPorOrigem() {
                     count={count}
                     pct={total > 0 ? (count / total) * 100 : 0}
                     cor={getCorOrigem(origem)}
-                    subItems={origem === 'Instagram' ? instagramSubItems : undefined}
+                    subItems={getMidiaSubItems(origem)}
                     info={origem === 'Tráfego' ? 'Contabiliza quantos leads novos vieram de anúncios pagos no mês, e a seção abaixo mostra qual anúncio trouxe mais leads' : undefined}
                   />
                 ))}
