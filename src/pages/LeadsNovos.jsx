@@ -226,7 +226,7 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
     const CONV = ['agendado', 'fechado']
     const FOLL = ['follow1', 'follow2', 'follow3']
     const ultimoFollow = (CONV.includes(status) && !CONV.includes(lead.status) && FOLL.includes(lead.status)) ? lead.status : undefined
-    onSalvar(lead.id, { nome: paciente.trim(), telefone: telefone || null, dataOrigem: dataOrigem || data, data, responsavel, origemCustom, midia: midia || null, linkBio: midia === 'Link da BIO' ? (linkBio || null) : null, criativo: criativo || null, status, agendadoPara: agendadoPara || null, proximoFollowup: lemsValidos[0]?.data || '', lembretes: lemsValidos, obs: obs.trim(), ...(ultimoFollow !== undefined ? { ultimoFollow } : {}) })
+    onSalvar(lead.id, { nome: paciente.trim(), telefone: telefone || null, dataOrigem: dataOrigem || data, data, responsavel, origemCustom, midia: midia || null, linkBio: midia === 'Link da BIO' ? (linkBio || null) : null, criativo: origemCustom === 'Tráfego' ? (criativo || null) : null, status, agendadoPara: agendadoPara || null, proximoFollowup: lemsValidos[0]?.data || '', lembretes: lemsValidos, obs: obs.trim(), ...(ultimoFollow !== undefined ? { ultimoFollow } : {}) })
     onClose()
   }
 

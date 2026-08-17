@@ -32,9 +32,9 @@ function getCorMidia(m) {
   return COR_MIDIA[m] || { bg: 'bg-gray-100', text: 'text-gray-600', bar: '#9ca3af' }
 }
 
-function CardContagem({ label, count, pct, cor, thumbnail, permalink, subItems, info }) {
+function CardContagem({ label, count, pct, cor, thumbnail, permalink, subItems, info, onClick }) {
   return (
-    <div className="text-left p-4 rounded-2xl border bg-white border-gray-100 shadow-sm flex flex-col gap-1">
+    <div className={`text-left p-4 rounded-2xl border bg-white border-gray-100 shadow-sm flex flex-col gap-1 ${onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`} onClick={onClick}>
       <div className="flex items-center gap-2 mb-1">
         {thumbnail && (
           permalink
@@ -74,9 +74,9 @@ function CardContagem({ label, count, pct, cor, thumbnail, permalink, subItems, 
   )
 }
 
-function RowContagem({ label, count, pct, cor, thumbnail, permalink }) {
+function RowContagem({ label, count, pct, cor, thumbnail, permalink, onClick }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-3 bg-white rounded-2xl border border-gray-100 shadow-sm">
+    <div className={`flex items-center gap-3 px-4 py-3 bg-white rounded-2xl border border-gray-100 shadow-sm ${onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`} onClick={onClick}>
       {thumbnail && (
         permalink
           ? <a href={permalink} target="_blank" rel="noreferrer">
@@ -316,6 +316,7 @@ export default function LeadsPorOrigem() {
   const [adsEngajamento, setAdsEngajamento] = useState([])
   const [viewCriativo, setViewCriativo] = useState('grid')
   const [modalCriativos, setModalCriativos] = useState(false)
+  const [modalLeadsCriativo, setModalLeadsCriativo] = useState(null) // { nome, leads[] }
 
   useEffect(() => {
     supabase.from('configuracoes').select('valor').eq('chave', 'ads_engajamento').maybeSingle()
@@ -340,6 +341,11 @@ export default function LeadsPorOrigem() {
 
   const isInstagramOrigem = (o) => (o || '').toLowerCase().includes('instagram')
 
+  const normalizarOrigem = (o) => {
+    if ((o || '').toLowerCase() === 'whatsapp') return 'Instagram'
+    return o
+  }
+
   const filtrados = leads.filter(l => {
     const d = l.dataOrigem || l.data || l.criadoEm?.slice(0, 10) || ''
     const origem = l.origemCustom || l.fonte || ''
@@ -348,10 +354,10 @@ export default function LeadsPorOrigem() {
 
   const total = filtrados.length
 
-  // Contagem por origem — agrupa Fornecedores/Outros em um único label
+  // Contagem por origem — agrupa Fornecedores/Outros em um único label, WhatsApp → Instagram
   const contagemOrigem = {}
   filtrados.forEach(l => {
-    const o = l.origemCustom || l.fonte || 'Não informado'
+    const o = normalizarOrigem(l.origemCustom || l.fonte || 'Não informado')
     if (o === 'Fornecedores' || o === 'Outros' || o === 'Fornecedores / Outros') {
       contagemOrigem['Fornecedores / Outros'] = (contagemOrigem['Fornecedores / Outros'] || 0) + 1
     } else {
@@ -364,7 +370,7 @@ export default function LeadsPorOrigem() {
   const midiasPorOrigem = {}
   filtrados.forEach(l => {
     if (!l.midia || l.midia === 'Campanha de msg para Whatsapp') return
-    let key = l.origemCustom || l.fonte || 'Não informado'
+    let key = normalizarOrigem(l.origemCustom || l.fonte || 'Não informado')
     if (key === 'Fornecedores' || key === 'Outros') key = 'Fornecedores / Outros'
     if (!midiasPorOrigem[key]) midiasPorOrigem[key] = {}
     midiasPorOrigem[key][l.midia] = (midiasPorOrigem[key][l.midia] || 0) + 1
@@ -385,9 +391,12 @@ export default function LeadsPorOrigem() {
 
   // Contagem por criativo — mostra TODOS os criativos cadastrados, mesmo com 0 leads
   const contagemCriativo = {}
+  const leadsPorCriativo = {}
   filtrados.forEach(l => {
-    if (!l.criativo) return
+    if (!l.criativo || (l.origemCustom || l.fonte) !== 'Tráfego') return
     contagemCriativo[l.criativo] = (contagemCriativo[l.criativo] || 0) + 1
+    if (!leadsPorCriativo[l.criativo]) leadsPorCriativo[l.criativo] = []
+    leadsPorCriativo[l.criativo].push(l)
   })
 
   const adMap = {}
@@ -488,6 +497,7 @@ export default function LeadsPorOrigem() {
                         cor={corCriativo}
                         thumbnail={ad?.thumbnail || ''}
                         permalink={ad?.permalink || ''}
+                        onClick={count > 0 ? () => setModalLeadsCriativo({ nome: criativo, leads: leadsPorCriativo[criativo] || [] }) : undefined}
                       />
                     )
                   })}
@@ -505,6 +515,7 @@ export default function LeadsPorOrigem() {
                         cor={corCriativo}
                         thumbnail={ad?.thumbnail || ''}
                         permalink={ad?.permalink || ''}
+                        onClick={count > 0 ? () => setModalLeadsCriativo({ nome: criativo, leads: leadsPorCriativo[criativo] || [] }) : undefined}
                       />
                     )
                   })}
@@ -523,6 +534,30 @@ export default function LeadsPorOrigem() {
           onSalvar={salvarCriativos}
           onFechar={() => setModalCriativos(false)}
         />
+      )}
+
+      {modalLeadsCriativo && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setModalLeadsCriativo(null)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm max-h-[70vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <h2 className="text-sm font-bold text-gray-800">Leads — {modalLeadsCriativo.nome}</h2>
+              <button onClick={() => setModalLeadsCriativo(null)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
+            </div>
+            <div className="overflow-y-auto flex-1 px-5 py-3 flex flex-col gap-2">
+              {modalLeadsCriativo.leads.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-4">Nenhum lead encontrado</p>
+              ) : modalLeadsCriativo.leads.map((l, i) => (
+                <div key={l.id || i} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">{l.nome || 'Sem nome'}</p>
+                    <p className="text-xs text-gray-400">{l.telefone || l.dataOrigem || l.data || ''}</p>
+                  </div>
+                  <span className="text-xs text-gray-400">{(l.dataOrigem || l.data || '').slice(8, 10)}/{(l.dataOrigem || l.data || '').slice(5, 7)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

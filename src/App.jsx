@@ -335,7 +335,7 @@ case 'whatsapp_canal': return <PagePlaceholder title="WhatsApp" />
     <PacientesProvider>
     <VendasProvider>
     <SocialProvider>
-      <div className="flex min-h-screen" style={{ background: 'linear-gradient(135deg, #F5EDE0 0%, #EDD9C0 50%, #E8D4BE 100%)' }}>
+      <div className="flex min-h-screen" style={{ background: '#f4f6f8' }}>
         <Sidebar active={active} setActive={setActive} />
         <div className="flex-1 ml-16 flex flex-col">
           {active === 'dashboard' && <Header view={view} setView={setView} />}
