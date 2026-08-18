@@ -101,10 +101,14 @@ function CalendarioPos({ registros, onSelectDia, onEditReg }) {
   const getSlotEntries = (dayStr, slot) => {
     const [sh, sm] = slot.split(':').map(Number)
     const slotMin = sh * 60 + sm
+    const seen = new Set()
     return (lembMap[dayStr] || []).filter(e => {
       const [eh, em] = (e.lembHora || '09:00').split(':').map(Number)
       const em2 = eh * 60 + em
-      return em2 >= slotMin && em2 < slotMin + 30
+      if (!(em2 >= slotMin && em2 < slotMin + 30)) return false
+      if (seen.has(e.id)) return false
+      seen.add(e.id)
+      return true
     })
   }
 
@@ -164,7 +168,7 @@ function CalendarioPos({ registros, onSelectDia, onEditReg }) {
           {proximos.length === 0
             ? <p className="text-[10px] text-gray-300">Nenhum agendado</p>
             : proximos.map((p, i) => (
-              <div key={i} className="mb-2 cursor-pointer" onClick={() => { setSemana(semanaRef0(new Date(p.lembData))); onSelectDia(p.lembData) }}>
+              <div key={i} className="mb-2 cursor-pointer" onClick={() => { setSemana(semanaRef0(new Date(p.lembData))); onSelectDia(p.lembData); onEditReg(p) }}>
                 <p className="text-[10px] text-brand-500 font-semibold">{formatData(p.lembData)}{p.lembHora ? ` · ${p.lembHora}` : ''}</p>
                 <p className="text-[11px] text-gray-700 font-medium truncate">{p.nome}</p>
               </div>
