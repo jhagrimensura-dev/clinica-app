@@ -218,7 +218,7 @@ function CalendarioPos({ registros, onSelectDia, onEditReg }) {
                     {entries.map((e, ei) => (
                       <div key={ei}
                         onClick={() => onEditReg(e)}
-                        className={`w-full rounded border px-1.5 py-0.5 text-[10px] font-semibold truncate cursor-pointer leading-tight ${STATUS_SLOT[e.status] || 'bg-teal-100 text-teal-800 border-teal-300'} ${e.status === 'concluido' ? 'opacity-60' : ''}`}>
+                        className={`w-full rounded border px-1.5 py-0.5 text-[10px] font-semibold truncate cursor-pointer leading-tight relative z-10 ${STATUS_SLOT[e.status] || 'bg-teal-100 text-teal-800 border-teal-300'} ${e.status === 'concluido' ? 'opacity-60' : ''}`}>
                         <span className="opacity-70">{e.lembHora} </span>
                         <span className={e.status === 'concluido' ? 'line-through' : ''}>{e.nome}</span>
                       </div>
