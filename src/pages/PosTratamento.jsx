@@ -22,6 +22,10 @@ function parseLembretes(obs) {
   try { const p = JSON.parse(obs || '{}'); return Array.isArray(p.lembretes) ? p.lembretes : [] } catch { return [] }
 }
 
+function temEstruturaLembretes(obs) {
+  try { const p = JSON.parse(obs || 'null'); return p !== null && 'lembretes' in p } catch { return false }
+}
+
 function StatusBadge({ status }) {
   const s = STATUSES[status] || STATUSES.pendente
   return (
@@ -361,9 +365,11 @@ function ModalEditar({ lead, onSalvar, onFechar }) {
   const [lembretes, setLembretes] = useState(
     existingLems.length > 0
       ? existingLems
-      : [{ data: lead.proximoFollowup || '', hora: '09:00', obs: '' },
-         { data: '', hora: '09:00', obs: '' },
-         { data: '', hora: '09:00', obs: '' }]
+      : temEstruturaLembretes(lead.obs)
+        ? [{ data: '', hora: '09:00', obs: '' }]
+        : [{ data: lead.proximoFollowup || '', hora: '09:00', obs: '' },
+           { data: '', hora: '09:00', obs: '' },
+           { data: '', hora: '09:00', obs: '' }]
   )
 
   const setLembrete = (i, field, val) => setLembretes(prev => prev.map((l, idx) => idx === i ? { ...l, [field]: val } : l))
@@ -461,7 +467,7 @@ export default function PosTratamento() {
 
   const handleSalvarEdicao = async (registro, { status, lembretes }) => {
     const lemsValidos = (lembretes || []).filter(l => l.data)
-    const obs = lemsValidos.length > 0 ? JSON.stringify({ lembretes: lemsValidos }) : ''
+    const obs = JSON.stringify({ lembretes: lemsValidos })
     const proximoFollowup = lemsValidos.find(l => !l.feito)?.data || lemsValidos[0]?.data || ''
     await updateLead(registro.id, { status, proximoFollowup, obs })
     setModalEditar(null)
