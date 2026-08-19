@@ -523,18 +523,26 @@ export default function LeadsPorOrigem() {
   })
   const sortedMidia = Object.entries(contagemMidia).sort((a, b) => b[1] - a[1])
 
+  const adMap = {}
+  adsEngajamento.forEach(a => { adMap[a.nome] = a })
+
+  // Normaliza nome do criativo para o nome canônico cadastrado
+  // Remove emojis e caracteres não-alfanuméricos antes de comparar (case-insensitive)
+  const criatKey = (s) => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, '').trim().replace(/\s+/g, ' ')
+  const canonicalCriativo = {}
+  adsEngajamento.forEach(a => { canonicalCriativo[criatKey(a.nome)] = a.nome })
+  const normalizarCriativo = (nome) => canonicalCriativo[criatKey(nome)] || nome
+
   // Contagem por criativo — mostra TODOS os criativos cadastrados, mesmo com 0 leads
   const contagemCriativo = {}
   const leadsPorCriativo = {}
   filtrados.forEach(l => {
     if (!l.criativo || (l.origemCustom || l.fonte) !== 'Tráfego') return
-    contagemCriativo[l.criativo] = (contagemCriativo[l.criativo] || 0) + 1
-    if (!leadsPorCriativo[l.criativo]) leadsPorCriativo[l.criativo] = []
-    leadsPorCriativo[l.criativo].push(l)
+    const nome = normalizarCriativo(l.criativo)
+    contagemCriativo[nome] = (contagemCriativo[nome] || 0) + 1
+    if (!leadsPorCriativo[nome]) leadsPorCriativo[nome] = []
+    leadsPorCriativo[nome].push(l)
   })
-
-  const adMap = {}
-  adsEngajamento.forEach(a => { adMap[a.nome] = a })
 
   const todosCreativos = new Set([...Object.keys(contagemCriativo), ...adsEngajamento.map(a => a.nome)])
   const sortedCriativo = Array.from(todosCreativos)
