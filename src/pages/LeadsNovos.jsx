@@ -516,12 +516,99 @@ export default function LeadsNovos() {
   const [modal, setModal] = useState(false)
   const [modalEditar, setModalEditar] = useState(null)
   const [modalMesclar, setModalMesclar] = useState(null)
+  const [modalImport, setModalImport] = useState(null) // null | { rows, duplicatas }
+  const [importando, setImportando] = useState(false)
   const [busca, setBusca] = useState('')
   const [filtroOrigem, setFiltroOrigem] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [visao, setVisao] = useState('lista')
   const [dragOver, setDragOver] = useState(null)
   const [ordem, setOrdem] = useState('desc')
+
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    e.target.value = ''
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const text = ev.target.result
+      const lines = text.split(/\r?\n/).filter(l => l.trim())
+      if (lines.length < 2) return alert('CSV vazio ou sem dados.')
+      const header = lines[0].split(/[,;]/).map(h => h.trim().toLowerCase().replace(/[^a-z]/g, ''))
+      const rows = []
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(/[,;]/)
+        const row = {}
+        header.forEach((h, idx) => { row[h] = (cols[idx] || '').trim().replace(/^"|"$/g, '') })
+        if (!row.nome && !row.telefone) continue
+
+        // Normaliza data: dd/mm/yyyy → yyyy-mm-dd
+        const parseData = (str) => {
+          if (!str) return ''
+          const parts = str.split(/[\/\-]/)
+          if (parts.length === 3) {
+            if (parts[0].length === 4) return str.replace(/\//g, '-')
+            return `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`
+          }
+          return ''
+        }
+
+        // Normaliza origem
+        const rawOrigem = (row.origem || '').toUpperCase()
+        let origemCustom = 'Instagram'
+        let midia = ''
+        if (rawOrigem.includes('TRAFEGO') || rawOrigem.includes('TRÁFEGO')) { origemCustom = 'Tráfego'; midia = 'Campanha de msg para Whatsapp' }
+        else if (rawOrigem.includes('INDICACAO') || rawOrigem.includes('INDICAÇÃO')) { origemCustom = 'Indicação' }
+        else if (rawOrigem.includes('STORIES')) { origemCustom = 'Instagram'; midia = 'Stories' }
+        else if (rawOrigem.includes('BIO') || rawOrigem.includes('INSTAGRAM')) { origemCustom = 'Instagram'; midia = 'Link da BIO' }
+        else if (rawOrigem.includes('ONLINE')) { origemCustom = 'Online' }
+
+        const criativo = origemCustom === 'Tráfego' ? (row.criativo || '') : ''
+        const data = parseData(row.data || row.date || '')
+        const agendou = (row.agendou || '').toUpperCase() === 'SIM'
+
+        rows.push({
+          nome: row.nome || '',
+          telefone: (row.telefone || '').replace(/\D/g, '') ? row.telefone : '',
+          data,
+          dataOrigem: data,
+          origemCustom,
+          midia,
+          criativo,
+          status: agendou ? 'agendado' : 'em_aberto',
+          origem: 'leads_novos',
+          obs: '',
+          responsavel: '',
+        })
+      }
+
+      const telefonesExistentes = new Set(todosLeads.map(l => (l.telefone || '').replace(/\D/g, '')))
+      const nomesExistentes = new Set(todosLeads.map(l => (l.nome || '').toLowerCase().trim()))
+      const novos = rows.filter(r => {
+        const tel = r.telefone.replace(/\D/g, '')
+        const nome = r.nome.toLowerCase().trim()
+        return !telefonesExistentes.has(tel) && !nomesExistentes.has(nome)
+      })
+      const duplicatas = rows.filter(r => {
+        const tel = r.telefone.replace(/\D/g, '')
+        const nome = r.nome.toLowerCase().trim()
+        return telefonesExistentes.has(tel) || nomesExistentes.has(nome)
+      })
+      setModalImport({ novos, duplicatas })
+    }
+    reader.readAsText(file, 'UTF-8')
+  }
+
+  const confirmarImport = async () => {
+    if (!modalImport?.novos?.length) return
+    setImportando(true)
+    for (const lead of modalImport.novos) {
+      await addLead(lead)
+    }
+    setImportando(false)
+    setModalImport(null)
+    alert(`${modalImport.novos.length} lead(s) importado(s) com sucesso!`)
+  }
 
   const gruposDuplicatas = useMemo(() => {
     const groups = {}
@@ -660,6 +747,10 @@ export default function LeadsNovos() {
             <span className="text-sm font-semibold text-gray-700 w-24 text-center">{MESES_FULL[mes].slice(0,3)} {ano}</span>
             <button onClick={() => { if (mes === 11) { setMes(0); setAno(a => a+1) } else setMes(m => m+1) }} className="text-gray-400 hover:text-gray-600 px-1">›</button>
           </div>
+          <label className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-600 text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-sm border border-gray-200 cursor-pointer" title="Importar CSV">
+            ↑ Importar CSV
+            <input type="file" accept=".csv" className="hidden" onChange={handleImportCSV} />
+          </label>
           <button
             onClick={() => setModal(true)}
             className="flex items-center gap-2 bg-orange-400 hover:bg-orange-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-sm"
@@ -1010,6 +1101,52 @@ export default function LeadsNovos() {
           onMesclar={mesclarLeads}
           onFechar={() => setModalMesclar(null)}
         />
+      )}
+
+      {modalImport && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => !importando && setModalImport(null)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div>
+                <h2 className="text-sm font-bold text-gray-800">Importar Leads do CSV</h2>
+                <p className="text-xs text-gray-400 mt-0.5">{modalImport.novos.length} novos · {modalImport.duplicatas.length} já existem (serão ignorados)</p>
+              </div>
+              {!importando && <button onClick={() => setModalImport(null)} className="text-gray-400 hover:text-gray-600">✕</button>}
+            </div>
+
+            <div className="overflow-y-auto flex-1 px-6 py-3">
+              {modalImport.novos.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-6">Todos os leads já estão cadastrados no sistema.</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {modalImport.novos.map((l, i) => (
+                    <div key={i} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-800">{l.nome}</p>
+                        <p className="text-xs text-gray-400">{l.origemCustom}{l.midia ? ` · ${l.midia}` : ''}{l.criativo ? ` · ${l.criativo}` : ''}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-xs text-gray-500">{(l.data || '').slice(8,10)}/{(l.data || '').slice(5,7)}</p>
+                        <p className="text-xs text-gray-400">{l.status === 'agendado' ? '✓ Agendou' : 'Em aberto'}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {modalImport.novos.length > 0 && (
+              <div className="px-6 py-4 border-t border-gray-100 flex gap-3">
+                <button onClick={() => setModalImport(null)} disabled={importando} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50">
+                  Cancelar
+                </button>
+                <button onClick={confirmarImport} disabled={importando} className="flex-1 py-2.5 rounded-xl bg-orange-400 hover:bg-orange-500 text-white text-sm font-semibold transition-colors disabled:opacity-50">
+                  {importando ? 'Importando...' : `Importar ${modalImport.novos.length} leads`}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   )
