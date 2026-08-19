@@ -14,36 +14,72 @@ const FOLLOWS = [
 ]
 const ORIGENS_PADRAO = ['Instagram Anúncio', 'Instagram Orgânico', 'Tráfego', 'Indicação', 'Retorno', 'Resgate', 'Fornecedores', 'Outros']
 
-function ModalEditarLeadRapido({ lead, onSalvar, onFechar }) {
+const MIDIAS_PADRAO = ['Link da BIO', 'Link dos Stories', 'Campanha de msg para Whatsapp', 'Indicação']
+const RESPONSAVEIS = ['Dra. Amanda', 'Fernanda', 'Recepção', 'Equipe']
+
+function ModalEditarLeadRapido({ lead, adsEngajamento, onSalvar, onFechar }) {
+  const [dataOrigem, setDataOrigem] = useState(lead.dataOrigem || lead.data || '')
+  const [data, setData] = useState(lead.data || '')
+  const [responsavel, setResponsavel] = useState(lead.responsavel || '')
   const [nome, setNome] = useState(lead.nome || '')
   const [telefone, setTelefone] = useState(lead.telefone || '')
   const [origem, setOrigem] = useState(lead.origemCustom || lead.fonte || '')
   const [midia, setMidia] = useState(lead.midia || '')
+  const [criativo, setCriativo] = useState(lead.criativo || '')
+  const [criatvoCustom, setCriativoCustom] = useState('')
   const [status, setStatus] = useState(lead.status || 'em_aberto')
   const [obs, setObs] = useState(lead.obs || '')
 
+  const isTrafego = origem === 'Tráfego'
+  const isInstagram = origem === 'Instagram Anúncio' || origem === 'Instagram Orgânico' || origem === 'Instagram'
+
   return (
     <div className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center p-4" onClick={onFechar}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4" onClick={e => e.stopPropagation()}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-gray-900">Editar Lead</h2>
           <button onClick={onFechar} className="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
         </div>
+
+        <div>
+          <label className="text-xs font-semibold text-gray-500 mb-1 block">Data de Origem <span className="text-gray-400 font-normal">(primeiro contato)</span></label>
+          <input type="date" value={dataOrigem} onChange={e => setDataOrigem(e.target.value)}
+            className="w-full border border-amber-200 bg-amber-50/40 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400" />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1 block">Data</label>
+            <input type="date" value={data} onChange={e => setData(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400" />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1 block">Responsável</label>
+            <select value={responsavel} onChange={e => setResponsavel(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400 bg-white">
+              <option value="">Selecione</option>
+              {RESPONSAVEIS.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
+        </div>
+
         <div>
           <label className="text-xs font-semibold text-gray-500 mb-1 block">Nome</label>
           <input value={nome} onChange={e => setNome(e.target.value)} autoFocus
-            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-300" />
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400" />
         </div>
+
         <div>
           <label className="text-xs font-semibold text-gray-500 mb-1 block">Telefone</label>
           <input value={telefone} onChange={e => setTelefone(e.target.value.replace(/\D/g, ''))}
-            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-300" />
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400" />
         </div>
+
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="text-xs font-semibold text-gray-500 mb-1 block">Origem</label>
-            <select value={origem} onChange={e => setOrigem(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-300 bg-white">
+            <select value={origem} onChange={e => { setOrigem(e.target.value); setMidia(''); setCriativo('') }}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400 bg-white">
               <option value="">Não informado</option>
               {ORIGENS_PADRAO.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
@@ -51,26 +87,48 @@ function ModalEditarLeadRapido({ lead, onSalvar, onFechar }) {
           <div>
             <label className="text-xs font-semibold text-gray-500 mb-1 block">Status</label>
             <select value={status} onChange={e => setStatus(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-300 bg-white">
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400 bg-white">
               {FOLLOWS.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
             </select>
           </div>
         </div>
-        <div>
-          <label className="text-xs font-semibold text-gray-500 mb-1 block">Mídia / Criativo</label>
-          <input value={midia} onChange={e => setMidia(e.target.value)}
-            placeholder="Ex: Link da BIO, Coração Azul..."
-            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-300" />
-        </div>
+
+        {isInstagram && (
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1 block">Mídia</label>
+            <select value={midia} onChange={e => setMidia(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400 bg-white">
+              <option value="">Não informado</option>
+              {MIDIAS_PADRAO.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+        )}
+
+        {isTrafego && (
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1 block">Criativo</label>
+            <select value={criativo} onChange={e => setCriativo(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400 bg-white">
+              <option value="">Selecione o criativo...</option>
+              {(adsEngajamento || []).map(a => <option key={a.nome} value={a.nome}>{a.nome}</option>)}
+            </select>
+            <input value={criatvoCustom || (!(adsEngajamento || []).find(a => a.nome === criativo) ? criativo : '')}
+              onChange={e => { setCriativoCustom(e.target.value); setCriativo(e.target.value) }}
+              placeholder="Ou digitar nome do criativo..."
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400 mt-2" />
+          </div>
+        )}
+
         <div>
           <label className="text-xs font-semibold text-gray-500 mb-1 block">Observações</label>
           <textarea value={obs} onChange={e => setObs(e.target.value)} rows={2}
-            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-300 resize-none" />
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-400 resize-none" />
         </div>
+
         <div className="flex justify-end gap-3 pt-1 border-t border-gray-100">
           <button onClick={onFechar} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
-          <button onClick={() => onSalvar({ nome: nome.trim(), telefone, origemCustom: origem, midia: midia || null, status, obs })}
-            className="px-5 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-xl">Salvar</button>
+          <button onClick={() => onSalvar({ nome: nome.trim(), telefone, dataOrigem: dataOrigem || data, data, responsavel, origemCustom: origem, midia: isTrafego ? null : (midia || null), criativo: isTrafego ? (criativo || null) : null, status, obs })}
+            className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl">Salvar</button>
         </div>
       </div>
     </div>
@@ -615,6 +673,7 @@ export default function LeadsPorOrigem() {
       {modalEditarLead && (
         <ModalEditarLeadRapido
           lead={modalEditarLead}
+          adsEngajamento={adsEngajamento}
           onSalvar={async (dados) => { await updateLead(modalEditarLead.id, dados); setModalEditarLead(null) }}
           onFechar={() => setModalEditarLead(null)}
         />
