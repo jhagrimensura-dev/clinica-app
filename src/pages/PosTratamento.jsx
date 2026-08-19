@@ -327,9 +327,7 @@ function ModalNovo({ onSalvar, onFechar }) {
                     className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 bg-white" />
                   <input type="time" value={l.hora} onChange={e => setLembrete(i, 'hora', e.target.value)}
                     className="w-24 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 bg-white" />
-                  {lembretes.length > 1 && (
-                    <button onClick={() => removeLembrete(i)} className="text-gray-300 hover:text-red-400 text-lg leading-none flex-shrink-0">×</button>
-                  )}
+                  <button onClick={() => removeLembrete(i)} className="text-gray-300 hover:text-red-400 text-lg leading-none flex-shrink-0">×</button>
                 </div>
                 <input value={l.obs} onChange={e => setLembrete(i, 'obs', e.target.value)}
                   placeholder="Observação do lembrete..."
@@ -396,9 +394,7 @@ function ModalEditar({ lead, onSalvar, onFechar }) {
                     className={`flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 bg-white ${l.feito ? 'line-through text-gray-400' : ''}`} />
                   <input type="time" value={l.hora} onChange={e => setLembrete(i, 'hora', e.target.value)}
                     className="w-24 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300 bg-white" />
-                  {lembretes.length > 1 && (
-                    <button onClick={() => removeLembrete(i)} className="text-gray-300 hover:text-red-400 text-lg leading-none flex-shrink-0">×</button>
-                  )}
+                  <button onClick={() => removeLembrete(i)} className="text-gray-300 hover:text-red-400 text-lg leading-none flex-shrink-0">×</button>
                 </div>
                 <input value={l.obs} onChange={e => setLembrete(i, 'obs', e.target.value)}
                   placeholder="Observação do lembrete..."
