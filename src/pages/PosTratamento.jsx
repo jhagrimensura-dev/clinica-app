@@ -205,7 +205,7 @@ function CalendarioPos({ registros, onSelectDia, onEditReg }) {
         {/* time grid */}
         <div className="flex-1 overflow-y-auto">
           {SLOTS.map((slot, si) => (
-            <div key={si} className="flex" style={{ height: `${SLOT_H_PX}px` }}>
+            <div key={si} className="flex" style={{ minHeight: `${SLOT_H_PX}px` }}>
               <div className="w-14 flex-shrink-0 flex items-start justify-end pr-2 pt-0.5">
                 {slot.endsWith(':00') && <span className="text-[10px] text-gray-400">{slot}</span>}
               </div>
