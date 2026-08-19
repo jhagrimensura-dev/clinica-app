@@ -2,6 +2,81 @@ import { useState, useEffect } from 'react'
 import { useLeads } from '../context/LeadsContext'
 import { supabase } from '../lib/supabase'
 
+const FOLLOWS = [
+  { key: 'em_aberto',   label: 'Em aberto'   },
+  { key: 'conversando', label: 'Conversando'  },
+  { key: 'follow1',     label: 'Follow #1'    },
+  { key: 'follow2',     label: 'Follow #2'    },
+  { key: 'follow3',     label: 'Follow #3'    },
+  { key: 'agendado',    label: 'Agendado'     },
+  { key: 'fechado',     label: 'Fechado'      },
+  { key: 'perdido',     label: 'Perdido'      },
+]
+const ORIGENS_PADRAO = ['Instagram Anúncio', 'Instagram Orgânico', 'Tráfego', 'Indicação', 'Retorno', 'Resgate', 'Fornecedores', 'Outros']
+
+function ModalEditarLeadRapido({ lead, onSalvar, onFechar }) {
+  const [nome, setNome] = useState(lead.nome || '')
+  const [telefone, setTelefone] = useState(lead.telefone || '')
+  const [origem, setOrigem] = useState(lead.origemCustom || lead.fonte || '')
+  const [midia, setMidia] = useState(lead.midia || '')
+  const [status, setStatus] = useState(lead.status || 'em_aberto')
+  const [obs, setObs] = useState(lead.obs || '')
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center p-4" onClick={onFechar}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-bold text-gray-900">Editar Lead</h2>
+          <button onClick={onFechar} className="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-gray-500 mb-1 block">Nome</label>
+          <input value={nome} onChange={e => setNome(e.target.value)} autoFocus
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-300" />
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-gray-500 mb-1 block">Telefone</label>
+          <input value={telefone} onChange={e => setTelefone(e.target.value.replace(/\D/g, ''))}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-300" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1 block">Origem</label>
+            <select value={origem} onChange={e => setOrigem(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-300 bg-white">
+              <option value="">Não informado</option>
+              {ORIGENS_PADRAO.map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1 block">Status</label>
+            <select value={status} onChange={e => setStatus(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-300 bg-white">
+              {FOLLOWS.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
+            </select>
+          </div>
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-gray-500 mb-1 block">Mídia / Criativo</label>
+          <input value={midia} onChange={e => setMidia(e.target.value)}
+            placeholder="Ex: Link da BIO, Coração Azul..."
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-300" />
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-gray-500 mb-1 block">Observações</label>
+          <textarea value={obs} onChange={e => setObs(e.target.value)} rows={2}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-300 resize-none" />
+        </div>
+        <div className="flex justify-end gap-3 pt-1 border-t border-gray-100">
+          <button onClick={onFechar} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
+          <button onClick={() => onSalvar({ nome: nome.trim(), telefone, origemCustom: origem, midia: midia || null, status, obs })}
+            className="px-5 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-xl">Salvar</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
 const COR_ORIGEM = {
@@ -309,7 +384,7 @@ function ModalGerenciarCriativos({ criativos, contagemCriativo, onSalvar, onFech
 }
 
 export default function LeadsPorOrigem() {
-  const { leads } = useLeads()
+  const { leads, updateLead } = useLeads()
   const hoje = new Date()
   const [mes, setMes] = useState(hoje.getMonth())
   const [ano, setAno] = useState(hoje.getFullYear())
@@ -317,6 +392,7 @@ export default function LeadsPorOrigem() {
   const [viewCriativo, setViewCriativo] = useState('grid')
   const [modalCriativos, setModalCriativos] = useState(false)
   const [modalLeadsCriativo, setModalLeadsCriativo] = useState(null) // { nome, leads[] }
+  const [modalEditarLead, setModalEditarLead] = useState(null)
 
   useEffect(() => {
     supabase.from('configuracoes').select('valor').eq('chave', 'ads_engajamento').maybeSingle()
@@ -536,6 +612,14 @@ export default function LeadsPorOrigem() {
         />
       )}
 
+      {modalEditarLead && (
+        <ModalEditarLeadRapido
+          lead={modalEditarLead}
+          onSalvar={async (dados) => { await updateLead(modalEditarLead.id, dados); setModalEditarLead(null) }}
+          onFechar={() => setModalEditarLead(null)}
+        />
+      )}
+
       {modalLeadsCriativo && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setModalLeadsCriativo(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm max-h-[70vh] flex flex-col" onClick={e => e.stopPropagation()}>
@@ -547,7 +631,9 @@ export default function LeadsPorOrigem() {
               {modalLeadsCriativo.leads.length === 0 ? (
                 <p className="text-sm text-gray-400 text-center py-4">Nenhum lead encontrado</p>
               ) : modalLeadsCriativo.leads.map((l, i) => (
-                <div key={l.id || i} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                <div key={l.id || i}
+                  className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0 cursor-pointer hover:bg-gray-50 rounded-xl px-2 -mx-2 transition-colors"
+                  onClick={() => setModalEditarLead(l)}>
                   <div>
                     <p className="text-sm font-semibold text-gray-800">{l.nome || 'Sem nome'}</p>
                     <p className="text-xs text-gray-400">{l.telefone || l.dataOrigem || l.data || ''}</p>
