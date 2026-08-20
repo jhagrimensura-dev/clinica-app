@@ -80,11 +80,16 @@ export default function Dashboard() {
     ? ((followConvertidosMes.length / leadsFollowAtivos.length) * 100).toFixed(1)
     : '0.0'
 
-  // Consultas pagas = clientes que de fato compareceram (fonte verdadeira para CAC e conversão)
+  // Consultas pagas = clientes que de fato compareceram (fonte verdadeira para CAC e conversão geral)
   const totalAgendReal = countConsultas
 
+  // Agendados de novos + indicação (por status do lead — inclui quem ainda não tem lançamento financeiro)
+  const agendadosNovos = leadsNovos.filter(l => !isFollowLead(l) && l.status === 'agendado').length
+  const agendadosIndicacao = leadsIndicacao.filter(l => l.status === 'agendado').length
+  const totalAgendNovos = agendadosNovos + agendadosIndicacao
+
   const convComercial = totalLeads > 0 ? ((totalAgendReal / totalLeads) * 100).toFixed(1) : '0.0'
-  const convNovos = (leadsNovosReais + leadsIndicacao.length) > 0 ? ((totalAgendReal / (leadsNovosReais + leadsIndicacao.length)) * 100).toFixed(1) : '0.0'
+  const convNovos = (leadsNovosReais + leadsIndicacao.length) > 0 ? ((totalAgendNovos / (leadsNovosReais + leadsIndicacao.length)) * 100).toFixed(1) : '0.0'
   const convRecorrencia = leadsRecorrentes.length > 0 ? ((agendRecorrentes / leadsRecorrentes.length) * 100).toFixed(1) : '0.0'
 
   const { trafego: trafegoInvestido, seguidores } = getMes(ano, mes)
@@ -223,7 +228,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-5 gap-4">
           {[
             { label: 'Social Media', icon: '🔗', color: 'text-brand-500', value: String(seguidores.toLocaleString('pt-BR')), sub: 'seguidores', extras: [`${leadsNovosReais} leads recebidos`, `${convComercial}% conversão`] },
-            { label: 'Leads Novos', icon: '🏢', color: 'text-blue-500', value: String(leadsNovosReais + leadsIndicacao.length), sub: 'novos este mês', extras: [`${leadsNovosReais} novos`, `${leadsIndicacao.length} indicações`, `${totalAgendReal} consultas agendadas`, `${convNovos}% conversão`] },
+            { label: 'Leads Novos', icon: '🏢', color: 'text-blue-500', value: String(leadsNovosReais + leadsIndicacao.length), sub: 'novos este mês', extras: [`${leadsNovosReais} novos`, `${leadsIndicacao.length} indicações`, `${totalAgendNovos} agendados (novos + indicação)`, `${convNovos}% conversão`] },
             { label: 'Leads Follow', icon: '🔁', color: 'text-purple-500', value: String(followConvertidosMes.length), sub: `convertidos em ${MESES[mes]}`, extras: [`${leadsFollowAtivos.length} em acompanhamento`, `${follow1Count} follow #1 · ${follow2Count} follow #2 · ${follow3Count} follow #3`, `${convFollow}% conversão`] },
             { label: 'Leads Recorrência', icon: '🔄', color: 'text-teal-500', value: String(leadsRecorrentes.length), sub: 'contatos recorrentes', extras: [`${agendRecorrentes} agendamentos`, `${convRecorrencia}% conversão`] },
           ].map((card, i) => (
