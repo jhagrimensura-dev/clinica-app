@@ -225,7 +225,7 @@ export default function LeadsFollowUp() {
   const [importando, setImportando] = useState(false)
   const [busca, setBusca] = useState('')
   const [filtroOrigem, setFiltroOrigem] = useState('')
-  const [filtroStatus, setFiltroStatus] = useState('')
+  const [filtroStatus] = useState('')
   const [ordem, setOrdem] = useState('desc')
   const [confirmDelete, setConfirmDelete] = useState(null)
 
@@ -445,17 +445,6 @@ export default function LeadsFollowUp() {
         </div>
       </div>
 
-      {/* Cards resumo */}
-      <div className="grid grid-cols-5 gap-3">
-        {FOLLOWS.map(f => (
-          <div key={f.key} className={`rounded-2xl p-4 border cursor-pointer transition-all ${filtroStatus === f.key ? 'ring-2 ring-orange-400 border-orange-200' : 'border-gray-100 bg-white'}`}
-            onClick={() => setFiltroStatus(s => s === f.key ? '' : f.key)}>
-            <p className="text-xs text-gray-400 font-medium mb-1">{f.label}</p>
-            <p className={`text-2xl font-bold ${f.text}`}>{funil[f.key]}</p>
-          </div>
-        ))}
-      </div>
-
       {/* Resumo */}
       <div className="bg-white rounded-2xl p-4 border border-gray-100 flex gap-8 items-center">
         <div>
@@ -465,9 +454,6 @@ export default function LeadsFollowUp() {
         <div>
           <p className="text-xs text-gray-400">Taxa agend. + vendido</p>
           <p className="text-xl font-bold text-blue-500">{taxa}%</p>
-        </div>
-        <div className="text-xs text-gray-400 ml-auto">
-          Clique nos cards acima para filtrar por status
         </div>
       </div>
 
