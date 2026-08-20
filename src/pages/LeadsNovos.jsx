@@ -534,10 +534,11 @@ export default function LeadsNovos() {
       const text = ev.target.result
       const lines = text.split(/\r?\n/).filter(l => l.trim())
       if (lines.length < 2) return alert('CSV vazio ou sem dados.')
-      const header = lines[0].split(/[,;]/).map(h => h.trim().toLowerCase().replace(/[^a-z]/g, ''))
+      const sep = lines[0].includes('\t') ? /\t/ : /[,;]/
+      const header = lines[0].split(sep).map(h => h.trim().toLowerCase().replace(/[^a-z]/g, ''))
       const rows = []
       for (let i = 1; i < lines.length; i++) {
-        const cols = lines[i].split(/[,;]/)
+        const cols = lines[i].split(sep)
         const row = {}
         header.forEach((h, idx) => { row[h] = (cols[idx] || '').trim().replace(/^"|"$/g, '') })
         if (!row.nome && !row.telefone) continue
@@ -559,7 +560,7 @@ export default function LeadsNovos() {
         let midia = ''
         if (rawOrigem.includes('TRAFEGO') || rawOrigem.includes('TRÁFEGO')) { origemCustom = 'Tráfego'; midia = 'Campanha de msg para Whatsapp' }
         else if (rawOrigem.includes('INDICACAO') || rawOrigem.includes('INDICAÇÃO')) { origemCustom = 'Indicação' }
-        else if (rawOrigem.includes('STORIES')) { origemCustom = 'Instagram'; midia = 'Stories' }
+        else if (rawOrigem.includes('STORIES')) { origemCustom = 'Instagram'; midia = 'Link dos Stories' }
         else if (rawOrigem.includes('BIO') || rawOrigem.includes('INSTAGRAM')) { origemCustom = 'Instagram'; midia = 'Link da BIO' }
         else if (rawOrigem.includes('ONLINE')) { origemCustom = 'Online' }
 
