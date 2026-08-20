@@ -36,8 +36,8 @@ function parseLinhaProc(str, procs) {
     const calcTotal = precoPorMl > 0 ? precoPorMl * parseFloat(qtd) : 0
     return { nome, qtd, total: storedVal || calcTotal, precoPorMl, unidade, storedVal }
   }
-  const proc = procs.find(p => p.nome === s.trim())
-  return { nome: s.trim(), qtd: '', total: storedVal, precoPorMl: proc?.precoPorMl || 0, unidade: proc?.unidade || 'ml', storedVal }
+  const proc = procs.find(p => p.nome.toLowerCase() === s.trim().toLowerCase())
+  return { nome: proc?.nome || s.trim(), qtd: '', total: storedVal, precoPorMl: proc?.precoPorMl || 0, unidade: proc?.unidade || 'ml', storedVal }
 }
 
 function displayProc(str) {
@@ -787,8 +787,12 @@ export default function Faturamento() {
   const lancamentosModelo = lancamentosMesAll.filter(l => l.tipo === 'Paciente Modelo')
   const lancamentosMes = lancamentosMesAll.filter(l => l.tipo !== 'Paciente Modelo')
 
+  const isConsultaProc = (l) =>
+    (l.procedimentos || '').split(' e ').some(s => s.trim().toLowerCase() === 'consulta')
+
   const totalTratamentos = lancamentosMes.reduce((acc, l) => acc + (l.valorTratamento || 0), 0)
   const totalTaxas = lancamentosMes.reduce((acc, l) => acc + (l.valorTaxa || 0), 0)
+  const isConsultaCard = (l) => (l.valorTaxa || 0) > 0
   const totalGeral = totalTratamentos
   const totalModelo = lancamentosModelo.reduce((acc, l) => acc + (l.valorTratamento || 0) + (l.valorTaxa || 0), 0)
   const mlModelo = lancamentosModelo.reduce((acc, l) => {
@@ -879,11 +883,11 @@ export default function Faturamento() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 cursor-pointer" onClick={() => setConsultasAberto(o => !o)}>
           <p className="text-sm text-gray-500 font-medium mb-1">Consultas (R$)</p>
           <p className="text-2xl font-bold text-yellow-500">R$ {fmt(totalTaxas)}</p>
-          <p className="text-xs text-gray-400 mt-1">{lancamentosMes.filter(l => (l.valorTaxa || 0) > 0).length} consulta(s) paga(s) — não contabilizado(s)</p>
+          <p className="text-xs text-gray-400 mt-1">{lancamentosMes.filter(isConsultaCard).length} consulta(s) paga(s) — não contabilizado(s)</p>
           {consultasAberto && (
             <div className="mt-3 pt-2 border-t border-gray-100 space-y-1">
-              {lancamentosMes.filter(l => (l.valorTaxa || 0) > 0).map((l, i) => (
-                <p key={i} className="text-xs text-gray-500">· {l.paciente}</p>
+              {lancamentosMes.filter(isConsultaCard).map((l, i) => (
+                <p key={i} className="text-xs text-gray-500">· {l.paciente} — R$ {((l.valorTaxa || 0) > 0 ? l.valorTaxa : l.valorTratamento || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
               ))}
             </div>
           )}

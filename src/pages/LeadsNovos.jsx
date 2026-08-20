@@ -516,7 +516,8 @@ export default function LeadsNovos() {
   const [modal, setModal] = useState(false)
   const [modalEditar, setModalEditar] = useState(null)
   const [modalMesclar, setModalMesclar] = useState(null)
-  const [modalImport, setModalImport] = useState(null) // null | { rows, duplicatas }
+  const [modalImport, setModalImport] = useState(null)
+  const [suspeitosDecisao, setSuspeitosDecisao] = useState([]) // 'pular' | 'importar' por índice
   const [importando, setImportando] = useState(false)
   const [busca, setBusca] = useState('')
   const [filtroOrigem, setFiltroOrigem] = useState('')
@@ -592,19 +593,39 @@ export default function LeadsNovos() {
         })
       }
 
-      const telefonesExistentes = new Set(todosLeads.map(l => (l.telefone || '').replace(/\D/g, '')))
-      const nomesExistentes = new Set(todosLeads.map(l => (l.nome || '').toLowerCase().trim()))
-      const novos = rows.filter(r => {
-        const tel = r.telefone.replace(/\D/g, '')
-        const nome = r.nome.toLowerCase().trim()
-        return !telefonesExistentes.has(tel) && !nomesExistentes.has(nome)
+      const normNome = (s) => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
+      const primNome = (s) => normNome(s).split(/\s+/)[0]
+
+      const telefonesExistentes = new Set(
+        todosLeads.map(l => (l.telefone || '').replace(/\D/g, '')).filter(t => t.length >= 6)
+      )
+      const nomesExistentes = new Set(todosLeads.map(l => normNome(l.nome)))
+      // mapa: primeiro nome normalizado → leads no sistema
+      const primNomesMap = {}
+      todosLeads.forEach(l => {
+        const pn = primNome(l.nome)
+        if (pn.length < 3) return
+        if (!primNomesMap[pn]) primNomesMap[pn] = []
+        primNomesMap[pn].push(l)
       })
-      const duplicatas = rows.filter(r => {
+
+      const novos = []
+      const duplicatas = []
+      const suspeitos = []
+      rows.forEach(r => {
         const tel = r.telefone.replace(/\D/g, '')
-        const nome = r.nome.toLowerCase().trim()
-        return telefonesExistentes.has(tel) || nomesExistentes.has(nome)
+        const nome = normNome(r.nome)
+        const pn = primNome(r.nome)
+        if ((tel.length >= 6 && telefonesExistentes.has(tel)) || nomesExistentes.has(nome)) {
+          duplicatas.push(r)
+        } else if (pn.length >= 3 && primNomesMap[pn]) {
+          suspeitos.push({ lead: r, matches: primNomesMap[pn] })
+        } else {
+          novos.push(r)
+        }
       })
-      setModalImport({ novos, duplicatas })
+      setModalImport({ novos, duplicatas, suspeitos })
+      setSuspeitosDecisao(new Array(suspeitos.length).fill('pular'))
     }
     reader.readAsText(file, 'UTF-8')
   }
@@ -620,7 +641,7 @@ export default function LeadsNovos() {
       await addLancamento({
         paciente: lead.nome,
         tipo: lead.origemCustom === 'Indicação' ? 'Indicação' : 'Novo',
-        procedimentos: 'consulta',
+        procedimentos: 'Consulta',
         valorTaxa: lead._valorConsulta,
         valorTratamento: 0,
         data: lead.data,
@@ -635,7 +656,21 @@ export default function LeadsNovos() {
       await criarLancamento(lead)
     }
 
-    // Para duplicatas: apenas cria lançamento de consulta se tiver valor (lead já existe)
+    // Suspeitos marcados como 'importar' viram novos leads
+    for (let i = 0; i < (modalImport.suspeitos || []).length; i++) {
+      const { lead } = modalImport.suspeitos[i]
+      if (suspeitosDecisao[i] === 'importar') {
+        const { _valorConsulta, ...leadData } = lead
+        await addLead(leadData)
+        leadsImportados++
+        await criarLancamento(lead)
+      } else {
+        // marcado como duplicata: só lança consulta se houver
+        await criarLancamento(lead)
+      }
+    }
+
+    // Para duplicatas exatas: apenas cria lançamento de consulta se tiver valor (lead já existe)
     for (const lead of (modalImport.duplicatas || [])) {
       await criarLancamento(lead)
     }
@@ -1147,39 +1182,91 @@ export default function LeadsNovos() {
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <div>
                 <h2 className="text-sm font-bold text-gray-800">Importar Leads do CSV</h2>
-                <p className="text-xs text-gray-400 mt-0.5">{modalImport.novos.length} novos · {modalImport.duplicatas.length} já existem{modalImport.duplicatas.filter(d => d._valorConsulta > 0 && d.status === 'agendado').length > 0 ? ` (${modalImport.duplicatas.filter(d => d._valorConsulta > 0 && d.status === 'agendado').length} com consulta a lançar)` : ' (serão ignorados)'}</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {modalImport.novos.length} novos · {modalImport.duplicatas.length} já existem
+                  {modalImport.suspeitos.length > 0 ? ` · ${modalImport.suspeitos.length} para verificar` : ''}
+                  {modalImport.duplicatas.filter(d => d._valorConsulta > 0 && d.status === 'agendado').length > 0 ? ` (${modalImport.duplicatas.filter(d => d._valorConsulta > 0 && d.status === 'agendado').length} consulta a lançar)` : ''}
+                </p>
               </div>
               {!importando && <button onClick={() => setModalImport(null)} className="text-gray-400 hover:text-gray-600">✕</button>}
             </div>
 
-            <div className="overflow-y-auto flex-1 px-6 py-3">
-              {modalImport.novos.length === 0 && modalImport.duplicatas.filter(d => d._valorConsulta > 0).length === 0 ? (
+            <div className="overflow-y-auto flex-1 px-6 py-3 space-y-4">
+              {/* Possíveis duplicatas — requer decisão */}
+              {modalImport.suspeitos.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-yellow-600 mb-2">Possíveis duplicatas — confirme:</p>
+                  <div className="flex flex-col gap-2">
+                    {modalImport.suspeitos.map((s, i) => (
+                      <div key={i} className="rounded-xl border border-yellow-100 bg-yellow-50 p-3">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div>
+                            <p className="text-sm font-semibold text-gray-800">{s.lead.nome}</p>
+                            <p className="text-xs text-gray-500">CSV · {s.lead.origemCustom}{s.lead._valorConsulta > 0 ? ` · consulta R$ ${s.lead._valorConsulta.toLocaleString('pt-BR', {minimumFractionDigits:2})}` : ''}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">Sistema: {s.matches.map(m => m.nome).join(', ')}</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setSuspeitosDecisao(d => d.map((v, j) => j === i ? 'pular' : v))}
+                            className={`flex-1 text-xs py-1.5 rounded-lg border font-medium transition-colors ${suspeitosDecisao[i] === 'pular' ? 'bg-gray-200 text-gray-700 border-gray-300' : 'bg-white text-gray-400 border-gray-200 hover:bg-gray-50'}`}
+                          >
+                            É a mesma pessoa
+                          </button>
+                          <button
+                            onClick={() => setSuspeitosDecisao(d => d.map((v, j) => j === i ? 'importar' : v))}
+                            className={`flex-1 text-xs py-1.5 rounded-lg border font-medium transition-colors ${suspeitosDecisao[i] === 'importar' ? 'bg-orange-100 text-orange-700 border-orange-300' : 'bg-white text-gray-400 border-gray-200 hover:bg-gray-50'}`}
+                          >
+                            É lead novo
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Novos leads confirmados */}
+              {modalImport.novos.length === 0 && modalImport.suspeitos.length === 0 && modalImport.duplicatas.filter(d => d._valorConsulta > 0).length === 0 ? (
                 <p className="text-sm text-gray-400 text-center py-6">Todos os leads já estão cadastrados no sistema.</p>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  {modalImport.novos.map((l, i) => (
-                    <div key={i} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                      <div>
-                        <p className="text-sm font-semibold text-gray-800">{l.nome}</p>
-                        <p className="text-xs text-gray-400">{l.origemCustom}{l.midia ? ` · ${l.midia}` : ''}{l.criativo ? ` · ${l.criativo}` : ''}</p>
+              ) : modalImport.novos.length > 0 && (
+                <div>
+                  {modalImport.suspeitos.length > 0 && <p className="text-xs font-semibold text-gray-500 mb-2">Novos leads:</p>}
+                  <div className="flex flex-col gap-2">
+                    {modalImport.novos.map((l, i) => (
+                      <div key={i} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                        <div>
+                          <p className="text-sm font-semibold text-gray-800">{l.nome}</p>
+                          <p className="text-xs text-gray-400">{l.origemCustom}{l.midia ? ` · ${l.midia}` : ''}{l.criativo ? ` · ${l.criativo}` : ''}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-xs text-gray-500">{(l.data || '').slice(8,10)}/{(l.data || '').slice(5,7)}</p>
+                          <p className="text-xs text-gray-400">{l.status === 'agendado' ? '✓ Agendou' : 'Em aberto'}{l._valorConsulta > 0 ? ` · consulta R$ ${l._valorConsulta.toLocaleString('pt-BR', {minimumFractionDigits:2})}` : ''}</p>
+                        </div>
                       </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-xs text-gray-500">{(l.data || '').slice(8,10)}/{(l.data || '').slice(5,7)}</p>
-                        <p className="text-xs text-gray-400">{l.status === 'agendado' ? '✓ Agendou' : 'Em aberto'}{l._valorConsulta > 0 ? ` · consulta R$ ${l._valorConsulta.toLocaleString('pt-BR', {minimumFractionDigits:2})}` : ''}</p>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
 
-            {(modalImport.novos.length > 0 || modalImport.duplicatas.filter(d => d._valorConsulta > 0 && d.status === 'agendado').length > 0) && (
+            {(modalImport.novos.length > 0 || modalImport.suspeitos.length > 0 || modalImport.duplicatas.filter(d => d._valorConsulta > 0 && d.status === 'agendado').length > 0) && (
               <div className="px-6 py-4 border-t border-gray-100 flex gap-3">
                 <button onClick={() => setModalImport(null)} disabled={importando} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50">
                   Cancelar
                 </button>
                 <button onClick={confirmarImport} disabled={importando} className="flex-1 py-2.5 rounded-xl bg-orange-400 hover:bg-orange-500 text-white text-sm font-semibold transition-colors disabled:opacity-50">
-                  {importando ? 'Importando...' : `Importar ${modalImport.novos.length > 0 ? `${modalImport.novos.length} leads` : ''}${modalImport.novos.length > 0 && modalImport.duplicatas.filter(d => d._valorConsulta > 0 && d.status === 'agendado').length > 0 ? ' + ' : ''}${modalImport.duplicatas.filter(d => d._valorConsulta > 0 && d.status === 'agendado').length > 0 ? `${modalImport.duplicatas.filter(d => d._valorConsulta > 0 && d.status === 'agendado').length} consultas` : ''}`}
+                  {importando ? 'Importando...' : (() => {
+                    const novosTotal = modalImport.novos.length + suspeitosDecisao.filter(d => d === 'importar').length
+                    const consultasTotal = [
+                      ...modalImport.duplicatas,
+                      ...modalImport.suspeitos.filter((_, i) => suspeitosDecisao[i] === 'pular').map(s => s.lead),
+                    ].filter(d => d._valorConsulta > 0 && d.status === 'agendado').length
+                    const parts = []
+                    if (novosTotal > 0) parts.push(`${novosTotal} lead${novosTotal > 1 ? 's' : ''}`)
+                    if (consultasTotal > 0) parts.push(`${consultasTotal} consulta${consultasTotal > 1 ? 's' : ''}`)
+                    return `Confirmar${parts.length ? ` (${parts.join(' + ')})` : ''}`
+                  })()}
                 </button>
               </div>
             )}
