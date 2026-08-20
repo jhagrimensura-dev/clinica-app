@@ -512,7 +512,7 @@ export default function LeadsNovos() {
   const { userRole } = useAuth()
   const { ano, setAno, mes, setMes, MESES } = useFinanceiro()
   const { getLeadsPorOrigem, addLead, updateLead, removeLead, leads: todosLeads } = useLeads()
-  const { lancamentos } = useVendas()
+  const { lancamentos, addLancamento } = useVendas()
   const [modal, setModal] = useState(false)
   const [modalEditar, setModalEditar] = useState(null)
   const [modalMesclar, setModalMesclar] = useState(null)
@@ -568,6 +568,14 @@ export default function LeadsNovos() {
         const data = parseData(row.data || row.date || '')
         const agendou = (row.agendou || '').toUpperCase() === 'SIM'
 
+        // Parseia valor monetário: "R$ 8.400,00" → 8400
+        const parseValor = (str) => {
+          if (!str) return 0
+          const v = parseFloat(str.replace(/R\$\s?/g, '').replace(/\./g, '').replace(',', '.').trim())
+          return isNaN(v) ? 0 : v
+        }
+        const valorConsulta = parseValor(row.consulta)
+
         rows.push({
           nome: row.nome || '',
           telefone: (row.telefone || '').replace(/\D/g, '') ? row.telefone : '',
@@ -580,6 +588,7 @@ export default function LeadsNovos() {
           origem: 'leads_novos',
           obs: '',
           responsavel: '',
+          _valorConsulta: valorConsulta,
         })
       }
 
@@ -601,14 +610,42 @@ export default function LeadsNovos() {
   }
 
   const confirmarImport = async () => {
-    if (!modalImport?.novos?.length) return
+    if (!modalImport) return
     setImportando(true)
-    for (const lead of modalImport.novos) {
-      await addLead(lead)
+    let leadsImportados = 0
+    let lancamentosImportados = 0
+
+    const criarLancamento = async (lead) => {
+      if (!(lead._valorConsulta > 0) || lead.status !== 'agendado') return
+      await addLancamento({
+        paciente: lead.nome,
+        tipo: lead.origemCustom === 'Indicação' ? 'Indicação' : 'Novo',
+        procedimentos: 'consulta',
+        valorTaxa: lead._valorConsulta,
+        valorTratamento: 0,
+        data: lead.data,
+      })
+      lancamentosImportados++
     }
+
+    for (const lead of (modalImport.novos || [])) {
+      const { _valorConsulta, ...leadData } = lead
+      await addLead(leadData)
+      leadsImportados++
+      await criarLancamento(lead)
+    }
+
+    // Para duplicatas: apenas cria lançamento de consulta se tiver valor (lead já existe)
+    for (const lead of (modalImport.duplicatas || [])) {
+      await criarLancamento(lead)
+    }
+
     setImportando(false)
     setModalImport(null)
-    alert(`${modalImport.novos.length} lead(s) importado(s) com sucesso!`)
+    const msgs = []
+    if (leadsImportados > 0) msgs.push(`${leadsImportados} lead(s) importado(s)`)
+    if (lancamentosImportados > 0) msgs.push(`${lancamentosImportados} consulta(s) lançada(s) no Faturamento`)
+    alert(msgs.join(' · ') || 'Nada importado.')
   }
 
   const gruposDuplicatas = useMemo(() => {
@@ -1110,13 +1147,13 @@ export default function LeadsNovos() {
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <div>
                 <h2 className="text-sm font-bold text-gray-800">Importar Leads do CSV</h2>
-                <p className="text-xs text-gray-400 mt-0.5">{modalImport.novos.length} novos · {modalImport.duplicatas.length} já existem (serão ignorados)</p>
+                <p className="text-xs text-gray-400 mt-0.5">{modalImport.novos.length} novos · {modalImport.duplicatas.length} já existem{modalImport.duplicatas.filter(d => d._valorConsulta > 0 && d.status === 'agendado').length > 0 ? ` (${modalImport.duplicatas.filter(d => d._valorConsulta > 0 && d.status === 'agendado').length} com consulta a lançar)` : ' (serão ignorados)'}</p>
               </div>
               {!importando && <button onClick={() => setModalImport(null)} className="text-gray-400 hover:text-gray-600">✕</button>}
             </div>
 
             <div className="overflow-y-auto flex-1 px-6 py-3">
-              {modalImport.novos.length === 0 ? (
+              {modalImport.novos.length === 0 && modalImport.duplicatas.filter(d => d._valorConsulta > 0).length === 0 ? (
                 <p className="text-sm text-gray-400 text-center py-6">Todos os leads já estão cadastrados no sistema.</p>
               ) : (
                 <div className="flex flex-col gap-2">
@@ -1128,7 +1165,7 @@ export default function LeadsNovos() {
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-xs text-gray-500">{(l.data || '').slice(8,10)}/{(l.data || '').slice(5,7)}</p>
-                        <p className="text-xs text-gray-400">{l.status === 'agendado' ? '✓ Agendou' : 'Em aberto'}</p>
+                        <p className="text-xs text-gray-400">{l.status === 'agendado' ? '✓ Agendou' : 'Em aberto'}{l._valorConsulta > 0 ? ` · consulta R$ ${l._valorConsulta.toLocaleString('pt-BR', {minimumFractionDigits:2})}` : ''}</p>
                       </div>
                     </div>
                   ))}
@@ -1136,13 +1173,13 @@ export default function LeadsNovos() {
               )}
             </div>
 
-            {modalImport.novos.length > 0 && (
+            {(modalImport.novos.length > 0 || modalImport.duplicatas.filter(d => d._valorConsulta > 0 && d.status === 'agendado').length > 0) && (
               <div className="px-6 py-4 border-t border-gray-100 flex gap-3">
                 <button onClick={() => setModalImport(null)} disabled={importando} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50">
                   Cancelar
                 </button>
                 <button onClick={confirmarImport} disabled={importando} className="flex-1 py-2.5 rounded-xl bg-orange-400 hover:bg-orange-500 text-white text-sm font-semibold transition-colors disabled:opacity-50">
-                  {importando ? 'Importando...' : `Importar ${modalImport.novos.length} leads`}
+                  {importando ? 'Importando...' : `Importar ${modalImport.novos.length > 0 ? `${modalImport.novos.length} leads` : ''}${modalImport.novos.length > 0 && modalImport.duplicatas.filter(d => d._valorConsulta > 0 && d.status === 'agendado').length > 0 ? ' + ' : ''}${modalImport.duplicatas.filter(d => d._valorConsulta > 0 && d.status === 'agendado').length > 0 ? `${modalImport.duplicatas.filter(d => d._valorConsulta > 0 && d.status === 'agendado').length} consultas` : ''}`}
                 </button>
               </div>
             )}
