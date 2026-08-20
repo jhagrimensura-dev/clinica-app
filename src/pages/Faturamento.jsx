@@ -757,7 +757,7 @@ export default function Faturamento() {
   const { ano, setAno, mes, setMes } = useFinanceiro()
   const { lancamentos, addLancamento, removeLancamento, updateLancamento } = useVendas()
   const { pacientes } = usePacientes()
-  const { leads } = useLeads()
+  const { leads, updateLead } = useLeads()
   const { procedimentos: procsFromDB, setProcedimentos } = useConfig()
   const { userRole } = useAuth()
   const procs = (procsFromDB || PROCS_DEFAULT).map(p =>
@@ -772,6 +772,22 @@ export default function Faturamento() {
   const isAdmin = userRole !== 'Funcionário'
   const handleProcsChange = (novos) => setProcedimentos(novos)
 
+  const handleExcluir = async (id) => {
+    const lanc = lancamentos.find(l => l.id === id)
+    if (lanc?.paciente) {
+      const nomeLanc = lanc.paciente.toLowerCase().trim()
+      const outrosLancs = lancamentos.filter(l =>
+        l.id !== id && (l.paciente || '').toLowerCase().trim() === nomeLanc
+      )
+      if (outrosLancs.length === 0) {
+        const leadMatch = leads.find(l =>
+          (l.nome || '').toLowerCase().trim() === nomeLanc && l.status === 'agendado'
+        )
+        if (leadMatch) await updateLead(leadMatch.id, { status: 'em_aberto' })
+      }
+    }
+    await removeLancamento(id)
+  }
 
   const navMes = (delta) => {
     const novo = mes + delta
@@ -1014,7 +1030,7 @@ export default function Faturamento() {
                       <td className="py-3 px-3 text-right" onClick={e => e.stopPropagation()}>
                         {confirmDelete === l.id ? (
                           <div className="flex items-center gap-1 justify-end">
-                            <button onClick={() => { removeLancamento(l.id); setConfirmDelete(null) }}
+                            <button onClick={() => { handleExcluir(l.id); setConfirmDelete(null) }}
                               className="text-xs text-red-500 font-semibold px-2 py-1 rounded hover:bg-red-50">Sim</button>
                             <button onClick={() => setConfirmDelete(null)}
                               className="text-xs text-gray-400 px-2 py-1 rounded hover:bg-gray-100">Não</button>
@@ -1037,7 +1053,7 @@ export default function Faturamento() {
       </div>
 
       {modal && <ModalNovoLancamento onClose={() => setModal(false)} onSalvar={addLancamento} ano={ano} mes={mes} pacientes={pacientes} leads={leads} procs={procs} onProcsChange={handleProcsChange} />}
-      {editando && <ModalEditarLancamento lancamento={editando} onClose={() => setEditando(null)} onAtualizar={updateLancamento} onExcluir={removeLancamento} pacientes={pacientes} leads={leads} procs={procs} onProcsChange={handleProcsChange} />}
+      {editando && <ModalEditarLancamento lancamento={editando} onClose={() => setEditando(null)} onAtualizar={updateLancamento} onExcluir={handleExcluir} pacientes={pacientes} leads={leads} procs={procs} onProcsChange={handleProcsChange} />}
     </div>
   )
 }

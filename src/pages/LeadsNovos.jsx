@@ -940,48 +940,6 @@ export default function LeadsNovos() {
         </div>
       </div>
 
-      {/* Follow-up do Mês */}
-      {leadsFollowMes.length > 0 && (
-        <div className="bg-white rounded-2xl border border-orange-100 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-orange-50 flex items-center justify-between bg-orange-50">
-            <div className="flex items-center gap-2">
-              <span className="text-orange-400 text-base">🔁</span>
-              <h2 className="text-base font-bold text-orange-700">Leads em Follow-up</h2>
-              <span className="text-xs bg-orange-400 text-white font-semibold px-2 py-0.5 rounded-full">{leadsFollowMes.length}</span>
-            </div>
-            <p className="text-xs text-orange-400">Todos os leads aguardando contato</p>
-          </div>
-          <div className="divide-y divide-gray-50">
-            {leadsFollowMes.map(lead => {
-              const follow = getFollow(lead.status)
-              return (
-                <div key={lead.id}
-                  className="grid items-center px-5 py-3 hover:bg-orange-50 transition-colors cursor-pointer group"
-                  style={{ gridTemplateColumns: '2rem 1fr 6rem 6rem 1.5rem', gap: '1rem' }}
-                  onClick={() => setModalEditar(lead)}>
-                  <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-500 font-bold text-sm">
-                    {(lead.nome || '?').charAt(0).toUpperCase()}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-gray-800 truncate">{lead.nome}</p>
-                    {lead.obs && <p className="text-xs text-gray-400 truncate">{lead.obs}</p>}
-                  </div>
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold w-fit ${follow?.bg || 'bg-gray-100'} ${follow?.text || 'text-gray-500'}`}>
-                    {follow?.label || lead.status}
-                  </span>
-                  <p className="text-xs text-gray-500">
-                    📅 {lead.dataOrigem ? dataFormatada(lead.dataOrigem) : lead.data ? dataFormatada(lead.data) : '—'}
-                  </p>
-                  <div onClick={e => abrirInboxContato(lead.telefone, e)}>
-                    <IconeWpp ativo={!!lead.telefone} />
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
       {/* Lista / Quadro */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
