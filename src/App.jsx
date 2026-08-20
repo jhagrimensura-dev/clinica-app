@@ -35,6 +35,7 @@ import { SocialProvider } from './context/SocialContext'
 import { AgendaProvider } from './context/AgendaContext'
 import { ConfigProvider } from './context/ConfigContext'
 import LeadsNovos from './pages/LeadsNovos'
+import LeadsFollowUp from './pages/LeadsFollowUp'
 import LeadsRecorrentes from './pages/LeadsRecorrentes'
 import Indicacao from './pages/Indicacao'
 import Resgates from './pages/Resgates'
@@ -231,7 +232,7 @@ export default function App() {
   )
 }
 
-const PAGE_PARENT = { agenda_lembretes: 'comercial', leads_novos: 'comercial', leads_recorrentes: 'comercial', indicacao: 'comercial', resgates: 'comercial', pos_tratamento: 'comercial', contas: 'financeiro', colaboradoras: 'financeiro', inbox: 'comercial' }
+const PAGE_PARENT = { agenda_lembretes: 'comercial', leads_novos: 'comercial', leads_followup: 'comercial', leads_recorrentes: 'comercial', indicacao: 'comercial', resgates: 'comercial', pos_tratamento: 'comercial', contas: 'financeiro', colaboradoras: 'financeiro', inbox: 'comercial' }
 
 function AppContent() {
   const { userRole, permissoes } = useAuth()
@@ -307,6 +308,7 @@ function AppContent() {
       case 'comercial': return <Comercial />
       case 'agenda_lembretes': return <AgendaLembretes />
       case 'leads_novos': return <LeadsNovos />
+      case 'leads_followup': return <LeadsFollowUp />
       case 'leads_recorrentes': return <LeadsRecorrentes />
       case 'indicacao': return <Indicacao />
       case 'resgates': return <Resgates onNavigate={setActive} />

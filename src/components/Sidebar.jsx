@@ -46,6 +46,7 @@ const menuItems = [
     sub: [
       { id: 'agenda_lembretes',  label: 'Lembretes',        icon: 'lembretes' },
       { id: 'leads_novos',       label: 'Leads Novos',      icon: 'leads'     },
+      { id: 'leads_followup',    label: 'Leads Follow Up',  icon: 'leads'     },
       { id: 'leads_recorrentes', label: 'Leads Recorrentes',icon: 'leads'     },
       { id: 'indicacao',         label: 'Indicação',        icon: 'indicacao' },
       { id: 'resgates',          label: 'Resgates',         icon: 'resgates'       },
