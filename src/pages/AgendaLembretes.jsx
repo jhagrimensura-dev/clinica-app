@@ -288,7 +288,7 @@ export default function AgendaLembretes() {
             <div className="flex-1 overflow-y-auto space-y-1.5 pt-1">
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Próximos lembretes</p>
               {lembretes
-                .filter(l => !l.concluido && l.data >= hoje)
+                .filter(l => l.data >= hoje)
                 .sort((a, b) => a.data.localeCompare(b.data) || (a.hora || '').localeCompare(b.hora || ''))
                 .slice(0, 12)
                 .map(l => {
@@ -296,19 +296,19 @@ export default function AgendaLembretes() {
                   return (
                     <button key={l.id}
                       onClick={() => { setDiaSel(l.data); setMesRef({ ano: parseInt(l.data.slice(0, 4)), mes: parseInt(l.data.slice(5, 7)) - 1 }) }}
-                      className={`w-full text-left px-2.5 py-2 rounded-xl border ${cor.bg} ${cor.border} hover:opacity-80 transition-opacity`}>
+                      className={`w-full text-left px-2.5 py-2 rounded-xl border ${cor.bg} ${cor.border} hover:opacity-80 transition-opacity ${l.concluido ? 'opacity-50' : ''}`}>
                       <p className={`text-[10px] font-semibold ${cor.text} opacity-70`}>
-                        {l.data.split('-').reverse().join('/')}{l.hora ? ` · ${l.hora}` : ''}
+                        {l.data.split('-').reverse().join('/')}{l.hora ? ` · ${l.hora}` : ''}{l.concluido ? ' · ✓' : ''}
                       </p>
                       <div className={`flex items-center justify-between gap-1`}>
-                        <p className={`text-xs font-bold ${cor.text} truncate flex-1`}>{l.leadNome}</p>
+                        <p className={`text-xs font-bold ${cor.text} truncate flex-1 ${l.concluido ? 'line-through' : ''}`}>{l.leadNome}</p>
                         {(l.descricao || '').includes('Aniversário') && <span className="flex-shrink-0 text-sm">🎈</span>}
                       </div>
                       {l.descricao && <p className={`text-[10px] ${cor.text} opacity-60 truncate`}>{l.descricao}</p>}
                     </button>
                   )
                 })}
-              {lembretes.filter(l => !l.concluido && l.data >= hoje).length === 0 && (
+              {lembretes.filter(l => l.data >= hoje).length === 0 && (
                 <p className="text-xs text-gray-400 text-center py-4">Nenhum lembrete futuro</p>
               )}
             </div>

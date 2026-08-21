@@ -38,7 +38,7 @@ export function AgendaProvider({ children }) {
       if (lemErr || lem === null) return
       if (lem.length > 0) {
         const CORES_ANTIGAS = { brand: 'blue', purple: 'blue' }
-        const lemValidos = lem.filter(r => r && r.dados && !r.dados.concluido)
+        const lemValidos = lem.filter(r => r && r.dados)
         if (lemValidos.length === 0) { setLembretes([]); return }
         const paraAtualizar = lemValidos.filter(r => CORES_ANTIGAS[r.dados?.cor])
         if (paraAtualizar.length > 0) {
