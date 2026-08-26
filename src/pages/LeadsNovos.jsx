@@ -596,8 +596,15 @@ export default function LeadsNovos() {
       const normNome = (s) => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
       const primNome = (s) => normNome(s).split(/\s+/)[0]
 
+      // Normaliza telefone: remove +55, remove o 9 extra do celular → compara últimos 8 dígitos
+      const normTel = (t) => {
+        const d = (t || '').replace(/\D/g, '')
+        if (d.length < 6) return ''
+        return d.slice(-8)
+      }
+
       const telefonesExistentes = new Set(
-        todosLeads.map(l => (l.telefone || '').replace(/\D/g, '')).filter(t => t.length >= 6)
+        todosLeads.map(l => normTel(l.telefone)).filter(t => t.length >= 6)
       )
       const nomesExistentes = new Set(todosLeads.map(l => normNome(l.nome)))
       // mapa: primeiro nome normalizado → leads no sistema
@@ -613,7 +620,7 @@ export default function LeadsNovos() {
       const duplicatas = []
       const suspeitos = []
       rows.forEach(r => {
-        const tel = r.telefone.replace(/\D/g, '')
+        const tel = normTel(r.telefone)
         const nome = normNome(r.nome)
         const pn = primNome(r.nome)
         if (tel.length >= 6 && telefonesExistentes.has(tel)) {
@@ -689,22 +696,61 @@ export default function LeadsNovos() {
     alert(msgs.join(' · ') || 'Nada importado.')
   }
 
+  // Normaliza telefone para comparação: usa últimos 8 dígitos (ignora +55 e o 9 extra)
+  const normTelGlobal = (t) => {
+    const d = (t || '').replace(/\D/g, '')
+    if (d.length < 6) return ''
+    return d.slice(-8)
+  }
+
   const gruposDuplicatas = useMemo(() => {
     const groups = {}
     todosLeads.forEach(l => {
-      const tel = (l.telefone || '').replace(/\D/g, '')
-      if (tel.length < 6) return
+      const tel = normTelGlobal(l.telefone)
+      if (!tel) return
       if (!groups[tel]) groups[tel] = []
       groups[tel].push(l)
     })
     return Object.values(groups).filter(g => g.length >= 2)
   }, [todosLeads])
 
-  const telesDuplicados = useMemo(() => new Set(gruposDuplicatas.flat().map(l => (l.telefone || '').replace(/\D/g, ''))), [gruposDuplicatas])
+  const telesDuplicados = useMemo(() => new Set(gruposDuplicatas.flat().map(l => normTelGlobal(l.telefone))), [gruposDuplicatas])
 
   const isDuplicata = (lead) => {
-    const tel = (lead.telefone || '').replace(/\D/g, '')
-    return tel.length >= 6 && telesDuplicados.has(tel)
+    const tel = normTelGlobal(lead.telefone)
+    return !!tel && telesDuplicados.has(tel)
+  }
+
+  const resolverTodasDuplicatas = async () => {
+    if (!window.confirm(`Resolver ${gruposDuplicatas.length} grupo(s) de duplicatas automaticamente? O lead com melhor status será mantido.`)) return
+    setImportando(true)
+    let resolvidos = 0
+    for (const grupo of gruposDuplicatas) {
+      // Ordena por prioridade de status (maior = melhor)
+      const sorted = [...grupo].sort((a, b) => (STATUS_PRIORITY[b.status] ?? 0) - (STATUS_PRIORITY[a.status] ?? 0))
+      const manter = sorted[0]
+      const excluir = sorted.slice(1)
+      // Mescla dados do melhor lead com os demais
+      const merged = {
+        nome: sorted.find(l => l.nome)?.nome || manter.nome,
+        telefone: sorted.find(l => l.telefone)?.telefone || manter.telefone,
+        origemCustom: sorted.find(l => l.origemCustom && l.origemCustom !== 'WhatsApp')?.origemCustom || manter.origemCustom,
+        responsavel: sorted.find(l => l.responsavel)?.responsavel || '',
+        midia: sorted.find(l => l.midia)?.midia || null,
+        criativo: sorted.find(l => l.criativo)?.criativo || null,
+        dataOrigem: sorted.map(l => l.dataOrigem || l.data).filter(Boolean).sort()[0] || manter.dataOrigem,
+        data: manter.data,
+        status: manter.status,
+        obs: sorted.map(l => l.obs).filter(Boolean).join(' | ') || '',
+        agendadoPara: sorted.find(l => l.agendadoPara)?.agendadoPara || null,
+        origem: manter.origem,
+      }
+      await updateLead(manter.id, merged)
+      for (const l of excluir) await removeLead(l.id)
+      resolvidos++
+    }
+    setImportando(false)
+    alert(`${resolvidos} duplicata(s) resolvida(s) automaticamente.`)
   }
 
   const mesclarLeads = async (a, b, merged) => {
@@ -892,6 +938,10 @@ export default function LeadsNovos() {
                 +{gruposDuplicatas.length - 3} mais
               </button>
             )}
+            <button onClick={resolverTodasDuplicatas} disabled={importando}
+              className="text-xs bg-red-400 hover:bg-red-500 text-white font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50">
+              {importando ? 'Resolvendo...' : '✓ Resolver todas'}
+            </button>
           </div>
         </div>
       )}

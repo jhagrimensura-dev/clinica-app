@@ -481,7 +481,7 @@ export default function LeadsPorOrigem() {
   }
 
   const filtrados = leads.filter(l => {
-    const d = l.dataOrigem || l.data || l.criadoEm?.slice(0, 10) || ''
+    const d = l.dataOrigem || l.data || ''
     const origem = l.origemCustom || l.fonte || ''
     return l.origem !== 'leads_recorrentes' && d.startsWith(prefix) && origem !== ''
   })
