@@ -97,7 +97,16 @@ export function LeadsProvider({ children }) {
     setLoading(true)
     let migrated = false
 
+    const fixIndicacaoOrigem = async () => {
+      await supabase.from('leads')
+        .update({ origem: 'indicacao' })
+        .eq('clinica_id', clinicaId)
+        .eq('origem', 'leads_novos')
+        .eq('origem_custom', 'Indicação')
+    }
+
     const fetchAll = async () => {
+      await fixIndicacaoOrigem()
       const { data } = await supabase.from('leads').select('*').order('criado_em', { ascending: false })
       if (data && data.length > 0) {
         const fromDBData = data.map(fromDB).filter(Boolean)

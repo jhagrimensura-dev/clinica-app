@@ -130,6 +130,7 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
   const [linkBio, setLinkBio] = useState(lead.linkBio || '')
   const [status, setStatus] = useState(lead.status || 'em_aberto')
   const [agendadoPara, setAgendadoPara] = useState(lead.agendadoPara || '')
+  const [proximoFollowup, setProximoFollowup] = useState(lead.proximoFollowup || '')
   const [obs, setObs] = useState(lead.obs || '')
   const [confirmando, setConfirmando] = useState(false)
   const [lembretes, setLembretes] = useState(() => {

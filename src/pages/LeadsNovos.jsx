@@ -586,7 +586,7 @@ export default function LeadsNovos() {
           midia,
           criativo,
           status: agendou ? 'agendado' : 'em_aberto',
-          origem: 'leads_novos',
+          origem: origemCustom === 'Indicação' ? 'indicacao' : 'leads_novos',
           obs: '',
           responsavel: '',
           _valorConsulta: valorConsulta,
@@ -603,13 +603,16 @@ export default function LeadsNovos() {
         return d.slice(-8)
       }
 
+      // Só verifica duplicatas dentro do mesmo mês
+      const leadsDoMes = todosLeads.filter(l => (l.dataOrigem || l.data || '').startsWith(prefix))
+
       const telefonesExistentes = new Set(
-        todosLeads.map(l => normTel(l.telefone)).filter(t => t.length >= 6)
+        leadsDoMes.map(l => normTel(l.telefone)).filter(t => t.length >= 6)
       )
-      const nomesExistentes = new Set(todosLeads.map(l => normNome(l.nome)))
+      const nomesExistentes = new Set(leadsDoMes.map(l => normNome(l.nome)))
       // mapa: primeiro nome normalizado → leads no sistema
       const primNomesMap = {}
-      todosLeads.forEach(l => {
+      leadsDoMes.forEach(l => {
         const pn = primNome(l.nome)
         if (pn.length < 3) return
         if (!primNomesMap[pn]) primNomesMap[pn] = []
@@ -708,8 +711,11 @@ export default function LeadsNovos() {
     todosLeads.forEach(l => {
       const tel = normTelGlobal(l.telefone)
       if (!tel) return
-      if (!groups[tel]) groups[tel] = []
-      groups[tel].push(l)
+      // Agrupa por telefone normalizado + mês de origem (não mescla meses diferentes)
+      const mesRef = (l.dataOrigem || l.data || '').slice(0, 7)
+      const key = `${tel}__${mesRef}`
+      if (!groups[key]) groups[key] = []
+      groups[key].push(l)
     })
     return Object.values(groups).filter(g => g.length >= 2)
   }, [todosLeads])
@@ -836,7 +842,8 @@ export default function LeadsNovos() {
     })
 
   const agendados = consultasMes.length
-  const taxa = leads.length > 0 ? ((agendados / leads.length) * 100).toFixed(1) : '0.0'
+  const totalLeadsMes = leads.length + leadsIndicacao.length
+  const taxa = totalLeadsMes > 0 ? ((agendados / totalLeadsMes) * 100).toFixed(1) : '0.0'
 
   const dataFormatada = (data) => {
     const [, m, d] = data.split('-')
@@ -953,7 +960,7 @@ export default function LeadsNovos() {
             <p className="text-sm text-gray-500 font-medium">Total de Leads</p>
             <span className="text-orange-400 text-lg">👥</span>
           </div>
-          <p className="text-3xl font-bold text-gray-800">{leads.length}</p>
+          <p className="text-3xl font-bold text-gray-800">{totalLeadsMes}</p>
           <div className="mt-2 space-y-1 pt-2 border-t border-gray-50">
             <div className="flex justify-between text-xs"><span className="text-blue-400">Novos este mês</span><span className="font-semibold text-blue-600">{leadsNovosCount}</span></div>
             {contIndicacao > 0 && <div className="flex justify-between text-xs"><span className="text-pink-400">Indicações</span><span className="font-semibold text-pink-500">{contIndicacao}</span></div>}
