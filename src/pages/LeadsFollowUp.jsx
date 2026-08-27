@@ -364,10 +364,10 @@ export default function LeadsFollowUp() {
         const tel = (r.telefone || '').replace(/\D/g, '')
         const nome = normNome(r.nome)
         const pn = primNome(r.nome)
-        if ((tel.length >= 6 && telefonesExistentes.has(tel)) || nomesExistentes.has(nome)) {
+        if (tel.length >= 6 && telefonesExistentes.has(tel)) {
           duplicatas.push(r)
-        } else if (pn.length >= 3 && primNomesMap[pn]) {
-          suspeitos.push({ lead: r, matches: primNomesMap[pn] })
+        } else if (nomesExistentes.has(nome) || (pn.length >= 3 && primNomesMap[pn])) {
+          suspeitos.push({ lead: r, matches: primNomesMap[pn] || [] })
         } else {
           novos.push(r)
         }
