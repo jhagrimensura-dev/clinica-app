@@ -214,9 +214,9 @@ export function LeadsProvider({ children }) {
       if (origem === 'indicacao') {
         const d = l.dataOrigem || l.data || ''
         if (!d.startsWith(prefix)) return false
-        return l.origem === 'indicacao' || l.origemCustom === 'Indicação'
+        return l.origem === 'indicacao'
       }
-      if (l.origemCustom === 'Indicação' && l.origem !== 'indicacao') return false
+      if (origem === 'leads_novos' && l.origemCustom === 'Indicação' && l.origem !== 'indicacao') return false
       if (l.origem !== origem) return false
       const d = l.dataOrigem || l.data || ''
       return d.startsWith(prefix)
