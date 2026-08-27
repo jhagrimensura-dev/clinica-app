@@ -708,7 +708,7 @@ export default function LeadsNovos() {
 
   const gruposDuplicatas = useMemo(() => {
     const groups = {}
-    todosLeads.forEach(l => {
+    todosLeads.filter(l => l.origem === 'leads_novos' || l.origem === 'indicacao').forEach(l => {
       const tel = normTelGlobal(l.telefone)
       if (!tel) return
       // Agrupa por telefone normalizado + mês de origem (não mescla meses diferentes)
