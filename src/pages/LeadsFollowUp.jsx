@@ -237,15 +237,22 @@ export default function LeadsFollowUp() {
   const parseData = (str) => {
     if (!str) return ''
     const s = str.trim()
-    const parts = s.split(/[\/\-]/)
+    // Filter empty parts caused by double slashes (e.g. "06/08//2026")
+    const parts = s.split(/[\/\-]/).filter(p => p !== '')
     if (parts.length === 3) {
-      if (parts[0].length === 4) return s.replace(/\//g, '-')
+      if (parts[0].length === 4) return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`
       if (parts[2].length === 4) return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`
       if (parts[2].length === 3 || parts[2].length === 2) {
         const yr = parseInt(parts[2], 10)
         const fullYr = yr < 100 ? 2000 + yr : yr
         return `${fullYr}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`
       }
+    }
+    // Handle "07/082026" type: 2 parts where second is MMYYYY (6 chars)
+    if (parts.length === 2 && parts[1].length === 6) {
+      const mm = parts[1].slice(0, 2)
+      const yyyy = parts[1].slice(2)
+      return `${yyyy}-${mm.padStart(2, '0')}-${parts[0].padStart(2, '0')}`
     }
     return ''
   }
@@ -367,7 +374,7 @@ export default function LeadsFollowUp() {
       })
 
       setModalImport({ novos, duplicatas, suspeitos })
-      setSuspeitosDecisao(new Array(suspeitos.length).fill('pular'))
+      setSuspeitosDecisao(new Array(suspeitos.length).fill('importar'))
     }
     reader.readAsText(file, 'UTF-8')
   }
