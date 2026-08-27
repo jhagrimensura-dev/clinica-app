@@ -340,7 +340,8 @@ export default function LeadsFollowUp() {
       const normNome = (s) => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
       const primNome = (s) => normNome(s).split(/\s+/)[0]
 
-      const followupLeads = todosLeads.filter(l => l.origem === 'leads_followup')
+      const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
+      const followupLeads = todosLeads.filter(l => l.origem === 'leads_followup' && (l.data || '').startsWith(prefix))
       const telefonesExistentes = new Set(followupLeads.map(l => (l.telefone || '').replace(/\D/g, '')).filter(t => t.length >= 6))
       const nomesExistentes = new Set(followupLeads.map(l => normNome(l.nome)))
       const primNomesMap = {}
@@ -389,6 +390,31 @@ export default function LeadsFollowUp() {
   }
 
   const leads = getLeadsPorOrigem('leads_followup', ano, mes)
+
+  const normTelGlobal = (t) => { const d = (t || '').replace(/\D/g, ''); return d.length >= 6 ? d.slice(-8) : '' }
+
+  const gruposDuplicatas = useMemo(() => {
+    const groups = {}
+    leads.forEach(l => {
+      const tel = normTelGlobal(l.telefone)
+      if (!tel) return
+      if (!groups[tel]) groups[tel] = []
+      groups[tel].push(l)
+    })
+    return Object.values(groups).filter(g => g.length >= 2)
+  }, [leads])
+
+  const resolverDuplicata = async (grupo) => {
+    const manter = grupo.reduce((a, b) => ((a.criadoEm || '') > (b.criadoEm || '') ? a : b))
+    const excluir = grupo.filter(l => l.id !== manter.id)
+    await Promise.all(excluir.map(l => removeLead(l.id)))
+  }
+
+  const resolverTodasDuplicatas = async () => {
+    setImportando(true)
+    for (const grupo of gruposDuplicatas) await resolverDuplicata(grupo)
+    setImportando(false)
+  }
 
   const funil = useMemo(() => ({
     em_aberto: leads.filter(l => l.status === 'em_aberto').length,
@@ -444,6 +470,17 @@ export default function LeadsFollowUp() {
           </button>
         </div>
       </div>
+
+      {/* Banner duplicatas */}
+      {gruposDuplicatas.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between gap-4">
+          <p className="text-sm text-amber-800 font-medium">⚠️ {gruposDuplicatas.length} telefone(s) duplicado(s) encontrado(s)</p>
+          <button onClick={resolverTodasDuplicatas} disabled={importando}
+            className="text-xs bg-red-400 hover:bg-red-500 text-white font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap">
+            {importando ? 'Resolvendo...' : '✓ Resolver todas'}
+          </button>
+        </div>
+      )}
 
       {/* Resumo */}
       <div className="bg-white rounded-2xl p-4 border border-gray-100 flex gap-8 items-center">
@@ -594,8 +631,8 @@ export default function LeadsFollowUp() {
                     {modalImport.suspeitos.map((s, i) => (
                       <div key={i} className="rounded-xl border border-yellow-100 bg-yellow-50 p-3">
                         <p className="text-sm font-semibold text-gray-800">{s.lead.nome}</p>
-                        <p className="text-xs text-gray-500">CSV · {s.lead.origemCustom}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">Sistema: {s.matches.map(m => m.nome).join(', ')}</p>
+                        <p className="text-xs text-gray-500">CSV · {s.lead.origemCustom}{s.lead.telefone ? ` · ${s.lead.telefone}` : ''}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">Sistema: {s.matches.map(m => `${m.nome}${m.telefone ? ` · ${m.telefone}` : ''}`).join(', ')}</p>
                         <div className="flex gap-2 mt-2">
                           <button onClick={() => setSuspeitosDecisao(d => d.map((v, j) => j === i ? 'pular' : v))}
                             className={`flex-1 text-xs py-1.5 rounded-lg border font-medium transition-colors ${suspeitosDecisao[i] === 'pular' ? 'bg-gray-200 text-gray-700 border-gray-300' : 'bg-white text-gray-400 border-gray-200 hover:bg-gray-50'}`}>
