@@ -482,8 +482,8 @@ export default function LeadsPorOrigem() {
 
   const filtrados = leads.filter(l => {
     const d = l.dataOrigem || l.data || ''
-    const origem = l.origemCustom || l.fonte || ''
-    return l.origem !== 'leads_recorrentes' && d.startsWith(prefix) && origem !== ''
+    const origemCustom = l.origemCustom || l.fonte || ''
+    return (l.origem === 'leads_novos' || l.origem === 'indicacao') && d.startsWith(prefix) && origemCustom !== ''
   })
 
   const total = filtrados.length
@@ -501,13 +501,20 @@ export default function LeadsPorOrigem() {
   const sortedOrigem = Object.entries(contagemOrigem).sort((a, b) => b[1] - a[1])
 
   // Sub-breakdown de mídia por origem (para qualquer card)
+  const normalizarMidia = (m) => {
+    if (!m) return m
+    if (m === 'Stories' || m === 'Link dos Stories') return 'Link dos Stories'
+    return m
+  }
+
   const midiasPorOrigem = {}
   filtrados.forEach(l => {
     if (!l.midia || l.midia === 'Campanha de msg para Whatsapp') return
     let key = normalizarOrigem(l.origemCustom || l.fonte || 'Não informado')
     if (key === 'Fornecedores' || key === 'Outros') key = 'Fornecedores / Outros'
     if (!midiasPorOrigem[key]) midiasPorOrigem[key] = {}
-    midiasPorOrigem[key][l.midia] = (midiasPorOrigem[key][l.midia] || 0) + 1
+    const midia = normalizarMidia(l.midia)
+    midiasPorOrigem[key][midia] = (midiasPorOrigem[key][midia] || 0) + 1
   })
   const getMidiaSubItems = (origemKey) => {
     const midias = midiasPorOrigem[origemKey] || {}

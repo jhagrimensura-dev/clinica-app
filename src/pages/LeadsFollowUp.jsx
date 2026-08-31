@@ -489,15 +489,49 @@ export default function LeadsFollowUp() {
         </div>
       )}
 
-      {/* Resumo */}
-      <div className="bg-white rounded-2xl p-4 border border-gray-100 flex gap-8 items-center">
-        <div>
-          <p className="text-xs text-gray-400">Total este mês</p>
-          <p className="text-xl font-bold text-gray-800">{leads.length}</p>
+      {/* Cards de resumo */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+          <div className="flex justify-between items-start mb-1">
+            <p className="text-sm text-gray-500 font-medium">Total este mês</p>
+            <span className="text-orange-400 text-lg">👥</span>
+          </div>
+          <p className="text-3xl font-bold text-gray-800">{leads.length}</p>
+          <div className="mt-2 space-y-1 pt-2 border-t border-gray-50">
+            {funil.em_aberto > 0 && <div className="flex justify-between text-xs"><span className="text-gray-400">Em aberto</span><span className="font-semibold text-gray-500">{funil.em_aberto}</span></div>}
+            {funil.respondeu > 0 && <div className="flex justify-between text-xs"><span className="text-purple-400">Respondeu</span><span className="font-semibold text-purple-500">{funil.respondeu}</span></div>}
+            {funil.perdido > 0 && <div className="flex justify-between text-xs"><span className="text-red-400">Perdido</span><span className="font-semibold text-red-500">{funil.perdido}</span></div>}
+          </div>
         </div>
-        <div>
-          <p className="text-xs text-gray-400">Taxa agend. + vendido</p>
-          <p className="text-xl font-bold text-blue-500">{taxa}%</p>
+        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+          <div className="flex justify-between items-start mb-1">
+            <p className="text-sm text-gray-500 font-medium">Taxa de Conversão</p>
+            <span className="text-green-400 text-lg">📈</span>
+          </div>
+          <p className={`text-3xl font-bold ${parseFloat(taxa) > 15 ? 'text-green-600' : parseFloat(taxa) >= 10 ? 'text-orange-500' : 'text-red-500'}`}>{taxa}%</p>
+          <p className="text-xs text-gray-400 mt-1">{funil.agendado + funil.vendido} agendados + vendidos</p>
+          {(funil.agendado + funil.vendido) > 0 && (
+            <div className="mt-3 space-y-1">
+              {funil.agendado > 0 && <div className="flex justify-between text-xs"><span className="text-blue-400">Agendado</span><span className="font-semibold text-blue-500">{funil.agendado}</span></div>}
+              {funil.vendido > 0 && <div className="flex justify-between text-xs"><span className="text-green-400">Vendido</span><span className="font-semibold text-green-500">{funil.vendido}</span></div>}
+            </div>
+          )}
+          {(funil.agendado + funil.vendido) === 0 && (
+            <p className="text-xs text-gray-300 mt-3">Nenhuma conversão rastreada ainda</p>
+          )}
+        </div>
+        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+          <div className="flex justify-between items-start mb-1">
+            <p className="text-sm text-gray-500 font-medium">Agendados e Vendidos</p>
+            <span className="text-blue-400 text-lg">📅</span>
+          </div>
+          <p className="text-3xl font-bold text-gray-800">{funil.agendado + funil.vendido}</p>
+          <p className="text-xs text-gray-400 mt-1">leads convertidos este mês</p>
+          <div className="mt-3 space-y-1">
+            {leads.filter(l => l.status === 'agendado' || l.status === 'vendido').slice(0, 9).map((l, i) => (
+              <p key={i} className="text-xs text-gray-500">· {l.nome}</p>
+            ))}
+          </div>
         </div>
       </div>
 
