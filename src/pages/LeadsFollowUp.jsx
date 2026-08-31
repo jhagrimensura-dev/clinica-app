@@ -637,9 +637,26 @@ export default function LeadsFollowUp() {
                   <div className="flex flex-col gap-2">
                     {modalImport.suspeitos.map((s, i) => (
                       <div key={i} className="rounded-xl border border-yellow-100 bg-yellow-50 p-3">
-                        <p className="text-sm font-semibold text-gray-800">{s.lead.nome}</p>
-                        <p className="text-xs text-gray-500">CSV · {s.lead.origemCustom}{s.lead.telefone ? ` · ${s.lead.telefone}` : ''}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">Sistema: {s.matches.map(m => `${m.nome}${m.telefone ? ` · ${m.telefone}` : ''}`).join(', ')}</p>
+                        {/* CSV lead */}
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-semibold text-gray-800">{s.lead.nome}</p>
+                          <span className="text-[10px] font-bold text-orange-500 bg-orange-100 px-2 py-0.5 rounded-full">CSV</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-xs text-gray-400">{s.lead.origemCustom}</span>
+                          <span className="text-xs font-mono font-semibold text-blue-600">{s.lead.telefone || '— sem telefone'}</span>
+                        </div>
+                        {/* Sistema matches */}
+                        <div className="mt-2 border-t border-yellow-200 pt-2 space-y-1">
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">No sistema:</p>
+                          {s.matches.slice(0, 3).map((m, mi) => (
+                            <div key={mi} className="flex items-center justify-between">
+                              <span className="text-xs text-gray-600 font-medium">{m.nome}</span>
+                              <span className="text-xs font-mono text-gray-500">{m.telefone || '—'}</span>
+                            </div>
+                          ))}
+                          {s.matches.length > 3 && <p className="text-[10px] text-gray-400">+{s.matches.length - 3} outros com mesmo primeiro nome</p>}
+                        </div>
                         <div className="flex gap-2 mt-2">
                           <button onClick={() => setSuspeitosDecisao(d => d.map((v, j) => j === i ? 'pular' : v))}
                             className={`flex-1 text-xs py-1.5 rounded-lg border font-medium transition-colors ${suspeitosDecisao[i] === 'pular' ? 'bg-gray-200 text-gray-700 border-gray-300' : 'bg-white text-gray-400 border-gray-200 hover:bg-gray-50'}`}>
