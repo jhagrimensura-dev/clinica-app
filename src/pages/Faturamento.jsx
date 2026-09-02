@@ -822,6 +822,7 @@ export default function Faturamento() {
   }, 0)
 
   const fmt = (v) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+  const fmtData = (data) => { if (!data) return '—'; const [y, m, d] = data.split('-'); return `${d}/${m}/${(y||'').slice(2)}` }
 
   // Receita agrupada por procedimento
   const receitaPorProc = procs.map((p, i) => {
@@ -972,7 +973,7 @@ export default function Faturamento() {
             onClick={() => {
               const headers = ['Data','Paciente','Tipo','Responsável','Procedimentos','Consultas (R$)','Tratamento','Total','Pagamento']
               const rows = lancamentosMesAll.map(l => [
-                new Date(l.data).toLocaleDateString('pt-BR'),
+                fmtData(l.data),
                 l.paciente, l.tipo,
                 l.responsavel || '',
                 displayProc(l.procedimentos) || '',
@@ -1017,7 +1018,7 @@ export default function Faturamento() {
                 return (
                   <tr key={l.id} onClick={() => confirmDelete !== l.id && setEditando(l)}
                     className="border-b border-gray-50 hover:bg-brand-50 cursor-pointer transition-colors group">
-                    <td className="py-3 px-3 text-gray-500 whitespace-nowrap">{new Date(l.data).toLocaleDateString('pt-BR')}</td>
+                    <td className="py-3 px-3 text-gray-500 whitespace-nowrap">{fmtData(l.data)}</td>
                     <td className="py-3 px-3 font-medium text-gray-800">{l.paciente}</td>
                     <td className="py-3 px-3"><span className={`px-2 py-1 rounded-full text-xs font-semibold ${l.tipo === 'Novo' ? 'bg-green-100 text-green-600' : l.tipo === 'Novo Follow' ? 'bg-orange-100 text-orange-600' : l.tipo === 'Recorrência' ? 'bg-blue-100 text-blue-600' : l.tipo === 'Paciente Modelo' ? 'bg-purple-100 text-purple-600' : 'bg-brand-100 text-brand-600'}`}>{l.tipo}</span></td>
                     <td className="py-3 px-3 text-gray-600 text-sm">{l.responsavel || '—'}</td>
