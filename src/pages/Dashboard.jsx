@@ -71,10 +71,8 @@ export default function Dashboard() {
   // Consultas pagas = clientes que de fato compareceram (fonte verdadeira para CAC e conversão geral)
   const totalAgendReal = countConsultas
 
-  // Agendados de novos + indicação (por status do lead — inclui quem ainda não tem lançamento financeiro)
-  const agendadosNovos = leadsNovos.filter(l => !isFollowLead(l) && l.status === 'agendado').length
-  const agendadosIndicacao = leadsIndicacao.filter(l => l.status === 'agendado').length
-  const totalAgendNovos = agendadosNovos + agendadosIndicacao
+  // Agendados = consultas lançadas no Faturamento (fonte verdadeira, alinhada com Taxa de Conversão)
+  const totalAgendNovos = countConsultas
 
   const convComercial = totalLeads > 0 ? ((totalAgendReal / totalLeads) * 100).toFixed(1) : '0.0'
   const convNovos = (leadsNovosReais + leadsIndicacao.length) > 0 ? ((totalAgendNovos / (leadsNovosReais + leadsIndicacao.length)) * 100).toFixed(1) : '0.0'

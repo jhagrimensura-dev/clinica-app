@@ -312,7 +312,14 @@ export default function Indicacao() {
       const da = a.data || '', db = b.data || ''
       return ordem === 'asc' ? da.localeCompare(db) : db.localeCompare(da)
     })
-  const agendados = leads.filter(l => l.status === 'agendado' || l.status === 'fechado').length
+  const funil = {
+    em_aberto:   leads.filter(l => l.status === 'em_aberto').length,
+    conversando: leads.filter(l => l.status === 'conversando').length,
+    agendado:    leads.filter(l => l.status === 'agendado').length,
+    fechado:     leads.filter(l => l.status === 'fechado').length,
+    perdido:     leads.filter(l => l.status === 'perdido').length,
+  }
+  const agendados = funil.agendado + funil.fechado
   const taxa = leads.length > 0 ? ((agendados / leads.length) * 100).toFixed(1) : '0.0'
 
   const dataFormatada = (data) => { const [, m, d] = (data || '').split('-'); return d && m ? `${d}/${m}` : '—' }
@@ -351,20 +358,48 @@ export default function Indicacao() {
       </div>
 
       <div className="grid grid-cols-3 gap-4">
-        {[
-          { label: 'Total de Indicações', value: leads.length, sub: `${leads.length} indicações`, icon: '🤝', cor: 'text-green-400' },
-          { label: 'Taxa de Conversão', value: `${taxa}%`, sub: `${agendados} agendamentos`, icon: '📈', cor: 'text-emerald-400' },
-          { label: 'Agendamentos', value: agendados, sub: `de ${leads.length} indicações`, icon: '📅', cor: 'text-blue-400' },
-        ].map((c, i) => (
-          <div key={i} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
-            <div className="flex justify-between items-start mb-1">
-              <p className="text-sm text-gray-500 font-medium">{c.label}</p>
-              <span className={`text-lg ${c.cor}`}>{c.icon}</span>
-            </div>
-            <p className="text-3xl font-bold text-gray-800">{c.value}</p>
-            <p className="text-xs text-gray-400 mt-1">{c.sub}</p>
+        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+          <div className="flex justify-between items-start mb-1">
+            <p className="text-sm text-gray-500 font-medium">Total de Indicações</p>
+            <span className="text-green-400 text-lg">🤝</span>
           </div>
-        ))}
+          <p className="text-3xl font-bold text-gray-800">{leads.length}</p>
+          <div className="mt-2 space-y-1 pt-2 border-t border-gray-50">
+            {funil.em_aberto > 0 && <div className="flex justify-between text-xs"><span className="text-gray-400">Em aberto</span><span className="font-semibold text-gray-500">{funil.em_aberto}</span></div>}
+            {funil.conversando > 0 && <div className="flex justify-between text-xs"><span className="text-purple-400">Conversando</span><span className="font-semibold text-purple-500">{funil.conversando}</span></div>}
+            {funil.perdido > 0 && <div className="flex justify-between text-xs"><span className="text-red-400">Perdido</span><span className="font-semibold text-red-500">{funil.perdido}</span></div>}
+          </div>
+        </div>
+        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+          <div className="flex justify-between items-start mb-1">
+            <p className="text-sm text-gray-500 font-medium">Taxa de Conversão</p>
+            <span className="text-emerald-400 text-lg">📈</span>
+          </div>
+          <p className={`text-3xl font-bold ${parseFloat(taxa) > 15 ? 'text-green-600' : parseFloat(taxa) >= 10 ? 'text-orange-500' : 'text-red-500'}`}>{taxa}%</p>
+          <p className="text-xs text-gray-400 mt-1">{agendados} agendamentos</p>
+          {agendados > 0 && (
+            <div className="mt-3 space-y-1">
+              {funil.agendado > 0 && <div className="flex justify-between text-xs"><span className="text-blue-400">Agendado</span><span className="font-semibold text-blue-500">{funil.agendado}</span></div>}
+              {funil.fechado > 0 && <div className="flex justify-between text-xs"><span className="text-green-400">Fechado</span><span className="font-semibold text-green-500">{funil.fechado}</span></div>}
+            </div>
+          )}
+          {agendados === 0 && (
+            <p className="text-xs text-gray-300 mt-3">Nenhuma conversão rastreada ainda</p>
+          )}
+        </div>
+        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+          <div className="flex justify-between items-start mb-1">
+            <p className="text-sm text-gray-500 font-medium">Agendamentos</p>
+            <span className="text-blue-400 text-lg">📅</span>
+          </div>
+          <p className="text-3xl font-bold text-gray-800">{agendados}</p>
+          <p className="text-xs text-gray-400 mt-1">de {leads.length} indicações</p>
+          <div className="mt-3 space-y-1">
+            {leads.filter(l => l.status === 'agendado' || l.status === 'fechado').slice(0, 9).map((l, i) => (
+              <p key={i} className="text-xs text-gray-500">· {l.nome}</p>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">

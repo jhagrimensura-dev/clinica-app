@@ -306,7 +306,7 @@ function ModalEditarLead({ lead, onClose, onSalvar, onExcluir }) {
 export default function LeadsRecorrentes() {
   const { userRole } = useAuth()
   const { ano, setAno, mes, setMes } = useFinanceiro()
-  const { getLeadsPorOrigem, addLead, updateLead, removeLead } = useLeads()
+  const { getLeadsPorOrigem, addLead, updateLead, removeLead, clearLeadsByOrigemMes, leads: todosLeads } = useLeads()
   const [modal, setModal] = useState(false)
   const [modalEditar, setModalEditar] = useState(null)
   const [busca, setBusca] = useState('')
@@ -314,6 +314,9 @@ export default function LeadsRecorrentes() {
   const [visao, setVisao] = useState('lista')
   const [dragOver, setDragOver] = useState(null)
   const [ordem, setOrdem] = useState('desc')
+  const [modalImport, setModalImport] = useState(null)
+  const [suspeitosDecisao, setSuspeitosDecisao] = useState([])
+  const [importando, setImportando] = useState(false)
 
   const leads = getLeadsPorOrigem('leads_recorrentes', ano, mes)
   const leadsFiltrados = leads
@@ -322,7 +325,17 @@ export default function LeadsRecorrentes() {
       const da = a.data || '', db = b.data || ''
       return ordem === 'asc' ? da.localeCompare(db) : db.localeCompare(da)
     })
-  const agendados = leads.filter(l => l.status === 'agendado' || l.status === 'fechado').length
+  const funil = {
+    em_aberto:   leads.filter(l => l.status === 'em_aberto').length,
+    conversando: leads.filter(l => l.status === 'conversando').length,
+    follow1:     leads.filter(l => l.status === 'follow1').length,
+    follow2:     leads.filter(l => l.status === 'follow2').length,
+    follow3:     leads.filter(l => l.status === 'follow3').length,
+    agendado:    leads.filter(l => l.status === 'agendado').length,
+    fechado:     leads.filter(l => l.status === 'fechado').length,
+    perdido:     leads.filter(l => l.status === 'perdido').length,
+  }
+  const agendados = funil.agendado + funil.fechado
   const taxa = leads.length > 0 ? ((agendados / leads.length) * 100).toFixed(1) : '0.0'
 
   const dataFormatada = (data) => { const [, m, d] = (data || '').split('-'); return d && m ? `${d}/${m}` : '—' }
@@ -332,6 +345,99 @@ export default function LeadsRecorrentes() {
     if (!telefone) return
     sessionStorage.setItem('inbox_abrir_telefone', telefone)
     window.dispatchEvent(new CustomEvent('navegarInbox'))
+  }
+
+  const parseData = (str) => {
+    if (!str) return ''
+    const s = str.trim()
+    const parts = s.split(/[\/\-]/).filter(p => p !== '')
+    if (parts.length === 3) {
+      if (parts[0].length === 4) return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`
+      if (parts[2].length === 4) return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`
+      const yr = parseInt(parts[2], 10)
+      return `${yr < 100 ? 2000 + yr : yr}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`
+    }
+    if (parts.length === 2 && parts[1].length === 6) {
+      return `${parts[1].slice(2)}-${parts[1].slice(0, 2).padStart(2, '0')}-${parts[0].padStart(2, '0')}`
+    }
+    return ''
+  }
+
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    e.target.value = ''
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const text = ev.target.result
+      const lines = text.split(/\r?\n/).filter(l => l.trim())
+      if (lines.length < 2) return alert('CSV vazio ou sem dados.')
+
+      const sep = lines[0].includes('\t') ? /\t/ : /[,;]/
+      const header = lines[0].split(sep).map(h => h.trim().toLowerCase()
+        .normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z\s]/g, '').trim().replace(/\s+/g, '_'))
+
+      const idxNome      = header.findIndex(h => h === 'nome')
+      const idxTelefone  = header.findIndex(h => h === 'telefone')
+      const idxData      = header.findIndex(h => h.includes('data'))
+      const idxOrigem    = header.findIndex(h => h === 'origem')
+      const idxRespondeu = header.findIndex(h => h === 'respondeu')
+      const idxAgendou   = header.findIndex(h => h === 'agendou')
+      const idxVendeu    = header.findIndex(h => h === 'vendeu')
+      const idxObs       = header.findIndex(h => h.includes('observa') || h.includes('obs'))
+
+      const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
+      const rows = []
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(sep).map(c => c.trim().replace(/^"|"$/g, ''))
+        const get = (idx) => idx >= 0 ? (cols[idx] || '') : ''
+
+        const nome = get(idxNome)
+        const telefone = get(idxTelefone)
+        if (!nome && !telefone) continue
+        if (nome === '.' || nome === '@' || nome === '@@') continue
+
+        const rawOrigem = get(idxOrigem).toUpperCase()
+        let origemCustom = 'Instagram'
+        let midia = 'Link da BIO'
+        if (rawOrigem.includes('TRAFEGO') || rawOrigem.includes('TRÁFEGO')) { origemCustom = 'Tráfego'; midia = '' }
+        else if (rawOrigem.includes('INDICACAO') || rawOrigem.includes('INDICAÇÃO')) { origemCustom = 'Indicação'; midia = '' }
+        else if (rawOrigem.includes('STORIES')) { origemCustom = 'Instagram'; midia = 'Link dos Stories' }
+
+        const respondeu = get(idxRespondeu).toUpperCase() === 'SIM'
+        const agendou   = get(idxAgendou).toUpperCase() === 'SIM'
+        const vendeu    = get(idxVendeu).toUpperCase() === 'SIM'
+
+        let status = 'em_aberto'
+        if (vendeu)        status = 'fechado'
+        else if (agendou)  status = 'agendado'
+        else if (respondeu) status = 'conversando'
+
+        const data = parseData(get(idxData))
+        const obs  = get(idxObs)
+
+        rows.push({ id: genUUID(), nome: nome || telefone, telefone: nome ? telefone : '', data, origemCustom, midia, status, obs, origem: 'leads_recorrentes', responsavel: '' })
+      }
+
+      if (rows.length === 0) return alert('Nenhum lead válido encontrado no CSV.')
+
+      setModalImport({ todos: rows })
+      setSuspeitosDecisao([])
+    }
+    reader.readAsText(file, 'UTF-8')
+  }
+
+  const confirmarImport = async () => {
+    if (!modalImport) return
+    setImportando(true)
+    const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
+    const existentes = todosLeads.filter(l => l.origem === 'leads_recorrentes' && (l.data || '').startsWith(prefix))
+    for (const lead of existentes) await removeLead(lead.id)
+    let importados = 0
+    for (const lead of modalImport.todos) { await addLead(lead); importados++ }
+    setImportando(false)
+    setModalImport(null)
+    alert(`${importados} lead(s) importado(s). ${existentes.length} antigos removidos.`)
   }
 
   return (
@@ -346,6 +452,10 @@ export default function LeadsRecorrentes() {
             <span className="text-sm font-semibold text-gray-700 w-24 text-center">{MESES_FULL[mes].slice(0,3)} {ano}</span>
             <button onClick={() => { if (mes === 11) { setMes(0); setAno(a => a+1) } else setMes(m => m+1) }} className="text-gray-400 hover:text-gray-600 px-1">›</button>
           </div>
+          <label className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-600 text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-sm border border-gray-200 cursor-pointer">
+            ↑ Importar CSV
+            <input type="file" accept=".csv,.tsv,.txt" className="hidden" onChange={handleImportCSV} />
+          </label>
           <button onClick={() => setModal(true)}
             className="flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-sm">
             + Novo Lead
@@ -360,20 +470,49 @@ export default function LeadsRecorrentes() {
       </div>
 
       <div className="grid grid-cols-3 gap-4">
-        {[
-          { label: 'Total de Leads', value: leads.length, sub: `${leads.length} leads recorrentes`, icon: '🔄', cor: 'text-teal-400' },
-          { label: 'Taxa de Conversão', value: `${taxa}%`, sub: `${agendados} agendamentos`, icon: '📈', cor: 'text-green-400' },
-          { label: 'Agendamentos', value: agendados, sub: `de ${leads.length} leads`, icon: '📅', cor: 'text-blue-400' },
-        ].map((c, i) => (
-          <div key={i} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
-            <div className="flex justify-between items-start mb-1">
-              <p className="text-sm text-gray-500 font-medium">{c.label}</p>
-              <span className={`text-lg ${c.cor}`}>{c.icon}</span>
-            </div>
-            <p className="text-3xl font-bold text-gray-800">{c.value}</p>
-            <p className="text-xs text-gray-400 mt-1">{c.sub}</p>
+        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+          <div className="flex justify-between items-start mb-1">
+            <p className="text-sm text-gray-500 font-medium">Total de Leads</p>
+            <span className="text-teal-400 text-lg">🔄</span>
           </div>
-        ))}
+          <p className="text-3xl font-bold text-gray-800">{leads.length}</p>
+          <div className="mt-2 space-y-1 pt-2 border-t border-gray-50">
+            {funil.em_aberto > 0 && <div className="flex justify-between text-xs"><span className="text-gray-400">Em aberto</span><span className="font-semibold text-gray-500">{funil.em_aberto}</span></div>}
+            {funil.conversando > 0 && <div className="flex justify-between text-xs"><span className="text-purple-400">Conversando</span><span className="font-semibold text-purple-500">{funil.conversando}</span></div>}
+            {(funil.follow1 + funil.follow2 + funil.follow3) > 0 && <div className="flex justify-between text-xs"><span className="text-orange-400">Em follow</span><span className="font-semibold text-orange-500">{funil.follow1 + funil.follow2 + funil.follow3}</span></div>}
+            {funil.perdido > 0 && <div className="flex justify-between text-xs"><span className="text-red-400">Perdido</span><span className="font-semibold text-red-500">{funil.perdido}</span></div>}
+          </div>
+        </div>
+        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+          <div className="flex justify-between items-start mb-1">
+            <p className="text-sm text-gray-500 font-medium">Taxa de Conversão</p>
+            <span className="text-green-400 text-lg">📈</span>
+          </div>
+          <p className={`text-3xl font-bold ${parseFloat(taxa) > 15 ? 'text-green-600' : parseFloat(taxa) >= 10 ? 'text-orange-500' : 'text-red-500'}`}>{taxa}%</p>
+          <p className="text-xs text-gray-400 mt-1">{agendados} agendamentos</p>
+          {agendados > 0 && (
+            <div className="mt-3 space-y-1">
+              {funil.agendado > 0 && <div className="flex justify-between text-xs"><span className="text-blue-400">Agendado</span><span className="font-semibold text-blue-500">{funil.agendado}</span></div>}
+              {funil.fechado > 0 && <div className="flex justify-between text-xs"><span className="text-green-400">Fechado</span><span className="font-semibold text-green-500">{funil.fechado}</span></div>}
+            </div>
+          )}
+          {agendados === 0 && (
+            <p className="text-xs text-gray-300 mt-3">Nenhuma conversão rastreada ainda</p>
+          )}
+        </div>
+        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+          <div className="flex justify-between items-start mb-1">
+            <p className="text-sm text-gray-500 font-medium">Agendamentos</p>
+            <span className="text-blue-400 text-lg">📅</span>
+          </div>
+          <p className="text-3xl font-bold text-gray-800">{agendados}</p>
+          <p className="text-xs text-gray-400 mt-1">de {leads.length} leads</p>
+          <div className="mt-3 space-y-1">
+            {leads.filter(l => l.status === 'agendado' || l.status === 'fechado').slice(0, 9).map((l, i) => (
+              <p key={i} className="text-xs text-gray-500">· {l.nome}</p>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -501,6 +640,29 @@ export default function LeadsRecorrentes() {
       {modal && <ModalNovoLead onClose={() => setModal(false)} onSalvar={addLead} ano={ano} mes={mes} leads={leads} />}
       {modalEditar && (
         <ModalEditarLead lead={modalEditar} onClose={() => setModalEditar(null)} onSalvar={updateLead} onExcluir={removeLead} />
+      )}
+
+      {/* Modal Import CSV */}
+      {modalImport && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+            <h2 className="text-base font-bold text-gray-900">Importar CSV — Recorrentes</h2>
+            <div className="bg-teal-50 border border-teal-100 rounded-xl p-4 text-center">
+              <p className="text-3xl font-bold text-teal-600">{modalImport.todos.length}</p>
+              <p className="text-sm text-teal-500 mt-1">leads encontrados no CSV</p>
+            </div>
+            <div className="bg-amber-50 border border-amber-100 rounded-xl p-3">
+              <p className="text-xs text-amber-700 font-medium">⚠️ Os leads atuais de {MESES_FULL[mes]} serão substituídos pelos do CSV.</p>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setModalImport(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-500 hover:bg-gray-50">Cancelar</button>
+              <button onClick={confirmarImport} disabled={importando}
+                className="flex-1 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-600 text-white text-sm font-semibold disabled:opacity-50">
+                {importando ? 'Importando...' : 'Substituir e importar'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

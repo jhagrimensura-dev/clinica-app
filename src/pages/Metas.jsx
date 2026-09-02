@@ -366,6 +366,65 @@ export default function Metas() {
           <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-300"></div><span className="text-xs text-gray-500">Abaixo da meta</span></div>
           <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-gray-200"></div><span className="text-xs text-gray-500">Não selecionado</span></div>
         </div>
+
+        {/* Resumo por semana */}
+        {(() => {
+          const semanasResumo = calendario.map((semana, si) => {
+            const diasDaSemana = semana.map((dia, di) => ({ ...dia, di })).filter(d => !d.mes)
+            if (diasDaSemana.length === 0) return null
+            const diasTrabalho = diasDaSemana.filter(d => diasSelecionados.has(`${si}-${d.di}`))
+            if (diasTrabalho.length === 0) return null
+            const metaSemanal = diasTrabalho.length * metaDiariaOriginal
+            const faturamento = diasDaSemana.reduce((acc, d) => acc + (vendasPorDia[d.dia] || 0), 0)
+            const minDia = Math.min(...diasDaSemana.map(d => d.dia))
+            const maxDia = Math.max(...diasDaSemana.map(d => d.dia))
+            const todosPassados = diasDaSemana.every(d => d.dia < diaHoje)
+            const algumPassado = diasDaSemana.some(d => d.dia < diaHoje)
+            const bateu = todosPassados && faturamento >= metaSemanal
+            const nao = todosPassados && faturamento < metaSemanal
+            const emAndamento = !todosPassados && algumPassado
+            const futura = !algumPassado
+            const pct = metaSemanal > 0 ? Math.min((faturamento / metaSemanal) * 100, 100) : 0
+            return { si, minDia, maxDia, diasTrabalho: diasTrabalho.length, metaSemanal, faturamento, bateu, nao, emAndamento, futura, pct }
+          }).filter(Boolean)
+
+          if (semanasResumo.length === 0) return null
+
+          const mesStr = MESES[mes].slice(0, 3).toLowerCase()
+
+          return (
+            <div className="mt-6 pt-5 border-t border-gray-100">
+              <h3 className="text-sm font-semibold text-gray-600 mb-3">Resultado por Semana</h3>
+              <div className="divide-y divide-gray-100">
+                {semanasResumo.map((s, i) => (
+                  <div key={s.si} className="flex items-center gap-3 py-2">
+                    <span className="text-xs font-semibold text-gray-400 w-10 shrink-0">Sem {i + 1}</span>
+                    <span className="text-xs text-gray-400 w-20 shrink-0">{String(s.minDia).padStart(2,'0')}–{String(s.maxDia).padStart(2,'0')} {mesStr}</span>
+                    <span className="text-xs text-gray-300 w-6 shrink-0">{s.diasTrabalho}d</span>
+                    <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      {!s.futura && s.metaSemanal > 0 && (
+                        <div
+                          className={`h-full rounded-full ${s.bateu ? 'bg-green-400' : s.nao ? 'bg-red-400' : 'bg-blue-400'}`}
+                          style={{ width: `${s.pct}%` }}
+                        />
+                      )}
+                    </div>
+                    <span className="text-xs text-gray-400 w-24 text-right shrink-0">meta {fmt(s.metaSemanal)}</span>
+                    {!s.futura
+                      ? <span className={`text-xs font-semibold w-24 text-right shrink-0 ${s.bateu ? 'text-green-600' : s.nao ? 'text-red-500' : 'text-blue-500'}`}>{fmt(s.faturamento)}</span>
+                      : <span className="text-xs text-gray-300 w-24 text-right shrink-0">—</span>
+                    }
+                    <div className="w-4 text-center shrink-0">
+                      {s.bateu && <span className="text-green-500 text-sm">✓</span>}
+                      {s.nao && <span className="text-red-400 text-sm">✗</span>}
+                      {s.emAndamento && <span className="text-blue-400 text-xs">●</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
       </div>
 
     </div>

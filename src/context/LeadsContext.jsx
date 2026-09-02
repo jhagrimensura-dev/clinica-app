@@ -208,6 +208,15 @@ export function LeadsProvider({ children }) {
     if (clinicaId) await supabase.from('leads').delete().eq('clinica_id', clinicaId)
   }
 
+  const clearLeadsByOrigemMes = async (origem, ano, mes) => {
+    const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
+    setLeads(prev => prev.filter(l => !(l.origem === origem && (l.data || '').startsWith(prefix))))
+    if (clinicaId) await supabase.from('leads').delete()
+      .eq('clinica_id', clinicaId)
+      .eq('origem', origem)
+      .like('data', `${prefix}%`)
+  }
+
   const getLeadsPorOrigem = (origem, ano, mes) => {
     const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
     return leads.filter(l => {
@@ -224,7 +233,7 @@ export function LeadsProvider({ children }) {
   }
 
   return (
-    <LeadsContext.Provider value={{ leads, addLead, updateLead, removeLead, clearLeads, getLeadsPorOrigem, importLeads, loading }}>
+    <LeadsContext.Provider value={{ leads, addLead, updateLead, removeLead, clearLeads, clearLeadsByOrigemMes, getLeadsPorOrigem, importLeads, loading }}>
       {children}
     </LeadsContext.Provider>
   )
