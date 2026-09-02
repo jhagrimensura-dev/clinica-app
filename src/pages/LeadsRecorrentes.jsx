@@ -7,6 +7,7 @@ const genUUID = () => {
     return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16)
   })
 }
+import { useClinica } from '../context/ClinicaContext'
 import { useLeads } from '../context/LeadsContext'
 import { useFinanceiro } from '../context/FinanceiroContext'
 import { useAuth } from '../context/AuthContext'
@@ -317,16 +318,12 @@ export default function LeadsRecorrentes() {
   const [modalImport, setModalImport] = useState(null)
   const [suspeitosDecisao, setSuspeitosDecisao] = useState([])
   const [importando, setImportando] = useState(false)
-  const metaAgendKey = `metaAgendRec_${ano}_${mes}`
-  const [metaAgend, setMetaAgend] = useState(() => parseInt(localStorage.getItem(`metaAgendRec_${ano}_${mes}`) || '0', 10))
+  const { metaAgendRec: metaAgend, setMetaAgendRec: setMetaAgendCtx } = useClinica()
   const [editandoMetaAgend, setEditandoMetaAgend] = useState(false)
   const [inputMetaAgend, setInputMetaAgend] = useState('')
-  useEffect(() => {
-    setMetaAgend(parseInt(localStorage.getItem(`metaAgendRec_${ano}_${mes}`) || '0', 10))
-  }, [ano, mes])
   const salvarMetaAgend = () => {
     const v = parseInt(inputMetaAgend.replace(/\D/g, ''), 10)
-    if (!isNaN(v) && v >= 0) { setMetaAgend(v); localStorage.setItem(metaAgendKey, String(v)) }
+    if (!isNaN(v) && v >= 0) setMetaAgendCtx(v)
     setEditandoMetaAgend(false)
   }
 

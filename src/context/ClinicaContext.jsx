@@ -93,6 +93,8 @@ export function ClinicaProvider({ children }) {
           metaValor: meta?.meta_valor ?? undefined,
           superMetaValor: meta?.super_meta_valor ?? undefined,
           recordeValor: meta?.recorde_valor ?? undefined,
+          metaAgendNovos: meta?.meta_agend_novos ?? 0,
+          metaAgendRec: meta?.meta_agend_rec ?? 0,
         },
       }))
       setPostsPorMes(prev => ({ ...prev, [mesKey]: postsData?.posts || [] }))
@@ -126,6 +128,8 @@ export function ClinicaProvider({ children }) {
               metaValor: n.meta_valor ?? undefined,
               superMetaValor: n.super_meta_valor ?? undefined,
               recordeValor: n.recorde_valor ?? undefined,
+              metaAgendNovos: n.meta_agend_novos ?? 0,
+              metaAgendRec: n.meta_agend_rec ?? 0,
             }
           }))
           setLoadedMonths(prev => new Set([...prev, key]))
@@ -155,6 +159,8 @@ export function ClinicaProvider({ children }) {
         recorde_valor: dados.recordeValor ?? DEFAULTS.recordeValor,
         dias_selecionados: serSet(dados.diasSelecionados),
         dias_valores: dados.diasValores || {},
+        meta_agend_novos: dados.metaAgendNovos ?? 0,
+        meta_agend_rec: dados.metaAgendRec ?? 0,
       }, { onConflict: 'clinica_id,ano,mes' })
     }, 400)
   }
@@ -172,6 +178,8 @@ export function ClinicaProvider({ children }) {
   const setMetaValor = (valor) => updateMes(() => ({ metaValor: valor }))
   const setSuperMetaValor = (valor) => updateMes(() => ({ superMetaValor: valor }))
   const setRecordeValor = (valor) => updateMes(() => ({ recordeValor: valor }))
+  const setMetaAgendNovos = (valor) => updateMes(() => ({ metaAgendNovos: valor }))
+  const setMetaAgendRec = (valor) => updateMes(() => ({ metaAgendRec: valor }))
 
   const setDiasSelecionados = (updater) => updateMes(atual => ({
     diasSelecionados: typeof updater === 'function' ? updater(atual.diasSelecionados) : updater,
@@ -201,6 +209,8 @@ export function ClinicaProvider({ children }) {
   const metaValor = dadosAtual.metaValor ?? DEFAULTS.metaValor
   const superMetaValorRaw = dadosAtual.superMetaValor
   const recordeValor = dadosAtual.recordeValor ?? DEFAULTS.recordeValor
+  const metaAgendNovos = dadosAtual.metaAgendNovos ?? 0
+  const metaAgendRec = dadosAtual.metaAgendRec ?? 0
   const posts = postsPorMes[mesKey] || []
 
   const superMeta = superMetaValorRaw ?? metaValor * 1.1
@@ -224,6 +234,8 @@ export function ClinicaProvider({ children }) {
       metaDiaria,
       faturamentoTotal,
       porcentagemMeta,
+      metaAgendNovos, setMetaAgendNovos,
+      metaAgendRec, setMetaAgendRec,
     }}>
       {children}
     </ClinicaContext.Provider>

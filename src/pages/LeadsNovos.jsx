@@ -7,6 +7,7 @@ const genUUID = () => {
     return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16)
   })
 }
+import { useClinica } from '../context/ClinicaContext'
 import { useLeads } from '../context/LeadsContext'
 import { useFinanceiro } from '../context/FinanceiroContext'
 import { useAuth } from '../context/AuthContext'
@@ -512,6 +513,7 @@ export default function LeadsNovos() {
   const { userRole } = useAuth()
   const { ano, setAno, mes, setMes, MESES } = useFinanceiro()
   const { getLeadsPorOrigem, addLead, updateLead, removeLead, leads: todosLeads } = useLeads()
+  const { metaAgendNovos: metaAgend, setMetaAgendNovos: setMetaAgendCtx } = useClinica()
   const { lancamentos, addLancamento } = useVendas()
   const [modal, setModal] = useState(false)
   const [modalEditar, setModalEditar] = useState(null)
@@ -525,16 +527,11 @@ export default function LeadsNovos() {
   const [visao, setVisao] = useState('lista')
   const [dragOver, setDragOver] = useState(null)
   const [ordem, setOrdem] = useState('desc')
-  const metaAgendKey = `metaAgend_${ano}_${mes}`
-  const [metaAgend, setMetaAgend] = useState(() => parseInt(localStorage.getItem(`metaAgend_${ano}_${mes}`) || '0', 10))
   const [editandoMetaAgend, setEditandoMetaAgend] = useState(false)
   const [inputMetaAgend, setInputMetaAgend] = useState('')
-  useEffect(() => {
-    setMetaAgend(parseInt(localStorage.getItem(metaAgendKey) || '0', 10))
-  }, [ano, mes])
   const salvarMetaAgend = () => {
     const v = parseInt(inputMetaAgend.replace(/\D/g, ''), 10)
-    if (!isNaN(v) && v >= 0) { setMetaAgend(v); localStorage.setItem(metaAgendKey, String(v)) }
+    if (!isNaN(v) && v >= 0) setMetaAgendCtx(v)
     setEditandoMetaAgend(false)
   }
 
