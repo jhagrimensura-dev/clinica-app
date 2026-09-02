@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const genUUID = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID()
@@ -317,6 +317,18 @@ export default function LeadsRecorrentes() {
   const [modalImport, setModalImport] = useState(null)
   const [suspeitosDecisao, setSuspeitosDecisao] = useState([])
   const [importando, setImportando] = useState(false)
+  const metaAgendKey = `metaAgendRec_${ano}_${mes}`
+  const [metaAgend, setMetaAgend] = useState(() => parseInt(localStorage.getItem(`metaAgendRec_${ano}_${mes}`) || '0', 10))
+  const [editandoMetaAgend, setEditandoMetaAgend] = useState(false)
+  const [inputMetaAgend, setInputMetaAgend] = useState('')
+  useEffect(() => {
+    setMetaAgend(parseInt(localStorage.getItem(`metaAgendRec_${ano}_${mes}`) || '0', 10))
+  }, [ano, mes])
+  const salvarMetaAgend = () => {
+    const v = parseInt(inputMetaAgend.replace(/\D/g, ''), 10)
+    if (!isNaN(v) && v >= 0) { setMetaAgend(v); localStorage.setItem(metaAgendKey, String(v)) }
+    setEditandoMetaAgend(false)
+  }
 
   const leads = getLeadsPorOrigem('leads_recorrentes', ano, mes)
   const leadsFiltrados = leads
@@ -469,7 +481,7 @@ export default function LeadsRecorrentes() {
           className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-teal-400 bg-white" />
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
           <div className="flex justify-between items-start mb-1">
             <p className="text-sm text-gray-500 font-medium">Total de Leads</p>
@@ -512,6 +524,53 @@ export default function LeadsRecorrentes() {
               <p key={i} className="text-xs text-gray-500">· {l.nome}</p>
             ))}
           </div>
+        </div>
+
+        {/* Meta de Agendamentos */}
+        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+          <div className="flex justify-between items-start mb-1">
+            <p className="text-sm text-gray-500 font-medium">Meta de Agendamentos</p>
+            {!editandoMetaAgend && userRole !== 'Funcionário' && (
+              <button onClick={() => { setInputMetaAgend(String(metaAgend || '')); setEditandoMetaAgend(true) }} className="text-gray-300 hover:text-gray-500 text-sm">✏️</button>
+            )}
+          </div>
+          {editandoMetaAgend ? (
+            <div className="space-y-2">
+              <input
+                autoFocus type="text" value={inputMetaAgend}
+                onChange={e => setInputMetaAgend(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') salvarMetaAgend(); if (e.key === 'Escape') setEditandoMetaAgend(false) }}
+                placeholder="Ex: 40"
+                className="w-full text-2xl font-bold text-gray-900 border-b-2 border-teal-400 outline-none bg-transparent"
+              />
+              <div className="flex gap-2">
+                <button onClick={salvarMetaAgend} className="flex-1 bg-teal-500 hover:bg-teal-600 text-white text-xs font-semibold py-1.5 rounded-lg">Salvar</button>
+                <button onClick={() => setEditandoMetaAgend(false)} className="flex-1 bg-gray-100 text-gray-500 text-xs font-semibold py-1.5 rounded-lg">Cancelar</button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-end gap-2">
+                <p className={`text-3xl font-bold ${metaAgend > 0 && agendados >= metaAgend ? 'text-green-600' : metaAgend > 0 ? 'text-red-500' : 'text-gray-800'}`}>{agendados}</p>
+                {metaAgend > 0 && <p className="text-sm text-gray-400 mb-1">/ {metaAgend}</p>}
+              </div>
+              {metaAgend > 0 ? (
+                <>
+                  <div className="mt-3 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${agendados >= metaAgend ? 'bg-green-400' : 'bg-teal-400'}`}
+                      style={{ width: `${Math.min((agendados / metaAgend) * 100, 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {agendados >= metaAgend ? 'Meta batida!' : `faltam ${metaAgend - agendados}`}
+                  </p>
+                </>
+              ) : (
+                <p className="text-xs text-gray-300 mt-2">Clique em ✏️ para definir a meta</p>
+              )}
+            </>
+          )}
         </div>
       </div>
 
