@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useVendas } from '../context/VendasContext'
 import { useLeads } from '../context/LeadsContext'
+import { useClinica } from '../context/ClinicaContext'
 
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
@@ -83,13 +84,15 @@ function BonusLine({ label, valor, destaque }) {
   )
 }
 
-const STORAGE_KEY = (mes, ano) => `colaboradoras_${ano}_${mes}`
+const COLABORADORAS = ['Fernanda', 'Adriele']
 
-function loadData(mes, ano) {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY(mes, ano)) || 'null') } catch { return null }
+const STORAGE_KEY = (mes, ano, nome) => `colaboradoras_${nome}_${ano}_${mes}`
+
+function loadData(mes, ano, nome) {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY(mes, ano, nome)) || 'null') } catch { return null }
 }
-function saveData(mes, ano, data) {
-  localStorage.setItem(STORAGE_KEY(mes, ano), JSON.stringify(data))
+function saveData(mes, ano, nome, data) {
+  localStorage.setItem(STORAGE_KEY(mes, ano, nome), JSON.stringify(data))
 }
 
 const defaultState = () => ({
@@ -114,15 +117,36 @@ function semanaDoMes(dia) {
   return 3
 }
 
+function gerarCalendario(ano, mes) {
+  const primeiroDia = new Date(ano, mes, 1).getDay()
+  const diasNoMes = new Date(ano, mes + 1, 0).getDate()
+  const diasMesAnterior = new Date(ano, mes, 0).getDate()
+  const semanas = []
+  let semana = []
+  for (let i = primeiroDia - 1; i >= 0; i--) semana.push({ dia: diasMesAnterior - i, mes: 'ant' })
+  for (let dia = 1; dia <= diasNoMes; dia++) {
+    semana.push({ dia })
+    if (semana.length === 7) { semanas.push(semana); semana = [] }
+  }
+  if (semana.length > 0) {
+    let prox = 1
+    while (semana.length < 7) semana.push({ dia: prox++, mes: 'prox' })
+    semanas.push(semana)
+  }
+  return semanas
+}
+
 export default function Colaboradoras() {
   const { lancamentos } = useVendas()
   const { leads } = useLeads()
+  const { diasSelecionados } = useClinica()
   const hoje = new Date()
   const [mes, setMes] = useState(hoje.getMonth())
   const [ano, setAno] = useState(hoje.getFullYear())
   const [refreshKey, setRefreshKey] = useState(0)
+  const [activeTab, setActiveTab] = useState(COLABORADORAS[0])
 
-  const [dados, setDados] = useState(() => loadData(hoje.getMonth(), hoje.getFullYear()) || defaultState())
+  const [dados, setDados] = useState(() => loadData(hoje.getMonth(), hoje.getFullYear(), COLABORADORAS[0]) || defaultState())
 
   // Faturamento total do mês (todos os lançamentos, igual ao Dashboard)
   const fatTotalDoMes = useMemo(() => {
@@ -156,7 +180,7 @@ export default function Colaboradoras() {
       .reduce((acc, l) => acc + (l.valorTaxa || 0), 0)
   }, [lancamentos, mes, ano])
 
-  // Vendas de pacientes novos agrupadas por semana do mês selecionado
+  // Vendas de pacientes novos agrupadas por semana do mês selecionado (agrupamento fixo)
   const vendasPorSemana = useMemo(() => {
     const totais = [0, 0, 0, 0]
     const prefixo = `${ano}-${String(mes + 1).padStart(2, '0')}-`
@@ -170,9 +194,37 @@ export default function Colaboradoras() {
     return totais
   }, [lancamentos, mes, ano])
 
+  // Faturamento total por semana do calendário (igual ao Resultado por Semana do Metas)
+  const vendasPorSemanaCalendario = useMemo(() => {
+    const calendario = gerarCalendario(ano, mes)
+    const prefixo = `${ano}-${String(mes + 1).padStart(2, '0')}-`
+    const vendasPorDia = {}
+    lancamentos
+      .filter(l => l.data?.startsWith(prefixo) && l.tipo !== 'Paciente Modelo')
+      .forEach(l => {
+        const dia = parseInt(l.data.slice(8, 10), 10)
+        vendasPorDia[dia] = (vendasPorDia[dia] || 0) + (l.valorTratamento || 0) + (l.valorTaxa || 0)
+      })
+    const totais = []
+    calendario.forEach((semana, si) => {
+      const diasDaSemana = semana.map((d, di) => ({ ...d, di })).filter(d => !d.mes)
+      const diasTrabalho = diasDaSemana.filter(d => diasSelecionados.has(`${si}-${d.di}`))
+      if (diasTrabalho.length === 0) return
+      const total = diasDaSemana.reduce((acc, d) => acc + (vendasPorDia[d.dia] || 0), 0)
+      totais.push(total)
+    })
+    return totais
+  }, [lancamentos, mes, ano, diasSelecionados])
+
+  const trocarTab = (nome) => {
+    setActiveTab(nome)
+    setDados(loadData(mes, ano, nome) || defaultState())
+    setRefreshKey(k => k + 1)
+  }
+
   const trocarMes = (novoMes, novoAno) => {
     setMes(novoMes); setAno(novoAno)
-    setDados(loadData(novoMes, novoAno) || defaultState())
+    setDados(loadData(novoMes, novoAno, activeTab) || defaultState())
   }
 
   const navMes = (delta) => {
@@ -188,7 +240,7 @@ export default function Colaboradoras() {
   const update = (patch) => {
     const next = { ...dados, ...patch }
     setDados(next)
-    saveData(mes, ano, next)
+    saveData(mes, ano, activeTab, next)
   }
 
   const setTierMeta = (group, ti, field, val) => {
@@ -227,6 +279,23 @@ export default function Colaboradoras() {
         </div>
       </div>
 
+      {/* Tabs de colaboradoras */}
+      <div className="flex gap-2">
+        {COLABORADORAS.map(nome => (
+          <button
+            key={nome}
+            onClick={() => trocarTab(nome)}
+            className={`px-5 py-2 rounded-xl text-sm font-semibold border transition-colors ${
+              activeTab === nome
+                ? 'bg-brand-600 text-white border-brand-600 shadow-sm'
+                : 'bg-white text-gray-500 border-gray-200 hover:border-brand-300 hover:text-brand-600'
+            }`}
+          >
+            {nome}
+          </button>
+        ))}
+      </div>
+
       <div className="grid grid-cols-3 gap-6">
         {/* Coluna esquerda: inputs */}
         <div className="col-span-2 space-y-5">
@@ -237,9 +306,12 @@ export default function Colaboradoras() {
               <h2 className="text-sm font-bold text-gray-700">Bônus Semanais</h2>
               <button
                 onClick={() => {
-                  const next = { ...dados, semanas: [...vendasPorSemana] }
+                  const semanas = vendasPorSemanaCalendario.length > 0
+                    ? [...vendasPorSemanaCalendario]
+                    : [...vendasPorSemana]
+                  const next = { ...dados, semanas }
                   setDados(next)
-                  saveData(mes, ano, next)
+                  saveData(mes, ano, activeTab, next)
                   setRefreshKey(k => k + 1)
                 }}
                 className="flex items-center gap-1.5 text-xs font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-3 py-1.5 rounded-xl transition-colors"
@@ -248,10 +320,10 @@ export default function Colaboradoras() {
                 Puxar do sistema
               </button>
             </div>
-            {vendasPorSemana.some(v => v > 0) && (
+            {vendasPorSemanaCalendario.some(v => v > 0) && (
               <div className="flex items-center gap-2 bg-green-50 border border-green-100 rounded-xl px-3 py-2 mb-3 text-xs text-green-700">
                 <span>✓</span>
-                <span>Encontrado <strong>{fmt(vendasPorSemana.reduce((a,b)=>a+b,0))}</strong> em vendas de pacientes novos em {MESES[mes]}. Clique em "Puxar do sistema" para preencher.</span>
+                <span>Encontrado <strong>{fmt(vendasPorSemanaCalendario.reduce((a,b)=>a+b,0))}</strong> em faturamento total em {MESES[mes]} ({vendasPorSemanaCalendario.length} semanas). Clique em "Puxar do sistema" para preencher.</span>
               </div>
             )}
             <div className="space-y-2">
@@ -350,7 +422,10 @@ export default function Colaboradoras() {
             <div className="flex items-center justify-between mb-1">
               <h2 className="text-sm font-bold text-gray-700">Bônus por Conversão</h2>
               {leadsDoMes.length > 0 && (
-                <button onClick={() => update({ totalLeads: leadsDoMes.length, leadsConvertidos: leadsFechadosDoMes.length })}
+                <button onClick={() => {
+                    update({ totalLeads: leadsDoMes.length, leadsConvertidos: leadsFechadosDoMes.length, valorConsultas: valorConsultasDoMes })
+                    setRefreshKey(k => k + 1)
+                  }}
                   className="flex items-center gap-1.5 text-xs font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-3 py-1.5 rounded-xl transition-colors">
                   <svg viewBox="0 0 20 20" className="w-3.5 h-3.5 fill-current"><path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd"/></svg>
                   Puxar do sistema
@@ -377,7 +452,7 @@ export default function Colaboradoras() {
               </div>
               <div>
                 <label className="text-xs text-gray-500 mb-1 block">Valor das consultas</label>
-                <MoneyInput value={dados.valorConsultas} onChange={v => update({ valorConsultas: v })} />
+                <MoneyInput key={`vc-${refreshKey}`} value={dados.valorConsultas} onChange={v => update({ valorConsultas: v })} />
                 {valorConsultasDoMes > 0 && (
                   <button onClick={() => update({ valorConsultas: valorConsultasDoMes })}
                     className="mt-1 text-[10px] font-semibold text-brand-600 hover:text-brand-700">
@@ -462,7 +537,7 @@ export default function Colaboradoras() {
         {/* Coluna direita: resumo */}
         <div className="space-y-5">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sticky top-6">
-            <h2 className="text-sm font-bold text-gray-700 mb-4">Resumo — {MESES[mes]}</h2>
+            <h2 className="text-sm font-bold text-gray-700 mb-4">{activeTab} — {MESES[mes]}</h2>
 
             <BonusLine label="Salário base" valor={SALARIO_BASE} />
 
