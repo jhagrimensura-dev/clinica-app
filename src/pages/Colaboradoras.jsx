@@ -5,7 +5,7 @@ import { useClinica } from '../context/ClinicaContext'
 
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
-const SALARIO_BASE = 3000
+const SALARIO_BASE_DEFAULT = 3000
 
 // Bônus semanal — acumulam dentro da mesma semana
 const TIERS_SEMANA = [
@@ -96,6 +96,7 @@ function saveData(mes, ano, nome, data) {
 }
 
 const defaultState = () => ({
+  salarioBase: SALARIO_BASE_DEFAULT,
   semanas: [0, 0, 0, 0],
   fatMensal: 0,
   totalLeads: 0,
@@ -261,7 +262,8 @@ export default function Colaboradoras() {
   const taxaConversao = dados.totalLeads > 0 ? (dados.leadsConvertidos / dados.totalLeads) * 100 : 0
   const bonusConversao = useMemo(() => calcConversao(taxaConversao, dados.valorConsultas), [taxaConversao, dados.valorConsultas])
   const bonusRecorrencia = useMemo(() => calcBonusAcum(dados.fatRecorrencia, tiersR), [dados.fatRecorrencia, dados.tiers])
-  const totalFinal = SALARIO_BASE + totalBonusSemanas + bonusMensal + bonusConversao + bonusRecorrencia
+  const salarioBase = dados.salarioBase ?? SALARIO_BASE_DEFAULT
+  const totalFinal = salarioBase + totalBonusSemanas + bonusMensal + bonusConversao + bonusRecorrencia
 
   return (
     <div className="p-6 space-y-6 max-w-5xl">
@@ -539,7 +541,12 @@ export default function Colaboradoras() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sticky top-6">
             <h2 className="text-sm font-bold text-gray-700 mb-4">{activeTab} — {MESES[mes]}</h2>
 
-            <BonusLine label="Salário base" valor={SALARIO_BASE} />
+            <div className="flex justify-between items-center py-2 border-t border-gray-100">
+              <span className="text-sm text-gray-600">Salário base</span>
+              <div className="w-32">
+                <MoneyInput value={salarioBase} onChange={v => update({ salarioBase: v })} />
+              </div>
+            </div>
 
             <div className="mt-1">
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mt-3 mb-1">Bônus semanais</p>
@@ -565,7 +572,7 @@ export default function Colaboradoras() {
             {/* Breakdown visual */}
             <div className="mt-4 pt-4 border-t border-gray-100">
               {[
-                { label: 'Base', valor: SALARIO_BASE, cor: 'bg-gray-300' },
+                { label: 'Base', valor: salarioBase, cor: 'bg-gray-300' },
                 { label: 'Semanas', valor: totalBonusSemanas, cor: 'bg-blue-400' },
                 { label: 'Mensal', valor: bonusMensal, cor: 'bg-purple-400' },
                 { label: 'Conversão', valor: bonusConversao, cor: 'bg-amber-400' },
