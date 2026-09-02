@@ -376,14 +376,18 @@ export default function Metas() {
             if (diasTrabalho.length === 0) return null
             const metaSemanal = diasTrabalho.length * metaDiariaOriginal
             const faturamento = diasDaSemana.reduce((acc, d) => acc + (vendasPorDia[d.dia] || 0), 0)
-            const minDia = Math.min(...diasDaSemana.map(d => d.dia))
-            const maxDia = Math.max(...diasDaSemana.map(d => d.dia))
+            const minDia = Math.min(...diasTrabalho.map(d => d.dia))
+            const maxDia = Math.max(...diasTrabalho.map(d => d.dia))
             const todosPassados = diasDaSemana.every(d => d.dia < diaHoje)
             const algumPassado = diasDaSemana.some(d => d.dia < diaHoje)
-            const bateu = todosPassados && faturamento >= metaSemanal
-            const nao = todosPassados && faturamento < metaSemanal
-            const emAndamento = !todosPassados && algumPassado
             const futura = !algumPassado
+            const emAndamento = !todosPassados && algumPassado
+            const diasTrabalhoPassados = diasTrabalho.filter(d => d.dia < diaHoje)
+            const metaParaAvaliar = emAndamento
+              ? diasTrabalhoPassados.length * metaDiariaOriginal
+              : metaSemanal
+            const bateu = (todosPassados || emAndamento) && faturamento >= metaParaAvaliar && metaParaAvaliar > 0
+            const nao = (todosPassados || emAndamento) && faturamento < metaParaAvaliar && metaParaAvaliar > 0
             const pct = metaSemanal > 0 ? Math.min((faturamento / metaSemanal) * 100, 100) : 0
             return { si, minDia, maxDia, diasTrabalho: diasTrabalho.length, metaSemanal, faturamento, bateu, nao, emAndamento, futura, pct }
           }).filter(Boolean)
@@ -415,9 +419,10 @@ export default function Metas() {
                       : <span className="text-xs text-gray-300 w-24 text-right shrink-0">—</span>
                     }
                     <div className="w-4 text-center shrink-0">
-                      {s.bateu && <span className="text-green-500 text-sm">✓</span>}
-                      {s.nao && <span className="text-red-400 text-sm">✗</span>}
-                      {s.emAndamento && <span className="text-blue-400 text-xs">●</span>}
+                      {s.bateu && !s.emAndamento && <span className="text-green-500 text-sm">✓</span>}
+                      {s.bateu && s.emAndamento && <span className="text-green-400 text-xs">●</span>}
+                      {s.nao && !s.emAndamento && <span className="text-red-400 text-sm">✗</span>}
+                      {s.nao && s.emAndamento && <span className="text-red-400 text-xs">●</span>}
                     </div>
                   </div>
                 ))}
