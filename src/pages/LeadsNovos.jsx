@@ -799,7 +799,9 @@ export default function LeadsNovos() {
 
   // Consultas pagas neste mês (direto do Faturamento, sem alterar status de leads)
   const consultasMes = lancamentos.filter(l =>
-    (l.data || '').startsWith(prefix) && (l.procedimentos || '').toLowerCase().trim() === 'consulta'
+    (l.data || '').startsWith(prefix) &&
+    (l.procedimentos || '').toLowerCase().trim() === 'consulta' &&
+    l.tipo === 'Novo Follow'
   )
 
   const CONV_STATUS = ['agendado', 'fechado']
