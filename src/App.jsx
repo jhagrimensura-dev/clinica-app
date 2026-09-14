@@ -60,6 +60,7 @@ import Ajuda from './pages/Ajuda'
 import InboxWhatsApp from './pages/InboxWhatsApp'
 import AgendaLembretes from './pages/AgendaLembretes'
 import Colaboradoras from './pages/Colaboradoras'
+import PlanilhaLeads from './pages/PlanilhaLeads'
 import WhatsAppFAB from './components/WhatsAppFAB'
 import LembretesFAB from './components/LembretesFAB'
 
@@ -232,7 +233,7 @@ export default function App() {
   )
 }
 
-const PAGE_PARENT = { agenda_lembretes: 'comercial', leads_novos: 'comercial', leads_followup: 'comercial', leads_recorrentes: 'comercial', indicacao: 'comercial', resgates: 'comercial', pos_tratamento: 'comercial', contas: 'financeiro', colaboradoras: 'financeiro', inbox: 'comercial' }
+const PAGE_PARENT = { agenda_lembretes: 'comercial', leads_novos: 'comercial', leads_followup: 'comercial', leads_recorrentes: 'comercial', indicacao: 'comercial', resgates: 'comercial', pos_tratamento: 'comercial', planilha_leads: 'comercial', contas: 'financeiro', colaboradoras: 'financeiro', inbox: 'comercial' }
 
 function AppContent() {
   const { userRole, permissoes } = useAuth()
@@ -319,6 +320,7 @@ case 'whatsapp_canal': return <PagePlaceholder title="WhatsApp" />
       case 'financeiro': return <Financeiro />
       case 'contas': return <ContasPagar />
       case 'colaboradoras': return <Colaboradoras />
+      case 'planilha_leads': return <PlanilhaLeads />
       case 'pacientes': return <Pacientes />
       case 'relatorios': return <Relatorios />
       case 'configuracoes': return <Configuracoes />
