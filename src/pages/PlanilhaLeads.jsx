@@ -232,6 +232,9 @@ export default function PlanilhaLeads() {
   const [loading, setLoading] = useState(true)
   const [editingCell, setEditingCell] = useState(null)
   const [modalImport, setModalImport] = useState(false)
+  const [metaAg, setMetaAg] = useState(20)
+  const [editandoMeta, setEditandoMeta] = useState(false)
+  const [metaInput, setMetaInput] = useState('')
   const editInputRef = useRef(null)
 
   const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
@@ -239,6 +242,22 @@ export default function PlanilhaLeads() {
   const nextMonth = mes === 11
     ? `${ano + 1}-01-01`
     : `${ano}-${String(mes + 2).padStart(2, '0')}-01`
+
+  const metaKey = `planilha_meta_ag_${ano}_${mes + 1}`
+
+  useEffect(() => {
+    if (!clinicaId) return
+    supabase.from('configuracoes').select('valor').eq('chave', metaKey).single()
+      .then(({ data }) => { if (data?.valor != null) setMetaAg(parseInt(data.valor) || 20) })
+  }, [metaKey, clinicaId])
+
+  const salvarMeta = async (val) => {
+    const n = parseInt(val)
+    if (isNaN(n) || n < 0) return
+    setMetaAg(n)
+    setEditandoMeta(false)
+    await supabase.from('configuracoes').upsert({ chave: metaKey, valor: String(n) }, { onConflict: 'chave' })
+  }
 
   const navMes = (dir) => {
     if (dir === -1) { if (mes === 0) { setMes(11); setAno(a => a - 1) } else setMes(m => m - 1) }
@@ -423,7 +442,7 @@ export default function PlanilhaLeads() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Planilha de Leads</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Planilha de Leads Novos</h1>
           <p className="text-sm text-gray-400 mt-0.5">Clique em qualquer célula para editar · salva automaticamente</p>
         </div>
         <div className="flex items-center gap-3">
@@ -443,7 +462,7 @@ export default function PlanilhaLeads() {
         </div>
       </div>
 
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-6 gap-4">
         <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
           <div className="flex justify-between items-start mb-1">
             <p className="text-sm text-gray-500 font-medium">Total de Leads</p>
@@ -488,13 +507,40 @@ export default function PlanilhaLeads() {
 
         <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
           <div className="flex justify-between items-start mb-1">
-            <p className="text-sm text-gray-500 font-medium">Valor Total</p>
-            <span className="text-lg">💵</span>
+            <p className="text-sm text-gray-500 font-medium">Taxa de Conversão</p>
+            <span className="text-lg">📈</span>
           </div>
-          <p className="text-3xl font-bold text-purple-600">
-            {`R$ ${valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+          <p className={`text-3xl font-bold ${total > 0 && vendeuCount / total >= 0.1 ? 'text-green-600' : 'text-red-500'}`}>
+            {total > 0 ? `${((vendeuCount / total) * 100).toFixed(1)}%` : '0.0%'}
           </p>
-          <p className="text-xs text-gray-400 mt-1">em procedimentos</p>
+          <p className="text-xs text-gray-400 mt-1">{vendeuCount} vendas · R$ {valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+          <div className="flex justify-between items-start mb-1">
+            <p className="text-sm text-gray-500 font-medium">Meta de Agendamentos</p>
+            <button onClick={() => { setMetaInput(String(metaAg)); setEditandoMeta(true) }}
+              className="text-orange-300 hover:text-orange-500 transition-colors text-base leading-none" title="Editar meta">✏️</button>
+          </div>
+          {editandoMeta ? (
+            <div className="flex items-center gap-2 mt-1">
+              <input autoFocus type="number" value={metaInput} onChange={e => setMetaInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') salvarMeta(metaInput); if (e.key === 'Escape') setEditandoMeta(false) }}
+                className="w-20 text-2xl font-bold border border-orange-400 rounded-lg px-2 py-0.5 outline-none" />
+              <button onClick={() => salvarMeta(metaInput)} className="text-xs bg-orange-400 text-white px-2 py-1 rounded-lg">OK</button>
+            </div>
+          ) : (
+            <p className="text-3xl font-bold text-orange-500">
+              {agendouCount} <span className="text-lg font-normal text-gray-400">/ {metaAg}</span>
+            </p>
+          )}
+          <div className="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-full bg-orange-400 rounded-full transition-all"
+              style={{ width: `${Math.min((agendouCount / metaAg) * 100, 100)}%` }} />
+          </div>
+          <p className="text-xs text-gray-400 mt-1">
+            {agendouCount >= metaAg ? '🎯 Meta atingida!' : `faltam ${metaAg - agendouCount}`}
+          </p>
         </div>
       </div>
 

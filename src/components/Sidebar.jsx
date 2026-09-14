@@ -218,7 +218,7 @@ export default function Sidebar({ active, setActive }) {
 
         {/* Planilha de Leads */}
         <FlyoutItem
-          item={{ id: 'planilha_leads', label: 'Planilha de Leads', icon: 'planilha' }}
+          item={{ id: 'planilha_leads', label: 'Planilha de Leads Novos', icon: 'planilha' }}
           active={active} setActive={setActive}
         />
       </nav>
