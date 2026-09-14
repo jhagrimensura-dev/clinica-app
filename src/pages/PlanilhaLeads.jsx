@@ -443,19 +443,59 @@ export default function PlanilhaLeads() {
         </div>
       </div>
 
-      <div className="grid grid-cols-5 gap-3">
-        {[
-          { label: 'Total de Leads',  value: total,           color: 'text-gray-800'   },
-          { label: 'Agendou',         value: agendouCount,    color: 'text-blue-600'   },
-          { label: 'Compareceu',      value: compareceuCount, color: 'text-orange-500' },
-          { label: 'Vendeu',          value: vendeuCount,     color: 'text-green-600'  },
-          { label: 'Valor Total', value: `R$ ${valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, color: 'text-purple-600' },
-        ].map(c => (
-          <div key={c.label} className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-            <p className="text-xs text-gray-400">{c.label}</p>
-            <p className={`text-xl font-bold mt-0.5 ${c.color}`}>{c.value}</p>
+      <div className="grid grid-cols-5 gap-4">
+        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+          <div className="flex justify-between items-start mb-1">
+            <p className="text-sm text-gray-500 font-medium">Total de Leads</p>
+            <span className="text-lg">👥</span>
           </div>
-        ))}
+          <p className="text-3xl font-bold text-gray-800">{total}</p>
+          <p className="text-xs text-gray-400 mt-1">leads este mês</p>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+          <div className="flex justify-between items-start mb-1">
+            <p className="text-sm text-gray-500 font-medium">Agendou</p>
+            <span className="text-lg">📅</span>
+          </div>
+          <p className="text-3xl font-bold text-blue-600">{agendouCount}</p>
+          <p className="text-xs text-gray-400 mt-1">
+            {total > 0 ? `${((agendouCount / total) * 100).toFixed(1)}% dos leads` : 'nenhum ainda'}
+          </p>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+          <div className="flex justify-between items-start mb-1">
+            <p className="text-sm text-gray-500 font-medium">Compareceu</p>
+            <span className="text-lg">✅</span>
+          </div>
+          <p className="text-3xl font-bold text-orange-500">{compareceuCount}</p>
+          <p className="text-xs text-gray-400 mt-1">
+            {agendouCount > 0 ? `${((compareceuCount / agendouCount) * 100).toFixed(0)}% dos agendados` : 'nenhum ainda'}
+          </p>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+          <div className="flex justify-between items-start mb-1">
+            <p className="text-sm text-gray-500 font-medium">Vendeu</p>
+            <span className="text-lg">💰</span>
+          </div>
+          <p className="text-3xl font-bold text-green-600">{vendeuCount}</p>
+          <p className="text-xs text-gray-400 mt-1">
+            {compareceuCount > 0 ? `${((vendeuCount / compareceuCount) * 100).toFixed(0)}% dos que vieram` : 'nenhum ainda'}
+          </p>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+          <div className="flex justify-between items-start mb-1">
+            <p className="text-sm text-gray-500 font-medium">Valor Total</p>
+            <span className="text-lg">💵</span>
+          </div>
+          <p className="text-3xl font-bold text-purple-600">
+            {`R$ ${valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+          </p>
+          <p className="text-xs text-gray-400 mt-1">em procedimentos</p>
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
