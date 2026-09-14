@@ -294,7 +294,8 @@ export default function PlanilhaLeads() {
                     {COLS.map(col => renderCell(row, col))}
                     <td className="px-2 py-1.5">
                       <button onClick={() => deleteRow(row.id)}
-                        className="opacity-0 group-hover:opacity-100 text-gray-200 hover:text-red-400 transition-all w-5 h-5 flex items-center justify-center rounded text-base leading-none">
+                        className="text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all w-6 h-6 flex items-center justify-center rounded-md text-lg leading-none"
+                        title="Apagar linha">
                         ×
                       </button>
                     </td>
