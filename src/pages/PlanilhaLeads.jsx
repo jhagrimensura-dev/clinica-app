@@ -27,7 +27,201 @@ const COLS = [
   { key: 'follow_up_1',        label: 'Follow Up 1',  type: 'date'     },
   { key: 'follow_up_2',        label: 'Follow Up 2',  type: 'date'     },
   { key: 'follow_up_3',        label: 'Follow Up 3',  type: 'date'     },
+  { key: 'follow_up_4',        label: 'Follow Up 4',  type: 'date'     },
+  { key: 'follow_up_5',        label: 'Follow Up 5',  type: 'date'     },
+  { key: 'observacao',         label: 'Observação',   type: 'text'     },
 ]
+
+function parseSheetDate(s) {
+  if (!s) return null
+  const clean = s.trim().replace(/\/\//g, '/')
+  if (!clean.match(/\d/)) return null
+  const parts = clean.split(/[\/\-]/).filter(p => p && /^\d+$/.test(p))
+  if (parts.length !== 3) return null
+  if (parts[2].length === 4) {
+    return `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`
+  }
+  if (parts[0].length === 4) {
+    return `${parts[0]}-${parts[1].padStart(2,'0')}-${parts[2].padStart(2,'0')}`
+  }
+  return null
+}
+
+function parseOrigin(s) {
+  const u = (s || '').toUpperCase().trim()
+  if (u.includes('STORIES')) return 'Instagram Stories'
+  if (u.includes('BIO')) return 'Instagram Bio'
+  if (u.includes('TRÁFEGO') || u.includes('TRAFEGO')) return 'Tráfego'
+  if (u.includes('INDICAÇÃO') || u.includes('INDICACAO')) return 'Indicação'
+  if (u.includes('ONLINE')) return 'Outro'
+  if (u.includes('CONEXÃO') || u.includes('CONEXAO')) return 'Conexão'
+  return s?.trim() || ''
+}
+
+function parseValue(s) {
+  if (!s || !s.trim()) return null
+  const clean = s.replace(/R\$\s?/,'').replace(/\./g,'').replace(',','.').trim()
+  const num = parseFloat(clean)
+  return isNaN(num) ? null : num
+}
+
+function parseFUField(s) {
+  // Returns { date, obs } — if it's a date, date is set; otherwise it's an obs
+  if (!s || !s.trim()) return { date: null, obs: '' }
+  const d = parseSheetDate(s)
+  if (d) return { date: d, obs: '' }
+  // It's a text, treat as observation
+  return { date: null, obs: s.trim() }
+}
+
+function parseSheetRows(text, clinicaId) {
+  const lines = text.split('\n').filter(l => l.trim())
+  const rows = []
+  for (const line of lines) {
+    const cols = line.split('\t')
+    const rawDate = cols[0]?.trim()
+    // Skip header row and empty rows
+    if (!rawDate || !rawDate.match(/\d{2}\/\d{2}\/\d{4}/)) continue
+
+    const fu1 = parseFUField(cols[10])
+    const fu2 = parseFUField(cols[11])
+    const fu3 = parseFUField(cols[12])
+    const fu4 = parseFUField(cols[13])
+    const fu5 = parseFUField(cols[14])
+
+    const obsSheet = cols[15]?.trim() || ''
+    const extraObs = [fu1.obs, fu2.obs, fu3.obs, fu4.obs, fu5.obs].filter(Boolean).join(' | ')
+    const fullObs = [obsSheet, extraObs].filter(Boolean).join(' | ')
+
+    rows.push({
+      id: genId(),
+      clinica_id: clinicaId,
+      data: parseSheetDate(rawDate),
+      nome: cols[1]?.trim() || '',
+      telefone: cols[2]?.trim() || '',
+      origem: parseOrigin(cols[3]),
+      criativo: cols[4]?.trim() || '',
+      agendou: (cols[5] || '').trim().toUpperCase() === 'SIM',
+      compareceu: (cols[6] || '').trim().toUpperCase() === 'SIM',
+      vendeu: (cols[7] || '').trim().toUpperCase() === 'SIM',
+      consulta: cols[8]?.trim() || '',
+      valor_procedimento: parseValue(cols[9]),
+      follow_up_1: fu1.date,
+      follow_up_2: fu2.date,
+      follow_up_3: fu3.date,
+      follow_up_4: fu4.date,
+      follow_up_5: fu5.date,
+      observacao: fullObs,
+    })
+  }
+  return rows
+}
+
+function ModalImport({ clinicaId, onClose, onDone }) {
+  const [texto, setTexto] = useState('')
+  const [preview, setPreview] = useState([])
+  const [importando, setImportando] = useState(false)
+  const [done, setDone] = useState(0)
+
+  const analisar = () => {
+    const rows = parseSheetRows(texto, clinicaId)
+    setPreview(rows)
+  }
+
+  const importar = async () => {
+    if (!preview.length) return
+    setImportando(true)
+    const CHUNK = 50
+    let total = 0
+    for (let i = 0; i < preview.length; i += CHUNK) {
+      const chunk = preview.slice(i, i + CHUNK)
+      const { error } = await supabase.from('planilha_leads').insert(chunk)
+      if (error) console.error('import chunk error:', error)
+      else total += chunk.length
+      setDone(Math.min(i + CHUNK, preview.length))
+    }
+    setImportando(false)
+    onDone()
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div>
+            <h2 className="text-base font-bold text-gray-800">Importar do Google Sheets</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Selecione tudo na planilha (Ctrl+A → Ctrl+C) e cole abaixo</p>
+          </div>
+          <button onClick={onClose} className="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          <textarea
+            value={texto}
+            onChange={e => { setTexto(e.target.value); setPreview([]) }}
+            placeholder="Cole aqui os dados copiados do Google Sheets..."
+            rows={7}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-mono outline-none focus:border-orange-400 resize-none"
+          />
+
+          <button onClick={analisar} disabled={!texto.trim()}
+            className="w-full py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-sm font-semibold text-gray-700 transition-colors disabled:opacity-40">
+            Analisar dados
+          </button>
+
+          {preview.length > 0 && (
+            <div>
+              <p className="text-sm font-semibold text-gray-700 mb-2">{preview.length} lead(s) encontrado(s) — prévia:</p>
+              <div className="border border-gray-100 rounded-xl overflow-hidden max-h-52 overflow-y-auto">
+                {preview.slice(0, 25).map((r, i) => (
+                  <div key={i} className={`flex items-center gap-3 px-3 py-2 text-xs border-b border-gray-50 last:border-0 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                    <span className="text-gray-400 w-14 shrink-0">
+                      {r.data ? `${r.data.slice(8,10)}/${r.data.slice(5,7)}` : '—'}
+                    </span>
+                    <span className="font-semibold text-gray-700 w-36 truncate">{r.nome || '—'}</span>
+                    <span className="text-gray-400 w-28 shrink-0">{r.telefone || '—'}</span>
+                    <span className="text-gray-400 truncate flex-1">{r.origem || '—'}</span>
+                    <div className="flex gap-1 shrink-0">
+                      {r.agendou    && <span className="text-blue-600 text-[10px] bg-blue-50 px-1.5 py-0.5 rounded-full font-semibold">Ag</span>}
+                      {r.compareceu && <span className="text-orange-600 text-[10px] bg-orange-50 px-1.5 py-0.5 rounded-full font-semibold">Cp</span>}
+                      {r.vendeu     && <span className="text-green-600 text-[10px] bg-green-50 px-1.5 py-0.5 rounded-full font-semibold">Vd</span>}
+                    </div>
+                  </div>
+                ))}
+                {preview.length > 25 && (
+                  <div className="px-3 py-2 text-xs text-gray-400 bg-gray-50 text-center">
+                    +{preview.length - 25} leads adicionais
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {importando && (
+            <div className="bg-orange-50 rounded-xl px-4 py-3">
+              <p className="text-sm text-orange-700 font-medium">Importando... {done}/{preview.length}</p>
+              <div className="mt-2 h-1.5 bg-orange-100 rounded-full overflow-hidden">
+                <div className="h-full bg-orange-400 rounded-full transition-all" style={{ width: `${(done/preview.length)*100}%` }} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="px-6 py-4 border-t border-gray-100 flex gap-3">
+          <button onClick={onClose} disabled={importando}
+            className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-500 hover:bg-gray-50 disabled:opacity-40">
+            Cancelar
+          </button>
+          <button onClick={importar} disabled={preview.length === 0 || importando}
+            className="flex-1 py-2.5 rounded-xl bg-orange-400 hover:bg-orange-500 text-white text-sm font-semibold disabled:opacity-40 transition-colors">
+            {importando ? 'Importando...' : `Importar ${preview.length} leads`}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function PlanilhaLeads() {
   const { clinicaId } = useAuth()
@@ -37,6 +231,7 @@ export default function PlanilhaLeads() {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [editingCell, setEditingCell] = useState(null)
+  const [modalImport, setModalImport] = useState(false)
   const editInputRef = useRef(null)
 
   const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
@@ -85,13 +280,14 @@ export default function PlanilhaLeads() {
       agendou: false, compareceu: false, vendeu: false,
       consulta: '', valor_procedimento: null,
       follow_up_1: null, follow_up_2: null, follow_up_3: null,
+      follow_up_4: null, follow_up_5: null, observacao: '',
     }
     setRows(prev => [...prev, newRow])
     const { error } = await supabase.from('planilha_leads').insert(newRow)
     if (error) {
       console.error('addRow error:', error)
       setRows(prev => prev.filter(r => r.id !== id))
-      alert('Erro ao adicionar linha. Verifique sua conexão.')
+      alert('Erro ao adicionar linha.')
       return
     }
     setEditingCell({ rowId: id, col: 'nome' })
@@ -102,7 +298,7 @@ export default function PlanilhaLeads() {
     const dbVal = value === '' ? null : value
     const { error } = await supabase
       .from('planilha_leads').update({ [col]: dbVal }).eq('id', rowId)
-    if (error) console.error('saveCell error:', error, col, value)
+    if (error) console.error('saveCell error:', error)
   }, [])
 
   const toggleBool = useCallback((rowId, col) => {
@@ -147,14 +343,11 @@ export default function PlanilhaLeads() {
 
     if (col.type === 'bool') {
       return (
-        <td key={col.key}
-          className="px-2 py-1.5 text-center cursor-pointer select-none"
+        <td key={col.key} className="px-2 py-1.5 text-center cursor-pointer select-none"
           onClick={() => toggleBool(row.id, col.key)}>
           <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold transition-colors ${
             value ? 'bg-green-100 text-green-600' : 'bg-red-50 text-red-300'
-          }`}>
-            {value ? '✓' : '×'}
-          </span>
+          }`}>{value ? '✓' : '×'}</span>
         </td>
       )
     }
@@ -210,7 +403,7 @@ export default function PlanilhaLeads() {
     if (col.type === 'date' && value) {
       display = `${String(value).slice(8,10)}/${String(value).slice(5,7)}`
     } else if (col.type === 'currency' && value != null) {
-      display = `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      display = `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
     } else {
       display = value != null ? String(value) : ''
     }
@@ -218,7 +411,7 @@ export default function PlanilhaLeads() {
     return (
       <td key={col.key}
         onClick={() => setEditingCell({ rowId: row.id, col: col.key })}
-        className="px-2 py-1.5 cursor-text hover:bg-orange-50 transition-colors whitespace-nowrap overflow-hidden max-w-[150px]">
+        className="px-2 py-1.5 cursor-text hover:bg-orange-50 transition-colors whitespace-nowrap overflow-hidden max-w-[160px]">
         <span className={`text-xs ${display ? 'text-gray-700' : 'text-gray-200'}`}>
           {display || '—'}
         </span>
@@ -239,6 +432,10 @@ export default function PlanilhaLeads() {
             <span className="text-sm font-semibold text-gray-700 w-28 text-center">{MESES_FULL[mes]} {ano}</span>
             <button onClick={() => navMes(1)} className="text-gray-400 hover:text-gray-600 px-1">›</button>
           </div>
+          <button onClick={() => setModalImport(true)}
+            className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-600 text-sm font-semibold px-4 py-2 rounded-xl border border-gray-200 transition-colors shadow-sm">
+            ↑ Importar Planilha
+          </button>
           <button onClick={addRow}
             className="flex items-center gap-2 bg-orange-400 hover:bg-orange-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-sm">
             + Novo Lead
@@ -246,14 +443,13 @@ export default function PlanilhaLeads() {
         </div>
       </div>
 
-      {/* Cards de resumo */}
       <div className="grid grid-cols-5 gap-3">
         {[
           { label: 'Total de Leads',  value: total,           color: 'text-gray-800'   },
           { label: 'Agendou',         value: agendouCount,    color: 'text-blue-600'   },
           { label: 'Compareceu',      value: compareceuCount, color: 'text-orange-500' },
           { label: 'Vendeu',          value: vendeuCount,     color: 'text-green-600'  },
-          { label: 'Valor Total',     value: `R$ ${valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, color: 'text-purple-600' },
+          { label: 'Valor Total', value: `R$ ${valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, color: 'text-purple-600' },
         ].map(c => (
           <div key={c.label} className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
             <p className="text-xs text-gray-400">{c.label}</p>
@@ -262,13 +458,12 @@ export default function PlanilhaLeads() {
         ))}
       </div>
 
-      {/* Tabela */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
         {loading ? (
           <div className="py-16 text-center text-gray-300 text-sm">Carregando...</div>
         ) : (
           <>
-            <table className="text-left text-xs border-collapse" style={{ minWidth: '1200px' }}>
+            <table className="text-left text-xs border-collapse" style={{ minWidth: '1600px' }}>
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100">
                   <th className="px-3 py-2.5 text-[10px] font-bold text-gray-300 uppercase w-8">#</th>
@@ -284,7 +479,7 @@ export default function PlanilhaLeads() {
                 {rows.length === 0 ? (
                   <tr>
                     <td colSpan={COLS.length + 2} className="py-16 text-center text-gray-300 text-sm">
-                      Nenhum lead este mês · clique em "+ Novo Lead" para começar
+                      Nenhum lead este mês · clique em "+ Novo Lead" ou "Importar Planilha"
                     </td>
                   </tr>
                 ) : rows.map((row, i) => (
@@ -310,6 +505,14 @@ export default function PlanilhaLeads() {
           </>
         )}
       </div>
+
+      {modalImport && (
+        <ModalImport
+          clinicaId={clinicaId}
+          onClose={() => setModalImport(false)}
+          onDone={fetchRows}
+        />
+      )}
     </div>
   )
 }
