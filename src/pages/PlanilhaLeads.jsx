@@ -434,7 +434,11 @@ export default function PlanilhaLeads() {
         onClick={() => setEditingCell({ rowId: row.id, col: col.key })}
         className="px-2 py-1.5 cursor-text hover:bg-orange-50 transition-colors whitespace-nowrap overflow-hidden max-w-[160px]">
         {isFollowUp && display ? (
-          <span className="text-xs bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">
+          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+            value <= new Date().toISOString().slice(0,10)
+              ? 'bg-green-100 text-green-700'
+              : 'bg-gray-100 text-gray-500'
+          }`}>
             {display}
           </span>
         ) : (
