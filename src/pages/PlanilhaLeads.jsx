@@ -418,6 +418,8 @@ export default function PlanilhaLeads() {
       )
     }
 
+    const isFollowUp = col.key.startsWith('follow_up_')
+
     let display = ''
     if (col.type === 'date' && value) {
       display = `${String(value).slice(8,10)}/${String(value).slice(5,7)}`
@@ -431,9 +433,15 @@ export default function PlanilhaLeads() {
       <td key={col.key}
         onClick={() => setEditingCell({ rowId: row.id, col: col.key })}
         className="px-2 py-1.5 cursor-text hover:bg-orange-50 transition-colors whitespace-nowrap overflow-hidden max-w-[160px]">
-        <span className={`text-xs ${display ? 'text-gray-700' : 'text-gray-200'}`}>
-          {display || '—'}
-        </span>
+        {isFollowUp && display ? (
+          <span className="text-xs bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">
+            {display}
+          </span>
+        ) : (
+          <span className={`text-xs ${display ? 'text-gray-700' : 'text-gray-200'}`}>
+            {display || '—'}
+          </span>
+        )}
       </td>
     )
   }
