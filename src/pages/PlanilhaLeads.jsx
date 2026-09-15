@@ -429,23 +429,53 @@ export default function PlanilhaLeads() {
       display = value != null ? String(value) : ''
     }
 
+    if (isFollowUp) {
+      const fuIndex = parseInt(col.key.replace('follow_up_', ''))
+      const feitos = new Set((row.follow_ups_feitos || '').split(',').filter(Boolean).map(Number))
+      const isFeito = feitos.has(fuIndex)
+      const toggleFeito = (e) => {
+        e.stopPropagation()
+        const s = new Set(feitos)
+        if (s.has(fuIndex)) s.delete(fuIndex)
+        else s.add(fuIndex)
+        saveCell(row.id, 'follow_ups_feitos', [...s].join(','))
+      }
+      return (
+        <td key={col.key} className="px-2 py-1.5 whitespace-nowrap group/fu">
+          {display ? (
+            <div className="flex items-center gap-1">
+              <span onClick={toggleFeito}
+                className={`cursor-pointer text-xs font-semibold px-2 py-0.5 rounded-full transition-colors select-none ${
+                  isFeito ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                }`}>
+                {display}
+              </span>
+              <button onClick={() => setEditingCell({ rowId: row.id, col: col.key })}
+                className="opacity-0 group-hover/fu:opacity-100 text-gray-300 hover:text-orange-400 transition-all shrink-0"
+                title="Editar data">
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+            </div>
+          ) : (
+            <span onClick={() => setEditingCell({ rowId: row.id, col: col.key })}
+              className="cursor-text text-xs text-gray-200 hover:text-gray-400 transition-colors">
+              —
+            </span>
+          )}
+        </td>
+      )
+    }
+
     return (
       <td key={col.key}
         onClick={() => setEditingCell({ rowId: row.id, col: col.key })}
         className="px-2 py-1.5 cursor-text hover:bg-orange-50 transition-colors whitespace-nowrap overflow-hidden max-w-[160px]">
-        {isFollowUp && display ? (
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-            value <= new Date().toISOString().slice(0,10)
-              ? 'bg-green-100 text-green-700'
-              : 'bg-gray-100 text-gray-500'
-          }`}>
-            {display}
-          </span>
-        ) : (
-          <span className={`text-xs ${display ? 'text-gray-700' : 'text-gray-200'}`}>
-            {display || '—'}
-          </span>
-        )}
+        <span className={`text-xs ${display ? 'text-gray-700' : 'text-gray-200'}`}>
+          {display || '—'}
+        </span>
       </td>
     )
   }
