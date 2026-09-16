@@ -510,7 +510,7 @@ function ModalMesclarDuplicata({ grupo, onMesclar, onFechar }) {
 }
 
 export default function LeadsNovos() {
-  const { userRole } = useAuth()
+  const { userRole, clinicaId } = useAuth()
   const { ano, setAno, mes, setMes, MESES } = useFinanceiro()
   const { getLeadsPorOrigem, addLead, updateLead, removeLead, leads: todosLeads } = useLeads()
   const { metaAgendNovos: metaAgend, setMetaAgendNovos: setMetaAgendCtx } = useClinica()
@@ -534,6 +534,44 @@ export default function LeadsNovos() {
     if (!isNaN(v) && v >= 0) setMetaAgendCtx(v)
     setEditandoMetaAgend(false)
   }
+
+  useEffect(() => {
+    if (!clinicaId || mes === undefined || !ano) return
+    const monthStart = `${ano}-${String(mes + 1).padStart(2, '0')}-01`
+    const nextMonth = mes === 11 ? `${ano + 1}-01-01` : `${ano}-${String(mes + 2).padStart(2, '0')}-01`
+    supabase.from('planilha_leads').select('*')
+      .eq('clinica_id', clinicaId)
+      .gte('data', monthStart)
+      .lt('data', nextMonth)
+      .then(({ data: planilhaRows }) => {
+        const valid = (planilhaRows || []).filter(r => r.nome?.trim())
+        if (!valid.length) return
+        const payload = valid.map(r => ({
+          id: r.id,
+          clinica_id: clinicaId,
+          nome: r.nome,
+          telefone: r.telefone || '',
+          origem: r.origem === 'Indicação' ? 'indicacao' : 'leads_novos',
+          origem_custom: '',
+          data: r.data,
+          data_origem: r.data,
+          responsavel: '',
+          fonte: '',
+          status: r.agendou ? 'agendado' : 'em_aberto',
+          agendado_para: null,
+          proximo_followup: '',
+          obs: r.observacao || '',
+          aniversario: null,
+          midia: r.origem || null,
+          criativo: r.criativo || null,
+          link_bio: null,
+        }))
+        for (let i = 0; i < payload.length; i += 50) {
+          supabase.from('leads').upsert(payload.slice(i, i + 50), { onConflict: 'id' })
+            .then(({ error }) => { if (error) console.error('sync planilha→leads error:', error) })
+        }
+      })
+  }, [clinicaId, ano, mes])
 
   const handleImportCSV = (e) => {
     const file = e.target.files[0]

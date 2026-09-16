@@ -5,6 +5,59 @@ import { useAuth } from '../context/AuthContext'
 const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 const ORIGENS = ['Instagram Bio', 'Instagram Stories', 'Tráfego', 'Conexão', 'Indicação', 'Outro']
 
+async function syncRowData(row, clinicaId) {
+  if (!row?.id || !clinicaId || !row.nome?.trim()) return
+  const origemLeads = row.origem === 'Indicação' ? 'indicacao' : 'leads_novos'
+  await supabase.from('leads').upsert({
+    id: row.id,
+    clinica_id: clinicaId,
+    nome: row.nome,
+    telefone: row.telefone || '',
+    origem: origemLeads,
+    origem_custom: '',
+    data: row.data,
+    data_origem: row.data,
+    responsavel: '',
+    fonte: '',
+    status: row.agendou ? 'agendado' : 'em_aberto',
+    agendado_para: null,
+    proximo_followup: '',
+    obs: row.observacao || '',
+    aniversario: null,
+    midia: row.origem || null,
+    criativo: row.criativo || null,
+    link_bio: null,
+  }, { onConflict: 'id' })
+}
+
+async function syncBatchToLeads(rows, clinicaId) {
+  const valid = rows.filter(r => r.nome?.trim())
+  if (!valid.length) return
+  const leadsPayload = valid.map(row => ({
+    id: row.id,
+    clinica_id: clinicaId,
+    nome: row.nome,
+    telefone: row.telefone || '',
+    origem: row.origem === 'Indicação' ? 'indicacao' : 'leads_novos',
+    origem_custom: '',
+    data: row.data,
+    data_origem: row.data,
+    responsavel: '',
+    fonte: '',
+    status: row.agendou ? 'agendado' : 'em_aberto',
+    agendado_para: null,
+    proximo_followup: '',
+    obs: row.observacao || '',
+    aniversario: null,
+    midia: row.origem || null,
+    criativo: row.criativo || null,
+    link_bio: null,
+  }))
+  for (let i = 0; i < leadsPayload.length; i += 50) {
+    await supabase.from('leads').upsert(leadsPayload.slice(i, i + 50), { onConflict: 'id' })
+  }
+}
+
 const genId = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID()
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -132,14 +185,13 @@ function ModalImport({ clinicaId, onClose, onDone }) {
     if (!preview.length) return
     setImportando(true)
     const CHUNK = 50
-    let total = 0
     for (let i = 0; i < preview.length; i += CHUNK) {
       const chunk = preview.slice(i, i + CHUNK)
       const { error } = await supabase.from('planilha_leads').insert(chunk)
       if (error) console.error('import chunk error:', error)
-      else total += chunk.length
       setDone(Math.min(i + CHUNK, preview.length))
     }
+    await syncBatchToLeads(preview, clinicaId)
     setImportando(false)
     onDone()
     onClose()
@@ -236,6 +288,7 @@ export default function PlanilhaLeads() {
   const [editandoMeta, setEditandoMeta] = useState(false)
   const [metaInput, setMetaInput] = useState('')
   const editInputRef = useRef(null)
+  const rowsRef = useRef([])
 
   const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
   const monthStart = `${prefix}-01`
@@ -276,11 +329,15 @@ export default function PlanilhaLeads() {
       .order('data', { ascending: true })
       .order('criado_em', { ascending: true })
     if (error) { console.error(error); setLoading(false); return }
-    setRows(data || [])
+    const fetched = data || []
+    setRows(fetched)
     setLoading(false)
+    syncBatchToLeads(fetched, clinicaId)
   }, [clinicaId, monthStart, nextMonth])
 
   useEffect(() => { fetchRows() }, [fetchRows])
+
+  useEffect(() => { rowsRef.current = rows }, [rows])
 
   useEffect(() => {
     if (editingCell && editInputRef.current) {
@@ -288,6 +345,31 @@ export default function PlanilhaLeads() {
       if (editInputRef.current.select) editInputRef.current.select()
     }
   }, [editingCell])
+
+  const cleanupDone = useRef(false)
+  useEffect(() => {
+    if (!clinicaId || cleanupDone.current) return
+    cleanupDone.current = true
+    supabase.from('planilha_leads').select('id').eq('clinica_id', clinicaId)
+      .then(({ data }) => {
+        if (!data?.length) return
+        supabase.from('lancamentos').delete().in('id', data.map(r => r.id))
+      })
+  }, [clinicaId])
+
+  const [sincronizando, setSincronizando] = useState(false)
+
+  const sincronizarMes = async () => {
+    setSincronizando(true)
+    await supabase.from('leads')
+      .delete()
+      .eq('clinica_id', clinicaId)
+      .eq('origem', 'leads_novos')
+      .gte('data', monthStart)
+      .lt('data', nextMonth)
+    await syncBatchToLeads(rows, clinicaId)
+    setSincronizando(false)
+  }
 
   const addRow = async () => {
     if (!clinicaId) return
@@ -318,7 +400,11 @@ export default function PlanilhaLeads() {
     const { error } = await supabase
       .from('planilha_leads').update({ [col]: dbVal }).eq('id', rowId)
     if (error) console.error('saveCell error:', error)
-  }, [])
+    if (['consulta', 'valor_procedimento'].includes(col)) {
+      const row = rowsRef.current.find(r => r.id === rowId)
+      if (row?.agendou) await syncRowData({ ...row, [col]: value }, clinicaId)
+    }
+  }, [clinicaId])
 
   const toggleBool = useCallback((rowId, col) => {
     setRows(prev => {
@@ -327,9 +413,12 @@ export default function PlanilhaLeads() {
       const newVal = !row[col]
       supabase.from('planilha_leads').update({ [col]: newVal }).eq('id', rowId)
         .then(({ error }) => { if (error) console.error('toggleBool error:', error) })
+      if (col === 'agendou') {
+        syncRowData({ ...row, agendou: newVal }, clinicaId)
+      }
       return prev.map(r => r.id === rowId ? { ...r, [col]: newVal } : r)
     })
-  }, [])
+  }, [clinicaId])
 
   const deleteRow = async (rowId) => {
     setRows(prev => prev.filter(r => r.id !== rowId))
@@ -493,6 +582,11 @@ export default function PlanilhaLeads() {
             <span className="text-sm font-semibold text-gray-700 w-28 text-center">{MESES_FULL[mes]} {ano}</span>
             <button onClick={() => navMes(1)} className="text-gray-400 hover:text-gray-600 px-1">›</button>
           </div>
+          <button onClick={sincronizarMes} disabled={sincronizando}
+            className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-600 text-sm font-semibold px-4 py-2 rounded-xl border border-gray-200 transition-colors shadow-sm disabled:opacity-50"
+            title="Apaga os leads de Leads Novos deste mês e repõe com os da planilha">
+            {sincronizando ? '⏳ Sincronizando...' : '⟳ Sincronizar com Leads Novos'}
+          </button>
           <button onClick={() => setModalImport(true)}
             className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-600 text-sm font-semibold px-4 py-2 rounded-xl border border-gray-200 transition-colors shadow-sm">
             ↑ Importar Planilha
