@@ -216,9 +216,15 @@ export default function Sidebar({ active, setActive }) {
         {/* WhatsApp inbox accounts */}
         <WhatsAppFlyout active={active} setActive={setActive} />
 
-        {/* Planilha de Leads */}
+        {/* Planilhas */}
         <FlyoutItem
-          item={{ id: 'planilha_leads', label: 'Planilha de Leads Novos', icon: 'planilha' }}
+          item={{
+            id: 'planilha_grupo', label: 'Planilhas', icon: 'planilha',
+            sub: [
+              { id: 'planilha_leads',    label: 'Leads Novos',    icon: 'planilha' },
+              { id: 'planilha_followup', label: 'Follow Up',      icon: 'planilha' },
+            ]
+          }}
           active={active} setActive={setActive}
         />
       </nav>
