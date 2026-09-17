@@ -134,7 +134,7 @@ function parseSheetRows(text, clinicaId) {
     const cols = line.split('\t')
     const rawDate = cols[0]?.trim()
     // Skip header row and empty rows
-    if (!rawDate || !rawDate.match(/\d{2}\/\d{2}\/\d{4}/)) continue
+    if (!rawDate || !rawDate.match(/\d{1,2}[\/\-]+\d{1,2}[\/\-]+\d{4}/)) continue
 
     const fu1 = parseFUField(cols[10])
     const fu2 = parseFUField(cols[11])
@@ -170,20 +170,46 @@ function parseSheetRows(text, clinicaId) {
   return rows
 }
 
-function ModalImport({ clinicaId, onClose, onDone }) {
+function ModalImport({ clinicaId, ano, mes, onClose, onDone }) {
   const [texto, setTexto] = useState('')
   const [preview, setPreview] = useState([])
   const [importando, setImportando] = useState(false)
   const [done, setDone] = useState(0)
 
+  const prefixMes = `${ano}-${String(mes + 1).padStart(2, '0')}`
+
   const analisar = () => {
     const rows = parseSheetRows(texto, clinicaId)
-    setPreview(rows)
+    const soMesAtual = rows.filter(r => (r.data || '').startsWith(prefixMes))
+    setPreview(soMesAtual)
   }
 
   const importar = async () => {
     if (!preview.length) return
     setImportando(true)
+
+    // Apaga leads e planilha do mês para evitar duplicatas
+    const meses = [...new Set(preview.map(r => r.data?.slice(0, 7)).filter(Boolean))]
+    for (const mes of meses) {
+      const [y, m] = mes.split('-').map(Number)
+      const nextMes = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`
+      const fimMes = `${nextMes}-01`
+      const iniMes = `${mes}-01`
+
+      // Pega IDs dos leads da planilha que já existem (para apagar da tabela leads)
+      const { data: existentes } = await supabase.from('planilha_leads')
+        .select('id').eq('clinica_id', clinicaId).gte('data', iniMes).lt('data', fimMes)
+      if (existentes?.length) {
+        const ids = existentes.map(r => r.id)
+        for (let i = 0; i < ids.length; i += 50)
+          await supabase.from('leads').delete().in('id', ids.slice(i, i + 50))
+      }
+
+      // Apaga planilha do mês
+      await supabase.from('planilha_leads')
+        .delete().eq('clinica_id', clinicaId).gte('data', iniMes).lt('data', fimMes)
+    }
+
     const CHUNK = 50
     for (let i = 0; i < preview.length; i += CHUNK) {
       const chunk = preview.slice(i, i + CHUNK)
@@ -203,7 +229,7 @@ function ModalImport({ clinicaId, onClose, onDone }) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div>
             <h2 className="text-base font-bold text-gray-800">Importar do Google Sheets</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Selecione tudo na planilha (Ctrl+A → Ctrl+C) e cole abaixo</p>
+            <p className="text-xs text-gray-400 mt-0.5">Selecione tudo na planilha (Ctrl+A → Ctrl+C) e cole abaixo · só importa {String(mes + 1).padStart(2,'0')}/{ano}</p>
           </div>
           <button onClick={onClose} className="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
         </div>
@@ -345,17 +371,6 @@ export default function PlanilhaLeads() {
       if (editInputRef.current.select) editInputRef.current.select()
     }
   }, [editingCell])
-
-  const cleanupDone = useRef(false)
-  useEffect(() => {
-    if (!clinicaId || cleanupDone.current) return
-    cleanupDone.current = true
-    supabase.from('planilha_leads').select('id').eq('clinica_id', clinicaId)
-      .then(({ data }) => {
-        if (!data?.length) return
-        supabase.from('lancamentos').delete().in('id', data.map(r => r.id))
-      })
-  }, [clinicaId])
 
   const [sincronizando, setSincronizando] = useState(false)
 
@@ -731,6 +746,8 @@ export default function PlanilhaLeads() {
       {modalImport && (
         <ModalImport
           clinicaId={clinicaId}
+          ano={ano}
+          mes={mes}
           onClose={() => setModalImport(false)}
           onDone={fetchRows}
         />

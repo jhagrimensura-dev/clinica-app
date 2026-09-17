@@ -13,7 +13,6 @@ import { useFinanceiro } from '../context/FinanceiroContext'
 import { useAuth } from '../context/AuthContext'
 import { useConfig } from '../context/ConfigContext'
 import { useAgenda } from '../context/AgendaContext'
-import { useVendas } from '../context/VendasContext'
 import FeriadoAviso from '../components/FeriadoAviso'
 import { supabase } from '../lib/supabase'
 
@@ -514,7 +513,7 @@ export default function LeadsNovos() {
   const { ano, setAno, mes, setMes, MESES } = useFinanceiro()
   const { getLeadsPorOrigem, addLead, updateLead, removeLead, leads: todosLeads } = useLeads()
   const { metaAgendNovos: metaAgend, setMetaAgendNovos: setMetaAgendCtx } = useClinica()
-  const { lancamentos, addLancamento } = useVendas()
+
   const [modal, setModal] = useState(false)
   const [modalEditar, setModalEditar] = useState(null)
   const [modalMesclar, setModalMesclar] = useState(null)
@@ -700,26 +699,11 @@ export default function LeadsNovos() {
     if (!modalImport) return
     setImportando(true)
     let leadsImportados = 0
-    let lancamentosImportados = 0
-
-    const criarLancamento = async (lead) => {
-      if (!(lead._valorConsulta > 0) || lead.status !== 'agendado') return
-      await addLancamento({
-        paciente: lead.nome,
-        tipo: lead.origemCustom === 'Indicação' ? 'Indicação' : 'Novo',
-        procedimentos: 'Consulta',
-        valorTaxa: lead._valorConsulta,
-        valorTratamento: 0,
-        data: lead.data,
-      })
-      lancamentosImportados++
-    }
 
     for (const lead of (modalImport.novos || [])) {
       const { _valorConsulta, ...leadData } = lead
       await addLead(leadData)
       leadsImportados++
-      await criarLancamento(lead)
     }
 
     // Suspeitos marcados como 'importar' viram novos leads
@@ -729,21 +713,12 @@ export default function LeadsNovos() {
         const { _valorConsulta, ...leadData } = lead
         await addLead(leadData)
         leadsImportados++
-        await criarLancamento(lead)
-      } else {
-        // marcado como duplicata: só lança consulta se houver
-        await criarLancamento(lead)
       }
     }
 
-    // Duplicatas exatas: lead já existe, lançamentos já foram criados na importação anterior — pula
-
     setImportando(false)
     setModalImport(null)
-    const msgs = []
-    if (leadsImportados > 0) msgs.push(`${leadsImportados} lead(s) importado(s)`)
-    if (lancamentosImportados > 0) msgs.push(`${lancamentosImportados} consulta(s) lançada(s) no Faturamento`)
-    alert(msgs.join(' · ') || 'Nada importado.')
+    alert(leadsImportados > 0 ? `${leadsImportados} lead(s) importado(s)` : 'Nada importado.')
   }
 
   // Normaliza telefone para comparação: usa últimos 8 dígitos (ignora +55 e o 9 extra)
@@ -835,13 +810,6 @@ export default function LeadsNovos() {
   const leadsNovosCount = leads.filter(l => !isFollowUp(l)).length
   const leadsEmFollowCount = leads.filter(l => isFollowUp(l)).length
 
-  // Consultas pagas neste mês (direto do Faturamento, sem alterar status de leads)
-  const consultasMes = lancamentos.filter(l =>
-    (l.data || '').startsWith(prefix) &&
-    (l.procedimentos || '').toLowerCase().trim() === 'consulta' &&
-    l.tipo === 'Novo Follow'
-  )
-
   const CONV_STATUS = ['agendado', 'fechado']
   const FOLLOW_STATUS = ['follow1', 'follow2', 'follow3']
 
@@ -856,10 +824,10 @@ export default function LeadsNovos() {
     perdido:     leads.filter(l => l.status === 'perdido').length,
   }
 
-  const convPorFollow = consultasMes.reduce((acc, lanc) => {
-    const nome = (lanc.paciente || '').toLowerCase().trim()
-    const lead = leads.find(l => (l.nome || '').toLowerCase().trim() === nome)
-    const stage = lead?.ultimoFollow || null
+  const leadsAgendadosMes = leads.filter(l => l.status === 'agendado' || l.status === 'fechado')
+
+  const convPorFollow = leadsAgendadosMes.reduce((acc, lead) => {
+    const stage = lead.ultimoFollow || null
     if (stage === 'follow1') acc.follow1++
     else if (stage === 'follow2') acc.follow2++
     else if (stage === 'follow3') acc.follow3++
@@ -890,7 +858,7 @@ export default function LeadsNovos() {
       return ordem === 'asc' ? da.localeCompare(db) : db.localeCompare(da)
     })
 
-  const agendados = consultasMes.length
+  const agendados = leadsAgendadosMes.length
   const totalLeadsMes = leads.length + leadsIndicacao.length
   const taxa = totalLeadsMes > 0 ? ((agendados / totalLeadsMes) * 100).toFixed(1) : '0.0'
 
@@ -1040,11 +1008,11 @@ export default function LeadsNovos() {
             <p className="text-sm text-gray-500 font-medium">Agendamentos</p>
             <span className="text-blue-400 text-lg">📅</span>
           </div>
-          <p className="text-3xl font-bold text-gray-800">{consultasMes.length}</p>
-          <p className="text-xs text-gray-400 mt-1">consultas pagas este mês</p>
+          <p className="text-3xl font-bold text-gray-800">{leadsAgendadosMes.length}</p>
+          <p className="text-xs text-gray-400 mt-1">agendamentos este mês</p>
           <div className="mt-3 space-y-1">
-            {consultasMes.map((l, i) => (
-              <p key={i} className="text-xs text-gray-500">· {l.paciente}</p>
+            {leadsAgendadosMes.map((l, i) => (
+              <p key={i} className="text-xs text-gray-500">· {l.nome}</p>
             ))}
           </div>
         </div>
