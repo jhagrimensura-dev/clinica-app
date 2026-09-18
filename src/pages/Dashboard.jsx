@@ -71,8 +71,8 @@ export default function Dashboard() {
   // Consultas pagas = clientes que de fato compareceram (fonte verdadeira para CAC e conversão geral)
   const totalAgendReal = countConsultas
 
-  // CAC só conta clientes adquiridos por tráfego pago — exclui Indicação e Novo Follow (follow-up)
-  const cacClientes = lConsultas.filter(l => l.tipo !== 'Indicação' && l.tipo !== 'Novo Follow').length
+  // CAC só conta novos clientes via tráfego pago — exclui Indicação, Novo Follow e Recorrência
+  const cacClientes = lConsultas.filter(l => l.tipo === 'Novo').length
 
   // Agendados = consultas lançadas no Faturamento (fonte verdadeira, alinhada com Taxa de Conversão)
   const totalAgendNovos = countConsultas
