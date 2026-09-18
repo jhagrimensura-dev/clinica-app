@@ -119,6 +119,7 @@ export default function SocialMedia() {
     }
     salvarRotina({ ...rotina, [dk]: [...(rotina[dk] || []), nova] })
     setFormRotina(FORM_ROTINA_VAZIO)
+    setModalRotina(null)
   }
 
   const removerTarefaRotina = (dateKey, id, e) => {
