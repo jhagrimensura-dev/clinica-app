@@ -296,6 +296,7 @@ function AppContent() {
   const [view, setView] = useState('mensal')
   const [mesIndex, setMesIndex] = useState(4)
   const [collapsed] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const ano = 2026
 
   const renderPage = () => {
@@ -346,8 +347,15 @@ case 'whatsapp_canal': return <PagePlaceholder title="WhatsApp" />
     <VendasProvider>
     <SocialProvider>
       <div className="flex min-h-screen" style={{ background: '#f4f6f8' }}>
-        <Sidebar active={active} setActive={setActive} />
-        <div className="flex-1 ml-16 flex flex-col">
+        <Sidebar active={active} setActive={(p) => { setActive(p); setSidebarOpen(false) }} isOpen={sidebarOpen} onToggle={() => setSidebarOpen(o => !o)} />
+        <div className="flex-1 md:ml-16 flex flex-col">
+          {/* Mobile top bar */}
+          <div className="md:hidden flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 sticky top-0 z-40">
+            <button onClick={() => setSidebarOpen(o => !o)} className="text-gray-500 hover:text-brand-600 p-1 -ml-1">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="w-6 h-6"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+            </button>
+            <span className="font-semibold text-gray-800 text-sm">Dra. Amanda Lima</span>
+          </div>
           {active === 'dashboard' && <Header view={view} setView={setView} />}
           <main className="flex-1">{renderPage()}</main>
         </div>

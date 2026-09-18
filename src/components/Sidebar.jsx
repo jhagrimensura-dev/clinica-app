@@ -184,11 +184,104 @@ function WhatsAppFlyout({ active, setActive }) {
   )
 }
 
-export default function Sidebar({ active, setActive }) {
+/* ── Mobile Drawer ── */
+function MobileDrawer({ active, setActive, onClose, signOut, isFuncionario, inicial, contasWA, permissoes }) {
+  const podeVerItem = (item) => {
+    if (!isFuncionario) return true
+    if (item.id === 'relatorios') return false
+    if (item.id === 'instagram' || item.id === 'instagram_grupo' || item.id === 'leads_origem') return false
+    if (permissoes) return permissoes.includes(item.id)
+    return item.id !== 'financeiro'
+  }
+
+  const nav = (id) => { setActive(id); onClose() }
+
+  const allSections = [
+    ...menuItems.filter(podeVerItem).map(item =>
+      item.sub
+        ? { label: item.label, items: item.sub.filter(s => !isFuncionario || !permissoes || permissoes.includes(s.id)) }
+        : { label: null, items: [item] }
+    ),
+    ...(contasWA.length > 0 ? [{ label: 'Inbox WhatsApp', items: contasWA.map(c => ({ id: `inbox_${c.id}`, label: c.nome, icon: 'comercial' })) }] : []),
+    { label: 'Planilhas', items: [
+      { id: 'planilha_leads',       label: 'Leads Novos',  icon: 'planilha' },
+      { id: 'planilha_followup',    label: 'Follow Up',    icon: 'planilha' },
+      { id: 'planilha_recorrentes', label: 'Recorrentes',  icon: 'planilha' },
+    ]},
+  ]
+
+  return (
+    <div className="fixed inset-0 z-50 md:hidden flex">
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      {/* Drawer */}
+      <div className="relative w-72 max-w-[85vw] bg-white h-full flex flex-col shadow-2xl overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-100">
+          <div className="w-9 h-9 bg-brand-100 rounded-xl flex items-center justify-center text-brand-600 font-bold text-sm flex-shrink-0">
+            {inicial}
+          </div>
+          <span className="font-semibold text-gray-800 text-sm">Dra. Amanda Lima</span>
+          <button onClick={onClose} className="ml-auto text-gray-400 hover:text-gray-600 p-1">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 py-2">
+          {allSections.map((section, si) => (
+            <div key={si}>
+              {section.label && (
+                <p className="px-4 pt-4 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">{section.label}</p>
+              )}
+              {section.items.map(item => (
+                <button key={item.id} onClick={() => nav(item.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+                    active === item.id ? 'text-brand-600 bg-brand-50 font-semibold' : 'text-gray-600 hover:text-brand-600 hover:bg-gray-50'
+                  }`}>
+                  <span className={active === item.id ? 'text-brand-500' : 'text-gray-400'}>{icons[item.icon]}</span>
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          ))}
+        </nav>
+
+        {/* Footer */}
+        <div className="border-t border-gray-100 py-3 px-4 flex flex-col gap-1">
+          {!isFuncionario && (
+            <button onClick={() => nav('configuracoes')} className={`w-full flex items-center gap-3 py-2.5 text-sm transition-colors ${active === 'configuracoes' ? 'text-brand-600 font-semibold' : 'text-gray-500 hover:text-brand-600'}`}>
+              {icons.config} Configurações
+            </button>
+          )}
+          <button onClick={signOut} className="w-full flex items-center gap-3 py-2.5 text-sm text-red-400 hover:text-red-600">
+            {icons.sair} Sair
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function Sidebar({ active, setActive, isOpen, onToggle }) {
   const { signOut, userRole, user, permissoes } = useAuth()
+  const [contasWA, setContasWA] = useState(loadContas)
   const isFuncionario = userRole === 'Funcionário'
   const clinicaNome = (() => { try { return JSON.parse(localStorage.getItem('config_clinica') || '{}').nome || '' } catch { return '' } })()
   const inicial = (clinicaNome || user?.user_metadata?.nome || 'A').charAt(0).toUpperCase()
+
+  useEffect(() => {
+    const atualizar = () => setContasWA(loadContas())
+    window.addEventListener('storage', atualizar)
+    supabase.from('configuracoes').select('valor').eq('chave', 'config_whatsapp_contas').single()
+      .then(({ data, error }) => {
+        if (!error && Array.isArray(data?.valor)) {
+          localStorage.setItem('config_whatsapp_contas', JSON.stringify(data.valor))
+          setContasWA(data.valor)
+        }
+      })
+    return () => window.removeEventListener('storage', atualizar)
+  }, [])
 
   const podeVerItem = (item) => {
     if (!isFuncionario) return true
@@ -199,58 +292,55 @@ export default function Sidebar({ active, setActive }) {
   }
 
   return (
-    <div className="w-16 min-h-screen bg-white border-r border-gray-100 flex flex-col fixed left-0 top-0 bottom-0 z-50 items-center py-4 gap-1">
-
-      {/* Logo */}
-      <div className="w-10 h-10 bg-brand-100 rounded-xl flex items-center justify-center text-brand-600 font-bold text-base mb-3 flex-shrink-0">
-        {inicial}
-      </div>
-
-      {/* Divisor */}
-      <div className="w-8 h-px bg-gray-100 mb-2" />
-
-      {/* Nav principal */}
-      <nav className="flex flex-col gap-1 flex-1 items-center">
-        {menuItems.filter(podeVerItem).map(item => (
-          <FlyoutItem key={item.id} item={item} active={active} setActive={setActive} isFuncionario={isFuncionario} />
-        ))}
-
-        {/* WhatsApp inbox accounts */}
-        <WhatsAppFlyout active={active} setActive={setActive} />
-
-        {/* Planilhas */}
-        <FlyoutItem
-          item={{
-            id: 'planilha_grupo', label: 'Planilhas', icon: 'planilha',
-            sub: [
-              { id: 'planilha_leads',        label: 'Leads Novos',   icon: 'planilha' },
-              { id: 'planilha_followup',     label: 'Follow Up',     icon: 'planilha' },
-              { id: 'planilha_recorrentes',  label: 'Recorrentes',   icon: 'planilha' },
-            ]
-          }}
-          active={active} setActive={setActive}
-        />
-      </nav>
-
-      {/* Divisor */}
-      <div className="w-8 h-px bg-gray-100 mb-2" />
-
-      {/* Footer */}
-      <div className="flex flex-col gap-1 items-center">
-        {!isFuncionario && (
-          <button onClick={() => setActive('configuracoes')}
-            className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all ${
-              active === 'configuracoes' ? 'bg-brand-100 text-brand-600' : 'text-gray-400 hover:text-brand-600 hover:bg-brand-50'
-            }`} title="Configurações">
-            {icons.config}
+    <>
+      {/* Desktop sidebar */}
+      <div className="hidden md:flex w-16 min-h-screen bg-white border-r border-gray-100 flex-col fixed left-0 top-0 bottom-0 z-50 items-center py-4 gap-1">
+        <div className="w-10 h-10 bg-brand-100 rounded-xl flex items-center justify-center text-brand-600 font-bold text-base mb-3 flex-shrink-0">
+          {inicial}
+        </div>
+        <div className="w-8 h-px bg-gray-100 mb-2" />
+        <nav className="flex flex-col gap-1 flex-1 items-center">
+          {menuItems.filter(podeVerItem).map(item => (
+            <FlyoutItem key={item.id} item={item} active={active} setActive={setActive} isFuncionario={isFuncionario} />
+          ))}
+          <WhatsAppFlyout active={active} setActive={setActive} />
+          <FlyoutItem
+            item={{
+              id: 'planilha_grupo', label: 'Planilhas', icon: 'planilha',
+              sub: [
+                { id: 'planilha_leads',       label: 'Leads Novos',  icon: 'planilha' },
+                { id: 'planilha_followup',    label: 'Follow Up',    icon: 'planilha' },
+                { id: 'planilha_recorrentes', label: 'Recorrentes',  icon: 'planilha' },
+              ]
+            }}
+            active={active} setActive={setActive}
+          />
+        </nav>
+        <div className="w-8 h-px bg-gray-100 mb-2" />
+        <div className="flex flex-col gap-1 items-center">
+          {!isFuncionario && (
+            <button onClick={() => setActive('configuracoes')}
+              className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all ${active === 'configuracoes' ? 'bg-brand-100 text-brand-600' : 'text-gray-400 hover:text-brand-600 hover:bg-brand-50'}`}
+              title="Configurações">
+              {icons.config}
+            </button>
+          )}
+          <button onClick={signOut}
+            className="w-10 h-10 flex items-center justify-center rounded-xl text-gray-300 hover:text-red-400 hover:bg-red-50 transition-all"
+            title="Sair">
+            {icons.sair}
           </button>
-        )}
-        <button onClick={signOut}
-          className="w-10 h-10 flex items-center justify-center rounded-xl text-gray-300 hover:text-red-400 hover:bg-red-50 transition-all"
-          title="Sair">
-          {icons.sair}
-        </button>
+        </div>
       </div>
-    </div>
+
+      {/* Mobile drawer */}
+      {isOpen && (
+        <MobileDrawer
+          active={active} setActive={setActive} onClose={onToggle}
+          signOut={signOut} isFuncionario={isFuncionario} inicial={inicial}
+          contasWA={contasWA} permissoes={permissoes}
+        />
+      )}
+    </>
   )
 }
