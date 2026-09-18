@@ -121,7 +121,6 @@ function ResultadoCard({ analise, nomeLead, onNova, onCopiarParaEstrategia }) {
 function AbaAnalisar({ onCopiarParaEstrategia }) {
   const { clinicaId } = useAuth()
   const [texto, setTexto] = useState('')
-  const [nomeLead, setNomeLead] = useState('')
   const [analise, setAnalise] = useState(null)
   const [nomeAtual, setNomeAtual] = useState('')
   const [nomeSalvar, setNomeSalvar] = useState('')
@@ -133,7 +132,6 @@ function AbaAnalisar({ onCopiarParaEstrategia }) {
   const [drag, setDrag] = useState(false)
   const [historico, setHistorico] = useState([])
   const [loadingHist, setLoadingHist] = useState(true)
-  const [histAberto, setHistAberto] = useState(false)
   const [excluindo, setExcluindo] = useState(null)
   const inputRef = useRef(null)
 
@@ -193,7 +191,7 @@ function AbaAnalisar({ onCopiarParaEstrategia }) {
       const data = await res.json()
       if (!res.ok) { setErro(data.error || 'Erro ao analisar'); return }
       setAnalise(data)
-      const nome = nomeLead.trim() || nomeArquivo.replace(/\.(txt|pdf|md)$/i, '') || ''
+      const nome = nomeArquivo.replace(/\.(txt|pdf|md)$/i, '') || ''
       setNomeAtual(nome)
       setNomeSalvar(nome)
     } catch (e) { setErro(e.message) }
@@ -219,72 +217,85 @@ function AbaAnalisar({ onCopiarParaEstrategia }) {
   }
 
   function limpar() {
-    setTexto(''); setAnalise(null); setErro(''); setNomeArquivo(''); setNomeLead(''); setNomeAtual(''); setNomeSalvar(''); setSalvoId(null)
+    setTexto(''); setAnalise(null); setErro(''); setNomeArquivo(''); setNomeAtual(''); setNomeSalvar(''); setSalvoId(null)
     if (inputRef.current) inputRef.current.value = ''
   }
+
+  const [itemSelecionado, setItemSelecionado] = useState(null)
 
   function verSalvo(item) {
     setAnalise(item.resultado)
     setNomeAtual(item.nome_lead)
-    setHistAberto(false)
+    setSalvoId(item.id)
+    setItemSelecionado(item.id)
+  }
+
+  function novaAnalise() {
+    limpar()
+    setItemSelecionado(null)
   }
 
   return (
-    <div className="space-y-4">
-      {/* Histórico */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <button onClick={() => setHistAberto(o => !o)}
-          className="w-full flex items-center justify-between px-5 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50">
-          <span className="flex items-center gap-2">
-            🗂️ Análises salvas
-            {historico.length > 0 && <span className="text-xs bg-brand-100 text-brand-600 px-2 py-0.5 rounded-full font-bold">{historico.length}</span>}
-          </span>
-          <span className="text-gray-400 text-xs">{histAberto ? '▲' : '▼'}</span>
-        </button>
-        {histAberto && (
-          <div className="border-t border-gray-100">
-            {loadingHist ? (
-              <p className="text-sm text-gray-400 px-5 py-4">Carregando...</p>
-            ) : historico.length === 0 ? (
-              <p className="text-sm text-gray-400 px-5 py-4">Nenhuma análise salva ainda.</p>
-            ) : (
-              <div className="divide-y divide-gray-50 max-h-64 overflow-y-auto">
-                {historico.map(item => {
-                  const temp = TEMP_CONFIG[item.resultado?.temperatura] || TEMP_CONFIG.frio
-                  return (
-                    <div key={item.id} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 group">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-800 truncate">{item.nome_lead}</p>
-                        <p className="text-xs text-gray-400">{formatData(item.criado_em)}</p>
+    <div className="flex flex-col md:flex-row gap-4 items-start">
+
+      {/* ── Coluna esquerda: histórico ── */}
+      <div className="w-full md:w-64 md:flex-shrink-0 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Análises salvas</span>
+          {historico.length > 0 && <span className="text-xs bg-brand-100 text-brand-600 px-2 py-0.5 rounded-full font-bold">{historico.length}</span>}
+        </div>
+        <div className="md:max-h-[calc(100vh-260px)] overflow-y-auto">
+          {loadingHist ? (
+            <p className="text-xs text-gray-400 px-4 py-4">Carregando...</p>
+          ) : historico.length === 0 ? (
+            <p className="text-xs text-gray-400 px-4 py-4 text-center leading-relaxed">Nenhuma análise<br/>salva ainda</p>
+          ) : (
+            <div className="divide-y divide-gray-50">
+              {historico.map(item => {
+                const temp = TEMP_CONFIG[item.resultado?.temperatura] || TEMP_CONFIG.frio
+                const ativo = itemSelecionado === item.id
+                return (
+                  <div key={item.id}
+                    className={`group px-4 py-3 cursor-pointer transition-colors ${ativo ? 'bg-brand-50' : 'hover:bg-gray-50'}`}
+                    onClick={() => verSalvo(item)}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className={`text-sm font-semibold truncate ${ativo ? 'text-brand-700' : 'text-gray-800'}`}>{item.nome_lead}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{formatData(item.criado_em)}</p>
                       </div>
-                      <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${temp.bg} ${temp.text}`}>
+                      <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${temp.bg} ${temp.text}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${temp.dot}`} />
                         {temp.label}
                       </span>
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => verSalvo(item)}
-                          className="text-xs px-2 py-1 rounded-lg bg-brand-50 text-brand-600 hover:bg-brand-100 font-semibold whitespace-nowrap">
-                          Ver
-                        </button>
-                        <button onClick={() => onCopiarParaEstrategia(analiseParaTexto(item.nome_lead, item.resultado))}
-                          className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 font-semibold whitespace-nowrap">
-                          Estratégia
-                        </button>
-                        <button onClick={() => excluir(item.id)} disabled={excluindo === item.id}
-                          className="text-xs px-2 py-1 rounded-lg text-red-400 hover:bg-red-50 font-semibold">
-                          {excluindo === item.id ? '...' : '✕'}
-                        </button>
-                      </div>
                     </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-        )}
+                    <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={e => { e.stopPropagation(); onCopiarParaEstrategia(analiseParaTexto(item.nome_lead, item.resultado)) }}
+                        className="text-xs px-2 py-0.5 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 font-semibold">
+                        Estratégia
+                      </button>
+                      <button onClick={e => { e.stopPropagation(); excluir(item.id) }} disabled={excluindo === item.id}
+                        className="text-xs px-2 py-0.5 rounded-lg text-red-400 hover:bg-red-50 font-semibold">
+                        {excluindo === item.id ? '...' : '✕'}
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+        <div className="px-4 py-3 border-t border-gray-100">
+          <button onClick={novaAnalise}
+            className="w-full text-xs font-semibold text-brand-600 hover:text-brand-700 py-1">
+            + Nova análise
+          </button>
+        </div>
       </div>
 
-      {/* Upload / Resultado */}
+      {/* ── Coluna direita: form / resultado ── */}
+      <div className="flex-1 min-w-0 space-y-4">
+
       {/* Painel de salvar (após análise) */}
       {analise && !salvoId && (
         <div className="bg-brand-50 border border-brand-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
@@ -313,12 +324,6 @@ function AbaAnalisar({ onCopiarParaEstrategia }) {
 
       {!analise ? (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
-          <div>
-            <label className="text-xs font-semibold text-gray-500 block mb-1.5">Nome do lead / paciente</label>
-            <input className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 text-gray-800"
-              placeholder="ex: Maria Silva" value={nomeLead} onChange={e => setNomeLead(e.target.value)} />
-          </div>
-
           <div
             className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${drag ? 'border-brand-400 bg-brand-50' : 'border-gray-200 hover:border-brand-300 hover:bg-gray-50'}`}
             onDragOver={e => { e.preventDefault(); setDrag(true) }}
@@ -364,10 +369,11 @@ function AbaAnalisar({ onCopiarParaEstrategia }) {
         <ResultadoCard
           analise={analise}
           nomeLead={nomeAtual}
-          onNova={limpar}
+          onNova={novaAnalise}
           onCopiarParaEstrategia={() => onCopiarParaEstrategia(analiseParaTexto(nomeAtual, analise))}
         />
       )}
+      </div>
     </div>
   )
 }
