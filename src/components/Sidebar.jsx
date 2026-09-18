@@ -28,6 +28,7 @@ const icons = {
   contas:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>,
   colaboradoras: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
   planilha:  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>,
+  ia:        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M12 2a4 4 0 0 1 4 4v1h1a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3v-6a3 3 0 0 1 3-3h1V6a4 4 0 0 1 4-4z"/><circle cx="9" cy="13" r="1" fill="currentColor"/><circle cx="15" cy="13" r="1" fill="currentColor"/><path d="M9 17c.5.5 1.5 1 3 1s2.5-.5 3-1"/></svg>,
 }
 
 const menuItems = [
@@ -50,8 +51,9 @@ const menuItems = [
       { id: 'leads_followup',    label: 'Leads Follow Up',  icon: 'leads'     },
       { id: 'leads_recorrentes', label: 'Leads Recorrentes',icon: 'leads'     },
       { id: 'indicacao',         label: 'Indicação',        icon: 'indicacao' },
-      { id: 'resgates',          label: 'Resgates',         icon: 'resgates'       },
-      { id: 'pos_tratamento',    label: 'Pós Procedimento', icon: 'pos_tratamento' },
+      { id: 'resgates',                 label: 'Resgates',            icon: 'resgates'           },
+      { id: 'pos_tratamento',           label: 'Pós Procedimento',    icon: 'pos_tratamento'     },
+      { id: 'analisador_transcricoes',  label: 'Analisar Conversa',   icon: 'ia'                 },
     ],
   },
   { id: 'faturamento', label: 'Vendas',            icon: 'faturamento'  },
