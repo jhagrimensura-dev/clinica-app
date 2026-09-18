@@ -14,7 +14,7 @@ const genId = () => {
 }
 
 function rowStatus(r) {
-  return r.vendeu ? 'vendido' : r.agendou ? 'agendado' : r.respondeu ? 'respondeu' : 'em_aberto'
+  return r.vendeu ? 'fechado' : r.agendou ? 'agendado' : r.respondeu ? 'conversando' : 'em_aberto'
 }
 
 async function syncRowData(row, clinicaId) {
@@ -26,8 +26,8 @@ async function syncRowData(row, clinicaId) {
     telefone: row.telefone || '',
     origem: 'leads_followup',
     origem_custom: row.origem || '',
-    data: row.data_followup || null,
-    data_origem: row.data_origem || null,
+    data: row.data_followup || '',
+    data_origem: '',
     responsavel: '',
     fonte: '',
     status: rowStatus(row),
@@ -43,7 +43,7 @@ async function syncRowData(row, clinicaId) {
 
 async function syncBatchToLeads(rows, clinicaId) {
   const valid = rows.filter(r => r.nome?.trim())
-  if (!valid.length) return
+  if (!valid.length) return null
   const payload = valid.map(r => ({
     id: r.id,
     clinica_id: clinicaId,
@@ -51,8 +51,8 @@ async function syncBatchToLeads(rows, clinicaId) {
     telefone: r.telefone || '',
     origem: 'leads_followup',
     origem_custom: r.origem || '',
-    data: r.data_followup || null,
-    data_origem: r.data_origem || null,
+    data: r.data_followup || '',
+    data_origem: '',
     responsavel: '',
     fonte: '',
     status: rowStatus(r),
@@ -66,8 +66,9 @@ async function syncBatchToLeads(rows, clinicaId) {
   }))
   for (let i = 0; i < payload.length; i += 25) {
     const { error } = await supabase.from('leads').upsert(payload.slice(i, i + 25), { onConflict: 'id' })
-    if (error) console.error('syncBatchToLeads error:', error)
+    if (error) return error
   }
+  return null
 }
 
 const COLS = [
@@ -219,7 +220,8 @@ function ModalImport({ clinicaId, ano, mes, onClose, onDone }) {
         .gte('data', `${m}-01`)
         .lt('data', `${nextMes}-01`)
     }
-    await syncBatchToLeads(preview, clinicaId)
+    const syncErr = await syncBatchToLeads(preview, clinicaId)
+    if (syncErr) { setErro(`Erro ao sincronizar com Leads Follow Up: ${syncErr.message}`); setImportando(false); await onDone(); return }
 
     setImportando(false)
     await onDone()

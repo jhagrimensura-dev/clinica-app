@@ -4,10 +4,12 @@ import { useAuth } from './AuthContext'
 
 const LeadsContext = createContext()
 
-const VALID_STATUSES = new Set(['em_aberto', 'conversando', 'follow1', 'follow2', 'follow3', 'agendado', 'fechado', 'perdido', 'respondeu', 'vendido'])
+const VALID_STATUSES = new Set(['em_aberto', 'conversando', 'follow1', 'follow2', 'follow3', 'agendado', 'fechado', 'perdido'])
 
 const normalizeStatusKey = (raw) => {
   if (!raw) return 'em_aberto'
+  if (raw === 'respondeu') return 'conversando'
+  if (raw === 'vendido') return 'fechado'
   if (VALID_STATUSES.has(raw)) return raw
   const low = raw.toLowerCase()
   if (low.startsWith('follow #1') || low.startsWith('follow 1') || (low.includes('follow') && low.includes('1'))) return 'follow1'

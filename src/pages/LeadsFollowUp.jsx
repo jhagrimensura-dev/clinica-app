@@ -15,11 +15,11 @@ const genUUID = () => {
 const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
 const FOLLOWS = [
-  { key: 'em_aberto', label: 'Em aberto',  bg: 'bg-gray-100',   text: 'text-gray-500'   },
-  { key: 'respondeu', label: 'Respondeu',  bg: 'bg-purple-100', text: 'text-purple-600' },
-  { key: 'agendado',  label: 'Agendado',   bg: 'bg-blue-100',   text: 'text-blue-600'   },
-  { key: 'vendido',   label: 'Vendido',    bg: 'bg-green-100',  text: 'text-green-600'  },
-  { key: 'perdido',   label: 'Perdido',    bg: 'bg-red-100',    text: 'text-red-500'    },
+  { key: 'em_aberto',   label: 'Em aberto',  bg: 'bg-gray-100',   text: 'text-gray-500'   },
+  { key: 'conversando', label: 'Respondeu',  bg: 'bg-purple-100', text: 'text-purple-600' },
+  { key: 'agendado',    label: 'Agendado',   bg: 'bg-blue-100',   text: 'text-blue-600'   },
+  { key: 'fechado',     label: 'Vendido',    bg: 'bg-green-100',  text: 'text-green-600'  },
+  { key: 'perdido',     label: 'Perdido',    bg: 'bg-red-100',    text: 'text-red-500'    },
 ]
 
 function getFollow(key) {
@@ -424,11 +424,11 @@ export default function LeadsFollowUp() {
   }
 
   const funil = useMemo(() => ({
-    em_aberto: leads.filter(l => l.status === 'em_aberto').length,
-    respondeu:  leads.filter(l => l.status === 'respondeu').length,
-    agendado:   leads.filter(l => l.status === 'agendado').length,
-    vendido:    leads.filter(l => l.status === 'vendido').length,
-    perdido:    leads.filter(l => l.status === 'perdido').length,
+    em_aberto:   leads.filter(l => l.status === 'em_aberto').length,
+    respondeu:   leads.filter(l => l.status === 'conversando').length,
+    agendado:    leads.filter(l => l.status === 'agendado').length,
+    vendido:     leads.filter(l => l.status === 'fechado').length,
+    perdido:     leads.filter(l => l.status === 'perdido').length,
   }), [leads])
 
   const origensDisponiveis = useMemo(() =>
