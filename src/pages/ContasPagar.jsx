@@ -288,7 +288,7 @@ export default function ContasPagar() {
   const pagas      = contasOrdenadas.filter(c => getStatus(c) === 'pago')
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-6">
       {/* Cabeçalho */}
       <div className="flex items-center justify-between">
         <div>
@@ -320,7 +320,7 @@ export default function ContasPagar() {
       </div>
 
       {/* Cards de resumo */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: 'Total do Mês',  value: totais.total,    color: 'text-gray-800',   bg: 'bg-white',       icon: '📋' },
           { label: 'Pago',         value: totais.pago,     color: 'text-green-600',  bg: 'bg-green-50',    icon: '✅' },

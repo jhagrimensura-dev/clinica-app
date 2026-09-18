@@ -209,7 +209,7 @@ export default function Financeiro() {
   const resultBg = totais.resultado >= 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-6">
       {/* Cabeçalho */}
       <div className="flex items-center justify-between">
         <div>
@@ -246,7 +246,7 @@ export default function Financeiro() {
       </div>
 
       {/* Cards de resumo */}
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {[
           { label: 'Receita Total', value: totais.receita, color: 'text-green-600', bg: 'bg-green-50', icon: '💰' },
           { label: 'Custos', value: totais.custos, color: 'text-orange-600', bg: 'bg-orange-50', icon: '📦' },
@@ -404,7 +404,7 @@ export default function Financeiro() {
       </div>
 
       {/* Gráficos */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
           <h2 className="text-sm font-bold text-gray-700 mb-4">Receita x Saídas por Mês</h2>
           <ResponsiveContainer width="100%" height={200}>

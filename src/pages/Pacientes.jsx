@@ -455,7 +455,7 @@ export default function Pacientes() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Pacientes</h1>
@@ -465,7 +465,7 @@ export default function Pacientes() {
         </button>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 font-medium mb-1">Total de Pacientes</p>
           <p className="text-2xl font-bold text-gray-900">{total}</p>
@@ -488,7 +488,7 @@ export default function Pacientes() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-4">
+      <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-wrap items-center gap-4">
         <div className="flex-1 relative" ref={buscaRef}>
           <input
             type="text"
@@ -515,7 +515,7 @@ export default function Pacientes() {
             </div>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {['Todos', 'Ativo', 'Inativo', 'Pendente'].map(f => (
             <button
               key={f}
@@ -529,7 +529,7 @@ export default function Pacientes() {
       </div>
 
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex justify-between items-start mb-1">
             <p className="text-sm text-gray-500">Total de Pacientes</p>
@@ -563,6 +563,7 @@ export default function Pacientes() {
 
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <h2 className="text-base font-bold text-gray-800 mb-4">Lista de Pacientes</h2>
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-xs text-gray-400 border-b border-gray-100">
@@ -583,6 +584,7 @@ export default function Pacientes() {
             ))}
           </tbody>
         </table>
+        </div>
         {filtrados.length === 0 && (
           <p className="text-center text-gray-400 text-sm py-8">Nenhum paciente encontrado</p>
         )}

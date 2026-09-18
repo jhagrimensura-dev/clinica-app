@@ -560,7 +560,7 @@ export default function LeadsPorOrigem() {
   const corCriativo = { bg: 'bg-brand-50', text: 'text-brand-700', bar: '#a855f7' }
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="p-3 sm:p-6 space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

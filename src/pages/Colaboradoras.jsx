@@ -266,7 +266,7 @@ export default function Colaboradoras() {
   const totalFinal = salarioBase + totalBonusSemanas + bonusMensal + bonusConversao + bonusRecorrencia
 
   return (
-    <div className="p-6 space-y-6 max-w-5xl">
+    <div className="p-3 sm:p-6 space-y-6 max-w-5xl">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -298,9 +298,9 @@ export default function Colaboradoras() {
         ))}
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Coluna esquerda: inputs */}
-        <div className="col-span-2 space-y-5">
+        <div className="lg:col-span-2 space-y-5">
 
           {/* Semanas */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">

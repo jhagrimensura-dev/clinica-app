@@ -1,6 +1,6 @@
 export default function Ajuda() {
   return (
-    <div className="p-6 space-y-8 max-w-4xl">
+    <div className="p-3 sm:p-6 space-y-8 max-w-4xl">
       <div>
         <h1 className="text-2xl font-bold text-gray-800">Central de Ajuda</h1>
         <p className="text-sm text-gray-400 mt-1">Entenda como funcionam os indicadores e melhore a gestão da sua clínica</p>
@@ -11,7 +11,7 @@ export default function Ajuda() {
         <h2 className="text-base font-bold text-gray-800 mb-1">📣 De onde vêm os leads?</h2>
         <p className="text-xs text-gray-400 mb-5">Entenda os dois tipos de anúncio usados pela clínica e como identificar a origem de cada lead</p>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Instagram Impulsionar */}
           <div className="rounded-2xl border border-pink-200 bg-pink-50 p-5">
             <div className="flex items-center gap-2 mb-3">
@@ -152,7 +152,7 @@ export default function Ajuda() {
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <h2 className="text-base font-bold text-gray-800 mb-1">💡 Dicas de Gestão</h2>
         <p className="text-xs text-gray-400 mb-5">Boas práticas para melhorar os resultados da sua clínica</p>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[
             { icon: '🎯', titulo: 'Defina metas mensais', desc: 'Configure suas metas na página de Metas para acompanhar o progresso diário e ajustar estratégias.', cor: 'bg-amber-50 border-amber-100' },
             { icon: '📊', titulo: 'Monitore o funil completo', desc: 'Acompanhe cada etapa do funil para identificar gargalos e oportunidades de melhoria.', cor: 'bg-blue-50 border-blue-100' },
@@ -204,7 +204,7 @@ function Section({ titulo, cor, indicadores }) {
   return (
     <div>
       <p className={`text-xs font-bold text-gray-600 uppercase tracking-wider mb-3 px-3 py-1.5 rounded-lg border inline-block ${cor}`}>{titulo}</p>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {indicadores.map((ind, i) => (
           <div key={i} className="border border-gray-100 rounded-xl p-4">
             <div className="flex justify-between items-start mb-1">

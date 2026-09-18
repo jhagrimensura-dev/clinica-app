@@ -483,7 +483,7 @@ export default function PosTratamento() {
   }
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="p-3 sm:p-6 space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -529,6 +529,7 @@ export default function PosTratamento() {
             <p className="text-sm mt-1">Clique em "+ Nova entrada" para registrar o pós-tratamento de uma paciente.</p>
           </div>
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50 text-left">
@@ -574,6 +575,7 @@ export default function PosTratamento() {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

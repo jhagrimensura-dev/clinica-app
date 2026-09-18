@@ -142,7 +142,7 @@ export default function AgendaLembretes() {
     <div className="flex flex-col h-full bg-gray-50 overflow-hidden">
 
       {/* Barra superior */}
-      <div className="bg-white border-b border-gray-100 px-6 py-3 flex items-center justify-between flex-shrink-0">
+      <div className="bg-white border-b border-gray-100 px-3 sm:px-6 py-3 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <button onClick={() => navMes(-1)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 text-lg">‹</button>
@@ -316,7 +316,7 @@ export default function AgendaLembretes() {
 
           {/* Painel direito — timeline */}
           <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="bg-white border-b border-gray-100 px-6 py-3 flex items-center justify-between flex-shrink-0">
+            <div className="bg-white border-b border-gray-100 px-3 sm:px-6 py-3 flex items-center justify-between flex-shrink-0">
               <div>
                 <p className="text-base font-bold text-gray-800">{formatDiaSemana(diaSel)}</p>
                 <p className="text-xs text-gray-400">{lembretesDia.length} lembrete{lembretesDia.length !== 1 ? 's' : ''}</p>

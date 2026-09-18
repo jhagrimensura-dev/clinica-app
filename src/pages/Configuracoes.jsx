@@ -1386,13 +1386,13 @@ export default function Configuracoes() {
   const [aba, setAba] = useState(isFuncionario ? 'whatsapp' : 'clinica')
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-800">Configurações</h1>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-gray-100 pb-0">
+      <div className="flex flex-wrap gap-2 border-b border-gray-100 pb-0">
         {TABS.map(tab => (
           <button
             key={tab.key}

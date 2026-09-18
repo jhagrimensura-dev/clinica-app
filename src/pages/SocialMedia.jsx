@@ -189,7 +189,7 @@ export default function SocialMedia() {
   const totalImpulsionados = posts.filter(p => p.impulsionado).length
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Social Media</h1>
@@ -211,7 +211,7 @@ export default function SocialMedia() {
       </div>
 
       {/* Cards de métricas */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {/* Tráfego Investido */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex justify-between items-start mb-1">
