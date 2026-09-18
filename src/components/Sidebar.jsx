@@ -221,8 +221,9 @@ export default function Sidebar({ active, setActive }) {
           item={{
             id: 'planilha_grupo', label: 'Planilhas', icon: 'planilha',
             sub: [
-              { id: 'planilha_leads',    label: 'Leads Novos',    icon: 'planilha' },
-              { id: 'planilha_followup', label: 'Follow Up',      icon: 'planilha' },
+              { id: 'planilha_leads',        label: 'Leads Novos',   icon: 'planilha' },
+              { id: 'planilha_followup',     label: 'Follow Up',     icon: 'planilha' },
+              { id: 'planilha_recorrentes',  label: 'Recorrentes',   icon: 'planilha' },
             ]
           }}
           active={active} setActive={setActive}
