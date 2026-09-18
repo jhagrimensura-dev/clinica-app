@@ -13,6 +13,63 @@ const genId = () => {
   })
 }
 
+function rowStatus(r) {
+  return r.vendeu ? 'vendido' : r.agendou ? 'agendado' : r.respondeu ? 'respondeu' : 'em_aberto'
+}
+
+async function syncRowData(row, clinicaId) {
+  if (!row?.id || !clinicaId || !row.nome?.trim()) return
+  await supabase.from('leads').upsert({
+    id: row.id,
+    clinica_id: clinicaId,
+    nome: row.nome,
+    telefone: row.telefone || '',
+    origem: 'leads_followup',
+    origem_custom: row.origem || '',
+    data: row.data_followup || null,
+    data_origem: row.data_origem || null,
+    responsavel: '',
+    fonte: '',
+    status: rowStatus(row),
+    agendado_para: null,
+    proximo_followup: '',
+    obs: row.observacao || '',
+    aniversario: null,
+    midia: row.origem || null,
+    criativo: null,
+    link_bio: null,
+  }, { onConflict: 'id' })
+}
+
+async function syncBatchToLeads(rows, clinicaId) {
+  const valid = rows.filter(r => r.nome?.trim())
+  if (!valid.length) return
+  const payload = valid.map(r => ({
+    id: r.id,
+    clinica_id: clinicaId,
+    nome: r.nome,
+    telefone: r.telefone || '',
+    origem: 'leads_followup',
+    origem_custom: r.origem || '',
+    data: r.data_followup || null,
+    data_origem: r.data_origem || null,
+    responsavel: '',
+    fonte: '',
+    status: rowStatus(r),
+    agendado_para: null,
+    proximo_followup: '',
+    obs: r.observacao || '',
+    aniversario: null,
+    midia: r.origem || null,
+    criativo: null,
+    link_bio: null,
+  }))
+  for (let i = 0; i < payload.length; i += 25) {
+    const { error } = await supabase.from('leads').upsert(payload.slice(i, i + 25), { onConflict: 'id' })
+    if (error) console.error('syncBatchToLeads error:', error)
+  }
+}
+
 const COLS = [
   { key: 'data_origem',   label: 'Data Origem',   type: 'date'     },
   { key: 'data_followup', label: 'Data Follow Up', type: 'date'     },
@@ -150,6 +207,20 @@ function ModalImport({ clinicaId, ano, mes, onClose, onDone }) {
       }
       setDone(Math.min(i + CHUNK, preview.length))
     }
+
+    // Sincroniza com a tabela leads para aparecer no Leads Follow Up
+    for (const m of meses) {
+      const [y, mo] = m.split('-').map(Number)
+      const nextMes = mo === 12 ? `${y + 1}-01` : `${y}-${String(mo + 1).padStart(2, '0')}`
+      await supabase.from('leads')
+        .delete()
+        .eq('clinica_id', clinicaId)
+        .eq('origem', 'leads_followup')
+        .gte('data', `${m}-01`)
+        .lt('data', `${nextMes}-01`)
+    }
+    await syncBatchToLeads(preview, clinicaId)
+
     setImportando(false)
     await onDone()
     onClose()
@@ -324,11 +395,15 @@ export default function PlanilhaFollowUp() {
       const row = prev.find(r => r.id === rowId)
       if (!row) return prev
       const newVal = !row[col]
+      const updatedRow = { ...row, [col]: newVal }
       supabase.from('planilha_followup').update({ [col]: newVal }).eq('id', rowId)
         .then(({ error }) => { if (error) console.error('toggleBool error:', error) })
-      return prev.map(r => r.id === rowId ? { ...r, [col]: newVal } : r)
+      if (['respondeu', 'agendou', 'vendeu'].includes(col)) {
+        syncRowData(updatedRow, clinicaId)
+      }
+      return prev.map(r => r.id === rowId ? updatedRow : r)
     })
-  }, [])
+  }, [clinicaId])
 
   const deleteRow = async (rowId) => {
     setRows(prev => prev.filter(r => r.id !== rowId))

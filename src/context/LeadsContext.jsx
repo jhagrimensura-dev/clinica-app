@@ -4,7 +4,7 @@ import { useAuth } from './AuthContext'
 
 const LeadsContext = createContext()
 
-const VALID_STATUSES = new Set(['em_aberto', 'conversando', 'follow1', 'follow2', 'follow3', 'agendado', 'fechado', 'perdido'])
+const VALID_STATUSES = new Set(['em_aberto', 'conversando', 'follow1', 'follow2', 'follow3', 'agendado', 'fechado', 'perdido', 'respondeu', 'vendido'])
 
 const normalizeStatusKey = (raw) => {
   if (!raw) return 'em_aberto'
