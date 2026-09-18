@@ -1,35 +1,152 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import * as pdfjsLib from 'pdfjs-dist'
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker?url'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker
 
 const TIPO_LABELS = {
-  preco:      { label: 'Preço',       color: 'bg-red-100 text-red-700'       },
-  tempo:      { label: 'Tempo',       color: 'bg-orange-100 text-orange-700'  },
-  medo:       { label: 'Medo/Dor',   color: 'bg-yellow-100 text-yellow-700'  },
-  duvida:     { label: 'Dúvida',     color: 'bg-blue-100 text-blue-700'      },
-  comparacao: { label: 'Comparação', color: 'bg-purple-100 text-purple-700'  },
-  outro:      { label: 'Outro',       color: 'bg-gray-100 text-gray-700'     },
+  preco:      { label: 'Preço',       color: 'bg-red-100 text-red-700'      },
+  tempo:      { label: 'Tempo',       color: 'bg-orange-100 text-orange-700' },
+  medo:       { label: 'Medo/Dor',   color: 'bg-yellow-100 text-yellow-700' },
+  duvida:     { label: 'Dúvida',     color: 'bg-blue-100 text-blue-700'     },
+  comparacao: { label: 'Comparação', color: 'bg-purple-100 text-purple-700' },
+  outro:      { label: 'Outro',       color: 'bg-gray-100 text-gray-700'    },
 }
 
 const TEMP_CONFIG = {
-  frio:   { label: 'Lead Frio',   dot: 'bg-blue-400',   bg: 'bg-blue-50',   text: 'text-blue-700'   },
-  morno:  { label: 'Lead Morno',  dot: 'bg-yellow-400', bg: 'bg-yellow-50', text: 'text-yellow-700' },
-  quente: { label: 'Lead Quente', dot: 'bg-green-400',  bg: 'bg-green-50',  text: 'text-green-700'  },
+  frio:   { label: 'Frio',   dot: 'bg-blue-400',   bg: 'bg-blue-50',   text: 'text-blue-700'   },
+  morno:  { label: 'Morno',  dot: 'bg-yellow-400', bg: 'bg-yellow-50', text: 'text-yellow-700' },
+  quente: { label: 'Quente', dot: 'bg-green-400',  bg: 'bg-green-50',  text: 'text-green-700'  },
 }
 
 const PESO_COLOR = { alto: 'bg-red-100 text-red-700', médio: 'bg-yellow-100 text-yellow-700', baixo: 'bg-gray-100 text-gray-500' }
 const FORMATO_ICON = { 'Reels': '🎬', 'Carrossel': '🖼️', 'Stories': '📱', 'Post estático': '📸', 'Vídeo longo': '🎥' }
 
+function formatData(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })
+}
+
+function analiseParaTexto(nome, a) {
+  const objs = (a.objecoes || []).map(o => `- ${o.objecao}: ${o.como_responder}`).join('\n')
+  const passos = (a.proximos_passos || []).map((p, i) => `${i+1}. ${p}`).join('\n')
+  return `=== ${nome} (${a.temperatura || ''}) ===\nResumo: ${a.resumo || ''}\nPerfil: ${a.perfil_lead || ''}\n\nObjeções:\n${objs}\n\nPróximos passos:\n${passos}`
+}
+
+/* ── Card de resultado ── */
+function ResultadoCard({ analise, nomeLead, onNova, onCopiarParaEstrategia }) {
+  const temp = TEMP_CONFIG[analise.temperatura] || TEMP_CONFIG.frio
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-3 flex-wrap">
+          <p className="font-semibold text-gray-800">{nomeLead}</p>
+          <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${temp.bg} ${temp.text}`}>
+            <span className={`w-2 h-2 rounded-full ${temp.dot}`} />
+            {temp.label}
+          </span>
+        </div>
+        <div className="flex gap-2">
+          {onCopiarParaEstrategia && (
+            <button onClick={onCopiarParaEstrategia}
+              className="text-xs px-3 py-1.5 rounded-lg bg-brand-50 text-brand-600 hover:bg-brand-100 font-semibold">
+              Usar na estratégia
+            </button>
+          )}
+          <button onClick={onNova} className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50">
+            Nova análise
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Resumo</h2>
+        <p className="text-sm text-gray-700 leading-relaxed">{analise.resumo}</p>
+        {analise.perfil_lead && <p className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-100">{analise.perfil_lead}</p>}
+      </div>
+
+      {analise.temperatura_motivo && (
+        <div className={`rounded-2xl px-5 py-4 ${temp.bg}`}>
+          <h2 className={`text-xs font-bold uppercase tracking-wider mb-1 ${temp.text}`}>Por que {temp.label.toLowerCase()}?</h2>
+          <p className={`text-sm ${temp.text}`}>{analise.temperatura_motivo}</p>
+        </div>
+      )}
+
+      {analise.objecoes?.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Objeções ({analise.objecoes.length})</h2>
+          <div className="space-y-4">
+            {analise.objecoes.map((obj, i) => {
+              const tipo = TIPO_LABELS[obj.tipo] || TIPO_LABELS.outro
+              return (
+                <div key={i} className="border border-gray-100 rounded-xl p-4">
+                  <div className="flex items-start gap-3 mb-3">
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${tipo.color}`}>{tipo.label}</span>
+                    <p className="text-sm font-semibold text-gray-800">{obj.objecao}</p>
+                  </div>
+                  {obj.trecho && (
+                    <blockquote className="text-xs text-gray-500 italic bg-gray-50 rounded-lg px-3 py-2 mb-3 border-l-2 border-gray-200">"{obj.trecho}"</blockquote>
+                  )}
+                  <div className="bg-green-50 rounded-lg px-3 py-2">
+                    <p className="text-xs font-bold text-green-600 mb-1">Como responder</p>
+                    <p className="text-sm text-green-800">{obj.como_responder}</p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {analise.proximos_passos?.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Próximos passos</h2>
+          <ul className="space-y-2">
+            {analise.proximos_passos.map((passo, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                <span className="w-5 h-5 rounded-full bg-brand-100 text-brand-600 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{i+1}</span>
+                {passo}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
+
 /* ── ABA 1: Analisador individual ── */
-function AbaAnalisar() {
+function AbaAnalisar({ onCopiarParaEstrategia }) {
+  const { clinicaId } = useAuth()
   const [texto, setTexto] = useState('')
+  const [nomeLead, setNomeLead] = useState('')
   const [analise, setAnalise] = useState(null)
+  const [nomeAtual, setNomeAtual] = useState('')
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState('')
   const [nomeArquivo, setNomeArquivo] = useState('')
   const [drag, setDrag] = useState(false)
+  const [historico, setHistorico] = useState([])
+  const [loadingHist, setLoadingHist] = useState(true)
+  const [histAberto, setHistAberto] = useState(false)
+  const [excluindo, setExcluindo] = useState(null)
   const inputRef = useRef(null)
+
+  const carregarHistorico = useCallback(async () => {
+    if (!clinicaId) return
+    setLoadingHist(true)
+    const { data } = await supabase
+      .from('analises_conversas')
+      .select('id, nome_lead, resultado, criado_em')
+      .order('criado_em', { ascending: false })
+      .limit(50)
+    setHistorico(data || [])
+    setLoadingHist(false)
+  }, [clinicaId])
+
+  useEffect(() => { carregarHistorico() }, [carregarHistorico])
 
   function lerArquivo(file) {
     if (!file) return
@@ -64,6 +181,7 @@ function AbaAnalisar() {
 
   async function analisar() {
     if (!texto.trim()) { setErro('Cole ou envie um arquivo com a transcrição.'); return }
+    const nome = nomeLead.trim() || nomeArquivo || 'Sem nome'
     setLoading(true); setErro(''); setAnalise(null)
     try {
       const res = await fetch('/api/analisar-transcricao', {
@@ -73,18 +191,98 @@ function AbaAnalisar() {
       const data = await res.json()
       if (!res.ok) { setErro(data.error || 'Erro ao analisar'); return }
       setAnalise(data)
+      setNomeAtual(nome)
+      // Salva no Supabase
+      if (clinicaId) {
+        await supabase.from('analises_conversas').insert({ clinica_id: clinicaId, nome_lead: nome, resultado: data })
+        carregarHistorico()
+      }
     } catch (e) { setErro(e.message) }
     finally { setLoading(false) }
   }
 
-  function limpar() { setTexto(''); setAnalise(null); setErro(''); setNomeArquivo(''); if (inputRef.current) inputRef.current.value = '' }
+  async function excluir(id) {
+    setExcluindo(id)
+    await supabase.from('analises_conversas').delete().eq('id', id)
+    setHistorico(prev => prev.filter(h => h.id !== id))
+    setExcluindo(null)
+  }
 
-  const temp = analise ? TEMP_CONFIG[analise.temperatura] || TEMP_CONFIG.frio : null
+  function limpar() {
+    setTexto(''); setAnalise(null); setErro(''); setNomeArquivo(''); setNomeLead(''); setNomeAtual('')
+    if (inputRef.current) inputRef.current.value = ''
+  }
+
+  function verSalvo(item) {
+    setAnalise(item.resultado)
+    setNomeAtual(item.nome_lead)
+    setHistAberto(false)
+  }
 
   return (
     <div className="space-y-4">
-      {!analise && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+      {/* Histórico */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <button onClick={() => setHistAberto(o => !o)}
+          className="w-full flex items-center justify-between px-5 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+          <span className="flex items-center gap-2">
+            🗂️ Análises salvas
+            {historico.length > 0 && <span className="text-xs bg-brand-100 text-brand-600 px-2 py-0.5 rounded-full font-bold">{historico.length}</span>}
+          </span>
+          <span className="text-gray-400 text-xs">{histAberto ? '▲' : '▼'}</span>
+        </button>
+        {histAberto && (
+          <div className="border-t border-gray-100">
+            {loadingHist ? (
+              <p className="text-sm text-gray-400 px-5 py-4">Carregando...</p>
+            ) : historico.length === 0 ? (
+              <p className="text-sm text-gray-400 px-5 py-4">Nenhuma análise salva ainda.</p>
+            ) : (
+              <div className="divide-y divide-gray-50 max-h-64 overflow-y-auto">
+                {historico.map(item => {
+                  const temp = TEMP_CONFIG[item.resultado?.temperatura] || TEMP_CONFIG.frio
+                  return (
+                    <div key={item.id} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 group">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-800 truncate">{item.nome_lead}</p>
+                        <p className="text-xs text-gray-400">{formatData(item.criado_em)}</p>
+                      </div>
+                      <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${temp.bg} ${temp.text}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${temp.dot}`} />
+                        {temp.label}
+                      </span>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => verSalvo(item)}
+                          className="text-xs px-2 py-1 rounded-lg bg-brand-50 text-brand-600 hover:bg-brand-100 font-semibold whitespace-nowrap">
+                          Ver
+                        </button>
+                        <button onClick={() => onCopiarParaEstrategia(analiseParaTexto(item.nome_lead, item.resultado))}
+                          className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 font-semibold whitespace-nowrap">
+                          Estratégia
+                        </button>
+                        <button onClick={() => excluir(item.id)} disabled={excluindo === item.id}
+                          className="text-xs px-2 py-1 rounded-lg text-red-400 hover:bg-red-50 font-semibold">
+                          {excluindo === item.id ? '...' : '✕'}
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Upload / Resultado */}
+      {!analise ? (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
+          <div>
+            <label className="text-xs font-semibold text-gray-500 block mb-1.5">Nome do lead / paciente</label>
+            <input className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 text-gray-800"
+              placeholder="ex: Maria Silva" value={nomeLead} onChange={e => setNomeLead(e.target.value)} />
+          </div>
+
           <div
             className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${drag ? 'border-brand-400 bg-brand-50' : 'border-gray-200 hover:border-brand-300 hover:bg-gray-50'}`}
             onDragOver={e => { e.preventDefault(); setDrag(true) }}
@@ -99,14 +297,17 @@ function AbaAnalisar() {
               : <><p className="text-sm font-medium text-gray-700">Arraste o arquivo ou clique para selecionar</p><p className="text-xs text-gray-400 mt-1">.txt ou .pdf</p></>
             }
           </div>
-          <div className="mt-4">
+
+          <div>
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Ou cole a transcrição</p>
             <textarea className="w-full h-36 text-sm border border-gray-200 rounded-xl p-3 resize-none focus:outline-none focus:ring-2 focus:ring-brand-200 text-gray-700"
               placeholder="Cole aqui o texto da conversa..." value={texto}
               onChange={e => { setTexto(e.target.value); setNomeArquivo('') }} />
           </div>
-          {erro && <p className="mt-2 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{erro}</p>}
-          <div className="mt-4 flex gap-3">
+
+          {erro && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{erro}</p>}
+
+          <div className="flex gap-3">
             <button onClick={analisar} disabled={loading || !texto.trim()}
               className="flex-1 bg-brand-500 hover:bg-brand-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold py-3 rounded-xl transition-all text-sm">
               {loading ? 'Analisando...' : 'Analisar Conversa'}
@@ -115,91 +316,29 @@ function AbaAnalisar() {
               <button onClick={limpar} className="px-4 py-3 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 text-sm">Limpar</button>
             )}
           </div>
+
           {loading && (
-            <div className="mt-3 flex items-center gap-2 text-sm text-brand-500">
+            <div className="flex items-center gap-2 text-sm text-brand-500">
               <div className="w-4 h-4 border-2 border-brand-400 border-t-transparent rounded-full animate-spin" />
               A IA está analisando...
             </div>
           )}
         </div>
-      )}
-
-      {analise && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {nomeArquivo && <p className="text-sm text-gray-500">{nomeArquivo}</p>}
-              {temp && (
-                <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${temp.bg} ${temp.text}`}>
-                  <span className={`w-2 h-2 rounded-full ${temp.dot}`} />
-                  {temp.label}
-                </span>
-              )}
-            </div>
-            <button onClick={limpar} className="text-sm text-brand-500 hover:text-brand-700 font-medium">Nova análise</button>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-            <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Resumo</h2>
-            <p className="text-sm text-gray-700 leading-relaxed">{analise.resumo}</p>
-            {analise.perfil_lead && <p className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-100">{analise.perfil_lead}</p>}
-          </div>
-
-          {analise.temperatura_motivo && temp && (
-            <div className={`rounded-2xl px-5 py-4 ${temp.bg}`}>
-              <h2 className={`text-xs font-bold uppercase tracking-wider mb-1 ${temp.text}`}>Por que {temp.label.toLowerCase()}?</h2>
-              <p className={`text-sm ${temp.text}`}>{analise.temperatura_motivo}</p>
-            </div>
-          )}
-
-          {analise.objecoes?.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-              <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Objeções identificadas ({analise.objecoes.length})</h2>
-              <div className="space-y-4">
-                {analise.objecoes.map((obj, i) => {
-                  const tipo = TIPO_LABELS[obj.tipo] || TIPO_LABELS.outro
-                  return (
-                    <div key={i} className="border border-gray-100 rounded-xl p-4">
-                      <div className="flex items-start gap-3 mb-3">
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${tipo.color}`}>{tipo.label}</span>
-                        <p className="text-sm font-semibold text-gray-800">{obj.objecao}</p>
-                      </div>
-                      {obj.trecho && (
-                        <blockquote className="text-xs text-gray-500 italic bg-gray-50 rounded-lg px-3 py-2 mb-3 border-l-2 border-gray-200">"{obj.trecho}"</blockquote>
-                      )}
-                      <div className="bg-green-50 rounded-lg px-3 py-2">
-                        <p className="text-xs font-bold text-green-600 mb-1">Como responder</p>
-                        <p className="text-sm text-green-800">{obj.como_responder}</p>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {analise.proximos_passos?.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-              <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Próximos passos</h2>
-              <ul className="space-y-2">
-                {analise.proximos_passos.map((passo, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                    <span className="w-5 h-5 rounded-full bg-brand-100 text-brand-600 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
-                    {passo}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
+      ) : (
+        <ResultadoCard
+          analise={analise}
+          nomeLead={nomeAtual}
+          onNova={limpar}
+          onCopiarParaEstrategia={() => onCopiarParaEstrategia(analiseParaTexto(nomeAtual, analise))}
+        />
       )}
     </div>
   )
 }
 
 /* ── ABA 2: Estratégia de conteúdo ── */
-function AbaEstrategia() {
-  const [analises, setAnalises] = useState('')
+function AbaEstrategia({ analisesCopadas, onLimparCopadas }) {
+  const [analises, setAnalises] = useState(analisesCopadas || '')
   const [especialidade, setEspecialidade] = useState('')
   const [canais, setCanais] = useState('')
   const [frequencia, setFrequencia] = useState('')
@@ -208,6 +347,13 @@ function AbaEstrategia() {
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState('')
   const [secaoAberta, setSecaoAberta] = useState(null)
+
+  useEffect(() => {
+    if (analisesCopadas) {
+      setAnalises(prev => prev ? prev + '\n---\n' + analisesCopadas : analisesCopadas)
+      onLimparCopadas()
+    }
+  }, [analisesCopadas])
 
   async function gerar() {
     if (!analises.trim()) { setErro('Cole as análises das consultas.'); return }
@@ -226,12 +372,12 @@ function AbaEstrategia() {
   }
 
   const secoes = estrategia ? [
-    { id: 'mapa',      label: 'Mapa de Objeções',      icon: '🗺️', count: estrategia.mapa_objecoes?.length },
-    { id: 'ranking',   label: 'Ranking',                icon: '📊', count: estrategia.ranking?.length },
-    { id: 'calendario',label: 'Calendário 30 dias',     icon: '📅', count: estrategia.calendario?.length },
-    { id: 'whatsapp',  label: 'Mensagens WhatsApp',     icon: '💬', count: estrategia.whatsapp?.length },
-    { id: 'faq',       label: 'FAQ',                    icon: '❓', count: estrategia.faq?.length },
-    { id: 'lacunas',   label: 'Lacunas (só na consulta)',icon: '🔒', count: estrategia.lacunas?.length },
+    { id: 'mapa',       label: 'Mapa de Objeções',       icon: '🗺️', count: estrategia.mapa_objecoes?.length },
+    { id: 'ranking',    label: 'Ranking',                 icon: '📊', count: estrategia.ranking?.length },
+    { id: 'calendario', label: 'Calendário 30 dias',      icon: '📅', count: estrategia.calendario?.length },
+    { id: 'whatsapp',   label: 'Mensagens WhatsApp',      icon: '💬', count: estrategia.whatsapp?.length },
+    { id: 'faq',        label: 'FAQ',                     icon: '❓', count: estrategia.faq?.length },
+    { id: 'lacunas',    label: 'Lacunas (só na consulta)', icon: '🔒', count: estrategia.lacunas?.length },
   ] : []
 
   return (
@@ -265,13 +411,21 @@ function AbaEstrategia() {
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-gray-500 block mb-2">
-              Cole aqui as análises das consultas
-              <span className="text-gray-400 font-normal ml-1">(separe cada consulta com ---)</span>
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-semibold text-gray-500">
+                Análises das consultas
+                <span className="text-gray-400 font-normal ml-1">(separe cada uma com ---)</span>
+              </label>
+              {analises && <button onClick={() => setAnalises('')} className="text-xs text-red-400 hover:text-red-600">Limpar</button>}
+            </div>
             <textarea className="w-full h-48 text-sm border border-gray-200 rounded-xl p-3 resize-none focus:outline-none focus:ring-2 focus:ring-brand-200 text-gray-700 font-mono"
-              placeholder={"Consulta 1:\nResumo: ...\nObjeções: ...\n---\nConsulta 2:\nResumo: ...\nObjeções: ..."}
+              placeholder={'Cole aqui as análises ou use o botão "Usar na estratégia" na aba anterior'}
               value={analises} onChange={e => setAnalises(e.target.value)} />
+            {analises && (
+              <p className="text-xs text-gray-400 mt-1">
+                {(analises.match(/===/g) || []).length} consulta(s) detectada(s)
+              </p>
+            )}
           </div>
 
           {erro && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{erro}</p>}
@@ -296,7 +450,6 @@ function AbaEstrategia() {
             <button onClick={() => setEstrategia(null)} className="text-sm text-brand-500 hover:text-brand-700 font-medium">Gerar nova</button>
           </div>
 
-          {/* Tabs de seção */}
           <div className="flex flex-wrap gap-2">
             {secoes.map(s => (
               <button key={s.id} onClick={() => setSecaoAberta(secaoAberta === s.id ? null : s.id)}
@@ -306,16 +459,15 @@ function AbaEstrategia() {
             ))}
           </div>
 
-          {/* Conteúdo da seção */}
           {secaoAberta === 'mapa' && (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
               <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Mapa de Objeções</h2>
               {estrategia.mapa_objecoes?.map((obj, i) => (
                 <div key={i} className="border border-gray-100 rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${PESO_COLOR[obj.peso] || PESO_COLOR['baixo']}`}>{obj.peso}</span>
                     <p className="text-sm font-bold text-gray-800">{obj.tema}</p>
-                    <span className="ml-auto text-xs text-gray-400">{obj.frequencia}× nas consultas</span>
+                    <span className="text-xs text-gray-400 ml-auto">{obj.frequencia}× nas consultas</span>
                   </div>
                   <p className="text-sm text-gray-600">{obj.descricao}</p>
                   {obj.subtemas?.length > 0 && (
@@ -348,10 +500,10 @@ function AbaEstrategia() {
               <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Calendário de 30 dias</h2>
               {estrategia.calendario?.map((dia, i) => (
                 <div key={i} className="border border-gray-100 rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <span className="w-7 h-7 rounded-full bg-brand-100 text-brand-600 font-bold text-xs flex items-center justify-center flex-shrink-0">D{dia.dia}</span>
                     <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{FORMATO_ICON[dia.formato] || '📌'} {dia.formato}</span>
-                    <span className="text-xs text-gray-400 ml-auto">{dia.tema_objecao}</span>
+                    <span className="text-xs text-gray-400">{dia.tema_objecao}</span>
                   </div>
                   <p className="text-sm font-semibold text-gray-800 mb-1">"{dia.gancho}"</p>
                   <p className="text-xs text-gray-600 mb-2">{dia.roteiro}</p>
@@ -408,6 +560,12 @@ function AbaEstrategia() {
 /* ── Página principal ── */
 export default function AnalisadorTranscricoes() {
   const [aba, setAba] = useState('analisar')
+  const [analiseParaEstrategia, setAnaliseParaEstrategia] = useState(null)
+
+  function copiarParaEstrategia(texto) {
+    setAnaliseParaEstrategia(texto)
+    setAba('estrategia')
+  }
 
   return (
     <div className="p-3 sm:p-6 max-w-4xl mx-auto">
@@ -416,7 +574,6 @@ export default function AnalisadorTranscricoes() {
         <p className="text-sm text-gray-500 mt-1">Identifique objeções e transforme em estratégia de conteúdo</p>
       </div>
 
-      {/* Abas */}
       <div className="flex gap-2 mb-5">
         <button onClick={() => setAba('analisar')}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${aba === 'analisar' ? 'bg-brand-500 text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-600 hover:border-brand-300'}`}>
@@ -428,7 +585,10 @@ export default function AnalisadorTranscricoes() {
         </button>
       </div>
 
-      {aba === 'analisar' ? <AbaAnalisar /> : <AbaEstrategia />}
+      {aba === 'analisar'
+        ? <AbaAnalisar onCopiarParaEstrategia={copiarParaEstrategia} />
+        : <AbaEstrategia analisesCopadas={analiseParaEstrategia} onLimparCopadas={() => setAnaliseParaEstrategia(null)} />
+      }
     </div>
   )
 }
