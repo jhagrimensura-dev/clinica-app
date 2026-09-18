@@ -309,9 +309,9 @@ export default function LeadsFollowUp() {
         const vendeu    = get(idxVendeu).toUpperCase() === 'SIM'
 
         let status = 'em_aberto'
-        if (vendeu)   status = 'vendido'
+        if (vendeu)        status = 'fechado'
         else if (agendou)  status = 'agendado'
-        else if (respondeu) status = 'respondeu'
+        else if (respondeu) status = 'conversando'
 
         // DATA FOLLOW UP como data principal (para filtro por mês)
         const dataFollowUp = parseData(get(idxDataFollow))
@@ -528,7 +528,7 @@ export default function LeadsFollowUp() {
           <p className="text-3xl font-bold text-gray-800">{funil.agendado + funil.vendido}</p>
           <p className="text-xs text-gray-400 mt-1">leads convertidos este mês</p>
           <div className="mt-3 space-y-1">
-            {leads.filter(l => l.status === 'agendado' || l.status === 'vendido').slice(0, 9).map((l, i) => (
+            {leads.filter(l => l.status === 'agendado' || l.status === 'fechado').slice(0, 9).map((l, i) => (
               <p key={i} className="text-xs text-gray-500">· {l.nome}</p>
             ))}
           </div>
