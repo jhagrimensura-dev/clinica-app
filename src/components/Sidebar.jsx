@@ -51,9 +51,8 @@ const menuItems = [
       { id: 'leads_followup',    label: 'Leads Follow Up',  icon: 'leads'     },
       { id: 'leads_recorrentes', label: 'Leads Recorrentes',icon: 'leads'     },
       { id: 'indicacao',         label: 'Indicação',        icon: 'indicacao' },
-      { id: 'resgates',                 label: 'Resgates',            icon: 'resgates'           },
-      { id: 'pos_tratamento',           label: 'Pós Procedimento',    icon: 'pos_tratamento'     },
-      { id: 'analisador_transcricoes',  label: 'Analisar Conversa',   icon: 'ia'                 },
+      { id: 'resgates',       label: 'Resgates',         icon: 'resgates'       },
+      { id: 'pos_tratamento', label: 'Pós Procedimento', icon: 'pos_tratamento' },
     ],
   },
   { id: 'faturamento', label: 'Vendas',            icon: 'faturamento'  },
@@ -208,6 +207,7 @@ function MobileDrawer({ active, setActive, onClose, signOut, isFuncionario, inic
       { id: 'planilha_followup',    label: 'Follow Up',    icon: 'planilha' },
       { id: 'planilha_recorrentes', label: 'Recorrentes',  icon: 'planilha' },
     ]},
+    { label: null, items: [{ id: 'analisador_transcricoes', label: 'Análise de Conversas', icon: 'ia' }] },
   ]
 
   return (
@@ -313,6 +313,10 @@ export default function Sidebar({ active, setActive, isOpen, onToggle }) {
                 { id: 'planilha_recorrentes', label: 'Recorrentes',  icon: 'planilha' },
               ]
             }}
+            active={active} setActive={setActive}
+          />
+          <FlyoutItem
+            item={{ id: 'analisador_transcricoes', label: 'Análise de Conversas', icon: 'ia' }}
             active={active} setActive={setActive}
           />
         </nav>

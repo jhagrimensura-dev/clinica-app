@@ -236,7 +236,7 @@ export default function App() {
   )
 }
 
-const PAGE_PARENT = { agenda_lembretes: 'comercial', leads_novos: 'comercial', leads_followup: 'comercial', leads_recorrentes: 'comercial', indicacao: 'comercial', resgates: 'comercial', pos_tratamento: 'comercial', planilha_leads: 'comercial', planilha_followup: 'comercial', planilha_recorrentes: 'comercial', analisador_transcricoes: 'comercial', contas: 'financeiro', colaboradoras: 'financeiro', inbox: 'comercial' }
+const PAGE_PARENT = { agenda_lembretes: 'comercial', leads_novos: 'comercial', leads_followup: 'comercial', leads_recorrentes: 'comercial', indicacao: 'comercial', resgates: 'comercial', pos_tratamento: 'comercial', planilha_leads: 'comercial', planilha_followup: 'comercial', planilha_recorrentes: 'comercial', contas: 'financeiro', colaboradoras: 'financeiro', inbox: 'comercial' }
 
 function AppContent() {
   const { userRole, permissoes } = useAuth()
