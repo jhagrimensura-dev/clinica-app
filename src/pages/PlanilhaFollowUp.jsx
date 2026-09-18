@@ -33,13 +33,20 @@ function parseSheetDate(s) {
   if (!clean.match(/\d/)) return null
   const parts = clean.split(/[\/\-]/).filter(p => p && /^\d+$/.test(p))
   if (parts.length !== 3) return null
+  let iso
   if (parts[2].length === 4) {
-    return `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`
+    iso = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`
+  } else if (parts[0].length === 4) {
+    iso = `${parts[0]}-${parts[1].padStart(2,'0')}-${parts[2].padStart(2,'0')}`
+  } else {
+    return null
   }
-  if (parts[0].length === 4) {
-    return `${parts[0]}-${parts[1].padStart(2,'0')}-${parts[2].padStart(2,'0')}`
-  }
-  return null
+  // Valida que a data existe (ex: 31/09 é inválida)
+  const d = new Date(iso + 'T00:00:00')
+  if (isNaN(d.getTime())) return null
+  const [y, m, day] = iso.split('-').map(Number)
+  if (d.getFullYear() !== y || d.getMonth() + 1 !== m || d.getDate() !== day) return null
+  return iso
 }
 
 function parseOrigin(s) {
@@ -72,6 +79,13 @@ function parseSheetRows(text, clinicaId) {
                     (rawDataFollowup && rawDataFollowup.match(/\d{1,2}[\/\-]+\d{1,2}[\/\-]+\d{4}/))
     if (!hasDate) continue
 
+    // col[8] é coluna vazia na planilha; VALOR está em col[9], segundo valor em col[10]
+    const val1 = parseValue(cols[9])
+    const val2 = parseValue(cols[10])
+    const valor = val1 ?? val2 ?? null
+    const procedimento = cols[11]?.trim() || ''
+    const observacao   = cols[12]?.trim() || ''
+
     rows.push({
       id: genId(),
       clinica_id: clinicaId,
@@ -83,9 +97,9 @@ function parseSheetRows(text, clinicaId) {
       respondeu:    (cols[5] || '').trim().toUpperCase() === 'SIM',
       agendou:      (cols[6] || '').trim().toUpperCase() === 'SIM',
       vendeu:       (cols[7] || '').trim().toUpperCase() === 'SIM',
-      valor:        parseValue(cols[8]),
-      procedimento: cols[9]?.trim() || '',
-      observacao:   cols[10]?.trim() || '',
+      valor,
+      procedimento,
+      observacao,
     })
   }
   return rows
@@ -96,10 +110,12 @@ function ModalImport({ clinicaId, ano, mes, onClose, onDone }) {
   const [preview, setPreview] = useState([])
   const [importando, setImportando] = useState(false)
   const [done, setDone] = useState(0)
+  const [erro, setErro] = useState(null)
 
   const prefixMes = `${ano}-${String(mes + 1).padStart(2, '0')}`
 
   const analisar = () => {
+    setErro(null)
     const rows = parseSheetRows(texto, clinicaId)
     const soMesAtual = rows.filter(r => (r.data_followup || '').startsWith(prefixMes))
     setPreview(soMesAtual)
@@ -107,7 +123,9 @@ function ModalImport({ clinicaId, ano, mes, onClose, onDone }) {
 
   const importar = async () => {
     if (!preview.length) return
+    if (!clinicaId) { setErro('clinicaId não disponível — recarregue a página e tente novamente.'); return }
     setImportando(true)
+    setErro(null)
 
     const meses = [...new Set(preview.map(r => r.data_followup?.slice(0, 7)).filter(Boolean))]
     for (const m of meses) {
@@ -115,19 +133,25 @@ function ModalImport({ clinicaId, ano, mes, onClose, onDone }) {
       const nextMes = mo === 12 ? `${y + 1}-01` : `${y}-${String(mo + 1).padStart(2, '0')}`
       const iniMes = `${m}-01`
       const fimMes = `${nextMes}-01`
-      await supabase.from('planilha_followup')
+      const { error: delErr } = await supabase.from('planilha_followup')
         .delete().eq('clinica_id', clinicaId).gte('data_followup', iniMes).lt('data_followup', fimMes)
+      if (delErr) { setErro(`Erro ao apagar mês ${m}: ${delErr.message}`); setImportando(false); return }
     }
 
-    const CHUNK = 50
+    const CHUNK = 25
     for (let i = 0; i < preview.length; i += CHUNK) {
       const chunk = preview.slice(i, i + CHUNK)
       const { error } = await supabase.from('planilha_followup').insert(chunk)
-      if (error) console.error('import chunk error:', error)
+      if (error) {
+        setErro(`Erro ao inserir linhas ${i + 1}–${i + chunk.length}: ${error.message}`)
+        setImportando(false)
+        await onDone()
+        return
+      }
       setDone(Math.min(i + CHUNK, preview.length))
     }
     setImportando(false)
-    onDone()
+    await onDone()
     onClose()
   }
 
@@ -190,6 +214,13 @@ function ModalImport({ clinicaId, ano, mes, onClose, onDone }) {
               <div className="mt-2 h-1.5 bg-orange-100 rounded-full overflow-hidden">
                 <div className="h-full bg-orange-400 rounded-full transition-all" style={{ width: `${(done/preview.length)*100}%` }} />
               </div>
+            </div>
+          )}
+
+          {erro && (
+            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+              <p className="text-sm text-red-700 font-semibold">Erro na importação</p>
+              <p className="text-xs text-red-600 mt-1 font-mono break-all">{erro}</p>
             </div>
           )}
         </div>
