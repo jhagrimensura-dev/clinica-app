@@ -78,8 +78,8 @@ export function SocialProvider({ children }) {
   // Carrega rotina uma vez
   useEffect(() => {
     if (!clinicaId) return
-    supabase.from('social_rotina').select('*').maybeSingle()
-      .then(({ data }) => { if (data?.dados) setRotina(data.dados) })
+    supabase.from('social_rotina').select('*').eq('clinica_id', clinicaId).maybeSingle()
+      .then(({ data, error }) => { if (error) console.error('load rotina:', error); if (data?.dados) setRotina(data.dados) })
   }, [clinicaId])
 
   // Realtime + polling fallback
@@ -99,7 +99,7 @@ export function SocialProvider({ children }) {
       })
     }
 
-    const fetchRotina = () => supabase.from('social_rotina').select('*').maybeSingle().then(({ data }) => {
+    const fetchRotina = () => supabase.from('social_rotina').select('*').eq('clinica_id', clinicaId).maybeSingle().then(({ data }) => {
       if (data?.dados) setRotina(data.dados)
     })
 
@@ -160,8 +160,12 @@ export function SocialProvider({ children }) {
   const salvarRotina = (nova) => {
     setRotina(nova)
     if (saveTimers.current['rotina']) clearTimeout(saveTimers.current['rotina'])
-    saveTimers.current['rotina'] = setTimeout(() => {
-      supabase.from('social_rotina').upsert({ clinica_id: clinicaId, dados: nova }, { onConflict: 'clinica_id' })
+    saveTimers.current['rotina'] = setTimeout(async () => {
+      const { data: existing } = await supabase.from('social_rotina').select('id').eq('clinica_id', clinicaId).maybeSingle()
+      const { error } = existing
+        ? await supabase.from('social_rotina').update({ dados: nova }).eq('clinica_id', clinicaId)
+        : await supabase.from('social_rotina').insert({ clinica_id: clinicaId, dados: nova })
+      if (error) console.error('salvarRotina:', error)
     }, 300)
   }
 
