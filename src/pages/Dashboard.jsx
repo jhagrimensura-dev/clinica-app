@@ -61,15 +61,18 @@ export default function Dashboard() {
   // Leads Follow Up (nova página dedicada)
   const leadsFollowUp = getLeadsPorOrigem('leads_followup', ano, mes)
   const fuEmAberto = leadsFollowUp.filter(l => l.status === 'em_aberto').length
-  const fuRespondeu = leadsFollowUp.filter(l => l.status === 'respondeu').length
+  const fuRespondeu = leadsFollowUp.filter(l => l.status === 'conversando').length
   const fuAgendado = leadsFollowUp.filter(l => l.status === 'agendado').length
-  const fuVendido = leadsFollowUp.filter(l => l.status === 'vendido').length
+  const fuVendido = leadsFollowUp.filter(l => l.status === 'fechado').length
   const convFollow = leadsFollowUp.length > 0
     ? (((fuAgendado + fuVendido) / leadsFollowUp.length) * 100).toFixed(1)
     : '0.0'
 
   // Consultas pagas = clientes que de fato compareceram (fonte verdadeira para CAC e conversão geral)
   const totalAgendReal = countConsultas
+
+  // CAC só conta clientes adquiridos por tráfego pago — exclui Indicação e Novo Follow (follow-up)
+  const cacClientes = lConsultas.filter(l => l.tipo !== 'Indicação' && l.tipo !== 'Novo Follow').length
 
   // Agendados = consultas lançadas no Faturamento (fonte verdadeira, alinhada com Taxa de Conversão)
   const totalAgendNovos = countConsultas
@@ -190,10 +193,10 @@ export default function Dashboard() {
             },
             {
               label: 'CAC',
-              value: totalAgendReal > 0 && trafegoInvestido > 0 ? fmt(trafegoInvestido / totalAgendReal) : '—',
+              value: cacClientes > 0 && trafegoInvestido > 0 ? fmt(trafegoInvestido / cacClientes) : '—',
               icon: '💰',
               color: 'text-orange-500',
-              sub: totalAgendReal > 0 ? `${totalAgendReal} clientes adquiridos` : 'sem agendamentos',
+              sub: cacClientes > 0 ? `${cacClientes} clientes adquiridos` : 'sem agendamentos',
             },
           ].map((card, i) => (
             <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
