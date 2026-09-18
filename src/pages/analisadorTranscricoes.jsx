@@ -1,4 +1,7 @@
 import { useState, useRef } from 'react'
+import * as pdfjsLib from 'pdfjs-dist'
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker?url'
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker
 
 const TIPO_LABELS = {
   preco:      { label: 'Preço',      color: 'bg-red-100 text-red-700'      },
@@ -26,16 +29,45 @@ export default function AnalisadorTranscricoes() {
 
   function lerArquivo(file) {
     if (!file) return
-    if (!file.name.endsWith('.txt') && !file.name.endsWith('.md')) {
-      setErro('Apenas arquivos .txt são suportados por enquanto.')
+    const isPdf = file.name.toLowerCase().endsWith('.pdf')
+    const isTxt = file.name.toLowerCase().endsWith('.txt') || file.name.toLowerCase().endsWith('.md')
+    if (!isPdf && !isTxt) {
+      setErro('Apenas arquivos .txt ou .pdf são suportados.')
       return
     }
     setNomeArquivo(file.name)
     setErro('')
     setAnalise(null)
+
+    if (isTxt) {
+      const reader = new FileReader()
+      reader.onload = e => setTexto(e.target.result)
+      reader.readAsText(file, 'UTF-8')
+      return
+    }
+
+    // PDF: extrai texto via pdf.js
+    setLoading(true)
     const reader = new FileReader()
-    reader.onload = e => setTexto(e.target.result)
-    reader.readAsText(file, 'UTF-8')
+    reader.onload = async e => {
+      try {
+        const typedArray = new Uint8Array(e.target.result)
+        const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise
+        let fullText = ''
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i)
+          const content = await page.getTextContent()
+          const pageText = content.items.map(item => item.str).join(' ')
+          fullText += pageText + '\n'
+        }
+        setTexto(fullText.trim())
+      } catch {
+        setErro('Não foi possível ler o PDF. Tente converter para .txt.')
+      } finally {
+        setLoading(false)
+      }
+    }
+    reader.readAsArrayBuffer(file)
   }
 
   function onFileChange(e) { lerArquivo(e.target.files[0]) }
@@ -97,14 +129,14 @@ export default function AnalisadorTranscricoes() {
             onDrop={onDrop}
             onClick={() => inputRef.current?.click()}
           >
-            <input ref={inputRef} type="file" accept=".txt,.md" className="hidden" onChange={onFileChange} />
+            <input ref={inputRef} type="file" accept=".txt,.md,.pdf" className="hidden" onChange={onFileChange} />
             <div className="text-4xl mb-3">📄</div>
             {nomeArquivo ? (
               <p className="text-sm font-medium text-brand-600">{nomeArquivo}</p>
             ) : (
               <>
                 <p className="text-sm font-medium text-gray-700">Arraste o arquivo aqui ou clique para selecionar</p>
-                <p className="text-xs text-gray-400 mt-1">Formato: .txt</p>
+                <p className="text-xs text-gray-400 mt-1">Formatos: .txt ou .pdf</p>
               </>
             )}
           </div>
