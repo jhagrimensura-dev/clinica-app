@@ -84,7 +84,7 @@ function RedefinirSenha() {
 }
 
 export default function Login() {
-  const { signIn, signInWithMagicLink, recoveryMode } = useAuth()
+  const { signIn, signInWithMagicLink, recoveryMode, resetPassword } = useAuth()
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [erro, setErro] = useState('')
@@ -92,8 +92,22 @@ export default function Login() {
   const [magicSent, setMagicSent] = useState(false)
   const [magicLoading, setMagicLoading] = useState(false)
   const [showSenha, setShowSenha] = useState(false)
+  const [esqueceuSenha, setEsqueceuSenha] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
+  const [resetLoading, setResetLoading] = useState(false)
 
   if (recoveryMode) return <RedefinirSenha />
+
+  const handleReset = async (e) => {
+    e.preventDefault()
+    if (!email) { setErro('Digite seu email primeiro.'); return }
+    setErro('')
+    setResetLoading(true)
+    const { error } = await resetPassword(email)
+    if (error) setErro('Erro ao enviar email. Verifique o endereço e tente novamente.')
+    else setResetSent(true)
+    setResetLoading(false)
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -126,7 +140,35 @@ export default function Login() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <h2 className="text-base font-bold text-gray-800 mb-5">Entrar na conta</h2>
 
-          {magicSent ? (
+          {esqueceuSenha ? (
+            resetSent ? (
+              <div className="text-center py-4 space-y-2">
+                <p className="text-2xl">📬</p>
+                <p className="text-sm font-semibold text-gray-700">Email enviado!</p>
+                <p className="text-xs text-gray-400">Abra o email e clique no link para definir sua nova senha.</p>
+                <button onClick={() => { setEsqueceuSenha(false); setResetSent(false) }} className="text-xs text-brand-400 hover:text-brand-600 mt-2">Voltar ao login</button>
+              </div>
+            ) : (
+              <form onSubmit={handleReset} className="space-y-4">
+                <div>
+                  <h2 className="text-base font-bold text-gray-800 mb-1">Redefinir senha</h2>
+                  <p className="text-xs text-gray-400 mb-4">Vamos enviar um link para você criar uma nova senha.</p>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Email</label>
+                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="seu@email.com"
+                    className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-300" />
+                </div>
+                {erro && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{erro}</p>}
+                <button type="submit" disabled={resetLoading}
+                  className="w-full bg-brand-400 hover:bg-brand-500 disabled:bg-brand-200 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors">
+                  {resetLoading ? 'Enviando...' : 'Enviar link de redefinição'}
+                </button>
+                <button type="button" onClick={() => { setEsqueceuSenha(false); setErro('') }}
+                  className="w-full text-sm text-gray-400 hover:text-gray-600 py-1">
+                  Voltar
+                </button>
+              </form>
+            )
+          ) : magicSent ? (
             <div className="text-center py-4 space-y-2">
               <p className="text-2xl">📬</p>
               <p className="text-sm font-semibold text-gray-700">Link enviado para seu email!</p>
@@ -148,7 +190,13 @@ export default function Login() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Senha</label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-gray-500">Senha</label>
+                  <button type="button" onClick={() => { setEsqueceuSenha(true); setErro('') }}
+                    className="text-xs text-brand-400 hover:text-brand-600">
+                    Esqueci minha senha
+                  </button>
+                </div>
                 <div className="relative">
                   <input
                     type={showSenha ? 'text' : 'password'}

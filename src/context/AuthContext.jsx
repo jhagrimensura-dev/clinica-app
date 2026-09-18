@@ -54,9 +54,10 @@ export function AuthProvider({ children }) {
   const inviteUser = (email, funcao = 'Funcionário', perms = null) => supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: window.location.origin, data: { funcao, needsPassword: true, ...(perms ? { permissoes: perms } : {}) } } })
   const signOut = () => supabase.auth.signOut()
   const updatePassword = (password) => supabase.auth.updateUser({ password })
+  const resetPassword = (email) => supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin })
 
   return (
-    <AuthContext.Provider value={{ session, user, userRole, primeiroAcesso, permissoes, clinicaId, signIn, signInWithMagicLink, inviteUser, signOut, recoveryMode, updatePassword }}>
+    <AuthContext.Provider value={{ session, user, userRole, primeiroAcesso, permissoes, clinicaId, signIn, signInWithMagicLink, inviteUser, signOut, recoveryMode, updatePassword, resetPassword }}>
       {children}
     </AuthContext.Provider>
   )
