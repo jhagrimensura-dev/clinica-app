@@ -88,13 +88,13 @@ export default function Dashboard() {
   const custoPorSeguidor = seguidores > 0 && trafegoInvestido > 0 ? trafegoInvestido / seguidores : 0
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
       </div>
 
       {/* LINHA 1 */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex justify-between items-start mb-1">
             <p className="text-sm text-gray-500 font-medium">Faturamento Total</p>
@@ -148,7 +148,7 @@ export default function Dashboard() {
       {/* TICKET MÉDIO */}
       <div>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Ticket Médio</p>
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {[
             { label: 'Geral', value: fmt(ticketGeral), sub: `${lMesValidos.length} lançamento(s)` },
             { label: 'Novos', value: fmt(ticketNovos), sub: `${countNovos} novos + ${countIndicacaoLanc} indicação` },
@@ -168,7 +168,7 @@ export default function Dashboard() {
       {/* SOCIAL MEDIA */}
       <div>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Social Media</p>
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
             {
               label: 'Seguidores',
@@ -214,7 +214,7 @@ export default function Dashboard() {
       {/* FUNIL DE CONVERSÃO */}
       <div>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Funil de Conversão</p>
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {[
             { label: 'Social Media', icon: '🔗', color: 'text-brand-500', value: String(seguidores.toLocaleString('pt-BR')), sub: 'seguidores', extras: [`${leadsNovosReais} leads recebidos`, `${convComercial}% conversão`] },
             { label: 'Leads Novos', icon: '🏢', color: 'text-blue-500', value: String(leadsNovosReais + leadsIndicacao.length), sub: 'novos este mês', extras: [`${leadsNovosReais} novos`, `${leadsIndicacao.length} indicações`, `${totalAgendNovos} agendados (novos + indicação)`, `${convNovos}% conversão`] },
