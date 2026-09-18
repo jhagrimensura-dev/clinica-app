@@ -124,6 +124,9 @@ function AbaAnalisar({ onCopiarParaEstrategia }) {
   const [nomeLead, setNomeLead] = useState('')
   const [analise, setAnalise] = useState(null)
   const [nomeAtual, setNomeAtual] = useState('')
+  const [nomeSalvar, setNomeSalvar] = useState('')
+  const [salvando, setSalvando] = useState(false)
+  const [salvoId, setSalvoId] = useState(null)
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState('')
   const [nomeArquivo, setNomeArquivo] = useState('')
@@ -181,8 +184,7 @@ function AbaAnalisar({ onCopiarParaEstrategia }) {
 
   async function analisar() {
     if (!texto.trim()) { setErro('Cole ou envie um arquivo com a transcrição.'); return }
-    const nome = nomeLead.trim() || nomeArquivo || 'Sem nome'
-    setLoading(true); setErro(''); setAnalise(null)
+    setLoading(true); setErro(''); setAnalise(null); setSalvoId(null)
     try {
       const res = await fetch('/api/analisar-transcricao', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -191,14 +193,22 @@ function AbaAnalisar({ onCopiarParaEstrategia }) {
       const data = await res.json()
       if (!res.ok) { setErro(data.error || 'Erro ao analisar'); return }
       setAnalise(data)
+      const nome = nomeLead.trim() || nomeArquivo.replace(/\.(txt|pdf|md)$/i, '') || ''
       setNomeAtual(nome)
-      // Salva no Supabase
-      if (clinicaId) {
-        await supabase.from('analises_conversas').insert({ clinica_id: clinicaId, nome_lead: nome, resultado: data })
-        carregarHistorico()
-      }
+      setNomeSalvar(nome)
     } catch (e) { setErro(e.message) }
     finally { setLoading(false) }
+  }
+
+  async function salvar() {
+    if (!clinicaId || !analise) return
+    const nome = nomeSalvar.trim() || 'Sem nome'
+    setSalvando(true)
+    const { data } = await supabase.from('analises_conversas').insert({ clinica_id: clinicaId, nome_lead: nome, resultado: analise }).select('id').single()
+    setSalvoId(data?.id || true)
+    setNomeAtual(nome)
+    carregarHistorico()
+    setSalvando(false)
   }
 
   async function excluir(id) {
@@ -209,7 +219,7 @@ function AbaAnalisar({ onCopiarParaEstrategia }) {
   }
 
   function limpar() {
-    setTexto(''); setAnalise(null); setErro(''); setNomeArquivo(''); setNomeLead(''); setNomeAtual('')
+    setTexto(''); setAnalise(null); setErro(''); setNomeArquivo(''); setNomeLead(''); setNomeAtual(''); setNomeSalvar(''); setSalvoId(null)
     if (inputRef.current) inputRef.current.value = ''
   }
 
@@ -275,6 +285,32 @@ function AbaAnalisar({ onCopiarParaEstrategia }) {
       </div>
 
       {/* Upload / Resultado */}
+      {/* Painel de salvar (após análise) */}
+      {analise && !salvoId && (
+        <div className="bg-brand-50 border border-brand-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <div className="flex-1 w-full">
+            <label className="text-xs font-bold text-brand-700 block mb-1.5">Salvar esta análise como:</label>
+            <input
+              className="w-full px-3 py-2 rounded-xl border border-brand-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white text-gray-800"
+              placeholder="Nome do lead / paciente..."
+              value={nomeSalvar}
+              onChange={e => setNomeSalvar(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && salvar()}
+              autoFocus
+            />
+          </div>
+          <button onClick={salvar} disabled={salvando}
+            className="w-full sm:w-auto flex-shrink-0 bg-brand-500 hover:bg-brand-600 disabled:bg-gray-300 text-white font-semibold px-5 py-2 rounded-xl text-sm transition-all whitespace-nowrap">
+            {salvando ? 'Salvando...' : '💾 Salvar'}
+          </button>
+        </div>
+      )}
+      {analise && salvoId && (
+        <div className="bg-green-50 border border-green-200 rounded-2xl px-4 py-3 flex items-center gap-2 text-sm text-green-700 font-semibold">
+          ✓ Análise salva como "{nomeAtual}"
+        </div>
+      )}
+
       {!analise ? (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
           <div>
