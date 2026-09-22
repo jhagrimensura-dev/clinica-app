@@ -111,6 +111,13 @@ export default async function handler(req, res) {
         follow_up_5: parseSheetDate(cols[14]), observacao: cols[15] || '',
       })
     }
+    // Apaga leads órfãos do mês (que perderam o vínculo com planilha_leads)
+    const { data: planilhaAntes } = await supabase.from('planilha_leads').select('id').eq('clinica_id', clinicaId).gte('data', iniMes).lt('data', fimMes)
+    if (planilhaAntes?.length) {
+      const idsAntigos = planilhaAntes.map(r => r.id)
+      for (let i = 0; i < idsAntigos.length; i += 50)
+        await supabase.from('leads').delete().in('id', idsAntigos.slice(i, i + 50))
+    }
     await supabase.from('planilha_leads').delete().eq('clinica_id', clinicaId).gte('data', iniMes).lt('data', fimMes)
     for (let i = 0; i < rowsNovos.length; i += 50) {
       const { error } = await supabase.from('planilha_leads').insert(rowsNovos.slice(i, i + 50))
