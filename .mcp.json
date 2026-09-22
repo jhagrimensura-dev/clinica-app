@@ -6,7 +6,7 @@
       "env": {
         "SUPABASE_URL": "https://cojduxlqjwskfqqfximo.supabase.co",
         "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvamR1eGxxandza2ZxcWZ4aW1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MDg2NzcsImV4cCI6MjA5NjA4NDY3N30.eJMU_UmYDz-TyinbtNb4CNUw2tVxmBewpbs2MPVqqi8",
-        "SUPABASE_SERVICE_KEY": "COLE_AQUI_A_SERVICE_ROLE_KEY_DO_SUPABASE",
+        "SUPABASE_SERVICE_KEY": "sb_secret_MwFsDtKt2Bg1aPjTFjTaMQ_BQEQDFHQ",
         "CLINICA_ID": "0154f340-c20f-402d-9dbf-db1b3099dc7a"
       }
     }

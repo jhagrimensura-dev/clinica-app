@@ -69,30 +69,21 @@ server.tool(
     const prefix = prefixMes(a, m)
 
     const [
-      { data: leads },
       { data: lancamentos },
       { data: agendamentos },
       { data: planilha },
     ] = await Promise.all([
-      supabase.from('leads').select('id, status, origem, fonte').eq('clinica_id', clinicaId),
-      supabase.from('lancamentos').select('tipo, valor, data').eq('clinica_id', clinicaId).like('data', `${prefix}%`),
-      supabase.from('agendamentos').select('id, status, data').eq('clinica_id', clinicaId).like('data', `${prefix}%`),
+      supabase.from('lancamentos').select('tipo, valor_tratamento, valor_taxa, data, procedimentos').eq('clinica_id', clinicaId).like('data', `${prefix}%`),
+      supabase.from('agendamentos').select('id, status, date').eq('clinica_id', clinicaId).like('date', `${prefix}%`),
       supabase.from('planilha_leads').select('agendou, compareceu, vendeu, valor_procedimento').eq('clinica_id', clinicaId).like('data', `${prefix}%`),
     ])
 
     // Faturamento
-    const faturamento = (lancamentos || []).reduce((acc, l) => acc + (l.valor || 0), 0)
     const consultas = (lancamentos || []).filter(l => l.tipo === 'consulta')
     const procedimentos = (lancamentos || []).filter(l => l.tipo !== 'consulta')
-    const ticketMedio = procedimentos.length > 0
-      ? procedimentos.reduce((a, l) => a + (l.valor || 0), 0) / procedimentos.length
-      : 0
-
-    // Leads
-    const leadsNoMes = (leads || []).filter(l => {
-      const d = l.data || l.dataOrigem || ''
-      return d.startsWith(prefix)
-    })
+    const totalProc = procedimentos.reduce((a, l) => a + (l.valor_tratamento || 0), 0)
+    const totalCons = consultas.reduce((a, l) => a + (l.valor_taxa || 0), 0)
+    const ticketMedio = procedimentos.length > 0 ? totalProc / procedimentos.length : 0
 
     // Planilha
     const pl = planilha || []
@@ -105,9 +96,11 @@ server.tool(
     return ok({
       periodo: `${String(m).padStart(2, '0')}/${a}`,
       faturamento: {
-        total: faturamento,
-        consultas: consultas.length,
-        procedimentos: procedimentos.length,
+        total: totalProc + totalCons,
+        procedimentos_valor: totalProc,
+        consultas_valor: totalCons,
+        qtd_procedimentos: procedimentos.length,
+        qtd_consultas: consultas.length,
         ticket_medio: Math.round(ticketMedio),
       },
       leads: {
@@ -232,7 +225,7 @@ server.tool(
 
     const { data: lancamentos } = await supabase
       .from('lancamentos')
-      .select('tipo, descricao, valor, data, paciente, responsavel')
+      .select('tipo, procedimentos, valor_tratamento, valor_taxa, data, paciente, responsavel')
       .eq('clinica_id', clinicaId)
       .like('data', `${prefix}%`)
       .order('data', { ascending: false })
@@ -241,16 +234,18 @@ server.tool(
     const consultas = items.filter(l => l.tipo === 'consulta')
     const procedimentos = items.filter(l => l.tipo !== 'consulta')
 
-    const totalProc = procedimentos.reduce((a, l) => a + (l.valor || 0), 0)
-    const totalCons = consultas.reduce((a, l) => a + (l.valor || 0), 0)
+    const totalProc = procedimentos.reduce((a, l) => a + (l.valor_tratamento || 0), 0)
+    const totalCons = consultas.reduce((a, l) => a + (l.valor_taxa || 0), 0)
 
     // Agrupa por procedimento
     const porTipo = {}
     for (const l of procedimentos) {
-      const k = l.descricao || l.tipo || 'Outro'
-      if (!porTipo[k]) porTipo[k] = { count: 0, total: 0 }
-      porTipo[k].count++
-      porTipo[k].total += l.valor || 0
+      const procs = Array.isArray(l.procedimentos) ? l.procedimentos : [l.tipo || 'Outro']
+      for (const p of procs) {
+        if (!porTipo[p]) porTipo[p] = { count: 0, total: 0 }
+        porTipo[p].count++
+        porTipo[p].total += (l.valor_tratamento || 0) / procs.length
+      }
     }
 
     return ok({
@@ -292,11 +287,11 @@ server.tool(
 
     const [{ data: agendamentos }, { data: lembretes }] = await Promise.all([
       supabase.from('agendamentos')
-        .select('data, hora, paciente, procedimento, status, observacao')
+        .select('date, time, paciente, procedimento, status')
         .eq('clinica_id', clinicaId)
-        .gte('data', hoje)
-        .lte('data', futuroStr)
-        .order('data').order('hora'),
+        .gte('date', hoje)
+        .lte('date', futuroStr)
+        .order('date').order('time'),
       supabase.from('lembretes')
         .select('data, descricao, lead_nome, concluido')
         .eq('clinica_id', clinicaId)
@@ -309,8 +304,8 @@ server.tool(
     return ok({
       periodo: `${hoje} → ${futuroStr}`,
       agendamentos: (agendamentos || []).map(a => ({
-        data: a.data,
-        hora: a.hora,
+        data: a.date,
+        hora: a.time,
         paciente: a.paciente,
         procedimento: a.procedimento,
         status: a.status,
@@ -477,21 +472,22 @@ server.tool(
     const resultados = await Promise.all(meses.map(async ({ ano, mes }) => {
       const prefix = prefixMes(ano, mes)
       const [{ data: lanc }, { data: pl }] = await Promise.all([
-        supabase.from('lancamentos').select('tipo, valor').eq('clinica_id', clinicaId).like('data', `${prefix}%`),
+        supabase.from('lancamentos').select('tipo, valor_tratamento, valor_taxa').eq('clinica_id', clinicaId).like('data', `${prefix}%`),
         supabase.from('planilha_leads').select('agendou, vendeu, valor_procedimento').eq('clinica_id', clinicaId).like('data', `${prefix}%`),
       ])
 
       const procs = (lanc || []).filter(l => l.tipo !== 'consulta')
-      const faturamento = (lanc || []).reduce((a, l) => a + (l.valor || 0), 0)
+      const totalProc = procs.reduce((a, l) => a + (l.valor_tratamento || 0), 0)
+      const totalCons = (lanc || []).filter(l => l.tipo === 'consulta').reduce((a, l) => a + (l.valor_taxa || 0), 0)
       const leads = (pl || []).length
       const vendas = (pl || []).filter(r => r.vendeu).length
       const agendados = (pl || []).filter(r => r.agendou).length
 
       return {
         periodo: `${String(mes).padStart(2, '0')}/${ano}`,
-        faturamento,
+        faturamento: totalProc + totalCons,
         procedimentos: procs.length,
-        ticket_medio: procs.length > 0 ? Math.round(procs.reduce((a, l) => a + (l.valor || 0), 0) / procs.length) : 0,
+        ticket_medio: procs.length > 0 ? Math.round(totalProc / procs.length) : 0,
         leads_novos: leads,
         agendamentos: agendados,
         vendas,
