@@ -25,6 +25,166 @@ async function getClinicaId() {
   return CLINICA_ID
 }
 
+// ── Google Sheets config ──────────────────────────────────────────────────────
+const SHEETS_PUBLISHED_ID = '2PACX-1vSQHBxm7a-u_r5dMNrZtYoMHRs3awELyB968s8aqj0HcJSeP1PjnE3n_FWZ8bB54BeFNVc3Syv0E5Fr'
+const SHEETS_GIDS = { novos: '574898400', followup: '1573659618', recorrentes: '876639945' }
+
+function sheetCsvUrl(tab) {
+  return `https://docs.google.com/spreadsheets/d/e/${SHEETS_PUBLISHED_ID}/pub?gid=${SHEETS_GIDS[tab]}&single=true&output=csv`
+}
+
+function parseCSVLine(line) {
+  const result = []
+  let current = ''
+  let inQuotes = false
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i]
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') { current += '"'; i++ }
+      else inQuotes = !inQuotes
+    } else if (ch === ',' && !inQuotes) {
+      result.push(current.trim()); current = ''
+    } else {
+      current += ch
+    }
+  }
+  result.push(current.trim())
+  return result
+}
+
+function parseSheetDate(s) {
+  if (!s) return null
+  const clean = s.trim().replace(/\/\//g, '/')
+  if (!clean.match(/\d/)) return null
+  const parts = clean.split(/[/\-]/).filter(p => p && /^\d+$/.test(p))
+  if (parts.length !== 3) return null
+  let iso
+  if (parts[2].length === 4) iso = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`
+  else if (parts[0].length === 4) iso = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`
+  else return null
+  const d = new Date(iso + 'T00:00:00')
+  if (isNaN(d.getTime())) return null
+  const [y, m, day] = iso.split('-').map(Number)
+  if (d.getFullYear() !== y || d.getMonth() + 1 !== m || d.getDate() !== day) return null
+  return iso
+}
+
+function parseOriginSheet(s) {
+  const u = (s || '').toUpperCase().trim()
+  if (u.includes('STORIES')) return 'Instagram Stories'
+  if (u.includes('BIO')) return 'Instagram Bio'
+  if (u.includes('TRÁFEGO') || u.includes('TRAFEGO')) return 'Tráfego'
+  if (u.includes('INDICAÇÃO') || u.includes('INDICACAO')) return 'Indicação'
+  if (u.includes('ONLINE')) return 'Outro'
+  if (u.includes('CONEXÃO') || u.includes('CONEXAO')) return 'Conexão'
+  return s?.trim() || ''
+}
+
+function parseMoneyValue(s) {
+  if (!s || !s.trim()) return null
+  const clean = s.replace(/R\$\s?/, '').replace(/\./g, '').replace(',', '.').trim()
+  const num = parseFloat(clean)
+  return isNaN(num) ? null : num
+}
+
+function genUUID() {
+  return crypto.randomUUID()
+}
+
+async function fetchSheetCSV(tab) {
+  const res = await fetch(sheetCsvUrl(tab))
+  if (!res.ok) throw new Error(`HTTP ${res.status} ao buscar aba ${tab}`)
+  return res.text()
+}
+
+function parseNovosCSV(csv, clinicaId) {
+  const lines = csv.split('\n').filter(l => l.trim())
+  const rows = []
+  for (const line of lines) {
+    const cols = parseCSVLine(line)
+    const rawDate = cols[0]
+    if (!rawDate || !rawDate.match(/\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4}/)) continue
+    const data = parseSheetDate(rawDate)
+    if (!data) continue
+    rows.push({
+      id: genUUID(),
+      clinica_id: clinicaId,
+      data,
+      nome: cols[1] || '',
+      telefone: cols[2] || '',
+      origem: parseOriginSheet(cols[3]),
+      criativo: cols[4] || '',
+      agendou: (cols[5] || '').toUpperCase() === 'SIM',
+      compareceu: (cols[6] || '').toUpperCase() === 'SIM',
+      vendeu: (cols[7] || '').toUpperCase() === 'SIM',
+      consulta: cols[8] || '',
+      valor_procedimento: parseMoneyValue(cols[9]),
+      follow_up_1: parseSheetDate(cols[10]),
+      follow_up_2: parseSheetDate(cols[11]),
+      follow_up_3: parseSheetDate(cols[12]),
+      follow_up_4: parseSheetDate(cols[13]),
+      follow_up_5: parseSheetDate(cols[14]),
+      observacao: cols[15] || '',
+    })
+  }
+  return rows
+}
+
+function parseFollowupCSV(csv, clinicaId) {
+  const lines = csv.split('\n').filter(l => l.trim())
+  const rows = []
+  for (const line of lines) {
+    const cols = parseCSVLine(line)
+    const rawOrigem = cols[0]
+    const rawFollowup = cols[1]
+    const hasDate = (rawOrigem && rawOrigem.match(/\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4}/)) ||
+                    (rawFollowup && rawFollowup.match(/\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4}/))
+    if (!hasDate) continue
+    const data_followup = parseSheetDate(rawFollowup)
+    if (!data_followup) continue
+    rows.push({
+      id: genUUID(),
+      clinica_id: clinicaId,
+      data_origem: parseSheetDate(rawOrigem),
+      data_followup,
+      nome: cols[2] || '',
+      telefone: cols[3] || '',
+      origem: parseOriginSheet(cols[4]),
+      respondeu: (cols[5] || '').toUpperCase() === 'SIM',
+      agendou: (cols[6] || '').toUpperCase() === 'SIM',
+      vendeu: (cols[7] || '').toUpperCase() === 'SIM',
+      valor: parseMoneyValue(cols[8]),
+      procedimento: cols[9] || '',
+      observacao: cols[10] || '',
+    })
+  }
+  return rows
+}
+
+function parseRecorrentesCSV(csv, clinicaId) {
+  const lines = csv.split('\n').filter(l => l.trim())
+  const rows = []
+  for (const line of lines) {
+    const cols = parseCSVLine(line)
+    const rawDate = cols[0]
+    if (!rawDate || !rawDate.match(/\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4}/)) continue
+    const data = parseSheetDate(rawDate)
+    if (!data) continue
+    rows.push({
+      id: genUUID(),
+      clinica_id: clinicaId,
+      data,
+      nome: cols[1] || '',
+      telefone: cols[2] || '',
+      agendou: (cols[3] || '').toUpperCase() === 'SIM',
+      vendeu: (cols[4] || '').toUpperCase() === 'SIM',
+      valor: parseMoneyValue(cols[5]),
+      observacao: cols[6] || '',
+    })
+  }
+  return rows
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function mesAtual() {
   const hoje = new Date()
@@ -496,6 +656,83 @@ server.tool(
     }))
 
     return ok({ comparativo_3_meses: resultados })
+  }
+)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TOOL 10 — Importar planilha do Google Sheets
+// ─────────────────────────────────────────────────────────────────────────────
+server.tool(
+  'importar_planilha',
+  'Importa leads do Google Sheets para o Supabase. Só afeta o mês especificado (padrão: mês atual). Nunca toca em faturamento.',
+  {
+    tab: z.enum(['novos', 'followup', 'recorrentes', 'todos']).optional().default('todos').describe('Qual aba importar'),
+    ano: z.number().optional().describe('Ano (padrão: atual)'),
+    mes: z.number().min(1).max(12).optional().describe('Mês 1-12 (padrão: atual)'),
+  },
+  async ({ tab, ano, mes }) => {
+    const clinicaId = await getClinicaId()
+    if (!clinicaId) return err('clinica_id não encontrado')
+
+    const { ano: anoAtual, mes: mesAtualNum } = mesAtual()
+    const a = ano ?? anoAtual
+    const m = mes ?? mesAtualNum
+    const prefix = prefixMes(a, m)
+    const iniMes = `${prefix}-01`
+    const [y, mo] = [a, m]
+    const nextMo = mo === 12 ? `${y + 1}-01` : `${y}-${String(mo + 1).padStart(2, '0')}`
+    const fimMes = `${nextMo}-01`
+
+    const tabs = tab === 'todos' ? ['novos', 'followup', 'recorrentes'] : [tab]
+    const resultado = {}
+
+    for (const t of tabs) {
+      try {
+        const csv = await fetchSheetCSV(t)
+
+        if (t === 'novos') {
+          const rows = parseNovosCSV(csv, clinicaId).filter(r => (r.data || '').startsWith(prefix))
+          // Apaga mês atual e reimporta
+          await supabase.from('planilha_leads').delete()
+            .eq('clinica_id', clinicaId).gte('data', iniMes).lt('data', fimMes)
+          let inserted = 0
+          for (let i = 0; i < rows.length; i += 50) {
+            const { error } = await supabase.from('planilha_leads').insert(rows.slice(i, i + 50))
+            if (error) throw new Error(error.message)
+            inserted += rows.slice(i, i + 50).length
+          }
+          resultado.novos = { importados: inserted, mes: `${String(m).padStart(2,'0')}/${a}` }
+
+        } else if (t === 'followup') {
+          const rows = parseFollowupCSV(csv, clinicaId).filter(r => (r.data_followup || '').startsWith(prefix))
+          await supabase.from('planilha_followup').delete()
+            .eq('clinica_id', clinicaId).gte('data_followup', iniMes).lt('data_followup', fimMes)
+          let inserted = 0
+          for (let i = 0; i < rows.length; i += 25) {
+            const { error } = await supabase.from('planilha_followup').insert(rows.slice(i, i + 25))
+            if (error) throw new Error(error.message)
+            inserted += rows.slice(i, i + 25).length
+          }
+          resultado.followup = { importados: inserted, mes: `${String(m).padStart(2,'0')}/${a}` }
+
+        } else if (t === 'recorrentes') {
+          const rows = parseRecorrentesCSV(csv, clinicaId).filter(r => (r.data || '').startsWith(prefix))
+          await supabase.from('planilha_recorrentes').delete()
+            .eq('clinica_id', clinicaId).gte('data', iniMes).lt('data', fimMes)
+          let inserted = 0
+          for (let i = 0; i < rows.length; i += 50) {
+            const { error } = await supabase.from('planilha_recorrentes').insert(rows.slice(i, i + 50))
+            if (error) throw new Error(error.message)
+            inserted += rows.slice(i, i + 50).length
+          }
+          resultado.recorrentes = { importados: inserted, mes: `${String(m).padStart(2,'0')}/${a}` }
+        }
+      } catch (e) {
+        resultado[t] = { erro: e.message }
+      }
+    }
+
+    return ok({ status: 'ok', resultado })
   }
 )
 
