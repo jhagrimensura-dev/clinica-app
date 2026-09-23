@@ -98,10 +98,7 @@ export default function Estoque() {
   }
 
   const hoje = new Date().toISOString().slice(0, 10)
-
-  const filtrados = produtos.filter(p =>
-    p.nome.toLowerCase().includes(busca.toLowerCase())
-  )
+  const filtrados = produtos.filter(p => p.nome.toLowerCase().includes(busca.toLowerCase()))
 
   return (
     <div className="p-3 sm:p-6 space-y-4">
@@ -113,7 +110,7 @@ export default function Estoque() {
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35" strokeLinecap="round"/>
           </svg>
           <input
-            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white"
+            className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white"
             placeholder="Filtrar Produto..."
             value={busca}
             onChange={e => setBusca(e.target.value)}
@@ -121,7 +118,7 @@ export default function Estoque() {
         </div>
         <button
           onClick={() => setModalProd({ nome: '', unidade: 'unidade', fornecedor: '', estoque_minimo: 0 })}
-          className="flex items-center gap-2 px-4 py-2 bg-brand-400 text-white text-sm font-medium rounded-xl hover:bg-brand-500 transition-colors whitespace-nowrap"
+          className="flex items-center gap-2 px-4 py-2.5 bg-brand-400 text-white text-sm font-medium rounded-xl hover:bg-brand-500 transition-colors whitespace-nowrap"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v14M5 12h14"/></svg>
           Adicionar Produto
@@ -135,86 +132,85 @@ export default function Estoque() {
           {busca ? 'Nenhum produto encontrado.' : 'Nenhum produto cadastrado.'}
         </div>
       ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-50">
-          {filtrados.map(p => {
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          {filtrados.map((p, idx) => {
             const movs = movimentos[p.id] || []
             const atual = estoqueAtual(movs)
             const validade = validadeMaisProxima(movs)
             const dias = diasAteValidade(validade)
             const vencidoFlag = movs.some(m => m.tipo === 'entrada' && m.validade && m.validade < hoje)
             const baixo = p.estoque_minimo > 0 && atual <= p.estoque_minimo
-            const vencendo = dias !== null && dias <= 30
+            const vencendo = !vencidoFlag && dias !== null && dias <= 30
             const badge = UNIDADE_BADGE[p.unidade] || p.unidade.toUpperCase().slice(0, 2)
 
             return (
-              <div key={p.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50/60 transition-colors group">
-                {/* Ações esquerda */}
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+              <div
+                key={p.id}
+                className={`flex items-center gap-4 px-5 py-4 ${idx < filtrados.length - 1 ? 'border-b border-gray-100' : ''}`}
+              >
+                {/* Ícones de ação — sempre visíveis */}
+                <div className="flex items-center gap-2 flex-shrink-0">
                   <button
                     onClick={() => setModalMov({ produto_id: p.id, produto_nome: p.nome, tipo: 'entrada', quantidade: '', data: hoje, validade: '', observacao: '' })}
                     title="Entrada"
-                    className="w-7 h-7 flex items-center justify-center rounded-lg text-green-500 hover:bg-green-50 transition-colors"
+                    className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-green-500 hover:bg-green-50 rounded transition-colors"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v14M5 12h14"/></svg>
                   </button>
                   <button
                     onClick={() => setModalMov({ produto_id: p.id, produto_nome: p.nome, tipo: 'saida', quantidade: '', data: hoje, observacao: '' })}
                     title="Saída"
-                    className="w-7 h-7 flex items-center justify-center rounded-lg text-orange-500 hover:bg-orange-50 transition-colors"
+                    className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded transition-colors"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14"/></svg>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4 4 4"/>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8v12m0 0 4-4m-4 4-4-4"/>
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => excluirProduto(p.id)}
+                    title="Excluir"
+                    className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
                   </button>
                   <button
                     onClick={() => setModalProd({ ...p })}
                     title="Editar"
-                    className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 transition-colors"
+                    className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-brand-500 hover:bg-brand-50 rounded transition-colors"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.414-9.414a2 2 0 1 1 2.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                   </button>
                 </div>
 
-                {/* Nome */}
+                {/* Nome do produto */}
                 <div className="flex-1 min-w-0">
-                  <span className="text-sm font-medium text-gray-800">{p.nome}</span>
+                  <span className="text-sm font-semibold text-gray-800">{p.nome}</span>
                   {p.fornecedor && <span className="ml-2 text-xs text-gray-400">{p.fornecedor}</span>}
-                  {/* Alertas mobile */}
-                  <div className="flex gap-1.5 mt-0.5 sm:hidden">
+                  <div className="flex gap-2 mt-0.5">
                     {baixo && <span className="text-xs text-red-500 font-medium">Estoque baixo</span>}
                     {vencidoFlag && <span className="text-xs text-red-500 font-medium">Vencido</span>}
-                    {!vencidoFlag && vencendo && <span className="text-xs text-orange-500 font-medium">Vence em {dias}d</span>}
+                    {vencendo && <span className="text-xs text-orange-500 font-medium">Vence em {dias}d</span>}
                   </div>
                 </div>
 
-                {/* Alertas desktop */}
-                <div className="hidden sm:flex items-center gap-2">
-                  {baixo && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-600">
-                      Estoque baixo
-                    </span>
-                  )}
-                  {vencidoFlag && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-600">
-                      Vencido
-                    </span>
-                  )}
-                  {!vencidoFlag && vencendo && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-600">
-                      Vence em {dias}d
-                    </span>
-                  )}
+                {/* Quantidade Disponível */}
+                <div className="text-sm text-gray-400 flex-shrink-0 hidden sm:block">
+                  Quantidade Disponível{' '}
+                  <span className={`font-bold text-gray-800 ${baixo ? 'text-red-500' : ''}`}>
+                    {atual % 1 === 0 ? atual : atual.toFixed(1)}
+                  </span>
                 </div>
 
-                {/* Quantidade + Unidade */}
-                <div className="flex items-center gap-3 flex-shrink-0">
-                  <span className="text-sm text-gray-500">
-                    Quantidade Disponível:{' '}
-                    <span className={`font-semibold ${baixo ? 'text-red-500' : 'text-gray-800'}`}>
-                      {atual % 1 === 0 ? atual : atual.toFixed(1)}
-                    </span>
-                  </span>
-                  <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">
-                    {badge}
-                  </span>
+                {/* Unidade de Medida */}
+                <div className="text-sm text-gray-400 flex-shrink-0 w-32 text-right hidden sm:block">
+                  Unidade de Medida{' '}
+                  <span className="font-bold text-gray-800">{badge}</span>
+                </div>
+
+                {/* Mobile: quantidade compacta */}
+                <div className="sm:hidden text-sm font-bold text-gray-800 flex-shrink-0">
+                  {atual % 1 === 0 ? atual : atual.toFixed(1)} {badge}
                 </div>
               </div>
             )
