@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useClinica } from '../context/ClinicaContext'
 import { useVendas } from '../context/VendasContext'
 import { useFinanceiro } from '../context/FinanceiroContext'
@@ -87,10 +87,39 @@ export default function Dashboard() {
   const custoLead = leadsNovosReais > 0 && trafegoInvestido > 0 ? trafegoInvestido / leadsNovosReais : 0
   const custoPorSeguidor = seguidores > 0 && trafegoInvestido > 0 ? trafegoInvestido / seguidores : 0
 
+  const [sincronizando, setSincronizando] = useState(false)
+  const [syncMsg, setSyncMsg] = useState(null)
+
+  async function sincronizar() {
+    setSincronizando(true)
+    setSyncMsg(null)
+    try {
+      const res = await fetch('/api/sync-planilha')
+      const data = await res.json()
+      if (data.ok) setSyncMsg(`✓ ${data.resultado.novos} novos · ${data.resultado.followup} follow-ups · ${data.resultado.recorrentes} recorrentes`)
+      else setSyncMsg('Erro ao sincronizar')
+    } catch { setSyncMsg('Erro ao sincronizar') }
+    setSincronizando(false)
+    setTimeout(() => setSyncMsg(null), 6000)
+  }
+
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-      <div>
+      <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
+        <div className="flex items-center gap-2">
+          {syncMsg && <span className="text-xs text-green-600 font-medium">{syncMsg}</span>}
+          <button
+            onClick={sincronizar}
+            disabled={sincronizando}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+          >
+            <svg className={`w-3.5 h-3.5 ${sincronizando ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {sincronizando ? 'Sincronizando…' : 'Sincronizar Planilhas'}
+          </button>
+        </div>
       </div>
 
       {/* LINHA 1 */}
