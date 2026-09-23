@@ -4,9 +4,8 @@
   "installCommand": "npm install",
   "framework": "vite",
   "crons": [
-    {
-      "path": "/api/sync-planilha",
-      "schedule": "0 3 * * *"
-    }
+    { "path": "/api/sync-planilha", "schedule": "0 12 * * *" },
+    { "path": "/api/sync-planilha", "schedule": "0 16 * * *" },
+    { "path": "/api/sync-planilha", "schedule": "0 20 * * *" }
   ]
 }
