@@ -2,7 +2,11 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
-const UNIDADES = ['unidade', 'caixa', 'ml', 'g', 'mg', 'ampola', 'frasco', 'tubo', 'par', 'kit']
+const UNIDADES = ['unidade', 'caixa', 'pacote', 'ml', 'g', 'mg', 'ampola', 'frasco', 'tubo', 'par', 'kit']
+const UNIDADE_BADGE = {
+  unidade: 'UN', caixa: 'CX', pacote: 'PT', ml: 'ML', g: 'G', mg: 'MG',
+  ampola: 'AM', frasco: 'FR', tubo: 'TB', par: 'PR', kit: 'KT',
+}
 
 function estoqueAtual(movs) {
   return (movs || []).reduce((acc, m) => acc + (m.tipo === 'entrada' ? m.quantidade : -m.quantidade), 0)
@@ -17,9 +21,7 @@ function validadeMaisProxima(movs) {
 
 function diasAteValidade(validade) {
   if (!validade) return null
-  const hoje = new Date()
-  const val = new Date(validade + 'T00:00:00')
-  return Math.ceil((val - hoje) / (1000 * 60 * 60 * 24))
+  return Math.ceil((new Date(validade + 'T00:00:00') - new Date()) / (1000 * 60 * 60 * 24))
 }
 
 export default function Estoque() {
@@ -27,6 +29,7 @@ export default function Estoque() {
   const [produtos, setProdutos] = useState([])
   const [movimentos, setMovimentos] = useState({})
   const [loading, setLoading] = useState(true)
+  const [busca, setBusca] = useState('')
   const [modalProd, setModalProd] = useState(null)
   const [modalMov, setModalMov] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -87,7 +90,7 @@ export default function Estoque() {
   }
 
   async function excluirProduto(id) {
-    if (!confirm('Excluir produto e todos os movimentos? Essa ação não pode ser desfeita.')) return
+    if (!confirm('Excluir produto e todos os movimentos?')) return
     await supabase.from('estoque_movimentos').delete().eq('produto_id', id)
     await supabase.from('estoque_produtos').delete().eq('id', id)
     setModalProd(null)
@@ -95,129 +98,127 @@ export default function Estoque() {
   }
 
   const hoje = new Date().toISOString().slice(0, 10)
-  const alertasBaixo = produtos.filter(p => {
-    const atual = estoqueAtual(movimentos[p.id] || [])
-    return p.estoque_minimo > 0 && atual <= p.estoque_minimo
-  })
-  const alertasValidade = produtos.filter(p => {
-    const movs = movimentos[p.id] || []
-    const val = movs.filter(m => m.tipo === 'entrada' && m.validade).map(m => m.validade)
-    return val.some(v => v <= hoje || diasAteValidade(v) <= 30)
-  })
+
+  const filtrados = produtos.filter(p =>
+    p.nome.toLowerCase().includes(busca.toLowerCase())
+  )
 
   return (
     <div className="p-3 sm:p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Estoque</h1>
-          {(alertasBaixo.length > 0 || alertasValidade.length > 0) && (
-            <p className="text-xs text-gray-400 mt-0.5">
-              {alertasBaixo.length > 0 && <span className="text-red-500 font-medium">{alertasBaixo.length} abaixo do mínimo</span>}
-              {alertasBaixo.length > 0 && alertasValidade.length > 0 && ' · '}
-              {alertasValidade.length > 0 && <span className="text-orange-500 font-medium">{alertasValidade.length} com validade próxima</span>}
-            </p>
-          )}
+      <h1 className="text-2xl font-bold text-gray-800">Controle de Estoque</h1>
+
+      <div className="flex gap-3">
+        <div className="relative flex-1">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35" strokeLinecap="round"/>
+          </svg>
+          <input
+            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white"
+            placeholder="Filtrar Produto..."
+            value={busca}
+            onChange={e => setBusca(e.target.value)}
+          />
         </div>
         <button
           onClick={() => setModalProd({ nome: '', unidade: 'unidade', fornecedor: '', estoque_minimo: 0 })}
-          className="flex items-center gap-1.5 px-3 py-2 bg-brand-400 text-white text-sm font-medium rounded-lg hover:bg-brand-500 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-brand-400 text-white text-sm font-medium rounded-xl hover:bg-brand-500 transition-colors whitespace-nowrap"
         >
-          + Novo Produto
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v14M5 12h14"/></svg>
+          Adicionar Produto
         </button>
       </div>
 
       {loading ? (
         <div className="text-center py-16 text-gray-400">Carregando…</div>
-      ) : produtos.length === 0 ? (
+      ) : filtrados.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
-          <svg className="w-12 h-12 mx-auto mb-3 opacity-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-          <p className="font-medium">Nenhum produto cadastrado</p>
-          <p className="text-sm mt-1">Clique em "+ Novo Produto" para começar</p>
+          {busca ? 'Nenhum produto encontrado.' : 'Nenhum produto cadastrado.'}
         </div>
       ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Produto</th>
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider hidden sm:table-cell">Unidade</th>
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Estoque</th>
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider hidden sm:table-cell">Mínimo</th>
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider hidden sm:table-cell">Validade</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {produtos.map(p => {
-                  const movs = movimentos[p.id] || []
-                  const atual = estoqueAtual(movs)
-                  const validade = validadeMaisProxima(movs)
-                  const dias = diasAteValidade(validade)
-                  const vencidoVal = movs.some(m => m.tipo === 'entrada' && m.validade && m.validade < hoje)
-                  const baixo = p.estoque_minimo > 0 && atual <= p.estoque_minimo
-                  const vencendo = dias !== null && dias <= 30
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-50">
+          {filtrados.map(p => {
+            const movs = movimentos[p.id] || []
+            const atual = estoqueAtual(movs)
+            const validade = validadeMaisProxima(movs)
+            const dias = diasAteValidade(validade)
+            const vencidoFlag = movs.some(m => m.tipo === 'entrada' && m.validade && m.validade < hoje)
+            const baixo = p.estoque_minimo > 0 && atual <= p.estoque_minimo
+            const vencendo = dias !== null && dias <= 30
+            const badge = UNIDADE_BADGE[p.unidade] || p.unidade.toUpperCase().slice(0, 2)
 
-                  return (
-                    <tr key={p.id} className="hover:bg-gray-50/60 transition-colors">
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-gray-800">{p.nome}</div>
-                        {p.fornecedor && <div className="text-xs text-gray-400">{p.fornecedor}</div>}
-                      </td>
-                      <td className="px-4 py-3 text-center text-gray-500 hidden sm:table-cell">{p.unidade}</td>
-                      <td className="px-4 py-3 text-center">
-                        <div className={`font-semibold ${baixo ? 'text-red-500' : 'text-gray-800'}`}>
-                          {atual % 1 === 0 ? atual : atual.toFixed(1)}
-                        </div>
-                        {baixo && (
-                          <div className="text-xs text-red-500 font-medium">Baixo</div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-center text-gray-400 hidden sm:table-cell">
-                        {p.estoque_minimo > 0 ? p.estoque_minimo : '—'}
-                      </td>
-                      <td className="px-4 py-3 text-center hidden sm:table-cell">
-                        {vencidoVal ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-600">
-                            Vencido
-                          </span>
-                        ) : validade ? (
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                            vencendo ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-500'
-                          }`}>
-                            {new Date(validade + 'T00:00:00').toLocaleDateString('pt-BR')}
-                            {vencendo ? ` · ${dias}d` : ''}
-                          </span>
-                        ) : '—'}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => setModalMov({ produto_id: p.id, produto_nome: p.nome, tipo: 'entrada', quantidade: '', data: hoje, validade: '', observacao: '' })}
-                            className="px-2 py-1 text-xs font-medium text-green-600 bg-green-50 hover:bg-green-100 rounded transition-colors"
-                          >
-                            +
-                          </button>
-                          <button
-                            onClick={() => setModalMov({ produto_id: p.id, produto_nome: p.nome, tipo: 'saida', quantidade: '', data: hoje, observacao: '' })}
-                            className="px-2 py-1 text-xs font-medium text-orange-600 bg-orange-50 hover:bg-orange-100 rounded transition-colors"
-                          >
-                            −
-                          </button>
-                          <button
-                            onClick={() => setModalProd({ ...p })}
-                            className="px-2 py-1 text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
-                          >
-                            ⋯
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+            return (
+              <div key={p.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50/60 transition-colors group">
+                {/* Ações esquerda */}
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                  <button
+                    onClick={() => setModalMov({ produto_id: p.id, produto_nome: p.nome, tipo: 'entrada', quantidade: '', data: hoje, validade: '', observacao: '' })}
+                    title="Entrada"
+                    className="w-7 h-7 flex items-center justify-center rounded-lg text-green-500 hover:bg-green-50 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v14M5 12h14"/></svg>
+                  </button>
+                  <button
+                    onClick={() => setModalMov({ produto_id: p.id, produto_nome: p.nome, tipo: 'saida', quantidade: '', data: hoje, observacao: '' })}
+                    title="Saída"
+                    className="w-7 h-7 flex items-center justify-center rounded-lg text-orange-500 hover:bg-orange-50 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14"/></svg>
+                  </button>
+                  <button
+                    onClick={() => setModalProd({ ...p })}
+                    title="Editar"
+                    className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.414-9.414a2 2 0 1 1 2.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                  </button>
+                </div>
+
+                {/* Nome */}
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-medium text-gray-800">{p.nome}</span>
+                  {p.fornecedor && <span className="ml-2 text-xs text-gray-400">{p.fornecedor}</span>}
+                  {/* Alertas mobile */}
+                  <div className="flex gap-1.5 mt-0.5 sm:hidden">
+                    {baixo && <span className="text-xs text-red-500 font-medium">Estoque baixo</span>}
+                    {vencidoFlag && <span className="text-xs text-red-500 font-medium">Vencido</span>}
+                    {!vencidoFlag && vencendo && <span className="text-xs text-orange-500 font-medium">Vence em {dias}d</span>}
+                  </div>
+                </div>
+
+                {/* Alertas desktop */}
+                <div className="hidden sm:flex items-center gap-2">
+                  {baixo && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-600">
+                      Estoque baixo
+                    </span>
+                  )}
+                  {vencidoFlag && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-600">
+                      Vencido
+                    </span>
+                  )}
+                  {!vencidoFlag && vencendo && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-600">
+                      Vence em {dias}d
+                    </span>
+                  )}
+                </div>
+
+                {/* Quantidade + Unidade */}
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <span className="text-sm text-gray-500">
+                    Quantidade Disponível:{' '}
+                    <span className={`font-semibold ${baixo ? 'text-red-500' : 'text-gray-800'}`}>
+                      {atual % 1 === 0 ? atual : atual.toFixed(1)}
+                    </span>
+                  </span>
+                  <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">
+                    {badge}
+                  </span>
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
 
@@ -259,10 +260,8 @@ function ModalProduto({ initial, saving, onSave, onDelete, onClose }) {
             <label className="block text-xs font-medium text-gray-500 mb-1">Nome *</label>
             <input
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
-              value={form.nome}
-              onChange={e => set('nome', e.target.value)}
-              placeholder="Ex: Botox Allergan 100u"
-              autoFocus
+              value={form.nome} onChange={e => set('nome', e.target.value)}
+              placeholder="Ex: Botox Allergan 100u" autoFocus
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -270,8 +269,7 @@ function ModalProduto({ initial, saving, onSave, onDelete, onClose }) {
               <label className="block text-xs font-medium text-gray-500 mb-1">Unidade *</label>
               <select
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
-                value={form.unidade}
-                onChange={e => set('unidade', e.target.value)}
+                value={form.unidade} onChange={e => set('unidade', e.target.value)}
               >
                 {UNIDADES.map(u => <option key={u} value={u}>{u}</option>)}
               </select>
@@ -281,9 +279,7 @@ function ModalProduto({ initial, saving, onSave, onDelete, onClose }) {
               <input
                 type="number" min="0" step="0.5"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
-                value={form.estoque_minimo}
-                onChange={e => set('estoque_minimo', e.target.value)}
-                placeholder="0"
+                value={form.estoque_minimo} onChange={e => set('estoque_minimo', e.target.value)} placeholder="0"
               />
             </div>
           </div>
@@ -291,22 +287,17 @@ function ModalProduto({ initial, saving, onSave, onDelete, onClose }) {
             <label className="block text-xs font-medium text-gray-500 mb-1">Fornecedor</label>
             <input
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
-              value={form.fornecedor || ''}
-              onChange={e => set('fornecedor', e.target.value)}
+              value={form.fornecedor || ''} onChange={e => set('fornecedor', e.target.value)}
               placeholder="Ex: Distribuidora XYZ"
             />
           </div>
         </div>
         <div className="flex items-center justify-between p-5 border-t border-gray-100">
           {onDelete ? (
-            <button onClick={onDelete} className="text-sm text-red-500 hover:text-red-600">
-              Excluir produto
-            </button>
+            <button onClick={onDelete} className="text-sm text-red-500 hover:text-red-600">Excluir produto</button>
           ) : <div />}
           <div className="flex gap-2">
-            <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-              Cancelar
-            </button>
+            <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Cancelar</button>
             <button
               onClick={() => onSave(form)}
               disabled={!form.nome.trim() || saving}
@@ -338,11 +329,8 @@ function ModalMovimento({ initial, saving, onSave, onClose }) {
               { value: 'entrada', label: '+ Entrada', active: 'bg-green-500 text-white', idle: 'bg-gray-100 text-gray-600 hover:bg-gray-200' },
               { value: 'saida',   label: '− Saída',   active: 'bg-orange-500 text-white', idle: 'bg-gray-100 text-gray-600 hover:bg-gray-200' },
             ].map(t => (
-              <button
-                key={t.value}
-                onClick={() => set('tipo', t.value)}
-                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${form.tipo === t.value ? t.active : t.idle}`}
-              >
+              <button key={t.value} onClick={() => set('tipo', t.value)}
+                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${form.tipo === t.value ? t.active : t.idle}`}>
                 {t.label}
               </button>
             ))}
@@ -351,32 +339,25 @@ function ModalMovimento({ initial, saving, onSave, onClose }) {
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Quantidade *</label>
               <input
-                type="number" min="0.01" step="0.01"
+                type="number" min="0.01" step="0.01" autoFocus
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
-                value={form.quantidade}
-                onChange={e => set('quantidade', e.target.value)}
-                placeholder="0"
-                autoFocus
+                value={form.quantidade} onChange={e => set('quantidade', e.target.value)} placeholder="0"
               />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Data *</label>
-              <input
-                type="date"
+              <input type="date"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
-                value={form.data}
-                onChange={e => set('data', e.target.value)}
+                value={form.data} onChange={e => set('data', e.target.value)}
               />
             </div>
           </div>
           {form.tipo === 'entrada' && (
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Data de validade</label>
-              <input
-                type="date"
+              <input type="date"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
-                value={form.validade || ''}
-                onChange={e => set('validade', e.target.value)}
+                value={form.validade || ''} onChange={e => set('validade', e.target.value)}
               />
             </div>
           )}
@@ -384,16 +365,12 @@ function ModalMovimento({ initial, saving, onSave, onClose }) {
             <label className="block text-xs font-medium text-gray-500 mb-1">Observação</label>
             <input
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
-              value={form.observacao || ''}
-              onChange={e => set('observacao', e.target.value)}
-              placeholder="Opcional"
+              value={form.observacao || ''} onChange={e => set('observacao', e.target.value)} placeholder="Opcional"
             />
           </div>
         </div>
         <div className="flex items-center justify-end gap-2 p-5 border-t border-gray-100">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-            Cancelar
-          </button>
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Cancelar</button>
           <button
             onClick={() => onSave(form)}
             disabled={!form.quantidade || saving}
