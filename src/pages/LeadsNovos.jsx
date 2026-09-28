@@ -523,6 +523,7 @@ export default function LeadsNovos() {
   const [busca, setBusca] = useState('')
   const [filtroOrigem, setFiltroOrigem] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(null)
+  const [bannerDupDismissed, setBannerDupDismissed] = useState(false)
   const [visao, setVisao] = useState('lista')
   const [dragOver, setDragOver] = useState(null)
   const [ordem, setOrdem] = useState('desc')
@@ -931,7 +932,7 @@ export default function LeadsNovos() {
       </div>
 
       {/* Banner duplicatas */}
-      {gruposDuplicatas.length > 0 && (
+      {gruposDuplicatas.length > 0 && !bannerDupDismissed && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="text-amber-500 text-lg">⚠️</span>
@@ -967,6 +968,9 @@ export default function LeadsNovos() {
               {importando ? 'Resolvendo...' : '✓ Resolver todas'}
             </button>
           </div>
+          <button onClick={() => setBannerDupDismissed(true)} className="text-amber-400 hover:text-amber-600 flex-shrink-0 ml-1" title="Fechar">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
         </div>
       )}
 
