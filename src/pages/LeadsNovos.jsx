@@ -523,7 +523,16 @@ export default function LeadsNovos() {
   const [busca, setBusca] = useState('')
   const [filtroOrigem, setFiltroOrigem] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(null)
+  const dupFingerprint = useMemo(() =>
+    gruposDuplicatas.flatMap(g => g.map(l => normTelGlobal(l.telefone))).sort().join(',')
+  , [gruposDuplicatas])
   const [bannerDupDismissed, setBannerDupDismissed] = useState(false)
+  useEffect(() => {
+    if (dupFingerprint && localStorage.getItem('dup_dismissed') === dupFingerprint)
+      setBannerDupDismissed(true)
+    else
+      setBannerDupDismissed(false)
+  }, [dupFingerprint])
   const [visao, setVisao] = useState('lista')
   const [dragOver, setDragOver] = useState(null)
   const [ordem, setOrdem] = useState('desc')
@@ -968,7 +977,7 @@ export default function LeadsNovos() {
               {importando ? 'Resolvendo...' : '✓ Resolver todas'}
             </button>
           </div>
-          <button onClick={() => setBannerDupDismissed(true)} className="text-amber-400 hover:text-amber-600 flex-shrink-0 ml-1" title="Fechar">
+          <button onClick={() => { localStorage.setItem('dup_dismissed', dupFingerprint); setBannerDupDismissed(true) }} className="text-amber-400 hover:text-amber-600 flex-shrink-0 ml-1" title="Fechar">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
