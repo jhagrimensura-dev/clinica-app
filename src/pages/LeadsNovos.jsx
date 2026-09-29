@@ -523,16 +523,7 @@ export default function LeadsNovos() {
   const [busca, setBusca] = useState('')
   const [filtroOrigem, setFiltroOrigem] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(null)
-  const dupFingerprint = useMemo(() =>
-    gruposDuplicatas.flatMap(g => g.map(l => normTelGlobal(l.telefone))).sort().join(',')
-  , [gruposDuplicatas])
   const [bannerDupDismissed, setBannerDupDismissed] = useState(false)
-  useEffect(() => {
-    if (dupFingerprint && localStorage.getItem('dup_dismissed') === dupFingerprint)
-      setBannerDupDismissed(true)
-    else
-      setBannerDupDismissed(false)
-  }, [dupFingerprint])
   const [visao, setVisao] = useState('lista')
   const [dragOver, setDragOver] = useState(null)
   const [ordem, setOrdem] = useState('desc')
@@ -753,6 +744,16 @@ export default function LeadsNovos() {
   }, [todosLeads])
 
   const telesDuplicados = useMemo(() => new Set(gruposDuplicatas.flat().map(l => normTelGlobal(l.telefone))), [gruposDuplicatas])
+
+  const dupFingerprint = useMemo(() =>
+    gruposDuplicatas.flatMap(g => g.map(l => normTelGlobal(l.telefone))).sort().join(',')
+  , [gruposDuplicatas])
+  useEffect(() => {
+    if (dupFingerprint && localStorage.getItem('dup_dismissed') === dupFingerprint)
+      setBannerDupDismissed(true)
+    else
+      setBannerDupDismissed(false)
+  }, [dupFingerprint])
 
   const isDuplicata = (lead) => {
     const tel = normTelGlobal(lead.telefone)
