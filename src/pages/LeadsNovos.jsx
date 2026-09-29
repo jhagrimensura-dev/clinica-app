@@ -835,7 +835,16 @@ export default function LeadsNovos() {
     perdido:     leads.filter(l => l.status === 'perdido').length,
   }
 
-  const leadsAgendadosMes = leads.filter(l => l.status === 'agendado' || l.status === 'fechado')
+  const leadsAgendadosMes = (() => {
+    const filtered = leads.filter(l => l.status === 'agendado' || l.status === 'fechado')
+    const seen = new Set()
+    return filtered.filter(l => {
+      const key = (l.telefone ? l.telefone.replace(/\D/g, '').slice(-8) : '') || l.nome?.toLowerCase().trim() || l.id
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+  })()
 
   const convPorFollow = leadsAgendadosMes.reduce((acc, lead) => {
     const stage = lead.ultimoFollow || null
