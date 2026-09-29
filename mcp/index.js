@@ -195,6 +195,13 @@ function prefixMes(ano, mes) {
   return `${ano}-${String(mes).padStart(2, '0')}`
 }
 
+function rangesMes(ano, mes) {
+  const ini = `${prefixMes(ano, mes)}-01`
+  const proxMes = mes === 12 ? { ano: ano + 1, mes: 1 } : { ano, mes: mes + 1 }
+  const fim = `${prefixMes(proxMes.ano, proxMes.mes)}-01`
+  return { ini, fim }
+}
+
 function ok(obj) {
   return { content: [{ type: 'text', text: JSON.stringify(obj, null, 2) }] }
 }
@@ -227,15 +234,16 @@ server.tool(
     const a = ano ?? anoAtual
     const m = mes ?? mesAtualNum
     const prefix = prefixMes(a, m)
+    const { ini, fim } = rangesMes(a, m)
 
     const [
       { data: lancamentos },
       { data: agendamentos },
       { data: planilha },
     ] = await Promise.all([
-      supabase.from('lancamentos').select('tipo, valor_tratamento, valor_taxa, data, procedimentos').eq('clinica_id', clinicaId).like('data', `${prefix}%`),
-      supabase.from('agendamentos').select('id, status, date').eq('clinica_id', clinicaId).like('date', `${prefix}%`),
-      supabase.from('planilha_leads').select('agendou, compareceu, vendeu, valor_procedimento').eq('clinica_id', clinicaId).like('data', `${prefix}%`),
+      supabase.from('lancamentos').select('tipo, valor_tratamento, valor_taxa, data, procedimentos').eq('clinica_id', clinicaId).gte('data', ini).lt('data', fim),
+      supabase.from('agendamentos').select('id, status, date').eq('clinica_id', clinicaId).gte('date', ini).lt('date', fim),
+      supabase.from('planilha_leads').select('agendou, compareceu, vendeu, valor_procedimento').eq('clinica_id', clinicaId).gte('data', ini).lt('data', fim),
     ])
 
     // Faturamento
@@ -382,12 +390,14 @@ server.tool(
     const a = ano ?? anoAtual
     const m = mes ?? mesAtualNum
     const prefix = prefixMes(a, m)
+    const { ini: iniF, fim: fimF } = rangesMes(a, m)
 
     const { data: lancamentos } = await supabase
       .from('lancamentos')
       .select('tipo, procedimentos, valor_tratamento, valor_taxa, data, paciente, responsavel')
       .eq('clinica_id', clinicaId)
-      .like('data', `${prefix}%`)
+      .gte('data', iniF)
+      .lt('data', fimF)
       .order('data', { ascending: false })
 
     const items = lancamentos || []
@@ -496,13 +506,14 @@ server.tool(
     const { ano: anoAtual, mes: mesAtualNum } = mesAtual()
     const a = ano ?? anoAtual
     const m = mes ?? mesAtualNum
-    const prefix = prefixMes(a, m)
+    const { ini: iniO, fim: fimO } = rangesMes(a, m)
 
     const { data: planilha } = await supabase
       .from('planilha_leads')
       .select('origem, criativo, agendou, vendeu, valor_procedimento')
       .eq('clinica_id', clinicaId)
-      .like('data', `${prefix}%`)
+      .gte('data', iniO)
+      .lt('data', fimO)
 
     const porOrigem = {}
     for (const l of planilha || []) {
@@ -630,10 +641,10 @@ server.tool(
     }
 
     const resultados = await Promise.all(meses.map(async ({ ano, mes }) => {
-      const prefix = prefixMes(ano, mes)
+      const { ini: iniP, fim: fimP } = rangesMes(ano, mes)
       const [{ data: lanc }, { data: pl }] = await Promise.all([
-        supabase.from('lancamentos').select('tipo, valor_tratamento, valor_taxa').eq('clinica_id', clinicaId).like('data', `${prefix}%`),
-        supabase.from('planilha_leads').select('agendou, vendeu, valor_procedimento').eq('clinica_id', clinicaId).like('data', `${prefix}%`),
+        supabase.from('lancamentos').select('tipo, valor_tratamento, valor_taxa').eq('clinica_id', clinicaId).gte('data', iniP).lt('data', fimP),
+        supabase.from('planilha_leads').select('agendou, vendeu, valor_procedimento').eq('clinica_id', clinicaId).gte('data', iniP).lt('data', fimP),
       ])
 
       const procs = (lanc || []).filter(l => l.tipo !== 'consulta')
