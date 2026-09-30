@@ -96,11 +96,17 @@ export default function Dashboard() {
     try {
       const res = await fetch('/api/sync-planilha')
       const data = await res.json()
-      if (data.ok) setSyncMsg(`✓ ${data.resultado.novos} novos · ${data.resultado.followup} follow-ups · ${data.resultado.recorrentes} recorrentes`)
-      else setSyncMsg('Erro ao sincronizar')
-    } catch { setSyncMsg('Erro ao sincronizar') }
-    setSincronizando(false)
-    setTimeout(() => setSyncMsg(null), 6000)
+      if (data.ok) {
+        setSyncMsg(`✓ ${data.resultado.novos} novos · ${data.resultado.followup} follow-ups · ${data.resultado.recorrentes} recorrentes`)
+        setTimeout(() => window.location.reload(), 1500)
+      } else {
+        setSyncMsg('Erro ao sincronizar')
+        setSincronizando(false)
+      }
+    } catch {
+      setSyncMsg('Erro ao sincronizar')
+      setSincronizando(false)
+    }
   }
 
   return (
