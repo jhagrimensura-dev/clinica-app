@@ -68,18 +68,16 @@ export default function Dashboard() {
     ? (((fuAgendado + fuVendido) / leadsFollowUp.length) * 100).toFixed(1)
     : '0.0'
 
-  // Consultas pagas = clientes que de fato compareceram (fonte verdadeira para CAC e conversão geral)
-  const totalAgendReal = countConsultas
-
   // CAC só conta novos clientes via tráfego pago — exclui Indicação, Novo Follow e Recorrência
   const cacClientes = lConsultas.filter(l => l.tipo === 'Novo').length
 
-  // Agendados = consultas lançadas no Faturamento (fonte verdadeira, alinhada com Taxa de Conversão)
+  // Agendados = consultas lançadas no Faturamento filtradas por tipo (fonte verdadeira)
   const agendadosNovos = lConsultas.filter(l => l.tipo === 'Novo').length
   const agendadosIndicacao = lConsultas.filter(l => l.tipo === 'Indicação').length
   const totalAgendNovos = agendadosNovos + agendadosIndicacao
 
-  const convComercial = totalLeads > 0 ? ((totalAgendReal / totalLeads) * 100).toFixed(1) : '0.0'
+  // Taxa geral: só novos + indicação (não conta Recorrência nem outros tipos)
+  const convComercial = totalLeads > 0 ? ((totalAgendNovos / totalLeads) * 100).toFixed(1) : '0.0'
   const convNovos = (leadsNovosReais + leadsIndicacao.length) > 0 ? ((totalAgendNovos / (leadsNovosReais + leadsIndicacao.length)) * 100).toFixed(1) : '0.0'
   const convRecorrencia = leadsRecorrentes.length > 0 ? ((agendRecorrentes / leadsRecorrentes.length) * 100).toFixed(1) : '0.0'
 
