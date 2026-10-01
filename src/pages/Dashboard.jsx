@@ -75,9 +75,9 @@ export default function Dashboard() {
   const cacClientes = lConsultas.filter(l => l.tipo === 'Novo').length
 
   // Agendados = consultas lançadas no Faturamento (fonte verdadeira, alinhada com Taxa de Conversão)
-  const totalAgendNovos = countConsultas
   const agendadosNovos = lConsultas.filter(l => l.tipo === 'Novo').length
   const agendadosIndicacao = lConsultas.filter(l => l.tipo === 'Indicação').length
+  const totalAgendNovos = agendadosNovos + agendadosIndicacao
 
   const convComercial = totalLeads > 0 ? ((totalAgendReal / totalLeads) * 100).toFixed(1) : '0.0'
   const convNovos = (leadsNovosReais + leadsIndicacao.length) > 0 ? ((totalAgendNovos / (leadsNovosReais + leadsIndicacao.length)) * 100).toFixed(1) : '0.0'
