@@ -348,8 +348,11 @@ export default function PlanilhaFollowUp() {
       .order('data_followup', { ascending: true })
       .order('criado_em', { ascending: true })
     if (error) { console.error(error); setLoading(false); return }
-    setRows(data || [])
+    const fetched = data || []
+    setRows(fetched)
     setLoading(false)
+    // Backfill rows that exist in planilha_followup but not yet in leads
+    if (fetched.length > 0) syncBatchToLeads(fetched, clinicaId)
   }, [clinicaId, monthStart, nextMonth])
 
   useEffect(() => { fetchRows() }, [fetchRows])
@@ -390,7 +393,9 @@ export default function PlanilhaFollowUp() {
     const { error } = await supabase
       .from('planilha_followup').update({ [col]: dbVal }).eq('id', rowId)
     if (error) console.error('saveCell error:', error)
-  }, [])
+    const currentRow = rowsRef.current.find(r => r.id === rowId)
+    if (currentRow) syncRowData({ ...currentRow, [col]: value }, clinicaId)
+  }, [clinicaId])
 
   const toggleBool = useCallback((rowId, col) => {
     setRows(prev => {
