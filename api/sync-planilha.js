@@ -147,10 +147,32 @@ export default async function handler(req, res) {
         valor: parseMoney(cols[8]), procedimento: cols[9] || '', observacao: cols[10] || '',
       })
     }
+    // Apaga leads órfãos de followup do mês
+    const { data: fuAntes } = await supabase.from('planilha_followup').select('id').eq('clinica_id', clinicaId).gte('data_followup', iniMes).lt('data_followup', fimMes)
+    if (fuAntes?.length) {
+      const idsFU = fuAntes.map(r => r.id)
+      for (let i = 0; i < idsFU.length; i += 50)
+        await supabase.from('leads').delete().in('id', idsFU.slice(i, i + 50))
+    }
     await supabase.from('planilha_followup').delete().eq('clinica_id', clinicaId).gte('data_followup', iniMes).lt('data_followup', fimMes)
     for (let i = 0; i < rowsFU.length; i += 25) {
       const { error } = await supabase.from('planilha_followup').insert(rowsFU.slice(i, i + 25))
       if (error) throw new Error(`planilha_followup: ${error.message}`)
+    }
+    // Sincroniza followup → leads
+    const leadsFollowup = rowsFU.filter(r => r.nome?.trim()).map(r => {
+      const status = r.vendeu ? 'fechado' : r.agendou ? 'agendado' : r.respondeu ? 'conversando' : 'em_aberto'
+      return {
+        id: r.id, clinica_id: clinicaId, nome: r.nome, telefone: r.telefone || '',
+        origem: 'leads_followup', origem_custom: r.origem || '',
+        data: r.data_followup || '', data_origem: '',
+        status, obs: r.observacao || '', midia: r.origem || null,
+        responsavel: '', fonte: '', agendado_para: null, proximo_followup: '',
+      }
+    })
+    for (let i = 0; i < leadsFollowup.length; i += 25) {
+      const { error } = await supabase.from('leads').upsert(leadsFollowup.slice(i, i + 25), { onConflict: 'id' })
+      if (error) throw new Error(`leads followup: ${error.message}`)
     }
     resultado.followup = rowsFU.length
 
