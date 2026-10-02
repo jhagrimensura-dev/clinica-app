@@ -56,7 +56,7 @@ export default function Dashboard() {
     return String(l.fonte || '').toLowerCase().includes('follow') || String(l.origemCustom || '').toLowerCase().includes('follow')
   }
   const leadsNovosReais = leadsNovos.filter(l => !isFollowLead(l)).length
-  const agendRecorrentes = countRecorrentes
+  const agendRecorrentes = leadsRecorrentes.filter(l => l.status === 'agendado' || l.status === 'fechado').length
 
   // Leads Follow Up (nova página dedicada)
   const leadsFollowUp = getLeadsPorOrigem('leads_followup', ano, mes)
