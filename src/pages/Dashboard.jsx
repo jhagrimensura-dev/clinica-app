@@ -94,7 +94,7 @@ export default function Dashboard() {
     setSincronizando(true)
     setSyncMsg(null)
     try {
-      const res = await fetch('/api/sync-planilha')
+      const res = await fetch(`/api/sync-planilha?mes=${mes + 1}&ano=${ano}`)
       const data = await res.json()
       if (data.ok) {
         setSyncMsg(`✓ ${data.resultado.novos} novos · ${data.resultado.followup} follow-ups · ${data.resultado.recorrentes} recorrentes`)

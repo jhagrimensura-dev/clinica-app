@@ -61,7 +61,8 @@ export default async function handler(req, res) {
   // Vercel cron injeta o header Authorization automaticamente
   const authHeader = req.headers['authorization']
   const cronSecret = process.env.CRON_SECRET
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  // Bloqueia apenas se o header estiver presente e errado (permite chamadas sem auth do Dashboard)
+  if (cronSecret && authHeader && authHeader !== `Bearer ${cronSecret}`) {
     return res.status(401).json({ error: 'Unauthorized' })
   }
 
@@ -78,10 +79,10 @@ export default async function handler(req, res) {
   }
   if (!clinicaId) return res.status(500).json({ error: 'clinica_id não encontrado' })
 
-  // Mês atual (Brasília = UTC-3)
+  // Mês/ano: usa query params se fornecidos, senão mês atual (Brasília = UTC-3)
   const agora = new Date(Date.now() - 3 * 60 * 60 * 1000)
-  const ano = agora.getUTCFullYear()
-  const mes = agora.getUTCMonth() + 1
+  const ano = parseInt(req.query?.ano) || agora.getUTCFullYear()
+  const mes = parseInt(req.query?.mes) || (agora.getUTCMonth() + 1)
   const prefix = `${ano}-${String(mes).padStart(2, '0')}`
   const iniMes = `${prefix}-01`
   const nextMes = mes === 12 ? `${ano + 1}-01` : `${ano}-${String(mes + 1).padStart(2, '0')}`
