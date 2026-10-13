@@ -26,7 +26,7 @@ export default function Dashboard() {
       ? `${ano + 1}-01-01`
       : `${ano}-${String(mes + 2).padStart(2, '0')}-01`
     supabase.from('planilha_leads')
-      .select('origem, agendou, compareceu, vendeu')
+      .select('nome, origem, agendou, compareceu, vendeu')
       .eq('clinica_id', clinicaId)
       .gte('data', monthStart)
       .lt('data', nextMonth)
@@ -211,10 +211,26 @@ export default function Dashboard() {
             <p className="text-sm text-gray-500 font-medium">Conversão na Cadeira</p>
             <span className="text-brand-400 text-lg">💺</span>
           </div>
-          <p className={`text-3xl font-bold mb-3 ${cadeiraCompareceu > 0 && cadeiraVendeu / cadeiraCompareceu >= 0.5 ? 'text-green-600' : cadeiraCompareceu > 0 ? 'text-orange-500' : 'text-gray-300'}`}>
+          <p className={`text-3xl font-bold mb-1 ${cadeiraCompareceu > 0 && cadeiraVendeu / cadeiraCompareceu >= 0.5 ? 'text-green-600' : cadeiraCompareceu > 0 ? 'text-orange-500' : 'text-gray-300'}`}>
             {convCadeira}
           </p>
-          <p className="text-sm text-gray-400">{cadeiraVendeu} vendas de {cadeiraCompareceu} que vieram</p>
+          <p className="text-xs text-gray-400 mb-3">{cadeiraVendeu} vendas de {cadeiraCompareceu} que vieram</p>
+          {cadeiraCompareceu > 0 && (
+            <div className="space-y-2 pt-2 border-t border-gray-100">
+              {planilhaRows.filter(r => r.compareceu && r.vendeu).map((r, i) => (
+                <div key={i} className="flex items-center gap-1.5">
+                  <span className="text-green-500 text-xs">✓</span>
+                  <span className="text-xs text-gray-700 truncate">{r.nome}</span>
+                </div>
+              ))}
+              {planilhaRows.filter(r => r.compareceu && !r.vendeu).map((r, i) => (
+                <div key={i} className="flex items-center gap-1.5">
+                  <span className="text-red-400 text-xs">✗</span>
+                  <span className="text-xs text-gray-400 truncate">{r.nome}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
