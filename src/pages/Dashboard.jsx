@@ -4,6 +4,8 @@ import { useVendas } from '../context/VendasContext'
 import { useFinanceiro } from '../context/FinanceiroContext'
 import { useLeads } from '../context/LeadsContext'
 import { useSocial } from '../context/SocialContext'
+import { useAuth } from '../context/AuthContext'
+import { supabase } from '../lib/supabase'
 
 export default function Dashboard() {
   const { metaValor, diasAtendimento, metaDiaria, posts } = useClinica()
@@ -11,8 +13,26 @@ export default function Dashboard() {
   const { mes, ano, MESES } = useFinanceiro()
   const { leads, getLeadsPorOrigem } = useLeads()
   const { getMes, carregarMes } = useSocial()
+  const { clinicaId } = useAuth()
+
+  const [planilhaAgendados, setPlanilhaAgendados] = useState([])
 
   useEffect(() => { carregarMes(ano, mes) }, [ano, mes])
+
+  useEffect(() => {
+    if (!clinicaId) return
+    const monthStart = `${ano}-${String(mes + 1).padStart(2, '0')}-01`
+    const nextMonth = mes === 11
+      ? `${ano + 1}-01-01`
+      : `${ano}-${String(mes + 2).padStart(2, '0')}-01`
+    supabase.from('planilha_leads')
+      .select('origem')
+      .eq('clinica_id', clinicaId)
+      .eq('agendou', true)
+      .gte('data', monthStart)
+      .lt('data', nextMonth)
+      .then(({ data }) => setPlanilhaAgendados(data || []))
+  }, [clinicaId, mes, ano])
 
   const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
@@ -71,10 +91,10 @@ export default function Dashboard() {
   // CAC só conta novos clientes via tráfego pago — exclui Indicação, Novo Follow e Recorrência
   const cacClientes = lConsultas.filter(l => l.tipo === 'Novo').length
 
-  // Agendados = consultas lançadas no Faturamento filtradas por tipo (fonte verdadeira)
-  const agendadosNovos = lConsultas.filter(l => l.tipo === 'Novo').length
-  const agendadosIndicacao = lConsultas.filter(l => l.tipo === 'Indicação').length
-  const totalAgendNovos = agendadosNovos + agendadosIndicacao
+  // Agendados = planilha_leads.agendou = true (fonte verdadeira — quem marcou consulta)
+  const agendadosNovos = planilhaAgendados.filter(r => r.origem !== 'Indicação').length
+  const agendadosIndicacao = planilhaAgendados.filter(r => r.origem === 'Indicação').length
+  const totalAgendNovos = planilhaAgendados.length
 
   // Taxa geral: só novos + indicação (não conta Recorrência nem outros tipos)
   const convComercial = totalLeads > 0 ? ((totalAgendNovos / totalLeads) * 100).toFixed(1) : '0.0'
