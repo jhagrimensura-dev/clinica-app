@@ -661,10 +661,10 @@ export default function PlanilhaLeads() {
             <p className="text-sm text-gray-500 font-medium">Taxa de Conversão</p>
             <span className="text-lg">📈</span>
           </div>
-          <p className={`text-3xl font-bold ${total > 0 && vendeuCount / total >= 0.1 ? 'text-green-600' : 'text-red-500'}`}>
-            {total > 0 ? `${((vendeuCount / total) * 100).toFixed(1)}%` : '0.0%'}
+          <p className={`text-3xl font-bold ${total > 0 && agendouCount / total >= 0.1 ? 'text-green-600' : 'text-red-500'}`}>
+            {total > 0 ? `${((agendouCount / total) * 100).toFixed(1)}%` : '0.0%'}
           </p>
-          <p className="text-xs text-gray-400 mt-1">{vendeuCount} vendas · R$ {valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+          <p className="text-xs text-gray-400 mt-1">{agendouCount} agendados · {vendeuCount} vendas</p>
         </div>
 
         <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
