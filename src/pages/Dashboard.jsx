@@ -96,9 +96,9 @@ export default function Dashboard() {
   const agendadosIndicacao = planilhaAgendados.filter(r => r.origem === 'Indicação').length
   const totalAgendNovos = planilhaAgendados.length
 
-  // Conversão na cadeira = Faturamento: consultas (compareceu) vs procedimentos (vendeu) — Novo + Indicação
-  const cadeiraCompareceu = lConsultas.filter(l => l.tipo === 'Novo' || l.tipo === 'Indicação').length
-  const cadeiraVendeu = countNovos + countIndicacaoLanc
+  // Conversão na cadeira = planilha_leads: compareceu e vendeu
+  const cadeiraCompareceu = planilhaRows.filter(r => r.compareceu).length
+  const cadeiraVendeu = planilhaRows.filter(r => r.vendeu).length
   const convCadeira = cadeiraCompareceu > 0
     ? `${((cadeiraVendeu / cadeiraCompareceu) * 100).toFixed(0)}%`
     : '—'
@@ -211,7 +211,7 @@ export default function Dashboard() {
             <p className="text-sm text-gray-500 font-medium">Conversão na Cadeira</p>
             <span className="text-brand-400 text-lg">💺</span>
           </div>
-          <p className={`text-3xl font-bold mb-3 ${cadeiraCompareceu > 0 && cadeiraVendeu / cadeiraCompareceu >= 0.5 ? 'text-green-600' : cadeiraCompareceu > 0 ? 'text-orange-500' : 'text-gray-400'}`}>
+          <p className={`text-3xl font-bold mb-3 ${cadeiraCompareceu > 0 && cadeiraVendeu / cadeiraCompareceu >= 0.5 ? 'text-green-600' : cadeiraCompareceu > 0 ? 'text-orange-500' : 'text-gray-300'}`}>
             {convCadeira}
           </p>
           <p className="text-sm text-gray-400">{cadeiraVendeu} vendas de {cadeiraCompareceu} que vieram</p>
