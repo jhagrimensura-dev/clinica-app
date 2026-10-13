@@ -90,15 +90,17 @@ export default function Dashboard() {
   // CAC só conta novos clientes via tráfego pago — exclui Indicação, Novo Follow e Recorrência
   const cacClientes = lConsultas.filter(l => l.tipo === 'Novo').length
 
-  // Agendados/Compareceu/Vendeu = planilha_leads (fonte verdadeira)
+  // Agendados = planilha_leads.agendou (quem marcou consulta)
   const planilhaAgendados = planilhaRows.filter(r => r.agendou)
-  const planilhaCompareceu = planilhaRows.filter(r => r.compareceu).length
-  const planilhaVendeu = planilhaRows.filter(r => r.vendeu).length
   const agendadosNovos = planilhaAgendados.filter(r => r.origem !== 'Indicação').length
   const agendadosIndicacao = planilhaAgendados.filter(r => r.origem === 'Indicação').length
   const totalAgendNovos = planilhaAgendados.length
-  const convCadeira = planilhaCompareceu > 0
-    ? `${((planilhaVendeu / planilhaCompareceu) * 100).toFixed(0)}%`
+
+  // Conversão na cadeira = Faturamento: consultas (compareceu) vs procedimentos (vendeu) — Novo + Indicação
+  const cadeiraCompareceu = lConsultas.filter(l => l.tipo === 'Novo' || l.tipo === 'Indicação').length
+  const cadeiraVendeu = countNovos + countIndicacaoLanc
+  const convCadeira = cadeiraCompareceu > 0
+    ? `${((cadeiraVendeu / cadeiraCompareceu) * 100).toFixed(0)}%`
     : '—'
 
   // Taxa geral: só novos + indicação (não conta Recorrência nem outros tipos)
@@ -209,10 +211,10 @@ export default function Dashboard() {
             <p className="text-sm text-gray-500 font-medium">Conversão na Cadeira</p>
             <span className="text-brand-400 text-lg">💺</span>
           </div>
-          <p className={`text-3xl font-bold mb-3 ${planilhaCompareceu > 0 && planilhaVendeu / planilhaCompareceu >= 0.5 ? 'text-green-600' : planilhaCompareceu > 0 ? 'text-orange-500' : 'text-gray-400'}`}>
+          <p className={`text-3xl font-bold mb-3 ${cadeiraCompareceu > 0 && cadeiraVendeu / cadeiraCompareceu >= 0.5 ? 'text-green-600' : cadeiraCompareceu > 0 ? 'text-orange-500' : 'text-gray-400'}`}>
             {convCadeira}
           </p>
-          <p className="text-sm text-gray-400">{planilhaVendeu} vendas de {planilhaCompareceu} que vieram</p>
+          <p className="text-sm text-gray-400">{cadeiraVendeu} vendas de {cadeiraCompareceu} que vieram</p>
         </div>
       </div>
 
