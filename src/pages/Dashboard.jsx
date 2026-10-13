@@ -15,7 +15,7 @@ export default function Dashboard() {
   const { getMes, carregarMes } = useSocial()
   const { clinicaId } = useAuth()
 
-  const [planilhaAgendados, setPlanilhaAgendados] = useState([])
+  const [planilhaRows, setPlanilhaRows] = useState([])
 
   useEffect(() => { carregarMes(ano, mes) }, [ano, mes])
 
@@ -26,12 +26,11 @@ export default function Dashboard() {
       ? `${ano + 1}-01-01`
       : `${ano}-${String(mes + 2).padStart(2, '0')}-01`
     supabase.from('planilha_leads')
-      .select('origem')
+      .select('origem, agendou, compareceu, vendeu')
       .eq('clinica_id', clinicaId)
-      .eq('agendou', true)
       .gte('data', monthStart)
       .lt('data', nextMonth)
-      .then(({ data }) => setPlanilhaAgendados(data || []))
+      .then(({ data }) => setPlanilhaRows(data || []))
   }, [clinicaId, mes, ano])
 
   const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -91,10 +90,16 @@ export default function Dashboard() {
   // CAC só conta novos clientes via tráfego pago — exclui Indicação, Novo Follow e Recorrência
   const cacClientes = lConsultas.filter(l => l.tipo === 'Novo').length
 
-  // Agendados = planilha_leads.agendou = true (fonte verdadeira — quem marcou consulta)
+  // Agendados/Compareceu/Vendeu = planilha_leads (fonte verdadeira)
+  const planilhaAgendados = planilhaRows.filter(r => r.agendou)
+  const planilhaCompareceu = planilhaRows.filter(r => r.compareceu).length
+  const planilhaVendeu = planilhaRows.filter(r => r.vendeu).length
   const agendadosNovos = planilhaAgendados.filter(r => r.origem !== 'Indicação').length
   const agendadosIndicacao = planilhaAgendados.filter(r => r.origem === 'Indicação').length
   const totalAgendNovos = planilhaAgendados.length
+  const convCadeira = planilhaCompareceu > 0
+    ? `${((planilhaVendeu / planilhaCompareceu) * 100).toFixed(0)}%`
+    : '—'
 
   // Taxa geral: só novos + indicação (não conta Recorrência nem outros tipos)
   const convComercial = totalLeads > 0 ? ((totalAgendNovos / totalLeads) * 100).toFixed(1) : '0.0'
@@ -149,7 +154,7 @@ export default function Dashboard() {
       </div>
 
       {/* LINHA 1 */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex justify-between items-start mb-1">
             <p className="text-sm text-gray-500 font-medium">Faturamento Total</p>
@@ -197,6 +202,17 @@ export default function Dashboard() {
           </div>
           <p className="text-3xl font-bold text-gray-900 mb-3">{lMesSemConsulta.length}</p>
           <p className="text-sm text-gray-400">{countNovos} novos · {countRecorrentes} recorrentes</p>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+          <div className="flex justify-between items-start mb-1">
+            <p className="text-sm text-gray-500 font-medium">Conversão na Cadeira</p>
+            <span className="text-brand-400 text-lg">💺</span>
+          </div>
+          <p className={`text-3xl font-bold mb-3 ${planilhaCompareceu > 0 && planilhaVendeu / planilhaCompareceu >= 0.5 ? 'text-green-600' : planilhaCompareceu > 0 ? 'text-orange-500' : 'text-gray-400'}`}>
+            {convCadeira}
+          </p>
+          <p className="text-sm text-gray-400">{planilhaVendeu} vendas de {planilhaCompareceu} que vieram</p>
         </div>
       </div>
 
