@@ -75,6 +75,7 @@ const COLS = [
   { key: 'agendou',            label: 'Agendou',      type: 'bool'     },
   { key: 'compareceu',         label: 'Compareceu',   type: 'bool'     },
   { key: 'vendeu',             label: 'Vendeu',       type: 'bool'     },
+  { key: 'reagendado',         label: 'Reagendado',   type: 'bool'     },
   { key: 'consulta',           label: 'Consulta',     type: 'text'     },
   { key: 'valor_procedimento', label: 'Valor (R$)',   type: 'currency' },
   { key: 'follow_up_1',        label: 'Follow Up 1',  type: 'date'     },
@@ -264,6 +265,7 @@ function ModalImport({ clinicaId, ano, mes, onClose, onDone }) {
                       {r.agendou    && <span className="text-blue-600 text-[10px] bg-blue-50 px-1.5 py-0.5 rounded-full font-semibold">Ag</span>}
                       {r.compareceu && <span className="text-orange-600 text-[10px] bg-orange-50 px-1.5 py-0.5 rounded-full font-semibold">Cp</span>}
                       {r.vendeu     && <span className="text-green-600 text-[10px] bg-green-50 px-1.5 py-0.5 rounded-full font-semibold">Vd</span>}
+                      {r.reagendado && <span className="text-purple-600 text-[10px] bg-purple-50 px-1.5 py-0.5 rounded-full font-semibold">Re</span>}
                     </div>
                   </div>
                 ))}
@@ -393,7 +395,7 @@ export default function PlanilhaLeads() {
     const newRow = {
       id, clinica_id: clinicaId,
       data: dataHoje, nome: '', telefone: '', origem: '', criativo: '',
-      agendou: false, compareceu: false, vendeu: false,
+      agendou: false, compareceu: false, vendeu: false, reagendado: false,
       consulta: '', valor_procedimento: null,
       follow_up_1: null, follow_up_2: null, follow_up_3: null,
       follow_up_4: null, follow_up_5: null, observacao: '',

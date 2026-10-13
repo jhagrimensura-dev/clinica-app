@@ -26,7 +26,7 @@ export default function Dashboard() {
       ? `${ano + 1}-01-01`
       : `${ano}-${String(mes + 2).padStart(2, '0')}-01`
     supabase.from('planilha_leads')
-      .select('nome, origem, agendou, compareceu, vendeu')
+      .select('nome, origem, agendou, compareceu, vendeu, reagendado')
       .eq('clinica_id', clinicaId)
       .gte('data', monthStart)
       .lt('data', nextMonth)
@@ -96,8 +96,8 @@ export default function Dashboard() {
   const agendadosIndicacao = planilhaAgendados.filter(r => r.origem === 'Indicação').length
   const totalAgendNovos = planilhaAgendados.length
 
-  // Conversão na cadeira = planilha_leads: compareceu e vendeu
-  const cadeiraCompareceu = planilhaRows.filter(r => r.compareceu).length
+  // Conversão na cadeira = planilha_leads: compareceu e vendeu (reagendados ficam fora do denominador)
+  const cadeiraCompareceu = planilhaRows.filter(r => r.compareceu && !r.reagendado).length
   const cadeiraVendeu = planilhaRows.filter(r => r.vendeu).length
   const convCadeira = cadeiraCompareceu > 0
     ? `${((cadeiraVendeu / cadeiraCompareceu) * 100).toFixed(0)}%`
@@ -215,7 +215,7 @@ export default function Dashboard() {
             {convCadeira}
           </p>
           <p className="text-xs text-gray-400 mb-3">{cadeiraVendeu} vendas de {cadeiraCompareceu} que vieram</p>
-          {cadeiraCompareceu > 0 && (
+          {planilhaRows.some(r => r.compareceu || r.reagendado) && (
             <div className="space-y-2 pt-2 border-t border-gray-100">
               {planilhaRows.filter(r => r.compareceu && r.vendeu).map((r, i) => (
                 <div key={i} className="flex items-center gap-1.5">
@@ -223,10 +223,16 @@ export default function Dashboard() {
                   <span className="text-xs text-gray-700 truncate">{r.nome}</span>
                 </div>
               ))}
-              {planilhaRows.filter(r => r.compareceu && !r.vendeu).map((r, i) => (
+              {planilhaRows.filter(r => r.compareceu && !r.vendeu && !r.reagendado).map((r, i) => (
                 <div key={i} className="flex items-center gap-1.5">
                   <span className="text-red-400 text-xs">✗</span>
                   <span className="text-xs text-gray-400 truncate">{r.nome}</span>
+                </div>
+              ))}
+              {planilhaRows.filter(r => r.reagendado).map((r, i) => (
+                <div key={i} className="flex items-center gap-1.5">
+                  <span className="text-purple-400 text-xs">↻</span>
+                  <span className="text-xs text-purple-400 truncate">{r.nome}</span>
                 </div>
               ))}
             </div>
