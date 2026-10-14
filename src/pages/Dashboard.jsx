@@ -87,12 +87,12 @@ export default function Dashboard() {
     ? (((fuAgendado + fuVendido) / leadsFollowUp.length) * 100).toFixed(1)
     : '0.0'
 
+  // CAC só conta novos clientes via tráfego pago — consultas tipo Novo no Faturamento
+  const cacClientes = lConsultas.filter(l => l.tipo === 'Novo').length
+
   // Agendados = planilha_leads.agendou (quem marcou consulta)
   const planilhaAgendados = planilhaRows.filter(r => r.agendou)
   const agendadosNovos = planilhaAgendados.filter(r => r.origem !== 'Indicação').length
-
-  // CAC usa agendados novos da planilha (mesma fonte do resto)
-  const cacClientes = agendadosNovos
   const agendadosIndicacao = planilhaAgendados.filter(r => r.origem === 'Indicação').length
   const totalAgendNovos = planilhaAgendados.length
 
