@@ -137,13 +137,13 @@ function parseSheetRows(text, clinicaId) {
     // Skip header row and empty rows
     if (!rawDate || !rawDate.match(/\d{1,2}[\/\-]+\d{1,2}[\/\-]+\d{4}/)) continue
 
-    const fu1 = parseFUField(cols[10])
-    const fu2 = parseFUField(cols[11])
-    const fu3 = parseFUField(cols[12])
-    const fu4 = parseFUField(cols[13])
-    const fu5 = parseFUField(cols[14])
+    const fu1 = parseFUField(cols[11])
+    const fu2 = parseFUField(cols[12])
+    const fu3 = parseFUField(cols[13])
+    const fu4 = parseFUField(cols[14])
+    const fu5 = parseFUField(cols[15])
 
-    const obsSheet = cols[15]?.trim() || ''
+    const obsSheet = cols[16]?.trim() || ''
     const extraObs = [fu1.obs, fu2.obs, fu3.obs, fu4.obs, fu5.obs].filter(Boolean).join(' | ')
     const fullObs = [obsSheet, extraObs].filter(Boolean).join(' | ')
 
@@ -158,8 +158,9 @@ function parseSheetRows(text, clinicaId) {
       agendou: (cols[5] || '').trim().toUpperCase() === 'SIM',
       compareceu: (cols[6] || '').trim().toUpperCase() === 'SIM',
       vendeu: (cols[7] || '').trim().toUpperCase() === 'SIM',
-      consulta: cols[8]?.trim() || '',
-      valor_procedimento: parseValue(cols[9]),
+      reagendado: (cols[8] || '').trim().toUpperCase() === 'SIM',
+      consulta: cols[9]?.trim() || '',
+      valor_procedimento: parseValue(cols[10]),
       follow_up_1: fu1.date,
       follow_up_2: fu2.date,
       follow_up_3: fu3.date,
