@@ -216,7 +216,8 @@ export default function Dashboard() {
           </p>
           <p className="text-xs text-gray-400 mb-3">{cadeiraVendeu} vendas de {cadeiraCompareceu} que vieram</p>
           {planilhaRows.some(r => r.compareceu || r.reagendado) && (
-            <div className="space-y-2 pt-2 border-t border-gray-100">
+            <div className="pt-2 border-t border-gray-100">
+            <div className="space-y-2 overflow-y-auto" style={{ maxHeight: '9rem' }}>
               {planilhaRows.filter(r => r.compareceu && r.vendeu).map((r, i) => (
                 <div key={i} className="flex items-center gap-1.5">
                   <span className="text-green-500 text-xs">✓</span>
@@ -235,6 +236,7 @@ export default function Dashboard() {
                   <span className="text-xs text-gray-700 truncate">{r.nome}</span>
                 </div>
               ))}
+            </div>
             </div>
           )}
         </div>
