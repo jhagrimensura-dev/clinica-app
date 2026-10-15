@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 
 export default function Dashboard() {
-  const { metaValor, diasAtendimento, metaDiaria, posts } = useClinica()
+  const { metaValor, diasAtendimento, metaDiaria } = useClinica()
   const { lancamentos } = useVendas()
   const { mes, ano, MESES } = useFinanceiro()
   const { leads, getLeadsPorOrigem } = useLeads()
@@ -98,7 +98,7 @@ export default function Dashboard() {
 
   // Conversão na cadeira = planilha_leads: compareceu e vendeu (reagendados ficam fora do denominador)
   const cadeiraCompareceu = planilhaRows.filter(r => r.compareceu && !r.reagendado).length
-  const cadeiraVendeu = planilhaRows.filter(r => r.vendeu).length
+  const cadeiraVendeu = planilhaRows.filter(r => r.compareceu && r.vendeu).length
   const convCadeira = cadeiraCompareceu > 0
     ? `${((cadeiraVendeu / cadeiraCompareceu) * 100).toFixed(0)}%`
     : '—'
@@ -109,8 +109,6 @@ export default function Dashboard() {
   const convRecorrencia = leadsRecorrentes.length > 0 ? ((agendRecorrentes / leadsRecorrentes.length) * 100).toFixed(1) : '0.0'
 
   const { trafego: trafegoInvestido, seguidores } = getMes(ano, mes)
-  const totalPosts = posts.length
-  const totalImpulsionados = posts.filter(p => p.impulsionado).length
   const custoLead = leadsNovosReais > 0 && trafegoInvestido > 0 ? trafegoInvestido / leadsNovosReais : 0
   const custoPorSeguidor = seguidores > 0 && trafegoInvestido > 0 ? trafegoInvestido / seguidores : 0
 
