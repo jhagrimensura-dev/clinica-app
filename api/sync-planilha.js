@@ -125,6 +125,20 @@ export default async function handler(req, res) {
       const { error } = await supabase.from('planilha_leads').insert(rowsNovos.slice(i, i + 50))
       if (error) throw new Error(`planilha_leads: ${error.message}`)
     }
+    // Sincroniza novos → leads
+    const leadsNovos = rowsNovos.filter(r => r.nome?.trim()).map(r => ({
+      id: r.id, clinica_id: clinicaId,
+      nome: r.nome, telefone: r.telefone || '',
+      origem: r.origem === 'Indicação' ? 'indicacao' : 'leads_novos',
+      origem_custom: '', data: r.data, data_origem: r.data,
+      status: r.agendou ? 'agendado' : 'em_aberto',
+      obs: r.observacao || '', midia: r.origem || null,
+      responsavel: '', fonte: '', agendado_para: null, proximo_followup: '',
+    }))
+    for (let i = 0; i < leadsNovos.length; i += 50) {
+      const { error } = await supabase.from('leads').upsert(leadsNovos.slice(i, i + 50), { onConflict: 'id' })
+      if (error) throw new Error(`leads novos: ${error.message}`)
+    }
     resultado.novos = rowsNovos.length
 
     // ── Follow Up ─────────────────────────────────────────────────────────────
