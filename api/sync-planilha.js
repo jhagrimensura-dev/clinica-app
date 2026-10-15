@@ -105,11 +105,12 @@ export default async function handler(req, res) {
         agendou: (cols[5] || '').toUpperCase() === 'SIM',
         compareceu: (cols[6] || '').toUpperCase() === 'SIM',
         vendeu: (cols[7] || '').toUpperCase() === 'SIM',
-        consulta: cols[8] || '',
-        valor_procedimento: parseMoney(cols[9]),
-        follow_up_1: parseSheetDate(cols[10]), follow_up_2: parseSheetDate(cols[11]),
-        follow_up_3: parseSheetDate(cols[12]), follow_up_4: parseSheetDate(cols[13]),
-        follow_up_5: parseSheetDate(cols[14]), observacao: cols[15] || '',
+        reagendado: (cols[8] || '').toUpperCase() === 'SIM',
+        consulta: cols[9] || '',
+        valor_procedimento: parseMoney(cols[10]),
+        follow_up_1: parseSheetDate(cols[11]), follow_up_2: parseSheetDate(cols[12]),
+        follow_up_3: parseSheetDate(cols[13]), follow_up_4: parseSheetDate(cols[14]),
+        follow_up_5: parseSheetDate(cols[15]), observacao: cols[16] || '',
       })
     }
     // Apaga leads órfãos do mês (que perderam o vínculo com planilha_leads)
