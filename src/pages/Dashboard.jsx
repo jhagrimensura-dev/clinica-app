@@ -231,7 +231,7 @@ export default function Dashboard() {
               ))}
               {planilhaRows.filter(r => r.reagendado && !r.vendeu).map((r, i) => (
                 <div key={i} className="flex items-center gap-1.5">
-                  <span className="text-purple-400 text-xs">↻</span>
+                  <span className="text-green-500 text-xs">↻</span>
                   <span className="text-xs text-gray-700 truncate">{r.nome}</span>
                 </div>
               ))}
