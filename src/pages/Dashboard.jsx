@@ -96,8 +96,10 @@ export default function Dashboard() {
   const agendadosIndicacao = planilhaAgendados.filter(r => r.origem === 'Indicação').length
   const totalAgendNovos = planilhaAgendados.length
 
-  // Conversão na cadeira = planilha_leads: compareceu e vendeu (reagendados ficam fora do denominador)
-  const cadeiraCompareceu = planilhaRows.filter(r => r.compareceu && !r.reagendado).length
+  // Conversão na cadeira:
+  // - reagendado sem venda = ainda indeciso → fora do denominador
+  // - reagendado com venda = converteu, procedimento no próximo mês → conta normalmente
+  const cadeiraCompareceu = planilhaRows.filter(r => r.compareceu && (!r.reagendado || r.vendeu)).length
   const cadeiraVendeu = planilhaRows.filter(r => r.compareceu && r.vendeu).length
   const convCadeira = cadeiraCompareceu > 0
     ? `${((cadeiraVendeu / cadeiraCompareceu) * 100).toFixed(0)}%`
@@ -218,7 +220,7 @@ export default function Dashboard() {
               {planilhaRows.filter(r => r.compareceu && r.vendeu).map((r, i) => (
                 <div key={i} className="flex items-center gap-1.5">
                   <span className="text-green-500 text-xs">✓</span>
-                  <span className="text-xs text-gray-700 truncate">{r.nome}</span>
+                  <span className="text-xs text-gray-700 truncate">{r.nome}{r.reagendado ? ' · out' : ''}</span>
                 </div>
               ))}
               {planilhaRows.filter(r => r.compareceu && !r.vendeu && !r.reagendado).map((r, i) => (
@@ -227,7 +229,7 @@ export default function Dashboard() {
                   <span className="text-xs text-gray-400 truncate">{r.nome}</span>
                 </div>
               ))}
-              {planilhaRows.filter(r => r.reagendado).map((r, i) => (
+              {planilhaRows.filter(r => r.reagendado && !r.vendeu).map((r, i) => (
                 <div key={i} className="flex items-center gap-1.5">
                   <span className="text-purple-400 text-xs">↻</span>
                   <span className="text-xs text-purple-400 truncate">{r.nome}</span>
