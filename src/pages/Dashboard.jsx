@@ -16,6 +16,7 @@ export default function Dashboard() {
   const { clinicaId } = useAuth()
 
   const [planilhaRows, setPlanilhaRows] = useState([])
+  const [followupRows, setFollowupRows] = useState([])
 
   useEffect(() => { carregarMes(ano, mes) }, [ano, mes])
 
@@ -31,6 +32,12 @@ export default function Dashboard() {
       .gte('data', monthStart)
       .lt('data', nextMonth)
       .then(({ data }) => setPlanilhaRows(data || []))
+    supabase.from('planilha_followup')
+      .select('nome, agendou, vendeu')
+      .eq('clinica_id', clinicaId)
+      .gte('data_followup', monthStart)
+      .lt('data_followup', nextMonth)
+      .then(({ data }) => setFollowupRows(data || []))
   }, [clinicaId, mes, ano])
 
   const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -97,22 +104,28 @@ export default function Dashboard() {
   const totalAgendNovos = planilhaAgendados.length
 
   // Conversão na cadeira:
+  // - vendeu=true implica compareceu (se fechou, obviamente veio)
   // - reagendado sem venda = ainda indeciso → fora do denominador
   // - reagendado com venda = converteu, procedimento no próximo mês → conta normalmente
-  const cadeiraCompareceu = planilhaRows.filter(r => r.compareceu && (!r.reagendado || r.vendeu)).length
-  const cadeiraVendeu = planilhaRows.filter(r => r.compareceu && r.vendeu).length
+  // - follow-up: só conta quem vendeu (não há coluna compareceu no followup)
+  const fuCadeira = followupRows.filter(r => r.vendeu)
+  const veioNaCadeira = r => (r.compareceu || r.vendeu) && (!r.reagendado || r.vendeu)
+  const cadeiraCompareceu = planilhaRows.filter(veioNaCadeira).length + fuCadeira.length
+  const cadeiraVendeu = planilhaRows.filter(r => r.vendeu).length + fuCadeira.length
   const convCadeira = cadeiraCompareceu > 0
     ? `${((cadeiraVendeu / cadeiraCompareceu) * 100).toFixed(0)}%`
     : '—'
 
-  // Taxa geral: só novos + indicação (não conta Recorrência nem outros tipos)
-  const convComercial = totalLeads > 0 ? ((totalAgendNovos / totalLeads) * 100).toFixed(1) : '0.0'
+  const totalAgendGeral = totalAgendNovos + fuAgendado + fuVendido
   const convNovos = (leadsNovosReais + leadsIndicacao.length) > 0 ? ((totalAgendNovos / (leadsNovosReais + leadsIndicacao.length)) * 100).toFixed(1) : '0.0'
   const convRecorrencia = leadsRecorrentes.length > 0 ? ((agendRecorrentes / leadsRecorrentes.length) * 100).toFixed(1) : '0.0'
+  // Taxa geral: soma das duas taxas (novos + follow)
+  const convComercial = (parseFloat(convNovos) + parseFloat(convFollow)).toFixed(1)
 
   const { trafego: trafegoInvestido, seguidores } = getMes(ano, mes)
   const custoLead = leadsNovosReais > 0 && trafegoInvestido > 0 ? trafegoInvestido / leadsNovosReais : 0
   const custoPorSeguidor = seguidores > 0 && trafegoInvestido > 0 ? trafegoInvestido / seguidores : 0
+  const seguidoresPorDia = seguidores > 0 ? (seguidores / 30).toFixed(1) : null
 
   const [sincronizando, setSincronizando] = useState(false)
   const [syncMsg, setSyncMsg] = useState(null)
@@ -215,23 +228,29 @@ export default function Dashboard() {
             {convCadeira}
           </p>
           <p className="text-xs text-gray-400 mb-3">{cadeiraVendeu} vendas de {cadeiraCompareceu} que vieram</p>
-          {planilhaRows.some(r => r.compareceu || r.reagendado) && (
+          {(planilhaRows.some(r => r.compareceu || r.reagendado) || fuCadeira.length > 0) && (
             <div className="pt-2 border-t border-gray-100">
             <div className="space-y-2 overflow-y-auto" style={{ maxHeight: '9rem' }}>
-              {planilhaRows.filter(r => r.compareceu && r.vendeu).map((r, i) => (
-                <div key={i} className="flex items-center gap-1.5">
+              {planilhaRows.filter(r => r.vendeu).map((r, i) => (
+                <div key={`n-${i}`} className="flex items-center gap-1.5">
                   <span className="text-green-500 text-xs">✓</span>
                   <span className="text-xs text-gray-700 truncate">{r.nome}{r.reagendado ? ' · próx. mês' : ''}</span>
                 </div>
               ))}
-              {planilhaRows.filter(r => r.compareceu && !r.vendeu && !r.reagendado).map((r, i) => (
-                <div key={i} className="flex items-center gap-1.5">
+              {fuCadeira.map((r, i) => (
+                <div key={`fu-${i}`} className="flex items-center gap-1.5">
+                  <span className="text-green-500 text-xs">✓</span>
+                  <span className="text-xs text-gray-700 truncate">{r.nome} · follow</span>
+                </div>
+              ))}
+              {planilhaRows.filter(r => (r.compareceu || r.vendeu) && !r.vendeu && !r.reagendado).map((r, i) => (
+                <div key={`x-${i}`} className="flex items-center gap-1.5">
                   <span className="text-red-400 text-xs">✗</span>
                   <span className="text-xs text-gray-400 truncate">{r.nome}</span>
                 </div>
               ))}
               {planilhaRows.filter(r => r.reagendado && !r.vendeu).map((r, i) => (
-                <div key={i} className="flex items-center gap-1.5">
+                <div key={`re-${i}`} className="flex items-center gap-1.5">
                   <span className="text-green-500 text-xs">↻</span>
                   <span className="text-xs text-gray-700 truncate">{r.nome}</span>
                 </div>
@@ -272,7 +291,7 @@ export default function Dashboard() {
               value: seguidores.toLocaleString('pt-BR'),
               icon: '👥',
               color: 'text-brand-500',
-              sub: custoPorSeguidor > 0 ? `${fmt(custoPorSeguidor)} por seguidor` : 'total de seguidores',
+              sub: seguidoresPorDia ? `~${seguidoresPorDia}/dia · ${custoPorSeguidor > 0 ? fmt(custoPorSeguidor) + ' por seguidor' : 'média mensal'}` : 'total de seguidores',
             },
             {
               label: 'Tráfego Investido',
@@ -293,7 +312,7 @@ export default function Dashboard() {
               value: cacClientes > 0 && trafegoInvestido > 0 ? fmt(trafegoInvestido / cacClientes) : '—',
               icon: '💰',
               color: 'text-orange-500',
-              sub: cacClientes > 0 ? `${cacClientes} clientes adquiridos` : 'sem agendamentos',
+              sub: cacClientes > 0 ? `${cacClientes} clientes novos adquiridos` : 'sem agendamentos',
             },
           ].map((card, i) => (
             <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
@@ -313,9 +332,9 @@ export default function Dashboard() {
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Funil de Conversão</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {[
-            { label: 'Social Media', icon: '🔗', color: 'text-brand-500', value: String(seguidores.toLocaleString('pt-BR')), sub: 'seguidores', extras: [`${leadsNovosReais} leads recebidos`, `${convComercial}% conversão`] },
+            { label: 'Social Media', icon: '🔗', color: 'text-brand-500', value: String(seguidores.toLocaleString('pt-BR')), sub: 'seguidores', extras: [seguidoresPorDia ? `~${seguidoresPorDia} seguidores/dia` : '', `${leadsNovosReais} leads recebidos`, `${convComercial}% conversão`].filter(Boolean) },
             { label: 'Leads Novos', icon: '🏢', color: 'text-blue-500', value: String(leadsNovosReais + leadsIndicacao.length), sub: 'novos este mês', extras: [`${leadsNovosReais} novos · ${agendadosNovos} agendados`, `${leadsIndicacao.length} indicações · ${agendadosIndicacao} agendadas`, `${totalAgendNovos} agendados (novos + indicação)`, `${convNovos}% conversão`] },
-            { label: 'Leads Follow', icon: '🔁', color: 'text-purple-500', value: String(leadsFollowUp.length), sub: `em acompanhamento em ${MESES[mes]}`, extras: [`${fuEmAberto} em aberto · ${fuRespondeu} respondeu`, `${fuAgendado} agendado · ${fuVendido} vendido`, `${convFollow}% conversão`] },
+            { label: 'Leads Follow', icon: '🔁', color: 'text-purple-500', value: String(leadsFollowUp.length), sub: `em acompanhamento em ${MESES[mes]}`, extras: [`${fuEmAberto} em aberto · ${fuRespondeu} respondeu`, `${followupRows.filter(r => r.agendou).length} agendado · ${followupRows.filter(r => r.vendeu).length} vendido`, `${convFollow}% conversão`] },
             { label: 'Leads Recorrência', icon: '🔄', color: 'text-teal-500', value: String(leadsRecorrentes.length), sub: 'contatos recorrentes', extras: [`${agendRecorrentes} agendamentos`, `${convRecorrencia}% conversão`] },
           ].map((card, i) => (
             <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
@@ -350,17 +369,17 @@ export default function Dashboard() {
               return (
                 <>
                   <p className={`text-2xl font-bold mb-0.5 ${corTotal}`}>{convComercial}%</p>
-                  <p className="text-xs text-gray-400 mb-3">taxa geral</p>
+                  <p className="text-xs text-gray-400 mb-3">{totalAgendGeral} agend. · taxa geral</p>
                   <div className="space-y-1.5">
                     {[
-                      { label: 'Leads Novos', pct: convNovos },
-                      { label: 'Leads Follow', pct: convFollow },
-                    ].map(({ label, pct: p }) => {
+                      { label: 'Leads Novos', pct: convNovos, agend: totalAgendNovos },
+                      { label: 'Leads Follow', pct: convFollow, agend: fuAgendado + fuVendido },
+                    ].map(({ label, pct: p, agend }) => {
                       const v = parseFloat(p)
                       const cor = v > 15 ? 'text-green-600' : v >= 10 ? 'text-orange-500' : 'text-red-500'
                       return (
                         <p key={label} className="text-xs text-gray-500">
-                          {label}: <span className={`font-semibold ${cor}`}>{p}%</span>
+                          {label}: <span className="font-semibold text-gray-700">{agend} agend.</span> · <span className={`font-semibold ${cor}`}>{p}%</span>
                         </p>
                       )
                     })}

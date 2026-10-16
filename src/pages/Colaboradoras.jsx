@@ -168,10 +168,25 @@ export default function Colaboradoras() {
   // Leads do mês (excluindo pos_tratamento)
   const leadsDoMes = useMemo(() => {
     const prefixo = `${ano}-${String(mes + 1).padStart(2, '0')}-`
-    return leads.filter(l => l.origem !== 'pos_tratamento' && l.data?.startsWith(prefixo))
+    // Leads novos + indicação (total)
+    const novos = leads.filter(l =>
+      (l.origem === 'leads_novos' || l.origem === 'indicacao') && l.data?.startsWith(prefixo)
+    )
+    // Follow-up: só os que agendaram (agendado ou fechado = conversão do follow)
+    const followAgendados = leads.filter(l =>
+      l.origem === 'leads_followup' && l.data?.startsWith(prefixo) &&
+      (l.status === 'agendado' || l.status === 'fechado')
+    )
+    return { novos, followAgendados }
   }, [leads, mes, ano])
 
-  const leadsFechadosDoMes = useMemo(() => leadsDoMes.filter(l => l.status === 'fechado'), [leadsDoMes])
+  const leadsFechadosDoMes = useMemo(() =>
+    leadsDoMes.novos.filter(l => l.status === 'fechado'),
+  [leadsDoMes])
+
+  // Para exibição: total = novos + followAgendados; convertidos = novosFechados + followAgendados
+  const totalLeadsConversao = leadsDoMes.novos.length + leadsDoMes.followAgendados.length
+  const totalConvertidosConversao = leadsFechadosDoMes.length + leadsDoMes.followAgendados.length
 
   // Valor total de consultas do mês (valorTaxa)
   const valorConsultasDoMes = useMemo(() => {
@@ -423,9 +438,9 @@ export default function Colaboradoras() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
             <div className="flex items-center justify-between mb-1">
               <h2 className="text-sm font-bold text-gray-700">Bônus por Conversão</h2>
-              {leadsDoMes.length > 0 && (
+              {totalLeadsConversao > 0 && (
                 <button onClick={() => {
-                    update({ totalLeads: leadsDoMes.length, leadsConvertidos: leadsFechadosDoMes.length, valorConsultas: valorConsultasDoMes })
+                    update({ totalLeads: totalLeadsConversao, leadsConvertidos: totalConvertidosConversao, valorConsultas: valorConsultasDoMes })
                     setRefreshKey(k => k + 1)
                   }}
                   className="flex items-center gap-1.5 text-xs font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-3 py-1.5 rounded-xl transition-colors">
@@ -434,10 +449,10 @@ export default function Colaboradoras() {
                 </button>
               )}
             </div>
-            {leadsDoMes.length > 0 && (
+            {totalLeadsConversao > 0 && (
               <div className="flex items-center gap-2 bg-green-50 border border-green-100 rounded-xl px-3 py-2 mb-3 text-xs text-green-700">
                 <span>✓</span>
-                <span>Encontrado <strong>{leadsDoMes.length} leads</strong> em {MESES[mes]}, sendo <strong>{leadsFechadosDoMes.length} fechados</strong>.</span>
+                <span>Encontrado <strong>{leadsDoMes.novos.length} leads novos</strong> + <strong>{leadsDoMes.followAgendados.length} follow agendados</strong> em {MESES[mes]}, sendo <strong>{totalConvertidosConversao} convertidos</strong>.</span>
               </div>
             )}
             <p className="text-xs text-gray-400 mb-4">% de leads que se tornaram pacientes × valor das consultas</p>
