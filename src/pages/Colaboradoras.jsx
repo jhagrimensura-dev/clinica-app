@@ -583,7 +583,7 @@ export default function Colaboradoras() {
               </div>
             </div>
 
-            <div className="mt-1">
+            {activeTab !== 'Adriele' && <div className="mt-1">
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mt-3 mb-1">Bônus semanais</p>
               {dados.semanas.map((v, i) => (
                 <div key={i} className="flex justify-between items-center py-1">
@@ -595,11 +595,11 @@ export default function Colaboradoras() {
                 <span className="text-xs font-bold text-gray-600">Subtotal semanas</span>
                 <span className="text-xs font-bold text-green-600">+{fmt(totalBonusSemanas)}</span>
               </div>
-            </div>
+            </div>}
 
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mt-3 mb-1">Bônus mensais</p>
             <BonusLine label="Meta mensal" valor={bonusMensal} />
-            <BonusLine label="Conversão" valor={bonusConversao} />
+            {activeTab !== 'Adriele' && <BonusLine label="Conversão" valor={bonusConversao} />}
             <BonusLine label="Recorrência" valor={bonusRecorrencia} />
 
             <BonusLine label="Total a pagar" valor={totalFinal} destaque />
@@ -612,7 +612,8 @@ export default function Colaboradoras() {
                 { label: 'Mensal', valor: bonusMensal, cor: 'bg-purple-400' },
                 { label: 'Conversão', valor: bonusConversao, cor: 'bg-amber-400' },
                 { label: 'Rec.', valor: bonusRecorrencia, cor: 'bg-green-400' },
-              ].map(item => (
+              ].filter(item => activeTab !== 'Adriele' || !['Semanas', 'Conversão'].includes(item.label))
+              .map(item => (
                 <div key={item.label} className="flex items-center gap-2 mb-1.5">
                   <span className="text-[10px] text-gray-400 w-16 flex-shrink-0">{item.label}</span>
                   <div className="flex-1 bg-gray-100 rounded-full h-2">
