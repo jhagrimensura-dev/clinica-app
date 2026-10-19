@@ -23,12 +23,6 @@ const TIERS_MES = [
   { label: 'Super Meta',meta: 217800, bonus: 800 },
 ]
 
-// Bônus recorrência — acumulam
-const TIERS_REC = [
-  { label: 'Aceitável', meta: 72000,  bonus: 150 },
-  { label: 'Ideal',     meta: 80000,  bonus: 250 },
-  { label: 'Super Meta',meta: 87120,  bonus: 400 },
-]
 
 const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 const parseMoney = (s) => parseFloat((s || '0').replace(/\./g, '').replace(',', '.')) || 0
@@ -185,15 +179,7 @@ export default function Colaboradoras() {
       .reduce((acc, l) => acc + (l.valorTratamento || 0) + (l.valorTaxa || 0), 0)
   }, [lancamentos, mes, ano])
 
-  // Faturamento de recorrentes do mês
-  const fatRecorrenciaDoMes = useMemo(() => {
-    const prefixo = `${ano}-${String(mes + 1).padStart(2, '0')}-`
-    return lancamentos
-      .filter(l => l.data?.startsWith(prefixo) && l.tipo === 'Recorrência')
-      .reduce((acc, l) => acc + (l.valorTratamento || 0), 0)
-  }, [lancamentos, mes, ano])
-
-  // Leads do mês — lê direto das planilhas (fonte confiável, sem acúmulo da tabela leads)
+// Leads do mês — lê direto das planilhas (fonte confiável, sem acúmulo da tabela leads)
   const prefixoMes = `${ano}-${String(mes + 1).padStart(2, '0')}-`
   const novosDoMes = planilhaNovosRows.length
   const isIndicacao = r => (r.origem || '').toUpperCase().includes('INDICA')
@@ -284,7 +270,6 @@ export default function Colaboradoras() {
 
   const tiersS = dados.tiers?.semana || TIERS_SEMANA
   const tiersM = dados.tiers?.mes    || TIERS_MES
-  const tiersR = dados.tiers?.rec    || TIERS_REC
 
   const update = (patch) => {
     const next = { ...dados, ...patch }
@@ -293,7 +278,7 @@ export default function Colaboradoras() {
   }
 
   const setTierMeta = (group, ti, field, val) => {
-    const base = dados.tiers || { semana: TIERS_SEMANA.map(t=>({...t})), mes: TIERS_MES.map(t=>({...t})), rec: TIERS_REC.map(t=>({...t})) }
+    const base = dados.tiers || { semana: TIERS_SEMANA.map(t=>({...t})), mes: TIERS_MES.map(t=>({...t})) }
     const updated = base[group].map((t, j) => j === ti ? { ...t, [field]: val } : t)
     update({ tiers: { ...base, [group]: updated } })
   }
