@@ -2,6 +2,8 @@ import { useState, useMemo, useEffect } from 'react'
 import { useVendas } from '../context/VendasContext'
 import { useLeads } from '../context/LeadsContext'
 import { useClinica } from '../context/ClinicaContext'
+import { useAuth } from '../context/AuthContext'
+import { supabase } from '../lib/supabase'
 
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
@@ -141,13 +143,26 @@ export default function Colaboradoras() {
   const { lancamentos } = useVendas()
   const { leads } = useLeads()
   const { diasSelecionados } = useClinica()
+  const { clinicaId } = useAuth()
   const hoje = new Date()
   const [mes, setMes] = useState(hoje.getMonth())
   const [ano, setAno] = useState(hoje.getFullYear())
+  const [planilhaNovosRows, setPlanilhaNovosRows] = useState([])
+  const [planilhaFollowRows, setPlanilhaFollowRows] = useState([])
   const [refreshKey, setRefreshKey] = useState(0)
   const [activeTab, setActiveTab] = useState(COLABORADORAS[0])
 
   const [dados, setDados] = useState(() => loadData(hoje.getMonth(), hoje.getFullYear(), COLABORADORAS[0]) || defaultState())
+
+  useEffect(() => {
+    if (!clinicaId) return
+    const monthStart = `${ano}-${String(mes + 1).padStart(2, '0')}-01`
+    const nextMonth = mes === 11 ? `${ano + 1}-01-01` : `${ano}-${String(mes + 2).padStart(2, '0')}-01`
+    supabase.from('planilha_leads').select('vendeu').eq('clinica_id', clinicaId).gte('data', monthStart).lt('data', nextMonth)
+      .then(({ data }) => setPlanilhaNovosRows(data || []))
+    supabase.from('planilha_followup').select('agendou, vendeu').eq('clinica_id', clinicaId).gte('data_followup', monthStart).lt('data_followup', nextMonth)
+      .then(({ data }) => setPlanilhaFollowRows(data || []))
+  }, [clinicaId, mes, ano])
 
   // Faturamento total do mês (todos os lançamentos, igual ao Dashboard)
   const fatTotalDoMes = useMemo(() => {
@@ -165,28 +180,12 @@ export default function Colaboradoras() {
       .reduce((acc, l) => acc + (l.valorTratamento || 0), 0)
   }, [lancamentos, mes, ano])
 
-  // Leads do mês (excluindo pos_tratamento)
-  const leadsDoMes = useMemo(() => {
-    const prefixo = `${ano}-${String(mes + 1).padStart(2, '0')}-`
-    // Leads novos + indicação (total)
-    const novos = leads.filter(l =>
-      (l.origem === 'leads_novos' || l.origem === 'indicacao') && l.data?.startsWith(prefixo)
-    )
-    // Follow-up: só os que agendaram (agendado ou fechado = conversão do follow)
-    const followAgendados = leads.filter(l =>
-      l.origem === 'leads_followup' && l.data?.startsWith(prefixo) &&
-      (l.status === 'agendado' || l.status === 'fechado')
-    )
-    return { novos, followAgendados }
-  }, [leads, mes, ano])
-
-  const leadsFechadosDoMes = useMemo(() =>
-    leadsDoMes.novos.filter(l => l.status === 'fechado'),
-  [leadsDoMes])
-
-  // Para exibição: total = novos + followAgendados; convertidos = novosFechados + followAgendados
-  const totalLeadsConversao = leadsDoMes.novos.length + leadsDoMes.followAgendados.length
-  const totalConvertidosConversao = leadsFechadosDoMes.length + leadsDoMes.followAgendados.length
+  // Leads do mês — lê direto das planilhas (fonte confiável, sem acúmulo da tabela leads)
+  const novosDoMes = planilhaNovosRows.length
+  const novosConvertidos = planilhaNovosRows.filter(r => r.vendeu).length
+  const followAgendados = planilhaFollowRows.filter(r => r.agendou).length
+  const totalLeadsConversao = novosDoMes + followAgendados
+  const totalConvertidosConversao = novosConvertidos + followAgendados
 
   // Valor total de consultas do mês (valorTaxa)
   const valorConsultasDoMes = useMemo(() => {
@@ -452,7 +451,7 @@ export default function Colaboradoras() {
             {totalLeadsConversao > 0 && (
               <div className="flex items-center gap-2 bg-green-50 border border-green-100 rounded-xl px-3 py-2 mb-3 text-xs text-green-700">
                 <span>✓</span>
-                <span>Encontrado <strong>{leadsDoMes.novos.length} leads novos</strong> + <strong>{leadsDoMes.followAgendados.length} follow agendados</strong> em {MESES[mes]}, sendo <strong>{totalConvertidosConversao} convertidos</strong>.</span>
+                <span>Encontrado <strong>{novosDoMes} leads novos</strong> + <strong>{followAgendados} follow agendados</strong> em {MESES[mes]}, sendo <strong>{totalConvertidosConversao} convertidos</strong>.</span>
               </div>
             )}
             <p className="text-xs text-gray-400 mb-4">% de leads que se tornaram pacientes × valor das consultas</p>
