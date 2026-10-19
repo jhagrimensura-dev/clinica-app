@@ -600,7 +600,7 @@ export default function Colaboradoras() {
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mt-3 mb-1">Bônus mensais</p>
             <BonusLine label="Meta mensal" valor={bonusMensal} />
             {activeTab !== 'Adriele' && <BonusLine label="Conversão" valor={bonusConversao} />}
-            <BonusLine label="Recorrência" valor={bonusRecorrencia} />
+            {activeTab !== 'Fernanda' && <BonusLine label="Recorrência" valor={bonusRecorrencia} />}
 
             <BonusLine label="Total a pagar" valor={totalFinal} destaque />
 
@@ -612,7 +612,11 @@ export default function Colaboradoras() {
                 { label: 'Mensal', valor: bonusMensal, cor: 'bg-purple-400' },
                 { label: 'Conversão', valor: bonusConversao, cor: 'bg-amber-400' },
                 { label: 'Rec.', valor: bonusRecorrencia, cor: 'bg-green-400' },
-              ].filter(item => activeTab !== 'Adriele' || !['Semanas', 'Conversão'].includes(item.label))
+              ].filter(item => {
+                if (activeTab === 'Adriele' && ['Semanas', 'Conversão'].includes(item.label)) return false
+                if (activeTab === 'Fernanda' && item.label === 'Rec.') return false
+                return true
+              })
               .map(item => (
                 <div key={item.label} className="flex items-center gap-2 mb-1.5">
                   <span className="text-[10px] text-gray-400 w-16 flex-shrink-0">{item.label}</span>
