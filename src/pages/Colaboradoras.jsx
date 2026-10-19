@@ -158,7 +158,7 @@ export default function Colaboradoras() {
     if (!clinicaId) return
     const monthStart = `${ano}-${String(mes + 1).padStart(2, '0')}-01`
     const nextMonth = mes === 11 ? `${ano + 1}-01-01` : `${ano}-${String(mes + 2).padStart(2, '0')}-01`
-    supabase.from('planilha_leads').select('vendeu').eq('clinica_id', clinicaId).gte('data', monthStart).lt('data', nextMonth)
+    supabase.from('planilha_leads').select('origem, agendou, vendeu').eq('clinica_id', clinicaId).gte('data', monthStart).lt('data', nextMonth)
       .then(({ data }) => setPlanilhaNovosRows(data || []))
     supabase.from('planilha_followup').select('agendou, vendeu').eq('clinica_id', clinicaId).gte('data_followup', monthStart).lt('data_followup', nextMonth)
       .then(({ data }) => setPlanilhaFollowRows(data || []))
@@ -181,8 +181,29 @@ export default function Colaboradoras() {
   }, [lancamentos, mes, ano])
 
   // Leads do mês — lê direto das planilhas (fonte confiável, sem acúmulo da tabela leads)
+  const prefixoMes = `${ano}-${String(mes + 1).padStart(2, '0')}-`
   const novosDoMes = planilhaNovosRows.length
-  const novosConvertidos = planilhaNovosRows.filter(r => r.vendeu).length
+  const isIndicacao = r => (r.origem || '').toUpperCase().includes('INDICA')
+
+  // Indicações convertidas: pega o maior entre planilha e contexto de leads
+  // (indicações podem estar só no app/Indicações, não na planilha)
+  const indicacoesPlanilha = planilhaNovosRows.filter(r => isIndicacao(r) && (r.agendou || r.vendeu)).length
+  const indicacoesLeads = leads.filter(l => {
+    // aceita origem='indicacao' ou leads_novos com origemCustom contendo 'indica'
+    const isIndica = l.origem === 'indicacao' ||
+      ((l.origem === 'leads_novos' || !l.origem) && (l.origemCustom || '').toUpperCase().includes('INDICA'))
+    if (!isIndica) return false
+    // data ou dataOrigem no mês
+    const dataRef = l.data || l.dataOrigem || ''
+    if (!dataRef.startsWith(prefixoMes)) return false
+    return l.status === 'agendado' || l.status === 'fechado' || l.status === 'conversando'
+  }).length
+  const indicacoesConvertidas = Math.max(indicacoesPlanilha, indicacoesLeads)
+
+  // Novos convertidos = agendou=SIM (Fernanda converte leads em consultas, não em vendas)
+  const novosAgendaram = planilhaNovosRows.filter(r => !isIndicacao(r) && r.agendou).length
+  const novosConvertidos = novosAgendaram + indicacoesConvertidas
+
   const followAgendados = planilhaFollowRows.filter(r => r.agendou).length
   const totalLeadsConversao = novosDoMes + followAgendados
   const totalConvertidosConversao = novosConvertidos + followAgendados
@@ -316,8 +337,8 @@ export default function Colaboradoras() {
         {/* Coluna esquerda: inputs */}
         <div className="lg:col-span-2 space-y-5">
 
-          {/* Semanas */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+          {/* Semanas — apenas Fernanda */}
+          {activeTab !== 'Adriele' && <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-bold text-gray-700">Bônus Semanais</h2>
               <button
@@ -389,7 +410,7 @@ export default function Colaboradoras() {
                 ))}
               </div>
             </div>
-          </div>
+          </div>}
 
           {/* Meta Mensal */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
@@ -433,8 +454,8 @@ export default function Colaboradoras() {
             </div>
           </div>
 
-          {/* Conversão */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+          {/* Conversão — apenas Fernanda */}
+          {activeTab !== 'Adriele' && <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
             <div className="flex items-center justify-between mb-1">
               <h2 className="text-sm font-bold text-gray-700">Bônus por Conversão</h2>
               {totalLeadsConversao > 0 && (
@@ -451,7 +472,7 @@ export default function Colaboradoras() {
             {totalLeadsConversao > 0 && (
               <div className="flex items-center gap-2 bg-green-50 border border-green-100 rounded-xl px-3 py-2 mb-3 text-xs text-green-700">
                 <span>✓</span>
-                <span>Encontrado <strong>{novosDoMes} leads novos</strong> + <strong>{followAgendados} follow agendados</strong> em {MESES[mes]}, sendo <strong>{totalConvertidosConversao} convertidos</strong>.</span>
+                <span>Encontrado <strong>{novosDoMes} leads novos</strong> + <strong>{followAgendados} follow agendados</strong>{indicacoesConvertidas > 0 ? <> + <strong>{indicacoesConvertidas} indicações agendadas</strong></> : ''} em {MESES[mes]}, sendo <strong>{totalConvertidosConversao} convertidos</strong>.</span>
               </div>
             )}
             <p className="text-xs text-gray-400 mb-4">% de leads que se tornaram pacientes × valor das consultas</p>
@@ -505,10 +526,10 @@ export default function Colaboradoras() {
                 </div>
               ))}
             </div>
-          </div>
+          </div>}
 
-          {/* Recorrência */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+          {/* Recorrência — apenas Adriele */}
+          {activeTab !== 'Fernanda' && <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-bold text-gray-700">Bônus Recorrência</h2>
               {fatRecorrenciaDoMes > 0 && (
@@ -547,7 +568,7 @@ export default function Colaboradoras() {
                 ))}
               </div>
             </div>
-          </div>
+          </div>}
         </div>
 
         {/* Coluna direita: resumo */}
