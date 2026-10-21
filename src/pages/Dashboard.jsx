@@ -372,7 +372,7 @@ export default function Dashboard() {
           {/* Card Conversão */}
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
             <div className="flex justify-between items-start mb-1">
-              <p className="text-sm text-gray-500 font-medium">Conversão</p>
+              <p className="text-sm text-gray-500 font-medium">Conversão Novos + Follow + Indicação</p>
               <span className="text-lg text-green-500">📈</span>
             </div>
             {(() => {
@@ -381,7 +381,7 @@ export default function Dashboard() {
               return (
                 <>
                   <p className={`text-2xl font-bold mb-0.5 ${corTotal}`}>{convComercial}%</p>
-                  <p className="text-xs text-gray-400 mb-3">{totalAgendGeral} agend. · Novos + Follow + Indicação</p>
+                  <p className="text-xs text-gray-400 mb-3">{totalAgendGeral} agend. · taxa geral</p>
                   <div className="space-y-1.5">
                     {[
                       { label: 'Leads Novos', pct: convNovos, agend: totalAgendNovos },
