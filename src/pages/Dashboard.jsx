@@ -335,7 +335,7 @@ export default function Dashboard() {
             { label: 'Social Media', icon: '🔗', color: 'text-brand-500', value: String(seguidores.toLocaleString('pt-BR')), sub: 'seguidores', extras: [seguidoresPorDia ? `~${seguidoresPorDia} seguidores/dia` : '', `${leadsNovosReais} leads recebidos`, `${convComercial}% conversão`].filter(Boolean) },
             { label: 'Leads Novos', icon: '🏢', color: 'text-blue-500', value: String(leadsNovosReais + leadsIndicacao.length), sub: 'novos este mês', extras: [`${leadsNovosReais} novos · ${agendadosNovos} agendados`, `${leadsIndicacao.length} indicações · ${agendadosIndicacao} agendadas`, `${totalAgendNovos} agendados (novos + indicação)`, `${convNovos}% conversão`] },
             { label: 'Leads Follow', icon: '🔁', color: 'text-purple-500', value: String(leadsFollowUp.length), sub: `em acompanhamento em ${MESES[mes]}`, extras: [`${fuEmAberto} em aberto · ${fuRespondeu} respondeu`, `${followupRows.filter(r => r.agendou).length} agendado · ${followupRows.filter(r => r.vendeu).length} vendido`, `${convFollow}% conversão`] },
-            { label: 'Leads Recorrência', icon: '🔄', color: 'text-teal-500', value: String(leadsRecorrentes.length), sub: 'contatos recorrentes', extras: [`${agendRecorrentes} agendamentos`, `${convRecorrencia}% conversão`] },
+            { label: 'Leads Recorrência', icon: '🔄', color: 'text-teal-500', value: String(leadsRecorrentes.length), sub: 'contatos recorrentes', extras: [`${agendRecorrentes} agendamentos`, `${convRecorrencia}% conversão`], meta: { atual: agendRecorrentes, total: 40 } },
           ].map((card, i) => (
             <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
               <div className="flex justify-between items-start mb-1">
@@ -354,6 +354,18 @@ export default function Dashboard() {
                   return <p key={j} className="text-xs text-gray-500">{e}</p>
                 })}
               </div>
+              {card.meta && (
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Meta recorrência</span>
+                    <span className={`text-xs font-bold ${card.meta.atual >= card.meta.total ? 'text-green-600' : 'text-gray-500'}`}>{card.meta.atual}/{card.meta.total}</span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-1.5">
+                    <div className={`h-1.5 rounded-full transition-all duration-300 ${card.meta.atual >= card.meta.total ? 'bg-green-500' : card.meta.atual >= card.meta.total / 2 ? 'bg-orange-400' : 'bg-red-400'}`}
+                      style={{ width: `${Math.min(100, (card.meta.atual / card.meta.total) * 100)}%` }} />
+                  </div>
+                </div>
+              )}
             </div>
           ))}
 
