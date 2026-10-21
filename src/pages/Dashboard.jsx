@@ -388,7 +388,7 @@ export default function Dashboard() {
                   <div className="mt-3 pt-3 border-t border-gray-100">
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Meta comercial</span>
-                      <span className={`text-xs font-bold ${totalAgendGeral >= 20 ? 'text-green-600' : 'text-gray-500'}`}>{totalAgendGeral}/20 pac.</span>
+                      <span className={`text-xs font-bold ${totalAgendGeral >= 20 ? 'text-green-600' : 'text-gray-500'}`}>{totalAgendGeral}/20</span>
                     </div>
                     <div className="w-full bg-gray-100 rounded-full h-1.5">
                       <div
