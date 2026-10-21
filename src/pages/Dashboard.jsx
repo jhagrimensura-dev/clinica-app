@@ -327,9 +327,9 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* FUNIL DE CONVERSÃO */}
+      {/* VISÃO COMERCIAL */}
       <div>
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Funil de Conversão</p>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Visão Comercial</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {[
             { label: 'Social Media', icon: '🔗', color: 'text-brand-500', value: String(seguidores.toLocaleString('pt-BR')), sub: 'seguidores', extras: [seguidoresPorDia ? `~${seguidoresPorDia} seguidores/dia` : '', `${leadsNovosReais} leads recebidos`, `${convComercial}% conversão`].filter(Boolean) },
