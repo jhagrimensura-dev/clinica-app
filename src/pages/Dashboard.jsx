@@ -381,7 +381,7 @@ export default function Dashboard() {
               return (
                 <>
                   <p className={`text-2xl font-bold mb-0.5 ${corTotal}`}>{convComercial}%</p>
-                  <p className="text-xs text-gray-400 mb-3">{totalAgendGeral} agend. · taxa geral</p>
+                  <p className="text-xs text-gray-400 mb-3">{totalAgendGeral} agend. · Novos + Follow + Indicação</p>
                   <div className="space-y-1.5">
                     {[
                       { label: 'Leads Novos', pct: convNovos, agend: totalAgendNovos },
