@@ -384,6 +384,19 @@ export default function Dashboard() {
                       )
                     })}
                   </div>
+                  {/* Meta comercial */}
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Meta comercial</span>
+                      <span className={`text-xs font-bold ${totalAgendGeral >= 20 ? 'text-green-600' : 'text-gray-500'}`}>{totalAgendGeral}/20 pac.</span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-1.5">
+                      <div
+                        className={`h-1.5 rounded-full transition-all duration-300 ${totalAgendGeral >= 20 ? 'bg-green-500' : totalAgendGeral >= 10 ? 'bg-orange-400' : 'bg-red-400'}`}
+                        style={{ width: `${Math.min(100, (totalAgendGeral / 20) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
                 </>
               )
             })()}
