@@ -361,10 +361,7 @@ case 'whatsapp_canal': return <PagePlaceholder title="WhatsApp" />
           {active === 'dashboard' && <Header view={view} setView={setView} />}
           <main className="flex-1">{renderPage()}</main>
         </div>
-        {active !== 'inbox' && !active.startsWith('inbox_') && (
-          <WhatsAppFAB onOpen={() => setActive('inbox')} />
-        )}
-        <LembretesFAB onOpen={() => setActive('agenda_lembretes')} />
+        {/* FABs temporariamente ocultos */}
       </div>
     </SocialProvider>
     </VendasProvider>
