@@ -396,8 +396,8 @@ function Historico() {
                 )
               })}
               {ANOS_HISTORICO.length >= 2 && (() => {
-                const anoAnt = ANOS_HISTORICO[ANOS_HISTORICO.length - 2]
-                const anoAtl = ANOS_HISTORICO[ANOS_HISTORICO.length - 1]
+                const anoAnt = ANO_ATUAL - 1
+                const anoAtl = ANO_ATUAL
                 return (
                   <tr className="bg-gray-50 border-t border-gray-200">
                     <td className="px-4 py-2 text-xs font-semibold text-gray-400 sticky left-0 bg-gray-50">vs {anoAnt}</td>
