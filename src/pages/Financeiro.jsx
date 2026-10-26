@@ -260,10 +260,6 @@ function Historico() {
     return s + valor(k)
   }, 0)
 
-  const maxValor = Math.max(...ANOS_HISTORICO.flatMap(ano =>
-    MESES_ABREV.map((_, i) => valor(`${ano}-${String(i + 1).padStart(2, '0')}`))
-  ), 1)
-
   if (loading) return (
     <div className="flex items-center justify-center py-20 text-gray-400 text-sm">Carregando histórico...</div>
   )
