@@ -4,6 +4,8 @@ import { useSocial } from '../context/SocialContext'
 import { useLeads } from '../context/LeadsContext'
 
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+const DIAS_SEMANA_FULL = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado']
+const DIAS_SEMANA_ABREV = ['DOM','SEG','TER','QUA','QUI','SEX','SAB']
 
 function gerarCalendario(ano, mes) {
   const primeiroDia = new Date(ano, mes, 1).getDay()
@@ -25,11 +27,11 @@ function gerarCalendario(ano, mes) {
 }
 
 const TIPOS = [
-  { label: 'Caso',       cor: 'bg-yellow-100 text-yellow-700' },
-  { label: 'Trend',      cor: 'bg-purple-100 text-purple-700' },
-  { label: 'Experiência',cor: 'bg-blue-100 text-blue-700' },
-  { label: 'Respiro',    cor: 'bg-green-100 text-green-700' },
-  { label: 'Colab',      cor: 'bg-brand-100 text-brand-700' },
+  { label: 'Caso',        cor: 'bg-yellow-100 text-yellow-700' },
+  { label: 'Trend',       cor: 'bg-purple-100 text-purple-700' },
+  { label: 'Experiência', cor: 'bg-blue-100 text-blue-700' },
+  { label: 'Respiro',     cor: 'bg-green-100 text-green-700' },
+  { label: 'Colab',       cor: 'bg-brand-100 text-brand-700' },
 ]
 
 const ROTINA_TIPOS = [
@@ -39,95 +41,79 @@ const ROTINA_TIPOS = [
   { label: 'Respiro',     cor: 'bg-green-100 text-green-700' },
   { label: 'Colab',       cor: 'bg-brand-100 text-brand-700' },
   { label: 'Produção',    cor: 'bg-orange-100 text-orange-700' },
+  { label: 'Checklist',   cor: 'bg-gray-100 text-gray-600' },
   { label: 'Outro',       cor: 'bg-gray-100 text-gray-600' },
 ]
 
 const ROTINA_FORMATOS = ['Reels', 'Foto', 'Carrossel', 'Stories']
-
 const ETAPAS_FUNIL = ['Topo de Funil', 'Meio de Funil', 'Fundo de Funil']
-
-const STATUS_ROTINA = [
-  { label: 'A fazer',     cor: 'bg-gray-100 text-gray-600' },
-  { label: 'Em criação',  cor: 'bg-yellow-100 text-yellow-700' },
-  { label: 'Pronto',      cor: 'bg-blue-100 text-blue-700' },
-  { label: 'Publicado',   cor: 'bg-green-100 text-green-700' },
-]
-
-const corDoStatus = (status) => STATUS_ROTINA.find(s => s.label === status)?.cor || 'bg-gray-100 text-gray-500'
-
-const DIAS_SEMANA_FULL = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado']
-
-const corDoTipoRotina = (tipo) => ROTINA_TIPOS.find(t => t.label === tipo)?.cor || 'bg-gray-100 text-gray-600'
-
 const FORMATOS = ['Reels', 'Foto', 'Carrossel', 'Stories']
 
-const postsIniciais = []
+const STATUS_ROTINA = [
+  { label: 'A fazer',              cor: 'bg-gray-100 text-gray-500',     dot: 'bg-gray-300' },
+  { label: 'Em criação',           cor: 'bg-yellow-100 text-yellow-700', dot: 'bg-yellow-400' },
+  { label: 'Pronto',               cor: 'bg-blue-100 text-blue-700',     dot: 'bg-blue-400' },
+  { label: 'Aguardando aprovação', cor: 'bg-orange-100 text-orange-600', dot: 'bg-orange-400' },
+  { label: 'Aprovado',             cor: 'bg-green-100 text-green-700',   dot: 'bg-green-400' },
+  { label: 'Publicado',            cor: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
+]
 
-const corDoTipo = (tipo) => TIPOS.find(t => t.label === tipo)?.cor || 'bg-gray-100 text-gray-600'
+const STATUS_NEXT = {
+  'A fazer': 'Em criação',
+  'Em criação': 'Pronto',
+  'Pronto': 'Aguardando aprovação',
+  'Aguardando aprovação': 'Aprovado',
+  'Aprovado': 'Publicado',
+  'Publicado': 'A fazer',
+}
+
+const corDoStatus = (s) => STATUS_ROTINA.find(x => x.label === s)?.cor || 'bg-gray-100 text-gray-500'
+const corDoTipoRotina = (t) => ROTINA_TIPOS.find(x => x.label === t)?.cor || 'bg-gray-100 text-gray-600'
+const corDoTipo = (t) => TIPOS.find(x => x.label === t)?.cor || 'bg-gray-100 text-gray-600'
+
+// Helpers para template semanal (guardado como rotina._template e rotina._tplStatus)
+const getTemplate = (rotina) => rotina._template || {}
+const getTplStatus = (rotina) => rotina._tplStatus || {}
+const templateDoDia = (rotina, dow) => (getTemplate(rotina)[String(dow)] || [])
+const statusTpl = (rotina, dateKey, taskId) => ((getTplStatus(rotina)[dateKey] || {})[taskId] || 'A fazer')
 
 const hoje = new Date()
-const dataHoje = `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`
 
 export default function SocialMedia() {
   const { mes, ano, setMes, setAno, posts, setPosts } = useClinica()
   const { getMes, setTrafego: saveTrafego, setSeguidores: saveSeguidores, rotina, salvarRotina, carregarMes } = useSocial()
   const { getLeadsPorOrigem, leads } = useLeads()
 
-  const mesAnterior = () => {
-    if (mes === 0) { setMes(11); setAno(a => a - 1) }
-    else setMes(m => m - 1)
-  }
-  const proximoMes = () => {
-    if (mes === 11) { setMes(0); setAno(a => a + 1) }
-    else setMes(m => m + 1)
-  }
+  const mesAnterior = () => { if (mes === 0) { setMes(11); setAno(a => a - 1) } else setMes(m => m - 1) }
+  const proximoMes  = () => { if (mes === 11) { setMes(0); setAno(a => a + 1) } else setMes(m => m + 1) }
   const semanas = gerarCalendario(ano, mes)
 
   const mesMes = getMes(ano, mes)
   const trafego = mesMes.trafego
   const seguidores = mesMes.seguidores
 
+  useEffect(() => { carregarMes(ano, mes) }, [ano, mes])
+
   const [editandoTrafego, setEditandoTrafego] = useState(false)
   const [inputTrafego, setInputTrafego] = useState('')
-
   const [editandoSeguidores, setEditandoSeguidores] = useState(false)
   const [inputSeguidores, setInputSeguidores] = useState('')
 
-  useEffect(() => { carregarMes(ano, mes) }, [ano, mes])
-
-  const [modal, setModal] = useState(null) // null | { dia }
+  // Modal posts
+  const [modal, setModal] = useState(null)
   const [form, setForm] = useState({ data: '', formato: '', tipo: '', link: '', impulsionado: false })
 
-  const [modalRotina, setModalRotina] = useState(null) // null | { dateKey, label }
+  // Modal rotina (tarefas específicas do dia)
+  const [modalRotina, setModalRotina] = useState(null) // { dateKey, dow, label }
   const FORM_ROTINA_VAZIO = { texto: '', tipo: '', formato: '', etapaFunil: '', status: 'A fazer', paciente: '', inspiracao: '', horario: '', comentario: '' }
   const [formRotina, setFormRotina] = useState(FORM_ROTINA_VAZIO)
 
-  const adicionarTarefaRotina = () => {
-    if (!formRotina.texto.trim() || !formRotina.tipo) return
-    const dk = modalRotina.dateKey
-    const nova = {
-      id: Date.now(),
-      texto: formRotina.texto.trim(),
-      tipo: formRotina.tipo,
-      formato: formRotina.formato,
-      etapaFunil: formRotina.etapaFunil,
-      status: formRotina.status || 'A fazer',
-      paciente: formRotina.paciente.trim(),
-      inspiracao: formRotina.inspiracao.trim(),
-      horario: formRotina.horario,
-      comentario: formRotina.comentario.trim(),
-    }
-    salvarRotina({ ...rotina, [dk]: [...(rotina[dk] || []), nova] })
-    setFormRotina(FORM_ROTINA_VAZIO)
-    setModalRotina(null)
-  }
+  // Modal template semanal
+  const [modalTpl, setModalTpl] = useState(null) // { dow }
+  const FORM_TPL_VAZIO = { texto: '', tipo: 'Checklist', formato: '' }
+  const [formTpl, setFormTpl] = useState(FORM_TPL_VAZIO)
 
-  const removerTarefaRotina = (dateKey, id, e) => {
-    e.stopPropagation()
-    salvarRotina({ ...rotina, [dateKey]: (rotina[dateKey] || []).filter(t => t.id !== id) })
-  }
-
-  const porSeguidor = seguidores > 0 ? (trafego / seguidores).toFixed(2).replace('.', ',') : '—'
+  // Leads
   const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
   const leadsNovos = getLeadsPorOrigem('leads_novos', ano, mes)
   const isFollow = l => {
@@ -139,6 +125,8 @@ export default function SocialMedia() {
   const totalFollowUp = leadsNovos.filter(l => isFollow(l)).length
   const totalLeads = totalLeadsNovos + totalFollowUp
   const porLead = totalLeadsNovos > 0 && trafego > 0 ? (trafego / totalLeadsNovos).toFixed(2).replace('.', ',') : '—'
+  const porSeguidor = seguidores > 0 ? (trafego / seguidores).toFixed(2).replace('.', ',') : '—'
+
   const leadsPorDia = {}
   const leadsDetalhadosPorDia = {}
   leads.filter(l => {
@@ -153,15 +141,13 @@ export default function SocialMedia() {
       leadsDetalhadosPorDia[dia].push(l)
     }
   })
-
-  const [modalLeadsDia, setModalLeadsDia] = useState(null) // null | { dia, leads[] }
+  const [modalLeadsDia, setModalLeadsDia] = useState(null)
 
   const salvarTrafego = () => {
     const v = parseFloat(inputTrafego.replace(/\./g, '').replace(',', '.'))
     if (!isNaN(v) && v >= 0) saveTrafego(ano, mes, v)
     setEditandoTrafego(false)
   }
-
   const salvarSeguidores = () => {
     const v = parseInt(inputSeguidores.replace(/\D/g, ''))
     if (!isNaN(v) && v >= 0) saveSeguidores(ano, mes, v)
@@ -174,17 +160,74 @@ export default function SocialMedia() {
     setForm({ data: `${dd}/${mm}/${ano}`, formato: '', tipo: '', link: '', impulsionado: false })
     setModal({ dia })
   }
-
   const salvarPost = () => {
     if (!form.tipo) return
     setPosts(prev => [...prev, { id: Date.now(), dia: modal.dia, tipo: form.tipo, formato: form.formato, link: form.link, impulsionado: form.impulsionado }])
     setModal(null)
   }
+  const removerPost = (id, e) => { e.stopPropagation(); setPosts(prev => prev.filter(p => p.id !== id)) }
 
-  const removerPost = (id, e) => {
-    e.stopPropagation()
-    setPosts(prev => prev.filter(p => p.id !== id))
+  // Tarefas específicas do dia
+  const adicionarTarefaRotina = () => {
+    if (!formRotina.texto.trim() || !formRotina.tipo) return
+    const dk = modalRotina.dateKey
+    const nova = { id: Date.now(), texto: formRotina.texto.trim(), tipo: formRotina.tipo, formato: formRotina.formato, etapaFunil: formRotina.etapaFunil, status: formRotina.status || 'A fazer', paciente: formRotina.paciente.trim(), inspiracao: formRotina.inspiracao.trim(), horario: formRotina.horario, comentario: formRotina.comentario.trim() }
+    salvarRotina({ ...rotina, [dk]: [...(rotina[dk] || []), nova] })
+    setFormRotina(FORM_ROTINA_VAZIO)
   }
+  const removerTarefaRotina = (dateKey, id, e) => {
+    e.stopPropagation()
+    salvarRotina({ ...rotina, [dateKey]: (rotina[dateKey] || []).filter(t => t.id !== id) })
+  }
+  const avancarStatusTarefa = (dateKey, id, e) => {
+    e.stopPropagation()
+    const tarefas = (rotina[dateKey] || []).map(t =>
+      t.id === id ? { ...t, status: STATUS_NEXT[t.status || 'A fazer'] || 'A fazer' } : t
+    )
+    salvarRotina({ ...rotina, [dateKey]: tarefas })
+  }
+
+  // Template semanal
+  const adicionarTplTask = () => {
+    if (!formTpl.texto.trim()) return
+    const dow = String(modalTpl.dow)
+    const tpl = getTemplate(rotina)
+    const nova = { id: Date.now(), texto: formTpl.texto.trim(), tipo: formTpl.tipo, formato: formTpl.formato }
+    salvarRotina({ ...rotina, _template: { ...tpl, [dow]: [...(tpl[dow] || []), nova] } })
+    setFormTpl(FORM_TPL_VAZIO)
+  }
+  const removerTplTask = (dow, id) => {
+    const tpl = getTemplate(rotina)
+    const key = String(dow)
+    salvarRotina({ ...rotina, _template: { ...tpl, [key]: (tpl[key] || []).filter(t => t.id !== id) } })
+  }
+  const avancarStatusTpl = (dateKey, taskId, e) => {
+    e.stopPropagation()
+    const tplStatus = getTplStatus(rotina)
+    const cur = statusTpl(rotina, dateKey, taskId)
+    const proximo = STATUS_NEXT[cur] || 'A fazer'
+    salvarRotina({
+      ...rotina,
+      _tplStatus: { ...tplStatus, [dateKey]: { ...(tplStatus[dateKey] || {}), [taskId]: proximo } }
+    })
+  }
+
+  // Conta pendências de aprovação no mês
+  const aprovacoesPendentes = (() => {
+    const tplStatus = getTplStatus(rotina)
+    let count = 0
+    Object.entries(tplStatus).forEach(([dk, statusMap]) => {
+      if (!dk.startsWith('_') && dk.startsWith(`${ano}-${mes}-`)) {
+        Object.values(statusMap).forEach(s => { if (s === 'Aguardando aprovação') count++ })
+      }
+    })
+    ;(Object.entries(rotina) || []).forEach(([dk, tasks]) => {
+      if (!dk.startsWith('_') && dk.startsWith(`${ano}-${mes}-`) && Array.isArray(tasks)) {
+        tasks.forEach(t => { if (t.status === 'Aguardando aprovação') count++ })
+      }
+    })
+    return count
+  })()
 
   const totalPorTipo = (tipo) => posts.filter(p => p.tipo === tipo).length
   const totalImpulsionados = posts.filter(p => p.impulsionado).length
@@ -192,9 +235,7 @@ export default function SocialMedia() {
   return (
     <div className="p-3 sm:p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Social Media</h1>
-        </div>
+        <h1 className="text-2xl font-bold text-gray-800">Social Media</h1>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl px-1 py-1">
             <button onClick={mesAnterior} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors">
@@ -211,9 +252,8 @@ export default function SocialMedia() {
         </div>
       </div>
 
-      {/* Cards de métricas */}
+      {/* Métricas */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {/* Tráfego Investido */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex justify-between items-start mb-1">
             <p className="text-sm text-gray-500 font-medium">Tráfego Investido</p>
@@ -238,7 +278,6 @@ export default function SocialMedia() {
           <p className="text-xs text-gray-400 mt-1">Investimento do mês</p>
         </div>
 
-        {/* Seguidores */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex justify-between items-start mb-1">
             <p className="text-sm text-gray-500 font-medium">Seguidores</p>
@@ -260,7 +299,6 @@ export default function SocialMedia() {
           <p className="text-xs text-gray-400 mt-1">R$ {porSeguidor} por seguidor</p>
         </div>
 
-        {/* Leads */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex justify-between items-start mb-1">
             <p className="text-sm text-gray-500 font-medium">Leads</p>
@@ -274,7 +312,6 @@ export default function SocialMedia() {
           <p className="text-xs text-gray-400 mt-1">R$ {porLead} por lead novo</p>
         </div>
 
-        {/* Posts */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex justify-between items-start mb-2">
             <p className="text-sm text-gray-500 font-medium">Posts</p>
@@ -292,7 +329,7 @@ export default function SocialMedia() {
             ].map((item, i) => (
               <div key={i} className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${item.cor}`}></div>
+                  <div className={`w-2 h-2 rounded-full ${item.cor}`} />
                   <span className="text-gray-500">{item.tipo}</span>
                 </div>
                 <span className="font-semibold text-gray-700">{item.key === '_imp' ? totalImpulsionados : totalPorTipo(item.key)}</span>
@@ -304,7 +341,6 @@ export default function SocialMedia() {
 
       {/* Calendário de Posts */}
       <div className="bg-white rounded-2xl shadow-sm border border-blue-100 overflow-hidden">
-        {/* Header azul */}
         <div className="bg-blue-50 border-b border-blue-100 px-6 py-4 flex items-center gap-3">
           <div className="w-8 h-8 bg-blue-500 rounded-xl flex items-center justify-center text-white text-sm flex-shrink-0">📋</div>
           <div>
@@ -312,26 +348,20 @@ export default function SocialMedia() {
             <p className="text-xs text-blue-400 mt-0.5">Registre os posts publicados clicando em um dia</p>
           </div>
         </div>
-
         <div className="p-6">
           <div className="grid grid-cols-7 mb-2">
-            {['DOM','SEG','TER','QUA','QUI','SEX','SAB'].map(d => (
+            {DIAS_SEMANA_ABREV.map(d => (
               <div key={d} className="text-center text-xs font-semibold text-blue-300 py-2">{d}</div>
             ))}
           </div>
-
           {semanas.map((semana, si) => (
             <div key={si} className="grid grid-cols-7 border-t border-blue-50">
               {semana.map((celula, ci) => {
                 const isMesAtual = !celula.mes
                 const postsDoDia = posts.filter(p => p.dia === celula.dia && isMesAtual)
-
                 return (
-                  <div
-                    key={ci}
-                    onClick={() => isMesAtual && abrirModal(celula.dia)}
-                    className={`min-h-[80px] p-2 border-r border-blue-50 last:border-r-0 transition-colors ${isMesAtual ? 'cursor-pointer hover:bg-blue-50' : 'bg-gray-50/50'}`}
-                  >
+                  <div key={ci} onClick={() => isMesAtual && abrirModal(celula.dia)}
+                    className={`min-h-[80px] p-2 border-r border-blue-50 last:border-r-0 transition-colors ${isMesAtual ? 'cursor-pointer hover:bg-blue-50' : 'bg-gray-50/50'}`}>
                     <div className="flex items-center justify-between gap-1">
                       <span className={`text-xs font-bold ${isMesAtual ? 'text-gray-700' : 'text-gray-300'}`}>{celula.dia}</span>
                       {isMesAtual && leadsPorDia[celula.dia] > 0 && (
@@ -361,177 +391,277 @@ export default function SocialMedia() {
         </div>
       </div>
 
-      {/* Calendário de Rotina */}
-      <div className="bg-brand-50 rounded-2xl shadow-sm border border-brand-200 overflow-hidden">
-        {/* Header brand */}
-        <div className="bg-brand-400 px-6 py-4 flex items-center gap-3">
-          <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center text-white text-sm flex-shrink-0">🗓️</div>
-          <div>
-            <h2 className="text-base font-bold text-white">Rotina da Social Media — {MESES[mes]} {ano}</h2>
-            <p className="text-xs text-brand-100 mt-0.5">Planejamento de conteúdo por dia • clique em um dia para adicionar</p>
+      {/* ===== ROTINA SEMANAL (template) ===== */}
+      <div className="bg-white rounded-2xl shadow-sm border border-brand-100 overflow-hidden">
+        <div className="bg-brand-400 px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center text-white text-sm flex-shrink-0">📌</div>
+            <div>
+              <h2 className="text-base font-bold text-white">Rotina Semanal</h2>
+              <p className="text-xs text-brand-100 mt-0.5">Configure as tarefas recorrentes por dia da semana</p>
+            </div>
           </div>
+          {aprovacoesPendentes > 0 && (
+            <span className="bg-orange-400 text-white text-xs font-bold px-3 py-1 rounded-full">
+              {aprovacoesPendentes} aguardando aprovação
+            </span>
+          )}
         </div>
-
-        <div className="p-6">
-          <div className="grid grid-cols-7 mb-2">
-            {['DOM','SEG','TER','QUA','QUI','SEX','SAB'].map(d => (
-              <div key={d} className="text-center text-xs font-semibold text-brand-400 py-2">{d}</div>
-            ))}
-          </div>
-
-        {semanas.map((semana, si) => (
-          <div key={si} className="grid grid-cols-7 border-t border-gray-100">
-            {semana.map((celula, ci) => {
-              const isMesAtual = !celula.mes
-              const dateKey = `${ano}-${mes}-${celula.dia}`
-              const tarefas = isMesAtual ? (rotina[dateKey] || []) : []
+        <div className="p-4">
+          <div className="grid grid-cols-7 gap-2">
+            {[0,1,2,3,4,5,6].map(dow => {
+              const tasks = templateDoDia(rotina, dow)
               return (
-                <div
-                  key={ci}
-                  onClick={() => isMesAtual && (setModalRotina({ dateKey, label: `${celula.dia} de ${MESES[mes]} — ${DIAS_SEMANA_FULL[ci]}` }), setFormRotina(FORM_ROTINA_VAZIO))}
-                  className={`min-h-[80px] p-2 border-r border-brand-100 last:border-r-0 transition-colors ${isMesAtual ? 'cursor-pointer hover:bg-brand-100' : 'bg-brand-50/50'}`}
-                >
-                  <span className={`text-xs font-bold ${isMesAtual ? 'text-brand-700' : 'text-brand-200'}`}>{celula.dia}</span>
-                  <div className="space-y-1 mt-1">
-                    {tarefas.map(tarefa => (
-                      <div key={tarefa.id} className={`text-xs px-1.5 py-0.5 rounded-md font-medium flex items-center justify-between gap-1 ${corDoTipoRotina(tarefa.tipo)}`}>
-                        <div className="min-w-0">
-                          <p className="truncate">{tarefa.texto}</p>
-                          {tarefa.horario && <p className="text-[10px] opacity-60">🕐 {tarefa.horario}</p>}
-                        </div>
-                        <button onClick={e => removerTarefaRotina(dateKey, tarefa.id, e)} className="opacity-40 hover:opacity-100 text-xs leading-none flex-shrink-0">×</button>
+                <div key={dow} className="min-h-[100px]">
+                  <p className="text-xs font-semibold text-brand-500 text-center mb-2">{DIAS_SEMANA_ABREV[dow]}</p>
+                  <div className="space-y-1">
+                    {tasks.map(t => (
+                      <div key={t.id} className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium flex items-center justify-between gap-0.5 ${corDoTipoRotina(t.tipo)}`}>
+                        <span className="truncate min-w-0">{t.texto}</span>
+                        <button onClick={() => removerTplTask(dow, t.id)} className="opacity-40 hover:opacity-100 text-xs leading-none flex-shrink-0">×</button>
                       </div>
                     ))}
-                    {isMesAtual && tarefas.length === 0 && (
-                      <div className="text-xs text-brand-200 mt-2 text-center">+</div>
-                    )}
                   </div>
+                  <button
+                    onClick={() => { setModalTpl({ dow }); setFormTpl(FORM_TPL_VAZIO) }}
+                    className="mt-1.5 w-full text-xs text-brand-300 hover:text-brand-500 hover:bg-brand-50 rounded-lg py-1 transition-colors text-center"
+                  >+ adicionar</button>
                 </div>
               )
             })}
           </div>
-        ))}
         </div>
       </div>
 
-      {/* Modal Rotina */}
+      {/* ===== ROTINA DO MÊS (calendário) ===== */}
+      <div className="bg-brand-50 rounded-2xl shadow-sm border border-brand-200 overflow-hidden">
+        <div className="bg-brand-400 px-6 py-4 flex items-center gap-3">
+          <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center text-white text-sm flex-shrink-0">🗓️</div>
+          <div>
+            <h2 className="text-base font-bold text-white">Rotina da Social Media — {MESES[mes]} {ano}</h2>
+            <p className="text-xs text-brand-100 mt-0.5">Clique em um dia para ver e atualizar as tarefas</p>
+          </div>
+        </div>
+        <div className="p-6">
+          <div className="grid grid-cols-7 mb-2">
+            {DIAS_SEMANA_ABREV.map(d => (
+              <div key={d} className="text-center text-xs font-semibold text-brand-400 py-2">{d}</div>
+            ))}
+          </div>
+          {semanas.map((semana, si) => (
+            <div key={si} className="grid grid-cols-7 border-t border-gray-100">
+              {semana.map((celula, ci) => {
+                const isMesAtual = !celula.mes
+                const dateKey = `${ano}-${mes}-${celula.dia}`
+                const tarefas = isMesAtual ? (rotina[dateKey] || []) : []
+                const tplTasks = isMesAtual ? templateDoDia(rotina, ci) : []
+                const temAprovacao = tarefas.some(t => t.status === 'Aguardando aprovação') ||
+                  tplTasks.some(t => statusTpl(rotina, dateKey, t.id) === 'Aguardando aprovação')
+                return (
+                  <div key={ci}
+                    onClick={() => isMesAtual && (setModalRotina({ dateKey, dow: ci, label: `${celula.dia} de ${MESES[mes]} — ${DIAS_SEMANA_FULL[ci]}` }), setFormRotina(FORM_ROTINA_VAZIO))}
+                    className={`min-h-[80px] p-2 border-r border-brand-100 last:border-r-0 transition-colors relative ${isMesAtual ? 'cursor-pointer hover:bg-brand-100' : 'bg-brand-50/50'}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className={`text-xs font-bold ${isMesAtual ? 'text-brand-700' : 'text-brand-200'}`}>{celula.dia}</span>
+                      {temAprovacao && <span className="w-2 h-2 bg-orange-400 rounded-full" title="Aguardando aprovação" />}
+                    </div>
+                    <div className="space-y-0.5 mt-1">
+                      {tplTasks.slice(0, 2).map(t => {
+                        const st = statusTpl(rotina, dateKey, t.id)
+                        const cor = corDoStatus(st)
+                        return (
+                          <div key={t.id} className={`text-[10px] px-1 py-0.5 rounded font-medium truncate ${cor} opacity-80`}>
+                            {t.texto}
+                          </div>
+                        )
+                      })}
+                      {tarefas.slice(0, 2).map(t => (
+                        <div key={t.id} className={`text-[10px] px-1 py-0.5 rounded font-medium truncate ${corDoStatus(t.status || 'A fazer')}`}>
+                          {t.texto}
+                        </div>
+                      ))}
+                      {(tplTasks.length + tarefas.length) > 4 && (
+                        <div className="text-[10px] text-brand-300 text-center">+{tplTasks.length + tarefas.length - 4}</div>
+                      )}
+                      {isMesAtual && tplTasks.length === 0 && tarefas.length === 0 && (
+                        <div className="text-xs text-brand-200 mt-2 text-center">+</div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ))}
+        </div>
+
+        {/* Legenda status */}
+        <div className="px-6 pb-4 flex flex-wrap gap-2">
+          {STATUS_ROTINA.map(s => (
+            <span key={s.label} className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${s.cor}`}>{s.label}</span>
+          ))}
+        </div>
+      </div>
+
+      {/* ===== MODAL DIA (rotina + template) ===== */}
       {modalRotina && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={() => setModalRotina(null)}>
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
-            {/* Header */}
             <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100 flex-shrink-0">
-              <div>
-                <h2 className="text-lg font-bold text-gray-800">📅 {modalRotina.label}</h2>
-              </div>
+              <h2 className="text-base font-bold text-gray-800">📅 {modalRotina.label}</h2>
               <button onClick={() => setModalRotina(null)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
             </div>
 
-            {/* Corpo scrollável */}
-            <div className="overflow-y-auto flex-1 px-6 py-4 space-y-4">
+            <div className="overflow-y-auto flex-1 px-6 py-4 space-y-5">
 
-                {/* Título */}
-              <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">Título <span className="text-red-400">*</span></label>
-                <input autoFocus type="text" value={formRotina.texto}
-                  onChange={e => setFormRotina(f => ({ ...f, texto: e.target.value }))}
-                  placeholder="Ex: Criar conteúdo para Reels"
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400" />
-              </div>
-
-              {/* Formato + Tipo */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Rotina do dia (template) */}
+              {templateDoDia(rotina, modalRotina.dow).length > 0 && (
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Formato</label>
-                  <select value={formRotina.formato} onChange={e => setFormRotina(f => ({ ...f, formato: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400 bg-white">
-                    <option value="">Selecione</option>
-                    {ROTINA_FORMATOS.map(f => <option key={f} value={f}>{f}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Tipo <span className="text-red-400">*</span></label>
-                  <select value={formRotina.tipo} onChange={e => setFormRotina(f => ({ ...f, tipo: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400 bg-white">
-                    <option value="">Selecione</option>
-                    {ROTINA_TIPOS.map(t => <option key={t.label} value={t.label}>{t.label}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              {/* Etapa do Funil + Status */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Etapa do Funil</label>
-                  <select value={formRotina.etapaFunil} onChange={e => setFormRotina(f => ({ ...f, etapaFunil: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400 bg-white">
-                    <option value="">Selecione</option>
-                    {ETAPAS_FUNIL.map(e => <option key={e} value={e}>{e}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Status</label>
-                  <select value={formRotina.status} onChange={e => setFormRotina(f => ({ ...f, status: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400 bg-white">
-                    {STATUS_ROTINA.map(s => <option key={s.label} value={s.label}>{s.label}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              {/* Paciente + Inspiração */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Paciente</label>
-                  <input type="text" value={formRotina.paciente}
-                    onChange={e => setFormRotina(f => ({ ...f, paciente: e.target.value }))}
-                    placeholder="Nome do paciente"
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400" />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Inspiração</label>
-                  <div className="relative">
-                    <input type="text" value={formRotina.inspiracao}
-                      onChange={e => setFormRotina(f => ({ ...f, inspiracao: e.target.value }))}
-                      placeholder="Link ou referência"
-                      className={`w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400 ${formRotina.inspiracao ? 'pr-9' : ''}`} />
-                    {formRotina.inspiracao && (
-                      <a href={formRotina.inspiracao.startsWith('http') ? formRotina.inspiracao : `https://${formRotina.inspiracao}`}
-                        target="_blank" rel="noreferrer"
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-400 hover:text-brand-600 transition-colors"
-                        title="Abrir link">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                      </a>
-                    )}
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">Rotina do dia</p>
+                  <div className="space-y-2">
+                    {templateDoDia(rotina, modalRotina.dow).map(t => {
+                      const st = statusTpl(rotina, modalRotina.dateKey, t.id)
+                      const corInfo = STATUS_ROTINA.find(s => s.label === st) || STATUS_ROTINA[0]
+                      return (
+                        <div key={t.id} className="flex items-center gap-3 border border-gray-100 rounded-xl p-3">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-800 truncate">{t.texto}</p>
+                            {t.formato && <p className="text-xs text-gray-400">{t.formato}</p>}
+                          </div>
+                          <button
+                            onClick={(e) => avancarStatusTpl(modalRotina.dateKey, t.id, e)}
+                            className={`text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap transition-colors hover:opacity-80 ${corInfo.cor}`}
+                            title="Clique para avançar status"
+                          >
+                            {st}
+                          </button>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Horário */}
-              <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">Horário do post</label>
-                <input type="time" value={formRotina.horario}
-                  onChange={e => setFormRotina(f => ({ ...f, horario: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400 bg-white" />
-              </div>
+              {/* Tarefas específicas do dia */}
+              {(rotina[modalRotina.dateKey] || []).length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">Tarefas específicas</p>
+                  <div className="space-y-2">
+                    {(rotina[modalRotina.dateKey] || []).map(t => {
+                      const corInfo = STATUS_ROTINA.find(s => s.label === (t.status || 'A fazer')) || STATUS_ROTINA[0]
+                      return (
+                        <div key={t.id} className="flex items-center gap-3 border border-gray-100 rounded-xl p-3">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-800 truncate">{t.texto}</p>
+                            {t.horario && <p className="text-xs text-gray-400">🕐 {t.horario}</p>}
+                          </div>
+                          <button
+                            onClick={(e) => avancarStatusTarefa(modalRotina.dateKey, t.id, e)}
+                            className={`text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap hover:opacity-80 transition-colors ${corInfo.cor}`}
+                            title="Clique para avançar status"
+                          >
+                            {t.status || 'A fazer'}
+                          </button>
+                          <button onClick={e => removerTarefaRotina(modalRotina.dateKey, t.id, e)} className="text-gray-300 hover:text-red-400 text-sm leading-none">×</button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
 
-              {/* Comentário */}
+              {/* Adicionar tarefa específica */}
               <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">Comentário</label>
-                <textarea value={formRotina.comentario}
-                  onChange={e => setFormRotina(f => ({ ...f, comentario: e.target.value }))}
-                  placeholder="Observações, ideias, referências..."
-                  rows={3}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-400 resize-none" />
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">+ Tarefa específica</p>
+                <div className="space-y-3 border border-gray-100 rounded-xl p-4">
+                  <input type="text" value={formRotina.texto}
+                    onChange={e => setFormRotina(f => ({ ...f, texto: e.target.value }))}
+                    placeholder="Ex: Criar post de aniversário da clínica"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400" />
+                  <div className="grid grid-cols-2 gap-2">
+                    <select value={formRotina.tipo} onChange={e => setFormRotina(f => ({ ...f, tipo: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400 bg-white">
+                      <option value="">Tipo *</option>
+                      {ROTINA_TIPOS.map(t => <option key={t.label} value={t.label}>{t.label}</option>)}
+                    </select>
+                    <select value={formRotina.formato} onChange={e => setFormRotina(f => ({ ...f, formato: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400 bg-white">
+                      <option value="">Formato</option>
+                      {ROTINA_FORMATOS.map(f => <option key={f} value={f}>{f}</option>)}
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input type="time" value={formRotina.horario}
+                      onChange={e => setFormRotina(f => ({ ...f, horario: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400 bg-white" />
+                    <select value={formRotina.status} onChange={e => setFormRotina(f => ({ ...f, status: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400 bg-white">
+                      {STATUS_ROTINA.map(s => <option key={s.label} value={s.label}>{s.label}</option>)}
+                    </select>
+                  </div>
+                  <textarea value={formRotina.comentario}
+                    onChange={e => setFormRotina(f => ({ ...f, comentario: e.target.value }))}
+                    placeholder="Observações..."
+                    rows={2}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400 resize-none" />
+                  <button onClick={adicionarTarefaRotina} disabled={!formRotina.texto.trim() || !formRotina.tipo}
+                    className="w-full bg-brand-500 hover:bg-brand-600 disabled:opacity-40 text-white text-sm font-semibold py-2 rounded-xl transition-colors">
+                    Adicionar tarefa
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Footer fixo */}
-            <div className="flex gap-3 px-6 py-4 border-t border-gray-100 flex-shrink-0">
-              <button onClick={() => setModalRotina(null)}
-                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-semibold py-2.5 rounded-xl transition-colors">Fechar</button>
-              <button onClick={adicionarTarefaRotina} disabled={!formRotina.texto.trim() || !formRotina.tipo}
-                className="flex-1 bg-brand-500 hover:bg-brand-600 disabled:opacity-40 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">Adicionar</button>
+            <div className="px-6 py-4 border-t border-gray-100 flex-shrink-0">
+              <button onClick={() => setModalRotina(null)} className="w-full bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-semibold py-2.5 rounded-xl transition-colors">
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== MODAL TEMPLATE SEMANAL ===== */}
+      {modalTpl && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={() => setModalTpl(null)}>
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100">
+              <h2 className="text-base font-bold text-gray-800">📌 Rotina de {DIAS_SEMANA_FULL[modalTpl.dow]}</h2>
+              <button onClick={() => setModalTpl(null)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+            </div>
+            <div className="px-6 py-4 space-y-3">
+              {/* Lista atual */}
+              {templateDoDia(rotina, modalTpl.dow).length > 0 && (
+                <div className="space-y-1.5 mb-2">
+                  {templateDoDia(rotina, modalTpl.dow).map(t => (
+                    <div key={t.id} className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium ${corDoTipoRotina(t.tipo)}`}>
+                      <span className="truncate">{t.texto}{t.formato ? ` · ${t.formato}` : ''}</span>
+                      <button onClick={() => removerTplTask(modalTpl.dow, t.id)} className="opacity-40 hover:opacity-100 flex-shrink-0">×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* Adicionar */}
+              <input autoFocus type="text" value={formTpl.texto}
+                onChange={e => setFormTpl(f => ({ ...f, texto: e.target.value }))}
+                onKeyDown={e => { if (e.key === 'Enter') adicionarTplTask() }}
+                placeholder="Ex: Postar Reels, Responder DMs..."
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400" />
+              <div className="grid grid-cols-2 gap-2">
+                <select value={formTpl.tipo} onChange={e => setFormTpl(f => ({ ...f, tipo: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400 bg-white">
+                  {ROTINA_TIPOS.map(t => <option key={t.label} value={t.label}>{t.label}</option>)}
+                </select>
+                <select value={formTpl.formato} onChange={e => setFormTpl(f => ({ ...f, formato: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400 bg-white">
+                  <option value="">Formato</option>
+                  {ROTINA_FORMATOS.map(f => <option key={f} value={f}>{f}</option>)}
+                </select>
+              </div>
+              <button onClick={adicionarTplTask} disabled={!formTpl.texto.trim()}
+                className="w-full bg-brand-500 hover:bg-brand-600 disabled:opacity-40 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">
+                Adicionar à rotina
+              </button>
             </div>
           </div>
         </div>
@@ -545,23 +675,20 @@ export default function SocialMedia() {
               <h2 className="text-lg font-bold text-gray-800">Novo Post</h2>
               <button onClick={() => setModal(null)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
             </div>
-
             <div className="space-y-4">
               <div>
                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Data do Post</label>
                 <input type="text" value={form.data} onChange={e => setForm(f => ({ ...f, data: e.target.value }))}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400" />
               </div>
-
               <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">Formato <span className="text-red-400">*</span></label>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Formato</label>
                 <select value={form.formato} onChange={e => setForm(f => ({ ...f, formato: e.target.value }))}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400 bg-white">
                   <option value="">Selecione o formato</option>
                   {FORMATOS.map(f => <option key={f} value={f}>{f}</option>)}
                 </select>
               </div>
-
               <div>
                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Tipo <span className="text-red-400">*</span></label>
                 <select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}
@@ -570,7 +697,6 @@ export default function SocialMedia() {
                   {TIPOS.map(t => <option key={t.label} value={t.label}>{t.label}</option>)}
                 </select>
               </div>
-
               <div>
                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Link do Post</label>
                 <div className="relative">
@@ -578,29 +704,21 @@ export default function SocialMedia() {
                     placeholder="https://instagram.com/p/..."
                     className={`w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400 ${form.link ? 'pr-9' : ''}`} />
                   {form.link && (
-                    <a href={form.link.startsWith('http') ? form.link : `https://${form.link}`}
-                      target="_blank" rel="noreferrer"
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-400 hover:text-brand-600 transition-colors"
-                      title="Abrir link">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
+                    <a href={form.link.startsWith('http') ? form.link : `https://${form.link}`} target="_blank" rel="noreferrer"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-400 hover:text-brand-600 transition-colors">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                     </a>
                   )}
                 </div>
               </div>
-
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={form.impulsionado} onChange={e => setForm(f => ({ ...f, impulsionado: e.target.checked }))}
-                  className="w-4 h-4 accent-brand-400" />
+                <input type="checkbox" checked={form.impulsionado} onChange={e => setForm(f => ({ ...f, impulsionado: e.target.checked }))} className="w-4 h-4 accent-brand-400" />
                 <span className="text-sm text-gray-600">Post Impulsionado</span>
               </label>
             </div>
-
             <div className="flex gap-3 mt-6">
               <button onClick={() => setModal(null)} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-semibold py-2.5 rounded-xl transition-colors">Cancelar</button>
-              <button onClick={salvarPost} disabled={!form.tipo}
-                className="flex-1 bg-brand-500 hover:bg-brand-600 disabled:opacity-40 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">Salvar</button>
+              <button onClick={salvarPost} disabled={!form.tipo} className="flex-1 bg-brand-500 hover:bg-brand-600 disabled:opacity-40 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">Salvar</button>
             </div>
           </div>
         </div>
@@ -625,28 +743,18 @@ export default function SocialMedia() {
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2 flex-wrap">
                   <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-amber-400 flex-shrink-0"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-                  <h2 className="text-base font-bold text-gray-800">
-                    Leads do dia {String(modalLeadsDia.dia).padStart(2,'0')}/{String(mes+1).padStart(2,'0')}
-                  </h2>
-                  <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">
-                    {conversao}% de conversão
-                  </span>
+                  <h2 className="text-base font-bold text-gray-800">Leads do dia {String(modalLeadsDia.dia).padStart(2,'0')}/{String(mes+1).padStart(2,'0')}</h2>
+                  <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">{conversao}% de conversão</span>
                 </div>
                 <button onClick={() => setModalLeadsDia(null)} className="text-gray-300 hover:text-gray-500 text-2xl leading-none flex-shrink-0">×</button>
               </div>
-
               <div className="space-y-2">
                 {modalLeadsDia.leads.map(lead => {
                   const s = STATUS_LEAD.find(x => x.key === lead.status) || { label: lead.status || '—', bg: 'bg-gray-100', text: 'text-gray-500' }
                   const temTelefone = !!lead.telefone
                   return (
                     <div key={lead.id}
-                      onClick={() => {
-                        if (temTelefone) {
-                          window.dispatchEvent(new CustomEvent('navegarInbox', { detail: { telefone: lead.telefone, contaTipo: 'Leads Novos' } }))
-                          setModalLeadsDia(null)
-                        }
-                      }}
+                      onClick={() => { if (temTelefone) { window.dispatchEvent(new CustomEvent('navegarInbox', { detail: { telefone: lead.telefone, contaTipo: 'Leads Novos' } })); setModalLeadsDia(null) } }}
                       className={`border rounded-xl px-4 py-3 flex items-center justify-between gap-3 transition-colors ${temTelefone ? 'border-gray-200 cursor-pointer hover:border-brand-300 hover:bg-brand-50' : 'border-gray-100 opacity-60'}`}>
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-gray-800 truncate">{lead.nome}</p>
@@ -656,9 +764,7 @@ export default function SocialMedia() {
                     </div>
                   )
                 })}
-                {modalLeadsDia.leads.length === 0 && (
-                  <p className="text-center text-gray-400 text-sm py-6">Nenhum lead neste dia</p>
-                )}
+                {modalLeadsDia.leads.length === 0 && <p className="text-center text-gray-400 text-sm py-6">Nenhum lead neste dia</p>}
               </div>
               {modalLeadsDia.leads.some(l => l.telefone) && (
                 <p className="text-xs text-gray-400 text-center mt-4">Clique no lead para abrir a conversa no inbox</p>
