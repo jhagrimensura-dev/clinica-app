@@ -387,9 +387,6 @@ function Historico() {
                                 {fmtK(v)}
                                 {manual && <span className="ml-0.5 text-gray-300 text-[9px]">✎</span>}
                               </span>
-                              <div className="w-10 h-1 bg-gray-100 rounded-full overflow-hidden">
-                                <div className={`h-full rounded-full ${manual ? 'bg-gray-300' : 'bg-brand-400'}`} style={{ width: `${pct * 100}%` }} />
-                              </div>
                             </div>
                           ) : (
                             <button
