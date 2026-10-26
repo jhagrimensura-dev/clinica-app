@@ -194,6 +194,7 @@ function Historico() {
   const [loading, setLoading] = useState(true)
   const [editando, setEditando] = useState(null) // key "2023-04"
   const [editRaw, setEditRaw] = useState('')
+  const [tipoGrafico, setTipoGrafico] = useState('linha')
 
   useEffect(() => {
     if (!clinicaId) return
@@ -278,7 +279,6 @@ function Historico() {
   })
 
   const CORES_ANO = ['#a78bfa','#60a5fa','#34d399','#fbbf24','#f87171','#e879f9']
-  const [tipoGrafico, setTipoGrafico] = useState('linha')
 
   const fmtKAxis = (v) => {
     if (!v) return ''
