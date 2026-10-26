@@ -214,6 +214,40 @@ export default async function handler(req, res) {
     }
     resultado.recorrentes = rowsRec.length
 
+    // ── Deduplicação automática por telefone ──────────────────────────────────
+    const normPhone = (t) => {
+      if (!t) return ''
+      const d = t.replace(/\D/g, '')
+      if (d.length === 13 && d.startsWith('55')) return d.slice(2)
+      if (d.length === 12 && d.startsWith('55')) return d.slice(2)
+      return d
+    }
+    const STATUS_PRI = { perdido: 0, em_aberto: 1, conversando: 2, follow1: 3, follow2: 4, follow3: 5, agendado: 6, fechado: 7 }
+    const { data: todosLeads } = await supabase.from('leads')
+      .select('id, nome, telefone, status, obs, origem_custom, responsavel, midia, criativo, data_origem, data, origem, agendado_para')
+      .eq('clinica_id', clinicaId)
+      .not('telefone', 'is', null)
+      .neq('telefone', '')
+    const byTel = {}
+    for (const l of (todosLeads || [])) {
+      const tel = normPhone(l.telefone)
+      if (tel.length < 6) continue
+      if (!byTel[tel]) byTel[tel] = []
+      byTel[tel].push(l)
+    }
+    let deduplicados = 0
+    for (const grupo of Object.values(byTel)) {
+      if (grupo.length < 2) continue
+      const sorted = [...grupo].sort((a, b) => (STATUS_PRI[b.status] ?? 0) - (STATUS_PRI[a.status] ?? 0))
+      const manter = sorted[0]
+      const excluir = sorted.slice(1)
+      const obs = sorted.map(l => l.obs).filter(Boolean).join(' | ') || null
+      if (obs) await supabase.from('leads').update({ obs }).eq('id', manter.id)
+      for (const l of excluir) await supabase.from('leads').delete().eq('id', l.id)
+      deduplicados++
+    }
+    resultado.deduplicados = deduplicados
+
     return res.status(200).json({ ok: true, periodo: prefix, resultado })
   } catch (e) {
     console.error('sync-planilha error:', e.message)

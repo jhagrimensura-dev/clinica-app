@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 
 const genUUID = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID()
@@ -523,7 +523,7 @@ export default function LeadsNovos() {
   const [busca, setBusca] = useState('')
   const [filtroOrigem, setFiltroOrigem] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(null)
-  const [bannerDupDismissed, setBannerDupDismissed] = useState(false)
+  const autoResolvingRef = useRef(false)
   const [visao, setVisao] = useState('lista')
   const [dragOver, setDragOver] = useState(null)
   const [ordem, setOrdem] = useState('desc')
@@ -745,15 +745,34 @@ export default function LeadsNovos() {
 
   const telesDuplicados = useMemo(() => new Set(gruposDuplicatas.flat().map(l => normTelGlobal(l.telefone))), [gruposDuplicatas])
 
-  const dupFingerprint = useMemo(() =>
-    gruposDuplicatas.flatMap(g => g.map(l => normTelGlobal(l.telefone))).sort().join(',')
-  , [gruposDuplicatas])
+  // Auto-resolve duplicatas silenciosamente
   useEffect(() => {
-    if (dupFingerprint && localStorage.getItem('dup_dismissed') === dupFingerprint)
-      setBannerDupDismissed(true)
-    else
-      setBannerDupDismissed(false)
-  }, [dupFingerprint])
+    if (gruposDuplicatas.length === 0 || autoResolvingRef.current || importando) return
+    autoResolvingRef.current = true
+    ;(async () => {
+      for (const grupo of gruposDuplicatas) {
+        const sorted = [...grupo].sort((a, b) => (STATUS_PRIORITY[b.status] ?? 0) - (STATUS_PRIORITY[a.status] ?? 0))
+        const manter = sorted[0]
+        const excluir = sorted.slice(1)
+        const merged = {
+          nome: sorted.find(l => l.nome)?.nome || manter.nome,
+          telefone: sorted.find(l => l.telefone)?.telefone || manter.telefone,
+          origemCustom: sorted.find(l => l.origemCustom && l.origemCustom !== 'WhatsApp')?.origemCustom || manter.origemCustom,
+          responsavel: sorted.find(l => l.responsavel)?.responsavel || '',
+          midia: sorted.find(l => l.midia)?.midia || null,
+          criativo: sorted.find(l => l.criativo)?.criativo || null,
+          dataOrigem: sorted.map(l => l.dataOrigem || l.data).filter(Boolean).sort()[0] || manter.dataOrigem,
+          data: manter.data, status: manter.status,
+          obs: sorted.map(l => l.obs).filter(Boolean).join(' | ') || '',
+          agendadoPara: sorted.find(l => l.agendadoPara)?.agendadoPara || null,
+          origem: manter.origem,
+        }
+        await updateLead(manter.id, merged)
+        for (const l of excluir) await removeLead(l.id)
+      }
+      autoResolvingRef.current = false
+    })()
+  }, [gruposDuplicatas.length])
 
   const isDuplicata = (lead) => {
     const tel = normTelGlobal(lead.telefone)
@@ -950,48 +969,6 @@ export default function LeadsNovos() {
         </select>
       </div>
 
-      {/* Banner duplicatas */}
-      {gruposDuplicatas.length > 0 && !bannerDupDismissed && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-amber-500 text-lg">⚠️</span>
-            <div>
-              <p className="text-sm font-semibold text-amber-800">{gruposDuplicatas.length} {gruposDuplicatas.length === 1 ? 'lead duplicado detectado' : 'leads duplicados detectados'}</p>
-              <p className="text-xs text-amber-600">Mesmo telefone cadastrado mais de uma vez no sistema</p>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {gruposDuplicatas.slice(0, 3).map((grupo, i) => {
-              const meses = [...new Set(grupo.map(l => {
-                const d = l.data || ''
-                if (!d) return null
-                const [y, m] = d.split('-')
-                return `${MESES_FULL[parseInt(m, 10) - 1]?.slice(0, 3)}/${y?.slice(2)}`
-              }).filter(Boolean))].join(' · ')
-              return (
-                <button key={i} onClick={() => setModalMesclar(grupo)}
-                  className="text-xs bg-amber-400 hover:bg-amber-500 text-white font-semibold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap text-left leading-tight">
-                  <span className="block">{grupo[0].nome}</span>
-                  {meses && <span className="block text-[10px] opacity-75 font-normal">{meses}</span>}
-                </button>
-              )
-            })}
-            {gruposDuplicatas.length > 3 && (
-              <button onClick={() => setModalMesclar(gruposDuplicatas[3])}
-                className="text-xs bg-amber-200 hover:bg-amber-300 text-amber-800 font-semibold px-3 py-1.5 rounded-lg transition-colors">
-                +{gruposDuplicatas.length - 3} mais
-              </button>
-            )}
-            <button onClick={resolverTodasDuplicatas} disabled={importando}
-              className="text-xs bg-red-400 hover:bg-red-500 text-white font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50">
-              {importando ? 'Resolvendo...' : '✓ Resolver todas'}
-            </button>
-          </div>
-          <button onClick={() => { localStorage.setItem('dup_dismissed', dupFingerprint); setBannerDupDismissed(true) }} className="text-amber-400 hover:text-amber-600 flex-shrink-0 ml-1" title="Fechar">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
-          </button>
-        </div>
-      )}
 
       {/* Cards de resumo */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
