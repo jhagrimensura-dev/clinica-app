@@ -352,9 +352,9 @@ function Historico() {
   )
 }
 
-export default function Financeiro() {
+export default function Financeiro({ initialTab = 'financeiro' }) {
   const { clinicaId } = useAuth()
-  const [abaAtiva, setAbaAtiva] = useState('financeiro')
+  const [abaAtiva, setAbaAtiva] = useState(initialTab)
   const {
     ano, setAno,
     mes, setMes,

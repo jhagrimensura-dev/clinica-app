@@ -60,8 +60,10 @@ const menuItems = [
   {
     id: 'financeiro', label: 'Financeiro', icon: 'financeiro',
     sub: [
-      { id: 'contas',        label: 'Contas a Pagar', icon: 'contas'        },
-      { id: 'colaboradoras', label: 'Colaboradoras',  icon: 'colaboradoras' },
+      { id: 'financeiro',    label: 'Fluxo de Caixa', icon: 'financeiro'    },
+      { id: 'historico_fin', label: 'Histórico',       icon: 'relatorios'   },
+      { id: 'contas',        label: 'Contas a Pagar',  icon: 'contas'       },
+      { id: 'colaboradoras', label: 'Colaboradoras',   icon: 'colaboradoras'},
     ],
   },
   { id: 'estoque',     label: 'Estoque',           icon: 'estoque'      },
