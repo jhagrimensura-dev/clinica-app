@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   LineChart, Line, ResponsiveContainer
 } from 'recharts'
 import { useFinanceiro, CATEGORIAS } from '../context/FinanceiroContext'
+import { useAuth } from '../context/AuthContext'
+import { supabase } from '../lib/supabase'
 
 const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
@@ -181,7 +183,178 @@ const CustomTooltip = ({ active, payload, label }) => {
   )
 }
 
+const MESES_ABREV = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+const ANO_ATUAL = new Date().getFullYear()
+const ANOS_HISTORICO = Array.from({ length: ANO_ATUAL - 2021 }, (_, i) => 2022 + i)
+
+function Historico() {
+  const { clinicaId } = useAuth()
+  const [dados, setDados] = useState({}) // { "2025-03": 123456 }
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!clinicaId) return
+    setLoading(true)
+    supabase.from('lancamentos')
+      .select('data, valor_tratamento, valor_taxa, tipo, procedimentos')
+      .eq('clinica_id', clinicaId)
+      .neq('tipo', 'Paciente Modelo')
+      .then(({ data }) => {
+        const map = {}
+        for (const l of (data || [])) {
+          if (!l.data) continue
+          const ym = l.data.slice(0, 7) // "2025-03"
+          map[ym] = (map[ym] || 0) + (l.valor_tratamento || 0) + (l.valor_taxa || 0)
+        }
+        setDados(map)
+        setLoading(false)
+      })
+  }, [clinicaId])
+
+  const fmtK = (v) => {
+    if (!v) return '—'
+    if (v >= 1000) return `R$${(v / 1000).toFixed(0)}k`
+    return `R$${v.toFixed(0)}`
+  }
+  const fmtFull = (v) => v ? v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '—'
+
+  const totalAno = (ano) => MESES_ABREV.reduce((s, _, i) => {
+    const k = `${ano}-${String(i + 1).padStart(2, '0')}`
+    return s + (dados[k] || 0)
+  }, 0)
+
+  const maxValor = Math.max(...ANOS_HISTORICO.flatMap(ano =>
+    MESES_ABREV.map((_, i) => dados[`${ano}-${String(i + 1).padStart(2, '0')}`] || 0)
+  ), 1)
+
+  if (loading) return (
+    <div className="flex items-center justify-center py-20 text-gray-400 text-sm">Carregando histórico...</div>
+  )
+
+  // Gráfico de linha por ano
+  const chartData = MESES_ABREV.map((m, i) => {
+    const entry = { mes: m }
+    ANOS_HISTORICO.forEach(ano => {
+      entry[String(ano)] = dados[`${ano}-${String(i + 1).padStart(2, '0')}`] || 0
+    })
+    return entry
+  })
+
+  const CORES_ANO = ['#a78bfa','#60a5fa','#34d399','#fbbf24','#f87171','#e879f9']
+
+  return (
+    <div className="space-y-6">
+      {/* Gráfico comparativo */}
+      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+        <p className="text-sm font-semibold text-gray-500 mb-4">Faturamento Mensal por Ano</p>
+        <ResponsiveContainer width="100%" height={220}>
+          <LineChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
+            <YAxis tickFormatter={fmtK} tick={{ fontSize: 11 }} width={48} />
+            <Tooltip formatter={(v) => fmtFull(v)} />
+            <Legend />
+            {ANOS_HISTORICO.map((ano, i) => (
+              <Line key={ano} type="monotone" dataKey={String(ano)} name={String(ano)}
+                stroke={CORES_ANO[i % CORES_ANO.length]} strokeWidth={2} dot={{ r: 2 }} />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Tabela histórica */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-100">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase sticky left-0 bg-gray-50 min-w-[60px]">Ano</th>
+                {MESES_ABREV.map(m => (
+                  <th key={m} className="px-2 py-3 text-center text-xs font-semibold text-gray-400 uppercase min-w-[80px]">{m}</th>
+                ))}
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-400 uppercase min-w-[100px]">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ANOS_HISTORICO.map((ano, ai) => {
+                const total = totalAno(ano)
+                return (
+                  <tr key={ano} className="border-b border-gray-50 hover:bg-gray-50/50">
+                    <td className="px-4 py-3 font-bold text-gray-700 sticky left-0 bg-white">{ano}</td>
+                    {MESES_ABREV.map((_, i) => {
+                      const k = `${ano}-${String(i + 1).padStart(2, '0')}`
+                      const v = dados[k] || 0
+                      const pct = maxValor > 0 ? v / maxValor : 0
+                      const mesAtual = new Date().getFullYear() === ano && new Date().getMonth() === i
+                      return (
+                        <td key={i} className="px-2 py-3 text-center">
+                          {v > 0 ? (
+                            <div className="flex flex-col items-center gap-1">
+                              <span className={`text-xs font-semibold ${mesAtual ? 'text-brand-600' : 'text-gray-700'}`}>
+                                {fmtK(v)}
+                              </span>
+                              <div className="w-10 h-1 bg-gray-100 rounded-full overflow-hidden">
+                                <div className="h-full rounded-full bg-brand-400" style={{ width: `${pct * 100}%` }} />
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-gray-200 text-xs">—</span>
+                          )}
+                        </td>
+                      )
+                    })}
+                    <td className="px-4 py-3 text-right font-bold text-gray-800">
+                      {total > 0 ? fmtFull(total) : '—'}
+                    </td>
+                  </tr>
+                )
+              })}
+              {/* Linha de variação YoY */}
+              {ANOS_HISTORICO.length >= 2 && (() => {
+                const anoAnt = ANOS_HISTORICO[ANOS_HISTORICO.length - 2]
+                const anoAtl = ANOS_HISTORICO[ANOS_HISTORICO.length - 1]
+                return (
+                  <tr className="bg-gray-50 border-t border-gray-200">
+                    <td className="px-4 py-2 text-xs font-semibold text-gray-400 sticky left-0 bg-gray-50">
+                      vs {anoAnt}
+                    </td>
+                    {MESES_ABREV.map((_, i) => {
+                      const ka = `${anoAnt}-${String(i + 1).padStart(2, '0')}`
+                      const kb = `${anoAtl}-${String(i + 1).padStart(2, '0')}`
+                      const va = dados[ka] || 0
+                      const vb = dados[kb] || 0
+                      if (!va || !vb) return <td key={i} className="px-2 py-2 text-center text-xs text-gray-300">—</td>
+                      const diff = ((vb - va) / va) * 100
+                      return (
+                        <td key={i} className="px-2 py-2 text-center">
+                          <span className={`text-xs font-semibold ${diff >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                            {diff >= 0 ? '+' : ''}{diff.toFixed(0)}%
+                          </span>
+                        </td>
+                      )
+                    })}
+                    <td className="px-4 py-2 text-right">
+                      {(() => {
+                        const ta = totalAno(anoAnt), tb = totalAno(anoAtl)
+                        if (!ta || !tb) return <span className="text-xs text-gray-300">—</span>
+                        const d = ((tb - ta) / ta) * 100
+                        return <span className={`text-xs font-bold ${d >= 0 ? 'text-green-600' : 'text-red-500'}`}>{d >= 0 ? '+' : ''}{d.toFixed(1)}%</span>
+                      })()}
+                    </td>
+                  </tr>
+                )
+              })()}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function Financeiro() {
+  const { clinicaId } = useAuth()
+  const [abaAtiva, setAbaAtiva] = useState('financeiro')
   const {
     ano, setAno,
     mes, setMes,
@@ -215,19 +388,44 @@ export default function Financeiro() {
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Financeiro</h1>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setAno(a => a - 1)}
-            className="w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 flex items-center justify-center text-sm"
-          >←</button>
-          <span className="text-sm font-bold text-gray-700 w-10 text-center">{ano}</span>
-          <button
-            onClick={() => setAno(a => a + 1)}
-            className="w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 flex items-center justify-center text-sm"
-          >→</button>
-        </div>
+        {abaAtiva === 'financeiro' && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setAno(a => a - 1)}
+              className="w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 flex items-center justify-center text-sm"
+            >←</button>
+            <span className="text-sm font-bold text-gray-700 w-10 text-center">{ano}</span>
+            <button
+              onClick={() => setAno(a => a + 1)}
+              className="w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 flex items-center justify-center text-sm"
+            >→</button>
+          </div>
+        )}
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-gray-100 -mb-2">
+        {[
+          { key: 'financeiro', label: 'Financeiro' },
+          { key: 'historico', label: 'Histórico' },
+        ].map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setAbaAtiva(tab.key)}
+            className={`px-4 py-2 text-sm font-semibold transition-all border-b-2 -mb-px ${
+              abaAtiva === tab.key
+                ? 'border-brand-400 text-brand-600'
+                : 'border-transparent text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {abaAtiva === 'historico' && <Historico />}
+
+      {abaAtiva === 'financeiro' && <>
       {/* Seletor de mês */}
       <div className="flex gap-1 flex-wrap">
         {MESES.map((m, i) => (
@@ -451,6 +649,7 @@ export default function Financeiro() {
           </ResponsiveContainer>
         </div>
       </div>
+      </>}
     </div>
   )
 }
