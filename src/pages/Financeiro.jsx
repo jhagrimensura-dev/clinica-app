@@ -348,12 +348,13 @@ function Historico() {
               </tr>
             </thead>
             <tbody>
-              {ANOS_HISTORICO.map((ano) => {
+              {ANOS_HISTORICO.map((ano, ai) => {
                 const total = totalAno(ano)
                 const isFuturo = ano > ANO_ATUAL
+                const zebra = !isFuturo && ai % 2 === 1
                 return (
-                  <tr key={ano} className={`border-b ${isFuturo ? 'bg-blue-50/40' : 'border-gray-50 hover:bg-gray-50/50'}`}>
-                    <td className={`px-4 py-3 font-bold sticky left-0 ${isFuturo ? 'text-blue-600 bg-blue-50/40' : 'text-gray-700 bg-white'}`}>
+                  <tr key={ano} className={`border-b border-gray-100 ${isFuturo ? 'bg-blue-50/40' : zebra ? 'bg-gray-50/70' : 'bg-white'}`}>
+                    <td className={`px-4 py-3 font-bold sticky left-0 ${isFuturo ? 'text-blue-600 bg-blue-50/40' : zebra ? 'text-gray-700 bg-gray-50/70' : 'text-gray-700 bg-white'}`}>
                       {ano}{isFuturo && <span className="ml-1 text-[10px] font-normal text-blue-400">meta</span>}
                     </td>
                     {MESES_ABREV.map((_, i) => {
