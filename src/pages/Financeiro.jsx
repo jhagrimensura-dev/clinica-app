@@ -205,7 +205,6 @@ function Historico() {
         .neq('tipo', 'Paciente Modelo'),
       supabase.from('configuracoes')
         .select('valor')
-        .eq('clinica_id', clinicaId)
         .eq('chave', 'historico_manual')
         .maybeSingle(),
     ]).then(([{ data: lancs }, { data: cfg }]) => {
@@ -224,8 +223,8 @@ function Historico() {
   const saveManuais = async (next) => {
     setManuais(next)
     await supabase.from('configuracoes').upsert(
-      { clinica_id: clinicaId, chave: 'historico_manual', valor: JSON.stringify(next) },
-      { onConflict: 'clinica_id,chave' }
+      { chave: 'historico_manual', valor: JSON.stringify(next) },
+      { onConflict: 'chave' }
     )
   }
 
