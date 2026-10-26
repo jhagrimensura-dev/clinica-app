@@ -280,6 +280,11 @@ function Historico() {
 
   const CORES_ANO = ['#a78bfa','#60a5fa','#34d399','#fbbf24','#f87171','#e879f9']
 
+  // Máximo por mês (coluna) entre todos os anos
+  const maxPorMes = MESES_ABREV.map((_, i) =>
+    Math.max(...ANOS_HISTORICO.map(ano => valor(`${ano}-${String(i + 1).padStart(2, '0')}`)))
+  )
+
   const fmtKAxis = (v) => {
     if (!v) return ''
     if (v >= 1000) return `R$${(v / 1000).toFixed(0)}k`
@@ -358,9 +363,10 @@ function Historico() {
                       const manual = isManual(k)
                       const supa = fromSupa(k)
                       const editing = editando === k
+                      const eMaior = v > 0 && v === maxPorMes[i]
 
                       return (
-                        <td key={i} className="px-1 py-2 text-center">
+                        <td key={i} className={`px-1 py-2 text-center ${eMaior ? 'bg-green-50' : ''}`}>
                           {editing ? (
                             <input
                               autoFocus
@@ -377,7 +383,7 @@ function Historico() {
                               onClick={() => startEdit(k)}
                               title={!supa ? 'Clique para editar' : ''}
                             >
-                              <span className={`text-xs font-semibold ${mesAtual ? 'text-brand-600' : manual ? 'text-gray-500' : 'text-gray-700'}`}>
+                              <span className={`text-xs font-semibold ${eMaior ? 'text-green-600' : mesAtual ? 'text-brand-600' : manual ? 'text-gray-500' : 'text-gray-700'}`}>
                                 {fmtK(v)}
                                 {manual && <span className="ml-0.5 text-gray-300 text-[9px]">✎</span>}
                               </span>
