@@ -185,7 +185,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 const MESES_ABREV = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
 const ANO_ATUAL = new Date().getFullYear()
-const ANOS_HISTORICO = Array.from({ length: ANO_ATUAL - 2021 }, (_, i) => 2022 + i)
+const ANOS_HISTORICO = Array.from({ length: ANO_ATUAL - 2020 }, (_, i) => 2022 + i)
 
 function Historico() {
   const { clinicaId } = useAuth()
