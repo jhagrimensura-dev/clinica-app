@@ -353,8 +353,8 @@ function Historico() {
                 const isFuturo = ano > ANO_ATUAL
                 const zebra = !isFuturo && ai % 2 === 1
                 return (
-                  <tr key={ano} className={`border-b border-gray-100 ${isFuturo ? 'bg-blue-50/40' : zebra ? 'bg-gray-50/70' : 'bg-white'}`}>
-                    <td className={`px-4 py-3 font-bold sticky left-0 ${isFuturo ? 'text-blue-600 bg-blue-50/40' : zebra ? 'text-gray-700 bg-gray-50/70' : 'text-gray-700 bg-white'}`}>
+                  <tr key={ano} className={`border-b border-gray-100 ${isFuturo ? 'bg-blue-50/40' : zebra ? 'bg-gray-100' : 'bg-white'}`}>
+                    <td className={`px-4 py-3 font-bold sticky left-0 ${isFuturo ? 'text-blue-600 bg-blue-50/40' : zebra ? 'text-gray-700 bg-gray-100' : 'text-gray-700 bg-white'}`}>
                       {ano}{isFuturo && <span className="ml-1 text-[10px] font-normal text-blue-400">meta</span>}
                     </td>
                     {MESES_ABREV.map((_, i) => {
