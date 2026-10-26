@@ -252,8 +252,7 @@ function Historico() {
 
   const fmtK = (v) => {
     if (!v) return '—'
-    if (v >= 1000) return `R$${(v / 1000).toFixed(0)}k`
-    return `R$${v.toFixed(0)}`
+    return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 })
   }
   const fmtFull = (v) => v ? v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '—'
 
@@ -279,23 +278,54 @@ function Historico() {
   })
 
   const CORES_ANO = ['#a78bfa','#60a5fa','#34d399','#fbbf24','#f87171','#e879f9']
+  const [tipoGrafico, setTipoGrafico] = useState('linha')
+
+  const fmtKAxis = (v) => {
+    if (!v) return ''
+    if (v >= 1000) return `R$${(v / 1000).toFixed(0)}k`
+    return `R$${v.toFixed(0)}`
+  }
 
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-        <p className="text-sm font-semibold text-gray-500 mb-4">Faturamento Mensal por Ano</p>
-        <ResponsiveContainer width="100%" height={220}>
-          <LineChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
-            <YAxis tickFormatter={fmtK} tick={{ fontSize: 11 }} width={48} />
-            <Tooltip formatter={(v) => fmtFull(v)} />
-            <Legend />
-            {ANOS_HISTORICO.map((ano, i) => (
-              <Line key={ano} type="monotone" dataKey={String(ano)} name={String(ano)}
-                stroke={CORES_ANO[i % CORES_ANO.length]} strokeWidth={2} dot={{ r: 2 }} />
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-sm font-semibold text-gray-500">Faturamento Mensal por Ano</p>
+          <div className="flex gap-1">
+            {[{ key: 'linha', label: '〜 Linha' }, { key: 'barras', label: '▐ Barras' }].map(t => (
+              <button key={t.key} onClick={() => setTipoGrafico(t.key)}
+                className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${tipoGrafico === t.key ? 'bg-brand-400 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+                {t.label}
+              </button>
             ))}
-          </LineChart>
+          </div>
+        </div>
+        <ResponsiveContainer width="100%" height={240}>
+          {tipoGrafico === 'linha' ? (
+            <LineChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
+              <YAxis tickFormatter={fmtKAxis} tick={{ fontSize: 11 }} width={52} />
+              <Tooltip formatter={(v) => fmtFull(v)} />
+              <Legend />
+              {ANOS_HISTORICO.map((ano, i) => (
+                <Line key={ano} type="monotone" dataKey={String(ano)} name={String(ano)}
+                  stroke={CORES_ANO[i % CORES_ANO.length]} strokeWidth={2} dot={{ r: 2 }} />
+              ))}
+            </LineChart>
+          ) : (
+            <BarChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
+              <YAxis tickFormatter={fmtKAxis} tick={{ fontSize: 11 }} width={52} />
+              <Tooltip formatter={(v) => fmtFull(v)} />
+              <Legend />
+              {ANOS_HISTORICO.map((ano, i) => (
+                <Bar key={ano} dataKey={String(ano)} name={String(ano)}
+                  fill={CORES_ANO[i % CORES_ANO.length]} radius={[2,2,0,0]} />
+              ))}
+            </BarChart>
+          )}
         </ResponsiveContainer>
       </div>
 
