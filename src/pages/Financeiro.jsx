@@ -350,9 +350,12 @@ function Historico() {
             <tbody>
               {ANOS_HISTORICO.map((ano) => {
                 const total = totalAno(ano)
+                const isFuturo = ano > ANO_ATUAL
                 return (
-                  <tr key={ano} className="border-b border-gray-50 hover:bg-gray-50/50">
-                    <td className="px-4 py-3 font-bold text-gray-700 sticky left-0 bg-white">{ano}</td>
+                  <tr key={ano} className={`border-b ${isFuturo ? 'bg-blue-50/40' : 'border-gray-50 hover:bg-gray-50/50'}`}>
+                    <td className={`px-4 py-3 font-bold sticky left-0 ${isFuturo ? 'text-blue-600 bg-blue-50/40' : 'text-gray-700 bg-white'}`}>
+                      {ano}{isFuturo && <span className="ml-1 text-[10px] font-normal text-blue-400">meta</span>}
+                    </td>
                     {MESES_ABREV.map((_, i) => {
                       const k = `${ano}-${String(i + 1).padStart(2, '0')}`
                       const v = valor(k)
@@ -363,36 +366,30 @@ function Historico() {
 
                       return (
                         <td key={i} className={`px-1 py-2 text-center cursor-pointer ${eMaior ? 'bg-green-50' : ''}`}>
-                          {editing ? (
+                          {editing || (isFuturo && v === 0) ? (
                             <input
-                              autoFocus
-                              value={editRaw}
-                              onChange={e => setEditRaw(e.target.value)}
+                              autoFocus={editing}
+                              value={editing ? editRaw : ''}
+                              onChange={e => { if (!editing) { setEditando(k); setEditRaw(e.target.value) } else setEditRaw(e.target.value) }}
+                              onFocus={() => { if (!editing) { setEditando(k); setEditRaw('') } }}
                               onBlur={() => commitEdit(k)}
                               onKeyDown={e => { if (e.key === 'Enter') commitEdit(k); if (e.key === 'Escape') { setEditando(null); setEditRaw('') } }}
-                              placeholder="0"
-                              className="w-24 text-xs text-center border border-brand-300 rounded px-1 py-0.5 outline-none focus:ring-1 focus:ring-brand-200"
+                              placeholder="—"
+                              className={`w-20 text-xs text-center rounded px-1 py-0.5 outline-none ${isFuturo ? 'border border-blue-200 bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-100 text-blue-600 placeholder-blue-200' : 'border border-brand-300 focus:ring-1 focus:ring-brand-200'}`}
                             />
                           ) : v > 0 ? (
-                            <div
-                              className="flex flex-col items-center gap-1"
-                              onClick={() => startEdit(k)}
-                              title="Clique para editar"
-                            >
-                              <span className={`text-xs font-semibold ${eMaior ? 'text-green-600' : mesAtual ? 'text-brand-600' : manual ? 'text-gray-500' : 'text-gray-700'}`}>
+                            <div className="flex flex-col items-center gap-1" onClick={() => startEdit(k)} title="Clique para editar">
+                              <span className={`text-xs font-semibold ${eMaior ? 'text-green-600' : isFuturo ? 'text-blue-600' : mesAtual ? 'text-brand-600' : manual ? 'text-gray-500' : 'text-gray-700'}`}>
                                 {fmtK(v)}
                               </span>
                             </div>
                           ) : (
-                            <button
-                              onClick={() => startEdit(k)}
-                              className="text-gray-200 text-xs hover:text-gray-400 transition-colors w-full"
-                            >—</button>
+                            <button onClick={() => startEdit(k)} className="text-gray-200 text-xs hover:text-gray-400 transition-colors w-full">—</button>
                           )}
                         </td>
                       )
                     })}
-                    <td className="px-4 py-3 text-right font-bold text-gray-800">
+                    <td className={`px-4 py-3 text-right font-bold ${isFuturo ? 'text-blue-600' : 'text-gray-800'}`}>
                       {total > 0 ? fmtFull(total) : '—'}
                     </td>
                   </tr>
