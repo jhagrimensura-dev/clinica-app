@@ -189,27 +189,67 @@ const ANOS_HISTORICO = Array.from({ length: ANO_ATUAL - 2021 }, (_, i) => 2022 +
 
 function Historico() {
   const { clinicaId } = useAuth()
-  const [dados, setDados] = useState({}) // { "2025-03": 123456 }
+  const [dados, setDados] = useState({})     // dados do Supabase lancamentos
+  const [manuais, setManuais] = useState({}) // dados inseridos manualmente
   const [loading, setLoading] = useState(true)
+  const [editando, setEditando] = useState(null) // key "2023-04"
+  const [editRaw, setEditRaw] = useState('')
 
   useEffect(() => {
     if (!clinicaId) return
     setLoading(true)
-    supabase.from('lancamentos')
-      .select('data, valor_tratamento, valor_taxa, tipo, procedimentos')
-      .eq('clinica_id', clinicaId)
-      .neq('tipo', 'Paciente Modelo')
-      .then(({ data }) => {
-        const map = {}
-        for (const l of (data || [])) {
-          if (!l.data) continue
-          const ym = l.data.slice(0, 7) // "2025-03"
-          map[ym] = (map[ym] || 0) + (l.valor_tratamento || 0) + (l.valor_taxa || 0)
-        }
-        setDados(map)
-        setLoading(false)
-      })
+    Promise.all([
+      supabase.from('lancamentos')
+        .select('data, valor_tratamento, valor_taxa, tipo')
+        .eq('clinica_id', clinicaId)
+        .neq('tipo', 'Paciente Modelo'),
+      supabase.from('configuracoes')
+        .select('valor')
+        .eq('clinica_id', clinicaId)
+        .eq('chave', 'historico_manual')
+        .maybeSingle(),
+    ]).then(([{ data: lancs }, { data: cfg }]) => {
+      const map = {}
+      for (const l of (lancs || [])) {
+        if (!l.data) continue
+        const ym = l.data.slice(0, 7)
+        map[ym] = (map[ym] || 0) + (l.valor_tratamento || 0) + (l.valor_taxa || 0)
+      }
+      setDados(map)
+      try { setManuais(cfg?.valor ? JSON.parse(cfg.valor) : {}) } catch { setManuais({}) }
+      setLoading(false)
+    })
   }, [clinicaId])
+
+  const saveManuais = async (next) => {
+    setManuais(next)
+    await supabase.from('configuracoes').upsert(
+      { clinica_id: clinicaId, chave: 'historico_manual', valor: JSON.stringify(next) },
+      { onConflict: 'clinica_id,chave' }
+    )
+  }
+
+  const valor = (k) => dados[k] || manuais[k] || 0
+  const isManual = (k) => !dados[k] && !!manuais[k]
+  const fromSupa = (k) => !!dados[k]
+
+  const startEdit = (k) => {
+    if (fromSupa(k)) return
+    setEditando(k)
+    const v = manuais[k] || 0
+    setEditRaw(v ? String(v) : '')
+  }
+
+  const commitEdit = async (k) => {
+    const cleaned = editRaw.replace(/[^\d,]/g, '').replace(',', '.')
+    const num = parseFloat(cleaned) || 0
+    const next = { ...manuais }
+    if (num > 0) next[k] = num
+    else delete next[k]
+    await saveManuais(next)
+    setEditando(null)
+    setEditRaw('')
+  }
 
   const fmtK = (v) => {
     if (!v) return '—'
@@ -220,22 +260,21 @@ function Historico() {
 
   const totalAno = (ano) => MESES_ABREV.reduce((s, _, i) => {
     const k = `${ano}-${String(i + 1).padStart(2, '0')}`
-    return s + (dados[k] || 0)
+    return s + valor(k)
   }, 0)
 
   const maxValor = Math.max(...ANOS_HISTORICO.flatMap(ano =>
-    MESES_ABREV.map((_, i) => dados[`${ano}-${String(i + 1).padStart(2, '0')}`] || 0)
+    MESES_ABREV.map((_, i) => valor(`${ano}-${String(i + 1).padStart(2, '0')}`))
   ), 1)
 
   if (loading) return (
     <div className="flex items-center justify-center py-20 text-gray-400 text-sm">Carregando histórico...</div>
   )
 
-  // Gráfico de linha por ano
   const chartData = MESES_ABREV.map((m, i) => {
     const entry = { mes: m }
     ANOS_HISTORICO.forEach(ano => {
-      entry[String(ano)] = dados[`${ano}-${String(i + 1).padStart(2, '0')}`] || 0
+      entry[String(ano)] = valor(`${ano}-${String(i + 1).padStart(2, '0')}`)
     })
     return entry
   })
@@ -244,7 +283,6 @@ function Historico() {
 
   return (
     <div className="space-y-6">
-      {/* Gráfico comparativo */}
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
         <p className="text-sm font-semibold text-gray-500 mb-4">Faturamento Mensal por Ano</p>
         <ResponsiveContainer width="100%" height={220}>
@@ -262,8 +300,10 @@ function Historico() {
         </ResponsiveContainer>
       </div>
 
-      {/* Tabela histórica */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
+          <p className="text-xs text-gray-400">Clique em qualquer célula vazia para inserir o valor manualmente</p>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -276,29 +316,52 @@ function Historico() {
               </tr>
             </thead>
             <tbody>
-              {ANOS_HISTORICO.map((ano, ai) => {
+              {ANOS_HISTORICO.map((ano) => {
                 const total = totalAno(ano)
                 return (
                   <tr key={ano} className="border-b border-gray-50 hover:bg-gray-50/50">
                     <td className="px-4 py-3 font-bold text-gray-700 sticky left-0 bg-white">{ano}</td>
                     {MESES_ABREV.map((_, i) => {
                       const k = `${ano}-${String(i + 1).padStart(2, '0')}`
-                      const v = dados[k] || 0
+                      const v = valor(k)
                       const pct = maxValor > 0 ? v / maxValor : 0
                       const mesAtual = new Date().getFullYear() === ano && new Date().getMonth() === i
+                      const manual = isManual(k)
+                      const supa = fromSupa(k)
+                      const editing = editando === k
+
                       return (
-                        <td key={i} className="px-2 py-3 text-center">
-                          {v > 0 ? (
-                            <div className="flex flex-col items-center gap-1">
-                              <span className={`text-xs font-semibold ${mesAtual ? 'text-brand-600' : 'text-gray-700'}`}>
+                        <td key={i} className="px-1 py-2 text-center">
+                          {editing ? (
+                            <input
+                              autoFocus
+                              value={editRaw}
+                              onChange={e => setEditRaw(e.target.value)}
+                              onBlur={() => commitEdit(k)}
+                              onKeyDown={e => { if (e.key === 'Enter') commitEdit(k); if (e.key === 'Escape') { setEditando(null); setEditRaw('') } }}
+                              placeholder="0"
+                              className="w-16 text-xs text-center border border-brand-300 rounded px-1 py-0.5 outline-none focus:ring-1 focus:ring-brand-200"
+                            />
+                          ) : v > 0 ? (
+                            <div
+                              className={`flex flex-col items-center gap-1 ${!supa ? 'cursor-pointer group/cell' : ''}`}
+                              onClick={() => startEdit(k)}
+                              title={!supa ? 'Clique para editar' : ''}
+                            >
+                              <span className={`text-xs font-semibold ${mesAtual ? 'text-brand-600' : manual ? 'text-gray-500' : 'text-gray-700'}`}>
                                 {fmtK(v)}
+                                {manual && <span className="ml-0.5 text-gray-300 text-[9px]">✎</span>}
                               </span>
                               <div className="w-10 h-1 bg-gray-100 rounded-full overflow-hidden">
-                                <div className="h-full rounded-full bg-brand-400" style={{ width: `${pct * 100}%` }} />
+                                <div className={`h-full rounded-full ${manual ? 'bg-gray-300' : 'bg-brand-400'}`} style={{ width: `${pct * 100}%` }} />
                               </div>
                             </div>
                           ) : (
-                            <span className="text-gray-200 text-xs">—</span>
+                            <button
+                              onClick={() => startEdit(k)}
+                              className="text-gray-200 text-xs hover:text-gray-400 transition-colors w-full"
+                              title="Inserir valor"
+                            >—</button>
                           )}
                         </td>
                       )
@@ -309,20 +372,16 @@ function Historico() {
                   </tr>
                 )
               })}
-              {/* Linha de variação YoY */}
               {ANOS_HISTORICO.length >= 2 && (() => {
                 const anoAnt = ANOS_HISTORICO[ANOS_HISTORICO.length - 2]
                 const anoAtl = ANOS_HISTORICO[ANOS_HISTORICO.length - 1]
                 return (
                   <tr className="bg-gray-50 border-t border-gray-200">
-                    <td className="px-4 py-2 text-xs font-semibold text-gray-400 sticky left-0 bg-gray-50">
-                      vs {anoAnt}
-                    </td>
+                    <td className="px-4 py-2 text-xs font-semibold text-gray-400 sticky left-0 bg-gray-50">vs {anoAnt}</td>
                     {MESES_ABREV.map((_, i) => {
                       const ka = `${anoAnt}-${String(i + 1).padStart(2, '0')}`
                       const kb = `${anoAtl}-${String(i + 1).padStart(2, '0')}`
-                      const va = dados[ka] || 0
-                      const vb = dados[kb] || 0
+                      const va = valor(ka), vb = valor(kb)
                       if (!va || !vb) return <td key={i} className="px-2 py-2 text-center text-xs text-gray-300">—</td>
                       const diff = ((vb - va) / va) * 100
                       return (
