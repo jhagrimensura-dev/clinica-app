@@ -229,14 +229,12 @@ function Historico() {
     )
   }
 
-  const valor = (k) => dados[k] || manuais[k] || 0
-  const isManual = (k) => !dados[k] && !!manuais[k]
-  const fromSupa = (k) => !!dados[k]
+  const valor = (k) => manuais[k] || dados[k] || 0
+  const isManual = (k) => !!manuais[k]
 
   const startEdit = (k) => {
-    if (fromSupa(k)) return
     setEditando(k)
-    const v = manuais[k] || 0
+    const v = valor(k)
     setEditRaw(v ? String(v) : '')
   }
 
@@ -358,15 +356,13 @@ function Historico() {
                     {MESES_ABREV.map((_, i) => {
                       const k = `${ano}-${String(i + 1).padStart(2, '0')}`
                       const v = valor(k)
-                      const pct = maxValor > 0 ? v / maxValor : 0
                       const mesAtual = new Date().getFullYear() === ano && new Date().getMonth() === i
                       const manual = isManual(k)
-                      const supa = fromSupa(k)
                       const editing = editando === k
                       const eMaior = v > 0 && v === maxPorMes[i]
 
                       return (
-                        <td key={i} className={`px-1 py-2 text-center ${eMaior ? 'bg-green-50' : ''}`}>
+                        <td key={i} className={`px-1 py-2 text-center cursor-pointer ${eMaior ? 'bg-green-50' : ''}`}>
                           {editing ? (
                             <input
                               autoFocus
@@ -375,24 +371,22 @@ function Historico() {
                               onBlur={() => commitEdit(k)}
                               onKeyDown={e => { if (e.key === 'Enter') commitEdit(k); if (e.key === 'Escape') { setEditando(null); setEditRaw('') } }}
                               placeholder="0"
-                              className="w-16 text-xs text-center border border-brand-300 rounded px-1 py-0.5 outline-none focus:ring-1 focus:ring-brand-200"
+                              className="w-24 text-xs text-center border border-brand-300 rounded px-1 py-0.5 outline-none focus:ring-1 focus:ring-brand-200"
                             />
                           ) : v > 0 ? (
                             <div
-                              className={`flex flex-col items-center gap-1 ${!supa ? 'cursor-pointer group/cell' : ''}`}
+                              className="flex flex-col items-center gap-1"
                               onClick={() => startEdit(k)}
-                              title={!supa ? 'Clique para editar' : ''}
+                              title="Clique para editar"
                             >
                               <span className={`text-xs font-semibold ${eMaior ? 'text-green-600' : mesAtual ? 'text-brand-600' : manual ? 'text-gray-500' : 'text-gray-700'}`}>
                                 {fmtK(v)}
-                                {manual && <span className="ml-0.5 text-gray-300 text-[9px]">✎</span>}
                               </span>
                             </div>
                           ) : (
                             <button
                               onClick={() => startEdit(k)}
                               className="text-gray-200 text-xs hover:text-gray-400 transition-colors w-full"
-                              title="Inserir valor"
                             >—</button>
                           )}
                         </td>
