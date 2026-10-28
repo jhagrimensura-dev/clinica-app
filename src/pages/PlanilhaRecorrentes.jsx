@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
-const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+const MESES_FULL  = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+const MESES_ABREV = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
 
 const AGENDOU_OPTS = [
   { value: 'SIM',                  label: 'SIM',                  cls: 'bg-green-100 text-green-700' },
@@ -90,13 +91,13 @@ async function syncBatchToLeads(rows, clinicaId) {
 }
 
 const COLS = [
-  { key: 'data',        label: 'Data',        type: 'date'          },
-  { key: 'nome',        label: 'Nome',        type: 'text'          },
-  { key: 'telefone',    label: 'Telefone',    type: 'text'          },
-  { key: 'agendou',     label: 'Agendou',     type: 'agendou_select'},
-  { key: 'vendeu',      label: 'Vendeu',      type: 'bool'          },
-  { key: 'valor',       label: 'Valor (R$)',  type: 'currency'      },
-  { key: 'observacao',  label: 'Observação',  type: 'text'          },
+  { key: 'data',        label: 'Data',        type: 'date',           width: 70  },
+  { key: 'nome',        label: 'Nome',        type: 'text',           width: 220 },
+  { key: 'telefone',    label: 'Telefone',    type: 'text',           width: 130 },
+  { key: 'agendou',     label: 'Agendou',     type: 'agendou_select', width: 170 },
+  { key: 'vendeu',      label: 'Vendeu',      type: 'bool',           width: 80  },
+  { key: 'valor',       label: 'Valor (R$)',  type: 'currency',       width: 110 },
+  { key: 'observacao',  label: 'Observação',  type: 'text',           width: 200 },
 ]
 
 function parseSheetDate(s) {
@@ -338,9 +339,32 @@ export default function PlanilhaRecorrentes() {
       .order('data', { ascending: true })
       .order('criado_em', { ascending: true })
     if (error) { console.error(error); setLoading(false); return }
-    setRows(data || [])
+    const loaded = data || []
+    setRows(loaded)
     setLoading(false)
-  }, [clinicaId, monthStart, nextMonth])
+
+    // Auto-popular próximo mês para quem já estava com "AGENDOU PRÓXIMO MÊS"
+    const proxMesRows = loaded.filter(r => r.agendou === 'AGENDOU PRÓXIMO MÊS' && r.nome?.trim())
+    if (!proxMesRows.length) return
+    const proxMes = mes === 11 ? 0 : mes + 1
+    const proxAno = mes === 11 ? ano + 1 : ano
+    const dataProx  = `${proxAno}-${String(proxMes + 1).padStart(2,'0')}-01`
+    const fimProx   = proxMes === 11
+      ? `${proxAno + 1}-01-01`
+      : `${proxAno}-${String(proxMes + 2).padStart(2,'0')}-01`
+    const { data: jaExistem } = await supabase.from('planilha_recorrentes')
+      .select('nome').eq('clinica_id', clinicaId).gte('data', dataProx).lt('data', fimProx)
+    const nomesJaLa = new Set((jaExistem || []).map(r => r.nome?.trim().toLowerCase()))
+    const inserir = proxMesRows.filter(r => !nomesJaLa.has(r.nome.trim().toLowerCase()))
+    if (!inserir.length) return
+    await supabase.from('planilha_recorrentes').insert(inserir.map(r => ({
+      id: genId(), clinica_id: clinicaId,
+      data: dataProx, nome: r.nome,
+      telefone: r.telefone || '', agendou: 'NÃO',
+      vendeu: false, valor: null,
+      observacao: `Vindo de ${MESES_FULL[mes]}`,
+    })))
+  }, [clinicaId, mes, ano, monthStart, nextMonth])
 
   useEffect(() => { fetchRows() }, [fetchRows])
 
@@ -401,6 +425,9 @@ export default function PlanilhaRecorrentes() {
   const vendeuCount  = rows.filter(r => r.vendeu).length
   const valorTotal   = rows.reduce((s, r) => s + (parseFloat(r.valor) || 0), 0)
 
+  const mesmoMes   = rows.filter(r => r.agendou === 'SIM' || r.agendou === 'AGENDOU MESMO MÊS' || r.agendou === true)
+  const proximoMes = rows.filter(r => r.agendou === 'AGENDOU PRÓXIMO MÊS')
+
   const renderCell = (row, col) => {
     const isEditing = editingCell?.rowId === row.id && editingCell?.col === col.key
     const value = row[col.key]
@@ -409,11 +436,13 @@ export default function PlanilhaRecorrentes() {
       const opt = agendouOpt(value)
       const isOpen = openDropdown?.rowId === row.id && openDropdown?.col === col.key
       return (
-        <td key={col.key} className="px-2 py-1.5 text-center select-none relative">
+        <td key={col.key} className="px-2 py-1.5 select-none relative">
+          <div className="flex justify-center">
           <span
             className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold cursor-pointer ${opt.cls}`}
             onClick={() => setOpenDropdown(isOpen ? null : { rowId: row.id, col: col.key })}
           >{opt.label}</span>
+          </div>
           {isOpen && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)} />
@@ -426,6 +455,25 @@ export default function PlanilhaRecorrentes() {
                       await supabase.from('planilha_recorrentes').update({ agendou: o.value }).eq('id', row.id)
                       const updated = rows.find(r => r.id === row.id)
                       if (updated) syncRowData({ ...updated, agendou: o.value }, clinicaId)
+                      // Auto-mover para próximo mês
+                      if (o.value === 'AGENDOU PRÓXIMO MÊS' && row.nome?.trim()) {
+                        const proxMes = mes === 11 ? 0 : mes + 1
+                        const proxAno = mes === 11 ? ano + 1 : ano
+                        const dataProx = `${proxAno}-${String(proxMes + 1).padStart(2,'0')}-01`
+                        const { data: existe } = await supabase.from('planilha_recorrentes')
+                          .select('id').eq('clinica_id', clinicaId)
+                          .eq('nome', row.nome).gte('data', dataProx)
+                          .lt('data', `${proxAno}-${String(proxMes + 2 > 12 ? 1 : proxMes + 2).padStart(2,'0')}-01`)
+                          .maybeSingle()
+                        if (!existe) {
+                          await supabase.from('planilha_recorrentes').insert({
+                            id: genId(), clinica_id: clinicaId,
+                            data: dataProx, nome: row.nome,
+                            telefone: row.telefone || '', agendou: 'NÃO',
+                            vendeu: false, valor: null, observacao: `Vindo de ${MESES_FULL[mes]}`,
+                          })
+                        }
+                      }
                     }}>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold ${o.cls}`}>{o.label}</span>
                   </button>
@@ -500,17 +548,12 @@ export default function PlanilhaRecorrentes() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Planilha de Recorrentes</h1>
-          <p className="text-xs text-gray-400 mt-0.5">Navegação por Data · clique em qualquer célula para editar · salva automaticamente</p>
+          <p className="text-xs text-gray-400 mt-0.5">{MESES_FULL[mes]} {ano} · clique em qualquer célula para editar · salva automaticamente</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 border border-gray-200 rounded-xl px-3 py-1.5 bg-white">
-            <button onClick={() => navMes(-1)} className="text-gray-400 hover:text-gray-600 px-1">‹</button>
-            <span className="text-sm font-semibold text-gray-700 w-36 text-center">{MESES_FULL[mes]} {ano}</span>
-            <button onClick={() => navMes(1)} className="text-gray-400 hover:text-gray-600 px-1">›</button>
-          </div>
           <button onClick={() => setModalImport(true)}
             className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-600 text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-sm border border-gray-200">
-            ↑ Importar Planilha
+            ↑ Importar
           </button>
           <button onClick={addRow}
             className="flex items-center gap-2 bg-orange-400 hover:bg-orange-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-sm">
@@ -549,18 +592,73 @@ export default function PlanilhaRecorrentes() {
         </div>
       </div>
 
+      {/* Cards de agendamentos */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Agendou Mesmo Mês */}
+        <div className="bg-white rounded-2xl border border-blue-100 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-blue-50">
+            <div>
+              <p className="text-sm font-bold text-blue-700">Agendou Mesmo Mês</p>
+              <p className="text-xs text-gray-400 mt-0.5">confirmados para {MESES_FULL[mes]}</p>
+            </div>
+            <span className="text-3xl font-bold text-blue-600">{mesmoMes.length}</span>
+          </div>
+          {mesmoMes.length === 0 ? (
+            <p className="px-5 py-4 text-xs text-gray-300">Nenhum agendado ainda</p>
+          ) : (
+            <ul className="divide-y divide-gray-50 max-h-52 overflow-y-auto">
+              {mesmoMes.map((r, i) => (
+                <li key={r.id} className="flex items-center gap-3 px-5 py-2.5">
+                  <span className="text-[10px] text-gray-300 w-4 shrink-0">{i + 1}</span>
+                  <span className="text-sm font-semibold text-gray-700 flex-1 truncate">{r.nome || '—'}</span>
+                  {r.telefone && <span className="text-xs text-gray-400 shrink-0">{r.telefone}</span>}
+                  {r.vendeu && <span className="text-[10px] bg-green-100 text-green-700 font-bold px-1.5 py-0.5 rounded shrink-0">VENDEU</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Agendou Próximo Mês */}
+        <div className="bg-white rounded-2xl border border-yellow-100 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-yellow-50">
+            <div>
+              <p className="text-sm font-bold text-yellow-700">Agendou Próximo Mês</p>
+              <p className="text-xs text-gray-400 mt-0.5">confirmados para {MESES_FULL[(mes + 1) % 12]}</p>
+            </div>
+            <span className="text-3xl font-bold text-yellow-600">{proximoMes.length}</span>
+          </div>
+          {proximoMes.length === 0 ? (
+            <p className="px-5 py-4 text-xs text-gray-300">Nenhum agendado ainda</p>
+          ) : (
+            <ul className="divide-y divide-gray-50 max-h-52 overflow-y-auto">
+              {proximoMes.map((r, i) => (
+                <li key={r.id} className="flex items-center gap-3 px-5 py-2.5">
+                  <span className="text-[10px] text-gray-300 w-4 shrink-0">{i + 1}</span>
+                  <span className="text-sm font-semibold text-gray-700 flex-1 truncate">{r.nome || '—'}</span>
+                  {r.telefone && <span className="text-xs text-gray-400 shrink-0">{r.telefone}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+
       {/* Tabela */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
         {loading ? (
           <div className="py-16 text-center text-gray-300 text-sm">Carregando...</div>
         ) : (
           <>
-            <table className="text-left text-xs border-collapse" style={{ minWidth: '900px' }}>
-              <thead>
+            <div className="overflow-auto max-h-[60vh]">
+            <table className="text-left text-xs border-collapse w-full" style={{ minWidth: '900px' }}>
+              <thead className="sticky top-0 z-10">
                 <tr className="bg-gray-50 border-b border-gray-100">
                   <th className="px-3 py-2.5 text-[10px] font-bold text-gray-300 uppercase w-8">#</th>
                   {COLS.map(col => (
-                    <th key={col.key} className="px-2 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap">
+                    <th key={col.key} style={{ width: col.width }} className={`px-2 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap ${
+                      col.key === 'agendou' || col.key === 'vendeu' ? 'text-center' : ''
+                    }`}>
                       {col.label}
                     </th>
                   ))}
@@ -589,6 +687,7 @@ export default function PlanilhaRecorrentes() {
                 ))}
               </tbody>
             </table>
+            </div>
             <button onClick={addRow}
               className="w-full py-2 text-xs text-gray-300 hover:text-orange-500 hover:bg-orange-50 border-t border-gray-50 transition-colors text-left px-4">
               + Adicionar linha
@@ -606,6 +705,34 @@ export default function PlanilhaRecorrentes() {
           onDone={fetchRows}
         />
       )}
+
+      {/* Abas mensais — estilo Google Sheets */}
+      <div className="fixed bottom-0 left-16 right-0 z-30 bg-white border-t border-gray-200 flex items-end gap-0 overflow-x-auto px-4 py-0 shadow-md">
+        <div className="flex items-end gap-1 min-w-max py-1">
+          {/* Seletor de ano */}
+          <div className="flex items-center gap-1 mr-3 self-center">
+            <button onClick={() => setAno(a => a - 1)} className="text-gray-400 hover:text-gray-600 text-sm px-1">‹</button>
+            <span className="text-xs font-bold text-gray-500 w-10 text-center">{ano}</span>
+            <button onClick={() => setAno(a => a + 1)} className="text-gray-400 hover:text-gray-600 text-sm px-1">›</button>
+          </div>
+          {MESES_ABREV.map((label, i) => (
+            <button
+              key={i}
+              onClick={() => setMes(i)}
+              className={`px-4 py-2 text-xs font-semibold border-t-2 transition-all whitespace-nowrap rounded-t-lg ${
+                mes === i
+                  ? 'border-orange-400 text-orange-600 bg-orange-50'
+                  : 'border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Espaço para não ficar atrás das abas */}
+      <div className="h-12" />
     </div>
   )
 }
