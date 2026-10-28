@@ -4,6 +4,25 @@ import { useAuth } from '../context/AuthContext'
 
 const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
+const AGENDOU_OPTS = [
+  { value: 'SIM',                  label: 'SIM',                  cls: 'bg-green-100 text-green-700' },
+  { value: 'NÃO',                  label: 'NÃO',                  cls: 'bg-red-50 text-red-400' },
+  { value: 'AGENDOU MESMO MÊS',    label: 'AGENDOU MESMO MÊS',    cls: 'bg-blue-100 text-blue-700' },
+  { value: 'AGENDOU PRÓXIMO MÊS',  label: 'AGENDOU PRÓXIMO MÊS',  cls: 'bg-yellow-100 text-yellow-700' },
+  { value: 'AGENDOU MÊS ANTERIOR', label: 'AGENDOU MÊS ANTERIOR', cls: 'bg-red-900 text-white' },
+]
+
+function agendouOpt(val) {
+  if (val === true)  return AGENDOU_OPTS[0]
+  if (!val || val === false) return AGENDOU_OPTS[1]
+  return AGENDOU_OPTS.find(o => o.value === val) || AGENDOU_OPTS[1]
+}
+
+function isAgendou(val) {
+  if (typeof val === 'boolean') return val
+  return val && val !== 'NÃO'
+}
+
 const genId = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID()
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -13,7 +32,7 @@ const genId = () => {
 }
 
 function rowStatus(r) {
-  return r.vendeu ? 'fechado' : r.agendou ? 'agendado' : 'em_aberto'
+  return r.vendeu ? 'fechado' : isAgendou(r.agendou) ? 'agendado' : 'em_aberto'
 }
 
 async function syncRowData(row, clinicaId) {
@@ -71,13 +90,13 @@ async function syncBatchToLeads(rows, clinicaId) {
 }
 
 const COLS = [
-  { key: 'data',        label: 'Data',        type: 'date'     },
-  { key: 'nome',        label: 'Nome',        type: 'text'     },
-  { key: 'telefone',    label: 'Telefone',    type: 'text'     },
-  { key: 'agendou',     label: 'Agendou',     type: 'bool'     },
-  { key: 'vendeu',      label: 'Vendeu',      type: 'bool'     },
-  { key: 'valor',       label: 'Valor (R$)',  type: 'currency' },
-  { key: 'observacao',  label: 'Observação',  type: 'text'     },
+  { key: 'data',        label: 'Data',        type: 'date'          },
+  { key: 'nome',        label: 'Nome',        type: 'text'          },
+  { key: 'telefone',    label: 'Telefone',    type: 'text'          },
+  { key: 'agendou',     label: 'Agendou',     type: 'agendou_select'},
+  { key: 'vendeu',      label: 'Vendeu',      type: 'bool'          },
+  { key: 'valor',       label: 'Valor (R$)',  type: 'currency'      },
+  { key: 'observacao',  label: 'Observação',  type: 'text'          },
 ]
 
 function parseSheetDate(s) {
@@ -117,16 +136,16 @@ function parseSheetRows(text, clinicaId) {
     const hasDate = rawData && rawData.match(/\d{1,2}[\/\-]+\d{1,2}[\/\-]+\d{2,4}/)
     if (!hasDate) continue
 
-    const agendou = (cols[3] || '').trim().toUpperCase() === 'SIM'
+    const agendouRaw = (cols[3] || '').trim().toUpperCase()
+    const agendou = agendouRaw.includes('PRÓXIMO') || agendouRaw.includes('PROXIMO') ? 'AGENDOU PRÓXIMO MÊS'
+      : agendouRaw.includes('MESMO') ? 'AGENDOU MESMO MÊS'
+      : agendouRaw.includes('ANTERIOR') ? 'AGENDOU MÊS ANTERIOR'
+      : agendouRaw === 'SIM' ? 'SIM'
+      : 'NÃO'
     const vendeuRaw = (cols[4] || '').trim().toUpperCase()
     const vendeu = vendeuRaw === 'SIM'
 
-    // "AGENDOU PRÓXIMO MÊS" vai para observação junto com a data do próximo agendamento
     let observacao = cols[6]?.trim() || ''
-    if (vendeuRaw.includes('PRÓXIMO') || vendeuRaw.includes('PROXIMO')) {
-      const proxData = cols[5]?.trim() || cols[6]?.trim() || ''
-      observacao = proxData ? `Agendou próximo mês: ${proxData}` : 'Agendou próximo mês'
-    }
 
     rows.push({
       id: genId(),
@@ -292,6 +311,7 @@ export default function PlanilhaRecorrentes() {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [editingCell, setEditingCell] = useState(null)
+  const [openDropdown, setOpenDropdown] = useState(null)
   const [modalImport, setModalImport] = useState(false)
   const editInputRef = useRef(null)
 
@@ -338,7 +358,7 @@ export default function PlanilhaRecorrentes() {
     const newRow = {
       id, clinica_id: clinicaId,
       data: dataHoje, nome: '', telefone: '',
-      agendou: false, vendeu: false, valor: null, observacao: '',
+      agendou: 'NÃO', vendeu: false, valor: null, observacao: '',
     }
     setRows(prev => [...prev, newRow])
     const { error } = await supabase.from('planilha_recorrentes').insert(newRow)
@@ -377,7 +397,7 @@ export default function PlanilhaRecorrentes() {
   }
 
   const total      = rows.length
-  const agendouCount = rows.filter(r => r.agendou).length
+  const agendouCount = rows.filter(r => isAgendou(r.agendou)).length
   const vendeuCount  = rows.filter(r => r.vendeu).length
   const valorTotal   = rows.reduce((s, r) => s + (parseFloat(r.valor) || 0), 0)
 
@@ -385,13 +405,45 @@ export default function PlanilhaRecorrentes() {
     const isEditing = editingCell?.rowId === row.id && editingCell?.col === col.key
     const value = row[col.key]
 
+    if (col.type === 'agendou_select') {
+      const opt = agendouOpt(value)
+      const isOpen = openDropdown?.rowId === row.id && openDropdown?.col === col.key
+      return (
+        <td key={col.key} className="px-2 py-1.5 text-center select-none relative">
+          <span
+            className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold cursor-pointer ${opt.cls}`}
+            onClick={() => setOpenDropdown(isOpen ? null : { rowId: row.id, col: col.key })}
+          >{opt.label}</span>
+          {isOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)} />
+              <div className="absolute z-50 left-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 min-w-max">
+                {AGENDOU_OPTS.map(o => (
+                  <button key={o.value} className="w-full text-left px-3 py-1.5 hover:bg-gray-50"
+                    onClick={async () => {
+                      setOpenDropdown(null)
+                      setRows(prev => prev.map(r => r.id === row.id ? { ...r, agendou: o.value } : r))
+                      await supabase.from('planilha_recorrentes').update({ agendou: o.value }).eq('id', row.id)
+                      const updated = rows.find(r => r.id === row.id)
+                      if (updated) syncRowData({ ...updated, agendou: o.value }, clinicaId)
+                    }}>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold ${o.cls}`}>{o.label}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </td>
+      )
+    }
+
     if (col.type === 'bool') {
       return (
         <td key={col.key} className="px-2 py-1.5 text-center cursor-pointer select-none"
           onClick={() => toggleBool(row.id, col.key)}>
-          <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold transition-colors ${
-            value ? 'bg-green-100 text-green-600' : 'bg-red-50 text-red-300'
-          }`}>{value ? '✓' : '×'}</span>
+          <span className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded text-[11px] font-bold transition-colors ${
+            value ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-400'
+          }`}>{value ? 'SIM' : 'NÃO'}</span>
         </td>
       )
     }
