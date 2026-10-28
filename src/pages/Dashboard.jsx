@@ -88,10 +88,11 @@ export default function Dashboard() {
   const leadsFollowUp = getLeadsPorOrigem('leads_followup', ano, mes)
   const fuEmAberto = leadsFollowUp.filter(l => l.status === 'em_aberto').length
   const fuRespondeu = leadsFollowUp.filter(l => l.status === 'conversando').length
-  const fuAgendado = leadsFollowUp.filter(l => l.status === 'agendado').length
-  const fuVendido = leadsFollowUp.filter(l => l.status === 'fechado').length
-  const convFollow = leadsFollowUp.length > 0
-    ? (((fuAgendado + fuVendido) / leadsFollowUp.length) * 100).toFixed(1)
+  // Usa planilha_followup diretamente (mais confiável que leads table para contagem)
+  const fuAgendado = followupRows.filter(r => r.agendou).length
+  const fuVendido = followupRows.filter(r => r.vendeu).length
+  const convFollow = followupRows.length > 0
+    ? (((fuAgendado + fuVendido) / followupRows.length) * 100).toFixed(1)
     : '0.0'
 
   // CAC só conta novos clientes via tráfego pago — consultas tipo Novo no Faturamento
