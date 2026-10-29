@@ -17,6 +17,7 @@ export default function Dashboard() {
 
   const [planilhaRows, setPlanilhaRows] = useState([])
   const [followupRows, setFollowupRows] = useState([])
+  const [recorrentesRows, setRecorrentesRows] = useState([])
 
   useEffect(() => { carregarMes(ano, mes) }, [ano, mes])
 
@@ -38,6 +39,12 @@ export default function Dashboard() {
       .gte('data_followup', monthStart)
       .lt('data_followup', nextMonth)
       .then(({ data }) => setFollowupRows(data || []))
+    supabase.from('planilha_recorrentes')
+      .select('nome, agendou, vendeu')
+      .eq('clinica_id', clinicaId)
+      .gte('data', monthStart)
+      .lt('data', nextMonth)
+      .then(({ data }) => setRecorrentesRows(data || []))
   }, [clinicaId, mes, ano])
 
   const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -82,7 +89,8 @@ export default function Dashboard() {
     return String(l.fonte || '').toLowerCase().includes('follow') || String(l.origemCustom || '').toLowerCase().includes('follow')
   }
   const leadsNovosReais = leadsNovos.filter(l => !isFollowLead(l)).length
-  const agendRecorrentes = leadsRecorrentes.filter(l => l.status === 'agendado' || l.status === 'fechado').length
+  const isAgendouRec = v => v && v !== 'NÃO' && v !== false
+  const agendRecorrentes = recorrentesRows.filter(r => isAgendouRec(r.agendou) || r.vendeu).length
 
   // Leads Follow Up (nova página dedicada)
   const leadsFollowUp = getLeadsPorOrigem('leads_followup', ano, mes)
@@ -117,9 +125,9 @@ export default function Dashboard() {
     ? `${((cadeiraVendeu / cadeiraCompareceu) * 100).toFixed(0)}%`
     : '—'
 
-  const totalAgendGeral = totalAgendNovos + fuAgendado + fuVendido
+  const totalAgendGeral = totalAgendNovos + fuAgendado
   const convNovos = (leadsNovosReais + leadsIndicacao.length) > 0 ? ((totalAgendNovos / (leadsNovosReais + leadsIndicacao.length)) * 100).toFixed(1) : '0.0'
-  const convRecorrencia = leadsRecorrentes.length > 0 ? ((agendRecorrentes / leadsRecorrentes.length) * 100).toFixed(1) : '0.0'
+  const convRecorrencia = recorrentesRows.length > 0 ? ((agendRecorrentes / recorrentesRows.length) * 100).toFixed(1) : '0.0'
   // Taxa geral: soma das duas taxas (novos + follow)
   const convComercial = (parseFloat(convNovos) + parseFloat(convFollow)).toFixed(1)
 
@@ -336,7 +344,7 @@ export default function Dashboard() {
             { label: 'Social Media', icon: '🔗', color: 'text-brand-500', value: String(seguidores.toLocaleString('pt-BR')), sub: 'seguidores', extras: [seguidoresPorDia ? `~${seguidoresPorDia} seguidores/dia` : '', `${leadsNovosReais} leads recebidos`, `${convComercial}% conversão`].filter(Boolean) },
             { label: 'Leads Novos', icon: '🏢', color: 'text-blue-500', value: String(leadsNovosReais + leadsIndicacao.length), sub: 'novos este mês', extras: [`${leadsNovosReais} novos · ${agendadosNovos} agendados`, `${leadsIndicacao.length} indicações · ${agendadosIndicacao} agendadas`, `${totalAgendNovos} agendados (novos + indicação)`, `${convNovos}% conversão`] },
             { label: 'Leads Follow', icon: '🔁', color: 'text-purple-500', value: String(leadsFollowUp.length), sub: `em acompanhamento em ${MESES[mes]}`, extras: [`${fuEmAberto} em aberto · ${fuRespondeu} respondeu`, `${followupRows.filter(r => r.agendou).length} agendado · ${followupRows.filter(r => r.vendeu).length} vendido`, `${convFollow}% conversão`] },
-            { label: 'Leads Recorrência', icon: '🔄', color: 'text-teal-500', value: String(leadsRecorrentes.length), sub: 'contatos recorrentes', extras: [`${agendRecorrentes} agendamentos`, `${convRecorrencia}% conversão`], meta: { atual: agendRecorrentes, total: 40 } },
+            { label: 'Leads Recorrência', icon: '🔄', color: 'text-teal-500', value: String(recorrentesRows.length), sub: 'contatos recorrentes', extras: [`${agendRecorrentes} agendamentos`, `${convRecorrencia}% conversão`], meta: { atual: agendRecorrentes, total: 40 } },
           ].map((card, i) => (
             <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
               <div className="flex justify-between items-start mb-1">
@@ -386,7 +394,7 @@ export default function Dashboard() {
                   <div className="space-y-1.5">
                     {[
                       { label: 'Leads Novos', pct: convNovos, agend: totalAgendNovos },
-                      { label: 'Leads Follow', pct: convFollow, agend: fuAgendado + fuVendido },
+                      { label: 'Leads Follow', pct: convFollow, agend: fuAgendado },
                     ].map(({ label, pct: p, agend }) => {
                       const v = parseFloat(p)
                       const cor = v > 15 ? 'text-green-600' : v >= 10 ? 'text-orange-500' : 'text-red-500'

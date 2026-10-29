@@ -747,6 +747,208 @@ server.tool(
   }
 )
 
+// ─────────────────────────────────────────────────────────────────────────────
+// TOOL 11 — Diagnóstico do sistema (detecta inconsistências automaticamente)
+// ─────────────────────────────────────────────────────────────────────────────
+server.tool(
+  'diagnostico_sistema',
+  'Verifica inconsistências nos dados do sistema: Dashboard vs planilhas, leads desatualizados, sync atrasado. Retorna lista de problemas com sugestão de correção.',
+  {
+    ano: z.number().optional(),
+    mes: z.number().min(1).max(12).optional(),
+  },
+  async ({ ano, mes }) => {
+    const clinicaId = await getClinicaId()
+    if (!clinicaId) return err('clinica_id não encontrado')
+
+    const { ano: anoAtual, mes: mesAtualNum } = mesAtual()
+    const a = ano ?? anoAtual
+    const m = mes ?? mesAtualNum
+    const prefix = prefixMes(a, m)
+    const { ini, fim } = rangesMes(a, m)
+
+    const problemas = []
+    const ok_items = []
+
+    // 1. Verifica planilha_leads tem dados do mês
+    const { data: planilhaLeads, count: countPL } = await supabase
+      .from('planilha_leads').select('id, agendou, vendeu, criado_em', { count: 'exact' })
+      .eq('clinica_id', clinicaId).gte('data', ini).lt('data', fim)
+
+    if (!countPL || countPL === 0) {
+      problemas.push({ severidade: 'ERRO', area: 'Leads Novos', descricao: `Nenhum lead encontrado em ${String(m).padStart(2,'0')}/${a}`, sugestao: 'Sincronizar planilha ou importar dados manualmente' })
+    } else {
+      ok_items.push(`Leads Novos: ${countPL} registros em ${String(m).padStart(2,'0')}/${a}`)
+      // Checa sync recente (último criado_em)
+      const ultimos = (planilhaLeads || []).map(r => r.criado_em).filter(Boolean).sort().reverse()
+      if (ultimos.length > 0) {
+        const diasDesdeSync = Math.floor((Date.now() - new Date(ultimos[0]).getTime()) / 86400000)
+        if (diasDesdeSync > 3) {
+          problemas.push({ severidade: 'AVISO', area: 'Sync', descricao: `Planilha de Leads Novos não sincronizada há ${diasDesdeSync} dias`, sugestao: 'Usar ferramenta sincronizar_planilhas ou clicar em "Sincronizar" no Dashboard' })
+        }
+      }
+    }
+
+    // 2. Verifica planilha_followup
+    const { count: countFU } = await supabase
+      .from('planilha_followup').select('id', { count: 'exact' })
+      .eq('clinica_id', clinicaId).gte('data_followup', ini).lt('data_followup', fim)
+
+    if (!countFU || countFU === 0) {
+      problemas.push({ severidade: 'AVISO', area: 'Follow Up', descricao: `Nenhum follow-up encontrado em ${String(m).padStart(2,'0')}/${a}`, sugestao: 'Sincronizar aba Follow Up do Google Sheets' })
+    } else {
+      ok_items.push(`Follow Up: ${countFU} registros`)
+    }
+
+    // 3. Verifica planilha_recorrentes
+    const { count: countRec } = await supabase
+      .from('planilha_recorrentes').select('id', { count: 'exact' })
+      .eq('clinica_id', clinicaId).gte('data', ini).lt('data', fim)
+
+    if (!countRec || countRec === 0) {
+      problemas.push({ severidade: 'AVISO', area: 'Recorrentes', descricao: `Nenhum recorrente encontrado em ${String(m).padStart(2,'0')}/${a}`, sugestao: 'Adicionar pacientes recorrentes na Planilha Recorrentes' })
+    } else {
+      ok_items.push(`Recorrentes: ${countRec} registros`)
+    }
+
+    // 4. Leads novos sem follow-up agendado há mais de 7 dias
+    const corte7d = new Date(); corte7d.setDate(corte7d.getDate() - 7)
+    const { data: semFollowup } = await supabase
+      .from('planilha_leads').select('nome, data, follow_up_1')
+      .eq('clinica_id', clinicaId).gte('data', ini).lt('data', fim)
+      .eq('agendou', false).eq('vendeu', false)
+      .lt('data', corte7d.toISOString().split('T')[0])
+      .is('follow_up_1', null).limit(5)
+
+    if (semFollowup?.length > 0) {
+      problemas.push({
+        severidade: 'AVISO',
+        area: 'Follow Up',
+        descricao: `${semFollowup.length} leads sem follow-up agendado há mais de 7 dias`,
+        exemplos: semFollowup.map(l => l.nome),
+        sugestao: 'Agendar follow-up para esses leads na Planilha de Leads Novos',
+      })
+    }
+
+    // 5. Faturamento do mês
+    const { data: lancamentos } = await supabase
+      .from('lancamentos').select('valor_tratamento, valor_taxa, tipo')
+      .eq('clinica_id', clinicaId).gte('data', ini).lt('data', fim)
+      .neq('tipo', 'Paciente Modelo')
+
+    const totalFat = (lancamentos || []).reduce((acc, l) => acc + (l.valor_tratamento || 0) + (l.valor_taxa || 0), 0)
+    if (totalFat === 0) {
+      problemas.push({ severidade: 'AVISO', area: 'Faturamento', descricao: `Nenhum lançamento encontrado em ${String(m).padStart(2,'0')}/${a}`, sugestao: 'Verificar se os lançamentos foram feitos no Faturamento' })
+    } else {
+      ok_items.push(`Faturamento: R$ ${totalFat.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`)
+    }
+
+    return ok({
+      periodo: `${String(m).padStart(2,'0')}/${a}`,
+      resumo: problemas.length === 0 ? '✅ Sistema saudável — nenhum problema encontrado' : `⚠️ ${problemas.length} problema(s) detectado(s)`,
+      problemas,
+      ok: ok_items,
+    })
+  }
+)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TOOL 12 — Resumo diário (briefing matinal)
+// ─────────────────────────────────────────────────────────────────────────────
+server.tool(
+  'resumo_diario',
+  'Briefing do dia: agendamentos de hoje, faturamento de ontem, leads que precisam de atenção agora.',
+  {},
+  async () => {
+    const clinicaId = await getClinicaId()
+    if (!clinicaId) return err('clinica_id não encontrado')
+
+    const hoje = new Date()
+    const hojeStr = hoje.toISOString().split('T')[0]
+    const ontem = new Date(hoje); ontem.setDate(ontem.getDate() - 1)
+    const ontemStr = ontem.toISOString().split('T')[0]
+    const amanha = new Date(hoje); amanha.setDate(amanha.getDate() + 1)
+    const amanhaStr = amanha.toISOString().split('T')[0]
+
+    const [
+      { data: agendHoje },
+      { data: lancOntem },
+      { data: lembHoje },
+      { data: followHoje },
+    ] = await Promise.all([
+      supabase.from('agendamentos').select('paciente, procedimento, time, status')
+        .eq('clinica_id', clinicaId).eq('date', hojeStr).order('time'),
+      supabase.from('lancamentos').select('valor_tratamento, valor_taxa, paciente, tipo')
+        .eq('clinica_id', clinicaId).eq('data', ontemStr).neq('tipo', 'Paciente Modelo'),
+      supabase.from('lembretes').select('lead_nome, descricao, data')
+        .eq('clinica_id', clinicaId).eq('data', hojeStr).eq('concluido', false),
+      supabase.from('planilha_leads').select('nome, telefone, follow_up_1, follow_up_2, follow_up_3')
+        .eq('clinica_id', clinicaId).or(`follow_up_1.eq.${hojeStr},follow_up_2.eq.${hojeStr},follow_up_3.eq.${hojeStr}`),
+    ])
+
+    const fatOntem = (lancOntem || []).reduce((acc, l) => acc + (l.valor_tratamento || 0) + (l.valor_taxa || 0), 0)
+
+    const followUpsHoje = (followHoje || []).map(l => ({
+      nome: l.nome,
+      telefone: l.telefone,
+    }))
+
+    return ok({
+      data: hojeStr,
+      agendamentos_hoje: {
+        total: (agendHoje || []).length,
+        lista: (agendHoje || []).map(a => ({ hora: a.time, paciente: a.paciente, procedimento: a.procedimento, status: a.status })),
+      },
+      faturamento_ontem: {
+        total: fatOntem,
+        formatado: `R$ ${fatOntem.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+        lancamentos: (lancOntem || []).length,
+      },
+      follow_ups_hoje: {
+        total: followUpsHoje.length,
+        leads: followUpsHoje,
+      },
+      lembretes_hoje: {
+        total: (lembHoje || []).length,
+        lista: (lembHoje || []).map(l => ({ lead: l.lead_nome, descricao: l.descricao })),
+      },
+    })
+  }
+)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TOOL 13 — Sincronizar planilhas (aciona o sync sem precisar abrir o Dashboard)
+// ─────────────────────────────────────────────────────────────────────────────
+server.tool(
+  'sincronizar_planilhas',
+  'Dispara a sincronização das planilhas do Google Sheets (Leads Novos + Follow Up) para o mês especificado.',
+  {
+    ano: z.number().optional(),
+    mes: z.number().min(1).max(12).optional(),
+  },
+  async ({ ano, mes }) => {
+    const { ano: anoAtual, mes: mesAtualNum } = mesAtual()
+    const a = ano ?? anoAtual
+    const m = mes ?? mesAtualNum
+
+    const baseUrl = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : 'https://draamandaliima.com.br'
+
+    try {
+      const res = await fetch(`${baseUrl}/api/sync-planilha?ano=${a}&mes=${m}`)
+      const data = await res.json()
+      if (data.ok) {
+        return ok({ status: 'sucesso', periodo: `${String(m).padStart(2,'0')}/${a}`, resultado: data.resultado })
+      } else {
+        return err(`Sync falhou: ${data.error || 'erro desconhecido'}`)
+      }
+    } catch (e) {
+      return err(`Erro ao chamar sync: ${e.message}`)
+    }
+  }
+)
+
 // ── Inicia o servidor ─────────────────────────────────────────────────────────
 const transport = new StdioServerTransport()
 await server.connect(transport)
