@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 const PUBLISHED_ID = '2PACX-1vSQHBxm7a-u_r5dMNrZtYoMHRs3awELyB968s8aqj0HcJSeP1PjnE3n_FWZ8bB54BeFNVc3Syv0E5Fr'
-const GIDS = { novos: '574898400', followup: '1573659618', recorrentes: '876639945' }
+const GIDS = { novos: '574898400', followup: '1573659618' }
 
 function parseCSVLine(line) {
   const result = []; let current = '', inQuotes = false
@@ -191,28 +191,6 @@ export default async function handler(req, res) {
       if (error) throw new Error(`leads followup: ${error.message}`)
     }
     resultado.followup = rowsFU.length
-
-    // ── Recorrentes ───────────────────────────────────────────────────────────
-    const csvRec = await fetchCSV('recorrentes')
-    const rowsRec = []
-    for (const line of csvRec.split('\n').filter(l => l.trim())) {
-      const cols = parseCSVLine(line)
-      const data = parseSheetDate(cols[0])
-      if (!data || !data.startsWith(prefix)) continue
-      rowsRec.push({
-        id: crypto.randomUUID(), clinica_id: clinicaId, data,
-        nome: cols[1] || '', telefone: cols[2] || '',
-        agendou: (cols[3] || '').toUpperCase() === 'SIM',
-        vendeu: (cols[4] || '').toUpperCase() === 'SIM',
-        valor: parseMoney(cols[5]), observacao: cols[6] || '',
-      })
-    }
-    await supabase.from('planilha_recorrentes').delete().eq('clinica_id', clinicaId).gte('data', iniMes).lt('data', fimMes)
-    for (let i = 0; i < rowsRec.length; i += 50) {
-      const { error } = await supabase.from('planilha_recorrentes').insert(rowsRec.slice(i, i + 50))
-      if (error) throw new Error(`planilha_recorrentes: ${error.message}`)
-    }
-    resultado.recorrentes = rowsRec.length
 
     // ── Deduplicação automática por telefone ──────────────────────────────────
     const normPhone = (t) => {
