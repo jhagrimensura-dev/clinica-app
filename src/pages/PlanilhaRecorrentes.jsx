@@ -630,7 +630,7 @@ export default function PlanilhaRecorrentes() {
     return (
       <td key={col.key} className="px-2 py-1.5 cursor-pointer group/cell"
         onClick={() => setEditingCell({ rowId: row.id, col: col.key })}>
-        <span className={`text-xs ${value ? 'text-gray-700' : 'text-gray-300'} group-hover/cell:bg-orange-50 rounded px-1`}>
+        <span className={`text-sm ${value ? 'text-gray-900' : 'text-gray-300'} group-hover/cell:bg-orange-50 rounded px-1`}>
           {display()}
         </span>
       </td>
