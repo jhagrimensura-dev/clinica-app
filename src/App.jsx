@@ -65,6 +65,7 @@ import PlanilhaFollowUp from './pages/PlanilhaFollowUp'
 import PlanilhaRecorrentes from './pages/PlanilhaRecorrentes'
 import AnalisadorTranscricoes from './pages/analisadorTranscricoes'
 import Estoque from './pages/Estoque'
+import Reunioes from './pages/Reunioes'
 import DiarioDashboard from './pages/diarioDashboard'
 import WhatsAppFAB from './components/WhatsAppFAB'
 import LembretesFAB from './components/LembretesFAB'
@@ -270,6 +271,7 @@ case 'whatsapp_canal': return <PagePlaceholder title="WhatsApp" />
       case 'estoque': return <Estoque />
       case 'pacientes': return <Pacientes />
       case 'relatorios': return <Relatorios />
+      case 'reunioes': return <Reunioes />
       case 'configuracoes': return <Configuracoes />
       case 'ajuda': return <Ajuda />
       default: return <Dashboard />
