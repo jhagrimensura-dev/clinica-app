@@ -384,6 +384,8 @@ export default function PlanilhaRecorrentes() {
   const [modalImport, setModalImport] = useState(false)
   const [modalMesEsp, setModalMesEsp] = useState(null)
   const [erroDedup, setErroDedup] = useState(null)
+  const [sortDir, setSortDir] = useState('asc')
+  const [busca, setBusca] = useState('')
   const editInputRef = useRef(null)
 
   const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
@@ -511,6 +513,19 @@ export default function PlanilhaRecorrentes() {
 
   const mesmoMes     = rows.filter(r => r.agendou === 'SIM' || r.agendou === 'AGENDOU MESMO MÊS' || r.agendou === 'AGENDOU MÊS ANTERIOR' || r.agendou === true)
   const outrosMeses  = rows.filter(r => r.agendou === 'AGENDOU PRÓXIMO MÊS' || r.agendou === 'AGENDOU MÊS ESPECÍFICO')
+
+  const buscaNorm = busca.trim().toLowerCase()
+  const filteredRows = buscaNorm
+    ? rows.filter(r => (r.nome || '').toLowerCase().includes(buscaNorm) || (r.telefone || '').includes(buscaNorm))
+    : rows
+
+  const sortedRows = sortDir === 'asc'
+    ? filteredRows
+    : [...filteredRows].sort((a, b) => {
+        const da = a.data || ''
+        const db = b.data || ''
+        return da < db ? 1 : da > db ? -1 : 0
+      })
 
   const renderCell = (row, col) => {
     const isEditing = editingCell?.rowId === row.id && editingCell?.col === col.key
@@ -645,6 +660,19 @@ export default function PlanilhaRecorrentes() {
           <p className="text-xs text-gray-400 mt-0.5">{MESES_FULL[mes]} {ano} · clique em qualquer célula para editar · salva automaticamente</p>
         </div>
         <div className="flex items-center gap-3">
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 text-sm">🔍</span>
+            <input
+              type="text"
+              value={busca}
+              onChange={e => setBusca(e.target.value)}
+              placeholder="Buscar nome ou telefone..."
+              className="pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-orange-400 bg-white w-52"
+            />
+            {busca && (
+              <button onClick={() => setBusca('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 text-lg leading-none">×</button>
+            )}
+          </div>
           <button onClick={() => setModalImport(true)}
             className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-600 text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-sm border border-gray-200">
             ↑ Importar
@@ -755,11 +783,21 @@ export default function PlanilhaRecorrentes() {
           <div className="py-16 text-center text-gray-300 text-sm">Carregando...</div>
         ) : (
           <>
-            <div className="overflow-auto max-h-[60vh]">
+            <button onClick={addRow}
+            className="w-full py-2 text-xs text-gray-300 hover:text-orange-500 hover:bg-orange-50 border-b border-gray-50 transition-colors text-left px-4">
+            + Adicionar linha
+          </button>
+          <div className="overflow-auto max-h-[60vh]">
             <table className="text-left text-xs border-collapse w-full" style={{ minWidth: '900px' }}>
               <thead className="sticky top-0 z-10">
                 <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="px-3 py-2.5 text-[10px] font-bold text-gray-300 uppercase w-8">#</th>
+                  <th className="px-3 py-2.5 text-[10px] font-bold text-gray-300 uppercase w-8">
+                    <button onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}
+                      className="text-gray-400 hover:text-orange-500 transition-colors text-sm leading-none"
+                      title={sortDir === 'asc' ? 'Ordem crescente (clique para decrescente)' : 'Ordem decrescente (clique para crescente)'}>
+                      {sortDir === 'asc' ? '↑' : '↓'}
+                    </button>
+                  </th>
                   {COLS.map(col => (
                     <th key={col.key} style={{ width: col.width }} className={`px-2 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap ${
                       col.key === 'agendou' || col.key === 'vendeu' ? 'text-center' : ''
@@ -777,7 +815,7 @@ export default function PlanilhaRecorrentes() {
                       Nenhum recorrente este mês · clique em "+ Novo" ou "Importar Planilha"
                     </td>
                   </tr>
-                ) : rows.map((row, i) => (
+                ) : sortedRows.map((row, i) => (
                   <tr key={row.id}
                     className={`border-b border-gray-100 group ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-orange-50/40`}>
                     <td className="px-3 py-1.5 text-[10px] text-gray-300 select-none">{i + 1}</td>
