@@ -193,7 +193,7 @@ function WhatsAppFlyout({ active, setActive }) {
 function MobileDrawer({ active, setActive, onClose, signOut, isFuncionario, inicial, contasWA, permissoes }) {
   const podeVerItem = (item) => {
     if (!isFuncionario) return true
-    if (item.id === 'relatorios') return false
+    if (item.id === 'relatorios' || item.id === 'reunioes') return false
     if (item.id === 'instagram' || item.id === 'instagram_grupo' || item.id === 'leads_origem') return false
     if (permissoes) return permissoes.includes(item.id)
     return item.id !== 'financeiro'
@@ -291,7 +291,7 @@ export default function Sidebar({ active, setActive, isOpen, onToggle }) {
 
   const podeVerItem = (item) => {
     if (!isFuncionario) return true
-    if (item.id === 'relatorios') return false
+    if (item.id === 'relatorios' || item.id === 'reunioes') return false
     if (item.id === 'instagram' || item.id === 'instagram_grupo' || item.id === 'leads_origem') return false
     if (permissoes) return permissoes.includes(item.id)
     return item.id !== 'financeiro'
@@ -305,7 +305,7 @@ export default function Sidebar({ active, setActive, isOpen, onToggle }) {
           {inicial}
         </div>
         <div className="w-8 h-px bg-gray-100 mb-2" />
-        <nav className="flex flex-col gap-1 flex-1 items-center">
+        <nav className="flex flex-col gap-1 flex-1 items-center overflow-y-auto scrollbar-hide">
           {menuItems.filter(podeVerItem).map(item => (
             <FlyoutItem key={item.id} item={item} active={active} setActive={setActive} isFuncionario={isFuncionario} />
           ))}
