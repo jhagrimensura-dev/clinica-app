@@ -660,19 +660,6 @@ export default function PlanilhaRecorrentes() {
           <p className="text-xs text-gray-400 mt-0.5">{MESES_FULL[mes]} {ano} · clique em qualquer célula para editar · salva automaticamente</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 text-sm">🔍</span>
-            <input
-              type="text"
-              value={busca}
-              onChange={e => setBusca(e.target.value)}
-              placeholder="Buscar nome ou telefone..."
-              className="pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-orange-400 bg-white w-52"
-            />
-            {busca && (
-              <button onClick={() => setBusca('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 text-lg leading-none">×</button>
-            )}
-          </div>
           <button onClick={() => setModalImport(true)}
             className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-600 text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-sm border border-gray-200">
             ↑ Importar
@@ -775,6 +762,21 @@ export default function PlanilhaRecorrentes() {
             </ul>
           )}
         </div>
+      </div>
+
+      {/* Busca */}
+      <div className="relative">
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
+        <input
+          type="text"
+          value={busca}
+          onChange={e => setBusca(e.target.value)}
+          placeholder="Buscar nome ou telefone..."
+          className="w-full pl-9 pr-8 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-orange-400 bg-white"
+        />
+        {busca && (
+          <button onClick={() => setBusca('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 text-xl leading-none">×</button>
+        )}
       </div>
 
       {/* Tabela */}
