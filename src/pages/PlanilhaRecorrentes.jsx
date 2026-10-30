@@ -490,12 +490,11 @@ export default function PlanilhaRecorrentes() {
   }
 
   const total      = rows.length
-  const agendouCount = rows.filter(r => isAgendou(r.agendou)).length
   const vendeuCount  = rows.filter(r => r.vendeu).length
   const valorTotal   = rows.reduce((s, r) => s + (parseFloat(r.valor) || 0), 0)
 
-  const mesmoMes   = rows.filter(r => r.agendou === 'SIM' || r.agendou === 'AGENDOU MESMO MÊS' || r.agendou === true)
-  const proximoMes = rows.filter(r => r.agendou === 'AGENDOU PRÓXIMO MÊS')
+  const mesmoMes     = rows.filter(r => r.agendou === 'SIM' || r.agendou === 'AGENDOU MESMO MÊS' || r.agendou === 'AGENDOU MÊS ANTERIOR' || r.agendou === true)
+  const outrosMeses  = rows.filter(r => r.agendou === 'AGENDOU PRÓXIMO MÊS' || r.agendou === 'AGENDOU MÊS ESPECÍFICO')
 
   const renderCell = (row, col) => {
     const isEditing = editingCell?.rowId === row.id && editingCell?.col === col.key
@@ -648,18 +647,18 @@ export default function PlanilhaRecorrentes() {
           <p className="text-3xl font-bold text-gray-800">{total}</p>
           <p className="text-xs text-gray-400 mt-1">neste mês</p>
         </div>
-        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
-          <p className="text-sm text-gray-500 font-medium mb-1">Agendou</p>
-          <p className="text-3xl font-bold text-blue-600">{agendouCount}</p>
+        <div className="bg-white rounded-2xl p-5 border border-blue-100 shadow-sm">
+          <p className="text-sm text-blue-600 font-medium mb-1">Agendou Este Mês</p>
+          <p className="text-3xl font-bold text-blue-600">{mesmoMes.length}</p>
           <p className="text-xs text-gray-400 mt-1">
-            {total > 0 ? `${((agendouCount / total) * 100).toFixed(1)}% do total` : 'nenhum ainda'}
+            {total > 0 ? `${((mesmoMes.length / total) * 100).toFixed(1)}% do total` : 'nenhum ainda'}
           </p>
         </div>
-        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
-          <p className="text-sm text-gray-500 font-medium mb-1">Vendeu</p>
-          <p className="text-3xl font-bold text-green-600">{vendeuCount}</p>
+        <div className="bg-white rounded-2xl p-5 border border-yellow-100 shadow-sm">
+          <p className="text-sm text-yellow-600 font-medium mb-1">Para Outros Meses</p>
+          <p className="text-3xl font-bold text-yellow-600">{outrosMeses.length}</p>
           <p className="text-xs text-gray-400 mt-1">
-            {agendouCount > 0 ? `${((vendeuCount / agendouCount) * 100).toFixed(0)}% dos agendados` : 'nenhum ainda'}
+            {total > 0 ? `${((outrosMeses.length / total) * 100).toFixed(1)}% do total` : 'nenhum ainda'}
           </p>
         </div>
         <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
@@ -698,24 +697,24 @@ export default function PlanilhaRecorrentes() {
           )}
         </div>
 
-        {/* Agendou Próximo Mês */}
+        {/* Agendou Outros Meses */}
         <div className="bg-white rounded-2xl border border-yellow-100 shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-yellow-50">
             <div>
-              <p className="text-sm font-bold text-yellow-700">Agendou Próximo Mês</p>
-              <p className="text-xs text-gray-400 mt-0.5">confirmados para {MESES_FULL[(mes + 1) % 12]}</p>
+              <p className="text-sm font-bold text-yellow-700">Para Outros Meses</p>
+              <p className="text-xs text-gray-400 mt-0.5">próximo mês e meses específicos</p>
             </div>
-            <span className="text-3xl font-bold text-yellow-600">{proximoMes.length}</span>
+            <span className="text-3xl font-bold text-yellow-600">{outrosMeses.length}</span>
           </div>
-          {proximoMes.length === 0 ? (
+          {outrosMeses.length === 0 ? (
             <p className="px-5 py-4 text-xs text-gray-300">Nenhum agendado ainda</p>
           ) : (
             <ul className="divide-y divide-gray-50 max-h-52 overflow-y-auto">
-              {proximoMes.map((r, i) => (
+              {outrosMeses.map((r, i) => (
                 <li key={r.id} className="flex items-center gap-3 px-5 py-2.5">
                   <span className="text-[10px] text-gray-300 w-4 shrink-0">{i + 1}</span>
                   <span className="text-sm font-semibold text-gray-700 flex-1 truncate">{r.nome || '—'}</span>
-                  {r.telefone && <span className="text-xs text-gray-400 shrink-0">{r.telefone}</span>}
+                  {r.observacao && <span className="text-xs text-yellow-600 shrink-0">{r.observacao}</span>}
                 </li>
               ))}
             </ul>
