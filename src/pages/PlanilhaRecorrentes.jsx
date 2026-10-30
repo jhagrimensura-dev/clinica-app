@@ -6,11 +6,12 @@ const MESES_FULL  = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julh
 const MESES_ABREV = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
 
 const AGENDOU_OPTS = [
-  { value: 'SIM',                  label: 'SIM',                  cls: 'bg-green-100 text-green-700' },
-  { value: 'NÃO',                  label: 'NÃO',                  cls: 'bg-red-50 text-red-400' },
-  { value: 'AGENDOU MESMO MÊS',    label: 'AGENDOU MESMO MÊS',    cls: 'bg-blue-100 text-blue-700' },
-  { value: 'AGENDOU PRÓXIMO MÊS',  label: 'AGENDOU PRÓXIMO MÊS',  cls: 'bg-yellow-100 text-yellow-700' },
-  { value: 'AGENDOU MÊS ANTERIOR', label: 'AGENDOU MÊS ANTERIOR', cls: 'bg-red-900 text-white' },
+  { value: 'SIM',                   label: 'SIM',                   cls: 'bg-green-100 text-green-700' },
+  { value: 'NÃO',                   label: 'NÃO',                   cls: 'bg-red-50 text-red-400' },
+  { value: 'AGENDOU MESMO MÊS',     label: 'AGENDOU MESMO MÊS',     cls: 'bg-blue-100 text-blue-700' },
+  { value: 'AGENDOU PRÓXIMO MÊS',   label: 'AGENDOU PRÓXIMO MÊS',   cls: 'bg-yellow-100 text-yellow-700' },
+  { value: 'AGENDOU MÊS ESPECÍFICO',label: 'AGENDOU MÊS ESPECÍFICO',cls: 'bg-purple-100 text-purple-700' },
+  { value: 'AGENDOU MÊS ANTERIOR',  label: 'AGENDOU MÊS ANTERIOR',  cls: 'bg-red-900 text-white' },
 ]
 
 function agendouOpt(val) {
@@ -161,6 +162,73 @@ function parseSheetRows(text, clinicaId) {
     })
   }
   return rows
+}
+
+function ModalMesEspecifico({ row, currentMes, currentAno, clinicaId, onConfirm, onClose }) {
+  const defaultMes = currentMes === 11 ? 0 : currentMes + 1
+  const defaultAno = currentMes === 11 ? currentAno + 1 : currentAno
+  const [targetMes, setTargetMes] = useState(defaultMes)
+  const [targetAno, setTargetAno] = useState(defaultAno)
+  const [loading, setLoading] = useState(false)
+
+  const confirmar = async () => {
+    setLoading(true)
+    const dataProx = `${targetAno}-${String(targetMes + 1).padStart(2,'0')}-01`
+    const fimProx = targetMes === 11
+      ? `${targetAno + 1}-01-01`
+      : `${targetAno}-${String(targetMes + 2).padStart(2,'0')}-01`
+
+    const { data: existe } = await supabase.from('planilha_recorrentes')
+      .select('id').eq('clinica_id', clinicaId)
+      .eq('nome', row.nome).gte('data', dataProx).lt('data', fimProx)
+      .maybeSingle()
+
+    if (!existe) {
+      await supabase.from('planilha_recorrentes').insert({
+        id: genId(), clinica_id: clinicaId,
+        data: dataProx, nome: row.nome,
+        telefone: row.telefone || '', agendou: 'NÃO',
+        vendeu: false, valor: null,
+        observacao: `Vindo de ${MESES_FULL[currentMes]} ${currentAno}`,
+      })
+    }
+    setLoading(false)
+    onConfirm()
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl p-6 w-80" onClick={e => e.stopPropagation()}>
+        <h3 className="text-base font-bold text-gray-800 mb-1">Escolha o mês de agendamento</h3>
+        <p className="text-xs text-gray-400 mb-4"><span className="font-semibold text-gray-600">{row.nome}</span> será adicionado(a) ao mês selecionado</p>
+        <div className="flex gap-3 mb-6">
+          <div className="flex-1">
+            <label className="text-xs text-gray-500 font-medium block mb-1">Mês</label>
+            <select value={targetMes} onChange={e => setTargetMes(Number(e.target.value))}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-purple-400">
+              {MESES_FULL.map((m, i) => <option key={i} value={i}>{m}</option>)}
+            </select>
+          </div>
+          <div className="w-24">
+            <label className="text-xs text-gray-500 font-medium block mb-1">Ano</label>
+            <select value={targetAno} onChange={e => setTargetAno(Number(e.target.value))}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-purple-400">
+              {[currentAno, currentAno + 1].map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-500 hover:bg-gray-50">
+            Cancelar
+          </button>
+          <button onClick={confirmar} disabled={loading}
+            className="flex-1 py-2.5 rounded-xl bg-purple-500 hover:bg-purple-600 text-white text-sm font-semibold disabled:opacity-40 transition-colors">
+            {loading ? 'Salvando...' : `Confirmar → ${MESES_ABREV[targetMes]}/${targetAno}`}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function ModalImport({ clinicaId, ano, mes, onClose, onDone }) {
@@ -314,6 +382,7 @@ export default function PlanilhaRecorrentes() {
   const [editingCell, setEditingCell] = useState(null)
   const [openDropdown, setOpenDropdown] = useState(null)
   const [modalImport, setModalImport] = useState(false)
+  const [modalMesEsp, setModalMesEsp] = useState(null)
   const editInputRef = useRef(null)
 
   const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
@@ -451,6 +520,11 @@ export default function PlanilhaRecorrentes() {
                   <button key={o.value} className="w-full text-left px-3 py-1.5 hover:bg-gray-50"
                     onClick={async () => {
                       setOpenDropdown(null)
+                      // Mês específico: abre modal para escolher
+                      if (o.value === 'AGENDOU MÊS ESPECÍFICO') {
+                        setModalMesEsp(row)
+                        return
+                      }
                       setRows(prev => prev.map(r => r.id === row.id ? { ...r, agendou: o.value } : r))
                       await supabase.from('planilha_recorrentes').update({ agendou: o.value }).eq('id', row.id)
                       const updated = rows.find(r => r.id === row.id)
@@ -703,6 +777,24 @@ export default function PlanilhaRecorrentes() {
           mes={mes}
           onClose={() => setModalImport(false)}
           onDone={fetchRows}
+        />
+      )}
+
+      {modalMesEsp && (
+        <ModalMesEspecifico
+          row={modalMesEsp}
+          currentMes={mes}
+          currentAno={ano}
+          clinicaId={clinicaId}
+          onConfirm={async () => {
+            const rowId = modalMesEsp.id
+            setRows(prev => prev.map(r => r.id === rowId ? { ...r, agendou: 'AGENDOU MÊS ESPECÍFICO' } : r))
+            await supabase.from('planilha_recorrentes').update({ agendou: 'AGENDOU MÊS ESPECÍFICO' }).eq('id', rowId)
+            const updated = rows.find(r => r.id === rowId)
+            if (updated) syncRowData({ ...updated, agendou: 'AGENDOU MÊS ESPECÍFICO' }, clinicaId)
+            setModalMesEsp(null)
+          }}
+          onClose={() => setModalMesEsp(null)}
         />
       )}
 
