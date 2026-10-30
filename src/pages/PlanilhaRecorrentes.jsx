@@ -509,13 +509,18 @@ export default function PlanilhaRecorrentes() {
           <div className="flex justify-center">
           <span
             className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold cursor-pointer ${opt.cls}`}
-            onClick={() => setOpenDropdown(isOpen ? null : { rowId: row.id, col: col.key })}
+            onClick={(e) => {
+              if (isOpen) { setOpenDropdown(null); return }
+              const rect = e.currentTarget.getBoundingClientRect()
+              const up = window.innerHeight - rect.bottom < 260
+              setOpenDropdown({ rowId: row.id, col: col.key, up })
+            }}
           >{opt.label}</span>
           </div>
           {isOpen && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)} />
-              <div className="absolute z-50 left-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 min-w-max">
+              <div className={`absolute z-50 left-0 ${openDropdown.up ? 'bottom-full mb-1' : 'top-full mt-1'} bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 min-w-max`}>
                 {AGENDOU_OPTS.map(o => (
                   <button key={o.value} className="w-full text-left px-3 py-1.5 hover:bg-gray-50"
                     onClick={async () => {
