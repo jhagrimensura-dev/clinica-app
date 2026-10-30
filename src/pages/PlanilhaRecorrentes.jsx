@@ -383,6 +383,7 @@ export default function PlanilhaRecorrentes() {
   const [openDropdown, setOpenDropdown] = useState(null)
   const [modalImport, setModalImport] = useState(false)
   const [modalMesEsp, setModalMesEsp] = useState(null)
+  const [erroDedup, setErroDedup] = useState(null)
   const editInputRef = useRef(null)
 
   const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`
@@ -460,10 +461,25 @@ export default function PlanilhaRecorrentes() {
   }
 
   const saveCell = useCallback(async (rowId, col, value) => {
+    if ((col === 'nome' || col === 'telefone') && value?.trim()) {
+      const normalizado = value.trim().toLowerCase().replace(/\s+/g, ' ')
+      const duplicado = rows.find(r => {
+        if (r.id === rowId) return false
+        const v = (r[col] || '').trim().toLowerCase().replace(/\s+/g, ' ')
+        return col === 'telefone'
+          ? v.replace(/\D/g, '') === normalizado.replace(/\D/g, '') && v !== ''
+          : v === normalizado && v !== ''
+      })
+      if (duplicado) {
+        setErroDedup(`${col === 'nome' ? 'Nome' : 'Telefone'} já cadastrado neste mês — ${duplicado.nome}`)
+        setTimeout(() => setErroDedup(null), 5000)
+        return
+      }
+    }
     setRows(prev => prev.map(r => r.id === rowId ? { ...r, [col]: value } : r))
     const { error } = await supabase.from('planilha_recorrentes').update({ [col]: value === '' ? null : value }).eq('id', rowId)
     if (error) console.error('saveCell error:', error)
-  }, [])
+  }, [rows])
 
   const toggleBool = useCallback((rowId, col) => {
     setRows(prev => {
@@ -639,6 +655,17 @@ export default function PlanilhaRecorrentes() {
           </button>
         </div>
       </div>
+
+      {erroDedup && (
+        <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+          <span className="text-red-500 text-lg">⚠</span>
+          <div>
+            <p className="text-sm font-semibold text-red-700">Duplicidade detectada — não foi salvo</p>
+            <p className="text-xs text-red-500 mt-0.5">{erroDedup}</p>
+          </div>
+          <button onClick={() => setErroDedup(null)} className="ml-auto text-red-300 hover:text-red-500 text-xl leading-none">×</button>
+        </div>
+      )}
 
       {/* Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
