@@ -75,6 +75,7 @@ export default function Dashboard() {
   const ticketIndicacao = countIndicacaoLanc > 0 ? totalIndicacaoLanc / countIndicacaoLanc : 0
   const ticketDiario = diasAtendimento > 0 ? totalGeral / diasAtendimento : 0
 
+  const pctReal = metaValor > 0 ? ((totalGeral / metaValor) * 100).toFixed(1) : '0.0'
   const pct = metaValor > 0 ? Math.min((totalGeral / metaValor) * 100, 100).toFixed(1) : '0.0'
 
   // Leads por origem
@@ -189,7 +190,7 @@ export default function Dashboard() {
           <div className="w-full bg-gray-100 rounded-full h-2 mb-1">
             <div className="bg-brand-400 h-2 rounded-full transition-all" style={{ width: `${pct}%` }}></div>
           </div>
-          <p className="text-xs text-brand-500 font-medium mb-4">{pct}% da meta</p>
+          <p className="text-xs text-brand-500 font-medium mb-4">{pctReal}% da meta</p>
           <div className="pt-2 border-t border-gray-100" style={{ display: 'grid', gridTemplateColumns: '1fr auto auto auto', columnGap: '0.5rem', rowGap: '0.4rem', alignItems: 'baseline' }}>
             {[
               { label: 'Novos',        valor: totalNovos,       count: countNovos,       unit: 'venda(s)' },
