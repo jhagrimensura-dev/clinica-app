@@ -75,6 +75,7 @@ const menuItems = [
 
 function FlyoutItem({ item, active, setActive, isFuncionario }) {
   const [open, setOpen] = useState(false)
+  const [flyoutTop, setFlyoutTop] = useState(0)
   const ref = useRef(null)
   const timerRef = useRef(null)
 
@@ -82,6 +83,10 @@ function FlyoutItem({ item, active, setActive, isFuncionario }) {
 
   const handleEnter = () => {
     clearTimeout(timerRef.current)
+    if (ref.current) {
+      const rect = ref.current.getBoundingClientRect()
+      setFlyoutTop(rect.top)
+    }
     setOpen(true)
   }
   const handleLeave = () => {
@@ -109,9 +114,9 @@ function FlyoutItem({ item, active, setActive, isFuncionario }) {
         {icons[item.icon]}
       </button>
 
-      {/* Flyout */}
+      {/* Flyout — fixed para não ser cortado pelo overflow da nav */}
       {open && (
-        <div className="absolute left-14 top-0 z-50 bg-white border border-brand-100 rounded-xl shadow-2xl min-w-[180px] py-2 overflow-hidden">
+        <div className="fixed left-16 z-50 bg-white border border-brand-100 rounded-xl shadow-2xl min-w-[180px] py-2 overflow-hidden" style={{ top: flyoutTop }}>
           <p className="px-4 py-1.5 text-[10px] font-bold text-brand-400 uppercase tracking-widest">{item.label}</p>
           {item.sub ? item.sub.map(sub => (
             <button key={sub.id} onClick={() => { setActive(sub.id); setOpen(false) }}
@@ -158,13 +163,19 @@ function WhatsAppFlyout({ active, setActive }) {
   if (contasWA.length === 0) return null
 
   const isActive = contasWA.some(c => active === `inbox_${c.id}`)
+  const btnRef = useRef(null)
+  const [flyoutTop, setFlyoutTop] = useState(0)
 
-  const handleEnter = () => { clearTimeout(timerRef.current); setOpen(true) }
+  const handleEnter = () => {
+    clearTimeout(timerRef.current)
+    if (btnRef.current) setFlyoutTop(btnRef.current.getBoundingClientRect().top)
+    setOpen(true)
+  }
   const handleLeave = () => { timerRef.current = setTimeout(() => setOpen(false), 150) }
 
   return (
     <div className="relative" onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
-      <button className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all ${
+      <button ref={btnRef} className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all ${
         isActive ? 'bg-brand-100 text-brand-600' : 'text-gray-400 hover:text-brand-600 hover:bg-brand-50'
       }`}>
         <svg viewBox="0 0 24 24" className="w-5 h-5" fill={isActive ? '#25D366' : 'currentColor'} opacity={isActive ? 1 : 0.5}>
@@ -172,7 +183,7 @@ function WhatsAppFlyout({ active, setActive }) {
         </svg>
       </button>
       {open && (
-        <div className="absolute left-14 bottom-0 z-50 bg-white border border-brand-100 rounded-xl shadow-2xl min-w-[200px] py-2">
+        <div className="fixed left-16 z-50 bg-white border border-brand-100 rounded-xl shadow-2xl min-w-[200px] py-2" style={{ top: flyoutTop }}>
           <p className="px-4 py-1.5 text-[10px] font-bold text-brand-400 uppercase tracking-widest">Inbox WhatsApp</p>
           {contasWA.map(conta => (
             <button key={conta.id} onClick={() => { setActive(`inbox_${conta.id}`); setOpen(false) }}
