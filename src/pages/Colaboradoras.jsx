@@ -535,7 +535,7 @@ export default function Colaboradoras() {
                 <button onClick={() => {
                     update({
                       totalRecorrentes: planilhaRecRows.length,
-                      recorrentesAgendados: planilhaRecRows.filter(r => r.agendou).length,
+                      recorrentesAgendados: planilhaRecRows.filter(r => r.agendou === 'SIM' || r.agendou === 'AGENDOU MESMO MÊS' || r.agendou === 'AGENDOU MÊS ANTERIOR' || r.agendou === 'AGENDOU PRÓXIMO MÊS' || r.agendou === 'AGENDOU MÊS ESPECÍFICO' || r.agendou === true).length,
                       recorrentesFeitos: planilhaRecRows.filter(r => r.vendeu).length,
                     })
                     setRefreshKey(k => k + 1)
@@ -549,7 +549,7 @@ export default function Colaboradoras() {
             {planilhaRecRows.length > 0 && (
               <div className="flex items-center gap-2 bg-green-50 border border-green-100 rounded-xl px-3 py-2 mb-3 text-xs text-green-700">
                 <span>✓</span>
-                <span>Encontrado <strong>{planilhaRecRows.length} recorrentes</strong> em {MESES[mes]} — <strong>{planilhaRecRows.filter(r => r.agendou).length} agendados</strong>, <strong>{planilhaRecRows.filter(r => r.vendeu).length} com procedimento feito</strong>.</span>
+                <span>Encontrado <strong>{planilhaRecRows.length} recorrentes</strong> em {MESES[mes]} — <strong>{planilhaRecRows.filter(r => r.agendou === 'SIM' || r.agendou === 'AGENDOU MESMO MÊS' || r.agendou === 'AGENDOU MÊS ANTERIOR' || r.agendou === 'AGENDOU PRÓXIMO MÊS' || r.agendou === 'AGENDOU MÊS ESPECÍFICO' || r.agendou === true).length} agendados</strong> (incl. outros meses), <strong>{planilhaRecRows.filter(r => r.vendeu).length} com procedimento feito</strong>.</span>
               </div>
             )}
             <p className="text-xs text-gray-400 mb-4">Taxa de agendamento define o valor; pagamento por procedimento feito</p>
@@ -560,7 +560,15 @@ export default function Colaboradoras() {
                   placeholder="0" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300" />
               </div>
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Agendados</label>
+                <label className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+                  Agendados
+                  <span className="relative group">
+                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-100 text-blue-500 text-[10px] font-bold cursor-help leading-none border border-blue-200">?</span>
+                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-64 bg-gray-800 text-white text-[10px] leading-snug rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 pointer-events-none z-50 shadow-lg transition-opacity">
+                      Inclui agendamentos para <strong>outros meses</strong> (próximo mês e mês específico) além dos deste mês. Assim a taxa reflete todo o trabalho de contato feito, mesmo que o paciente venha em mês futuro. <strong>Procedimentos feitos</strong> conta apenas quem veio de fato.
+                    </span>
+                  </span>
+                </label>
                 <input type="number" value={dados.recorrentesAgendados || ''} onChange={e => update({ recorrentesAgendados: Number(e.target.value) })}
                   placeholder="0" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-300" />
               </div>
