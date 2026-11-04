@@ -432,7 +432,7 @@ export default function PlanilhaRecorrentes() {
     await supabase.from('planilha_recorrentes').insert(inserir.map(r => ({
       id: genId(), clinica_id: clinicaId,
       data: dataProx, nome: r.nome,
-      telefone: r.telefone || '', agendou: 'NÃO',
+      telefone: r.telefone || '', agendou: 'AGENDOU MÊS ANTERIOR',
       vendeu: false, valor: null,
       observacao: `Vindo de ${MESES_FULL[mes]}`,
     })))
@@ -578,7 +578,7 @@ export default function PlanilhaRecorrentes() {
                           await supabase.from('planilha_recorrentes').insert({
                             id: genId(), clinica_id: clinicaId,
                             data: dataProx, nome: row.nome,
-                            telefone: row.telefone || '', agendou: 'NÃO',
+                            telefone: row.telefone || '', agendou: 'AGENDOU MÊS ANTERIOR',
                             vendeu: false, valor: null, observacao: `Vindo de ${MESES_FULL[mes]}`,
                           })
                         }
