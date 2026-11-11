@@ -52,4 +52,4 @@
 - [Sessão 2026-10-26](project_sessao_20261026.md) — Histórico Financeiro (tabela editável, gráfico, linha 2027 planejamento), Social Media rotina semanal, dedup automático de leads
 - [Sessão 2026-10-28 a 10-29](project_sessao_20261028_29.md) — Planilha Recorrentes (abas mensais, auto-mover, dropdown), fix Metas Paciente Modelo, MCP gerente, hook SessionStart briefing automático
 - [Sessão 2026-10-30 a 11-04](project_sessao_20261030_1104.md) — Sort/busca PlanilhaRecorrentes, Reuniões nova página (admin-only), fix sidebar flyout, fix bônus Adriele (208→20), análise outubro, fix auto-mover → AGENDOU MÊS ANTERIOR
-- [Sessão 2026-11-11](project_sessao_20261111.md) — Setup PC Windows: memória via junction para repo/memory, fix setup-memory-sync.bat, Vercel CLI pendente no PC
+- [Sessão 2026-11-11](project_sessao_20261111.md) — Setup PC Windows: memória via junction para repo/memory, fix setup-memory-sync.bat, Vercel CLI instalado
