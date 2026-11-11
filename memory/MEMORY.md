@@ -1,0 +1,54 @@
+# Memory Index
+
+> Última atualização: 2026-11-04
+
+- [Recarregar browser após alterações](feedback_reload_browser.md) — sempre recarregar o Chrome após editar arquivos do projeto
+- [Commitar quando funcionar](feedback_commit_on_success.md) — commitar automaticamente toda vez que uma feature for confirmada como funcionando
+- [Financeiro — Contas a Pagar e campos ocultos](project_financeiro_contas.md) — features implementadas em 2026-06-01: hide/show de campos e módulo completo de Contas a Pagar
+- [Sessão 2026-06-11](project_sessao_20260611.md) — Faturamento (Consultas, procedimentos com preço, tabela alinhada) + fotos WhatsApp Inbox
+- [Pendências próximas sessões](project_pendencias.md) — Conexão (página de leads) pendente
+- [Deploy Vercel — case sensitivity](feedback_vercel_case.md) — src/Pages/ (maiúsculo) quebra build no Linux; fix: renomear + Vite 5
+- [Abrir site de produção](feedback_open_production.md) — sempre abrir draamandaliima.com.br, não localhost
+- [Sessão 2026-06-16](project_sessao_20260616.md) — Indicacao+LeadsRecorrentes rewrite, favicon, UI cleanup, fix timestamp inbox, menu ⋮ nas mensagens
+- [Sessão 2026-06-17](project_sessao_20260617.md) — Segurança: RLS ativado no Supabase + webhook usando SUPABASE_SERVICE_KEY
+- [Sessão 2026-06-24](project_sessao_20260624.md) — Realtime em todos os contexts + migração Metas/Financeiro localStorage→Supabase
+- [Sessão 2026-06-25](project_sessao_20260625.md) — Análises Instagram, rastreamento leads, sino inbox, fix arquivar, botão voltar
+- [Sessão 2026-06-30](project_sessao_20260630.md) — Dashboard (consultas, ticket médio novos, %), leads mídia/criativo, excluir lead admin, Social Media leads reais
+- [Sessão 2026-07-01](project_sessao_20260701.md) — Mídia editável, busca paciente+leads no Faturamento, responsável editável, fix realtime RLS multi-usuário, badge leads calendário
+- [Sessão 2026-07-02](project_sessao_20260702.md) — Agenda cores brand, Vendas/Dashboard sem consultas, Social Media modal, reload banner, Instagram Analytics: Supabase migration + visitas perfil + total seguidores + mensagens + filtro campanhas por tipo
+- [Consultas fora da contagem de Vendas](feedback_consultas_vendas.md) — consultas entram no valor do faturamento mas NUNCA na contagem de vendas/ticket médio
+- [Sessão 2026-07-03](project_sessao_20260703.md) — Pós Procedimento + anúncio CTW inbox + Colaboradoras: calculadora de bônus completa com Puxar do sistema, metas editáveis por mês, 4 bugfixes
+- [Estrutura dos Anúncios](project_estrutura_anuncios.md) — Instagram Impulsionar (bio/stories) vs Tráfego no Gerenciador (emoji+coração+bolinha no nome)
+- [Sessão 2026-07-06](project_sessao_20260706.md) — Fix QR code WhatsApp: Z-API retorna link wp.me (não imagem), usar react-qr-code + auto-refresh a cada 45s
+- [Bug let antes de declaração em webhook](feedback_let_before_init.md) — nunca referenciar let/const antes da declaração em handlers; try/catch com 200 esconde crashes
+- [Sessão 2026-07-09](project_sessao_20260709.md) — Painel Orgânico Instagram conectado + feriados + sort Faturamento + fixes API Graph v20+ + criativos com thumbnail/data
+- [Sessão 2026-07-17](project_sessao_20260717.md) — Webhook @lid: 3 estratégias de resolução, fix jsonb configuracoes, polling 25s inbox, Z-API limitações multi-device
+- [Sessão 2026-07-20](project_sessao_20260720.md) — Migração completa Z-API → Evolution API (Railway): webhook, inbox, configurações + Leads por Origem melhorias
+- [Sessão 2026-07-21](project_sessao_20260721.md) — Fix inbox Evolution API: GET→POST findChats, @lid sem nomes (findContacts map), histórico msgs via findMessages, webhook strip @lid
+- [Deduplicação de lembretes](feedback_dedup_lembretes.md) — guard de duplicata deve ficar dentro de addLembrete (AgendaContext), não nos chamadores
+- [Não sincronizar leads via useEffect](feedback_sync_leads_lancamentos.md) — nunca alterar status de leads automaticamente via side effects; preferir leitura cruzada de contextos
+- [Sessão 2026-07-28](project_sessao_20260728.md) — Card Leads Novos (novos/follow-up), Agendamentos via Faturamento sem sync, consultas clicáveis, fix bug revertRef destrutivo
+- [Sessão 2026-07-29](project_sessao_20260729.md) — Fix sidinhos lembrete: UUID em 6 páginas + RLS ::text cast + filtro data para burlar limite 1000 rows Supabase
+- [Sessão 2026-07-30](project_sessao_20260730.md) — Fix Social Media isFollow, busca leads no Inbox, detecção/mesclagem de duplicatas, telefone no modal, diagnóstico clinicaId
+- [Perguntar antes de implementar](feedback_perguntar_antes.md) — quando localização/formato não for explícito, perguntar antes de escrever código
+- [Deploy antes de pedir teste](feedback_deploy_before_test.md) — sempre fazer `vercel --prod` antes de pedir ao usuário para testar; ele usa só produção
+- [Sessão 2026-08-03](project_sessao_20260803.md) — Fix status Follow #1 revertendo: bug visual no InboxWhatsApp (label customizado vs padrão) + normalização defensiva no fromDB
+- [Sessão 2026-08-19](project_sessao_20260819.md) — Fix clique calendário Pós Procedimento (z-index): último bloco em slot cheio era bloqueado pelo slot seguinte + CSV import Leads Novos
+- [Sessão 2026-08-21](project_sessao_20260821.md) — Leads Follow Up nova página + Dashboard atualizado + fix agendados/taxa/lembretes concluídos sumindo
+- [Sessão 2026-08-26](project_sessao_20260826.md) — Import CSV 90 leads agosto, fix indicações invisíveis, crash proximoFollowup, taxa de conversão inclui indicações
+- [Sessão 2026-08-27](project_sessao_20260827.md) — Import Follow Up 141 leads: dedup mês-escopo, parseData datas malformadas, suspeitos default importar, duplicatas Leads Novos ignora Follow Up
+- [Sessão 2026-09-14](project_sessao_20260914.md) — Planilha de Leads: tabela editável inline substitui Google Sheets, import agosto+setembro via botão colar
+- [Sessão 2026-09-17](project_sessao_20260917.md) — PlanilhaFollowUp sync→LeadsFollowUp, PlanilhaRecorrentes nova página, fix status keys (conversando/fechado), CAC só tipo Novo
+- [Sessão 2026-09-18](project_sessao_20260918.md) — Analisador de Transcrições com IA (txt+pdf), sidebar mobile drawer, Dashboard responsivo, fix senha/sessão
+- [Mobile First — novas páginas](feedback_mobile_first.md) — toda nova página deve ser responsiva desde a criação (p-3 sm:p-6, grids com breakpoints, tabelas com overflow-x-auto)
+- [Sessão 2026-09-22](project_sessao_20260922.md) — MCP MVP + tool importar_planilha + cron diário Google Sheets → Supabase + fix duplicatas trigger
+- [Trigger planilha_leads → leads](feedback_planilha_trigger.md) — trigger cria leads automaticamente ao inserir em planilha_leads; apagar leads vinculados ANTES de reimportar
+- [Atualizar memória ao perguntar sobre o programa](feedback_atualizar_memoria.md) — sempre atualizar memória da sessão quando usuário perguntar como está o sistema
+- [Sessão 2026-09-28](project_sessao_20260928.md) — Estoque (32 produtos, layout Clinicorp, tabelas Supabase) + botão Sincronizar no Dashboard + fix fechar banner duplicatas
+- [Sessão 2026-09-29](project_sessao_20260929.md) — Fix MCP leads zerados (.like() → .gte()/.lt() em colunas date) + banner duplicatas persiste dismiss no localStorage
+- [Sessão 2026-09-30 a 10-05](project_sessao_20260930_1005.md) — Fixes pós-Planilha: reload após sync, PlanilhaFollowUp→leads, agendados novos+indicação separados, botão Sincronizar com mês/ano
+- [Sessão 2026-10-13 a 10-19](project_sessao_20261013_15.md) — Card Conversão na Cadeira, follow-up no card, Colaboradoras bônus por colaboradora (Fernanda: Semanal+Conversão; Adriele: Recorrência), seguidores/dia
+- [Sessão 2026-10-21 a 10-23](project_sessao_20261021_23.md) — Dashboard Visão Comercial, meta 20 pac/mês, meta recorrência 40 agend, botões flutuantes, dashboard diário
+- [Sessão 2026-10-26](project_sessao_20261026.md) — Histórico Financeiro (tabela editável, gráfico, linha 2027 planejamento), Social Media rotina semanal, dedup automático de leads
+- [Sessão 2026-10-28 a 10-29](project_sessao_20261028_29.md) — Planilha Recorrentes (abas mensais, auto-mover, dropdown), fix Metas Paciente Modelo, MCP gerente, hook SessionStart briefing automático
+- [Sessão 2026-10-30 a 11-04](project_sessao_20261030_1104.md) — Sort/busca PlanilhaRecorrentes, Reuniões nova página (admin-only), fix sidebar flyout, fix bônus Adriele (208→20), análise outubro, fix auto-mover → AGENDOU MÊS ANTERIOR
