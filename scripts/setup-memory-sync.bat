@@ -1,34 +1,38 @@
 @echo off
-:: Setup memory sync — roda uma vez no Windows
-:: Cria symlink do .claude local apontando para repo/memory/
+:: Setup memory sync - roda uma vez no Windows
+:: Cria junction do .claude local apontando para repo/memory/
 
-set REPO_DIR=%~dp0..
+for /f "delims=" %%i in ('powershell -NoProfile -command "(Get-Item '%~dp0..').FullName"') do set REPO_DIR=%%i
 set MEMORY_SRC=%REPO_DIR%\memory
 
-:: Descobrir o path hash do projeto no .claude
-:: Formato: substitui \ por - e remove letra de drive+:
-for /f "delims=" %%i in ('powershell -command "(Get-Item '%REPO_DIR%').FullName.Replace('\','-').Replace(':','').TrimStart('-')"') do set PROJECT_HASH=%%i
+:: Formato do Claude: C:\Users\X\clinica-app -> C--Users-X-clinica-app
+for /f "delims=" %%i in ('powershell -NoProfile -command "'%REPO_DIR%' -replace '[:\\]','-'"') do set PROJECT_HASH=%%i
 
-set CLAUDE_BASE=%USERPROFILE%\.claude\projects\-%PROJECT_HASH%
+set CLAUDE_BASE=%USERPROFILE%\.claude\projects\%PROJECT_HASH%
 set CLAUDE_MEMORY=%CLAUDE_BASE%\memory
 
 echo Repo: %REPO_DIR%
 echo Claude memory path: %CLAUDE_MEMORY%
 
-:: Cria pasta .claude se nao existir
 if not exist "%CLAUDE_BASE%" mkdir "%CLAUDE_BASE%"
 
-:: Remove memoria local se existir (faz backup primeiro)
+:: Ja esta linkado? Sai sem mexer
+powershell -NoProfile -command "if ((Get-Item '%CLAUDE_MEMORY%' -ErrorAction SilentlyContinue).LinkType) { exit 1 }"
+if errorlevel 1 (
+    echo Ja configurado.
+    pause
+    exit /b 0
+)
+
 if exist "%CLAUDE_MEMORY%" (
     echo Fazendo backup da memoria local...
     xcopy "%CLAUDE_MEMORY%" "%CLAUDE_MEMORY%_backup\" /E /I /Q
     rmdir /S /Q "%CLAUDE_MEMORY%"
 )
 
-:: Cria symlink
-mklink /D "%CLAUDE_MEMORY%" "%MEMORY_SRC%"
+:: Junction nao precisa de admin (mklink /D precisa)
+mklink /J "%CLAUDE_MEMORY%" "%MEMORY_SRC%"
 
 echo.
 echo Sincronizacao de memoria configurada!
-echo Agora toda sessao no Mac e Windows vai compartilhar a mesma memoria via git.
 pause
