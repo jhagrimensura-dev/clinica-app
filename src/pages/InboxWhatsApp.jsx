@@ -338,6 +338,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
               </select>
             )}
           </div>
+          {tipo !== 'leads_recorrentes' && (
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="text-xs font-semibold text-gray-500">Status</label>
@@ -377,6 +378,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
               </select>
             )}
           </div>
+          )}
         </div>
 
         {status === 'Agendou' && (
