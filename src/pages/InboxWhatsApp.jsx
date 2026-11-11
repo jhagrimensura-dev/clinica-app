@@ -294,7 +294,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div>
+          {tipo !== 'leads_recorrentes' && <div>
             <div className="flex items-center justify-between mb-1">
               <label className="text-xs font-semibold text-gray-500">Origem</label>
               <button onClick={() => setEditandoOrigens(v => !v)}
@@ -337,7 +337,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
                 {origens.map(o => <option key={o}>{o}</option>)}
               </select>
             )}
-          </div>
+          </div>}
           {tipo !== 'leads_recorrentes' && (
           <div>
             <div className="flex items-center justify-between mb-1">
