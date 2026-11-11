@@ -1296,7 +1296,10 @@ export default function InboxWhatsApp({ contaId }) {
   useEffect(() => {
     if (!conversa) return
     const tel = (conversa.contato?.telefone || conversa.id || '').replace(/\D/g, '')
-    const leadExistente = tel.length > 5 ? leads.find(l => (l.telefone || '').replace(/\D/g, '') === tel) : null
+    const leadExistente = tel.length > 5 ? leads.find(l => {
+      const telL = (l.telefone || '').replace(/\D/g, '')
+      return telL.length > 5 && (telL.endsWith(tel.slice(-8)) || tel.endsWith(telL.slice(-8)))
+    }) : null
     setLeadRegistrado(prev => {
       if (!leadExistente) {
         if (!prev[conversa.id]) return prev
