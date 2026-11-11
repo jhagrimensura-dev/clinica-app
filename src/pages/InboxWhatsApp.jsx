@@ -219,7 +219,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-base font-bold text-gray-900">Registrar Lead</h3>
@@ -256,13 +256,12 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
           </div>
         )}
 
-        <div className="mb-3">
-          <label className="text-xs font-semibold text-gray-500 mb-1 block">Data de Origem <span className="text-gray-400 font-normal">(primeiro contato)</span></label>
-          <input type="date" value={dataOrigem} onChange={e => setDataOrigem(e.target.value)}
-            className="w-full border border-brand-200 bg-brand-50/30 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400" />
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1 block">Data de Origem <span className="text-gray-400 font-normal">(1º contato)</span></label>
+            <input type="date" value={dataOrigem} onChange={e => setDataOrigem(e.target.value)}
+              className="w-full border border-brand-200 bg-brand-50/30 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400" />
+          </div>
           <div>
             <label className="text-xs font-semibold text-gray-500 mb-1 block">Data *</label>
             <input type="date" value={data} onChange={e => setData(e.target.value)}
@@ -281,16 +280,17 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
           </div>
         </div>
 
-        <div>
-          <label className="text-xs font-semibold text-gray-500 mb-1 block">Nome *</label>
-          <input value={nome} onChange={e => setNome(e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300" />
-        </div>
-
-        <div>
-          <label className="text-xs font-semibold text-gray-500 mb-1 block">Telefone</label>
-          <input value={telefone} onChange={e => setTelefone(e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300" />
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1 block">Nome *</label>
+            <input value={nome} onChange={e => setNome(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300" />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1 block">Telefone</label>
+            <input value={telefone} onChange={e => setTelefone(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-300" />
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
