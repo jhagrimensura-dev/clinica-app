@@ -468,7 +468,7 @@ function ModalRegistrarLead({ contato, tipo, onSalvar, onFechar, onDeletar, lead
           )}
         </div>
 
-        <div className={origemCustom === 'Tráfego' ? 'hidden' : ''}>
+        <div className={tipo === 'leads_recorrentes' || origemCustom === 'Tráfego' ? 'hidden' : ''}>
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-1">
               <label className="text-xs font-semibold text-gray-500">Mídia</label>
