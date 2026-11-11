@@ -2319,10 +2319,18 @@ export default function InboxWhatsApp({ contaId }) {
           : primeiraMsg.includes('Vim dos stories da Dra Amanda') ? 'Link dos Stories'
           : ''
         const criativoDetectado = referralAnuncio || campanhaDetectada?.nome || ''
+        const telConversa = (conversa.contato?.telefone || '').replace(/\D/g, '')
+        const leadExistente = leads.find(l => {
+          const telL = (l.telefone || '').replace(/\D/g, '')
+          return telL.length > 5 && telConversa.length > 5 && (telL.endsWith(telConversa.slice(-8)) || telConversa.endsWith(telL.slice(-8)))
+        }) || null
         return (
           <ModalRegistrarLead
             contato={conversa.contato}
             tipo={modalLead}
+            leadInicial={leadExistente}
+            lembretesDaAgenda={todosLembretesAgenda}
+            onDeletarLembrete={deleteLembrete}
             onSalvar={confirmarLead}
             onFechar={() => setModalLead(null)}
             referralAnuncio={criativoDetectado}
