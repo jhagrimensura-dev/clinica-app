@@ -26,5 +26,7 @@ Primeira sessão no PC Windows (`C:\Users\User\clinica-app`).
 9. Perguntou por que o elogio não estava salvo. Expliquei que a memória guarda só o que é útil para o trabalho e que a conversa completa fica em `.jsonl`, só nesta máquina.
 10. Disse que, ao abrir o Claude no Mac à tarde, quer que eu saiba de tudo o que falamos de manhã. Por isso este resumo existe. Ele quer continuidade total entre as máquinas, inclusive do que foi conversado e não só do código.
 
+11. O usuário pediu que toda conversa já comece com `git pull`. Criei um hook SessionStart em `.claude/settings.json` (commitado, vale no Mac e no PC) que roda `scripts/session-pull.mjs`. O script faz `git pull --ff-only`, avisa quantos commits chegaram e injeta no contexto o conteúdo dos arquivos de `memory/` que mudaram, porque o MEMORY.md pode ter carregado antes do pull. Testado num clone atrasado 2 commits.
+
 **Why:** usuário trabalha alternando Mac e Windows e quer a mesma memória nos dois.
 **How to apply:** `git pull` ao começar e commitar `memory/` ao terminar, em qualquer máquina. Ver [[project-pendencias]].
