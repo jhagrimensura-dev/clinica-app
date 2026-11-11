@@ -20,6 +20,23 @@ Substituiu planilhas e Google Sheets. Acesso via web em qualquer computador.
 - **Perguntar antes de implementar** quando localização/formato não for explícito
 - **src/pages/ com letra minúscula** — maiúsculo quebra o build no Linux (Vercel)
 - O site de produção é **draamandaliima.com.br**
+- **Toda nova página deve ser responsiva** desde a criação — `p-3 sm:p-6`, grids com breakpoints, tabelas com `overflow-x-auto`
+- **Trigger `planilha_leads → leads`**: ao inserir em planilha_leads um trigger cria leads automaticamente. Apagar leads vinculados ANTES de reimportar.
+- **Deduplicação de lembretes** dentro de `addLembrete` (AgendaContext), não nos chamadores
+- **CAC só conta leads do tipo Novo** — não contar indicações
+- **Banner de duplicatas**: persiste dismiss no localStorage
+- **Botão Sincronizar**: recebe mês/ano como parâmetro, não sincroniza tudo sempre
+
+---
+
+## Comportamento esperado do Claude
+
+- Respostas curtas e diretas, sem enrolação
+- Não adicionar comentários desnecessários no código
+- Não criar features além do que foi pedido
+- Sempre abrir **draamandaliima.com.br** para testar, nunca localhost
+- Ao confirmar que funcionou → commitar imediatamente
+- Quando o formato/localização não estiver claro → perguntar antes de implementar
 
 ---
 
