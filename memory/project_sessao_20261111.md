@@ -1,32 +1,40 @@
 ---
 name: project-sessao-20261111
-description: Sessão 2026-11-11 — setup do PC Windows: memória sincronizada via junction + fix setup-memory-sync.bat
+description: Sessão 2026-11-11 — Setup PC Windows + fixes InboxWhatsApp + obra-app Controle Mensal layout
 metadata:
   type: project
 ---
 
-Primeira sessão no PC Windows (`C:\Users\User\clinica-app`).
+## Manhã — Setup PC Windows
 
 - Memória sincronizada: `~/.claude/projects/C--Users-User-clinica-app/memory` é uma junction para `repo/memory/` (mklink /J, não precisa admin).
-- `scripts/setup-memory-sync.bat` corrigido (commit 52db1a4): path era `-C-Users-...`, o certo é `C--Users-...` (`:` e `\` viram `-`); usa junction; detecta se já está configurado; CRLF e sem travessão (quebrava o cmd).
-- Git identity configurada só no repo do PC: Joao Henrique.
+- `scripts/setup-memory-sync.bat` corrigido: path era `-C-Users-...`, o certo é `C--Users-...` (`:` e `\` viram `-`); usa junction; detecta se já configurado.
+- Git identity configurada no repo do PC: Joao Henrique.
 - Vercel CLI 65.14.0 instalado no PC, logado e linkado ao projeto.
 - Python não está instalado no PC (usar bash/node em scripts).
-- Página Conexão: iniciada a análise e depois pausada pelo usuário ("esquece isso por enquanto"). Achados: o placeholder `case 'conexao'` não existe mais no App.jsx; o modelo mais próximo é Indicacao.jsx (`getLeadsPorOrigem('indicacao')`); 'Conexão' já é uma das origens em PlanilhaLeads/PlanilhaFollowUp e hoje cai em Leads Novos. Perguntas em aberto: puxar da planilha ou fazer cadastro próprio, onde fica na sidebar, se precisa de um campo "conectado por".
+- Página Conexão: análise iniciada e pausada pelo usuário ("esquece isso por enquanto").
+- Hook SessionStart: `git pull --ff-only` automático ao iniciar sessão para sincronizar memória entre Mac e Windows.
 
-## Conversa da manhã (PC Windows), em ordem
-1. O usuário perguntou se eu tinha a memória das conversas do Mac. A pasta local estava vazia.
-2. Ele fez push no Mac da pasta `memory/` dentro do repo, eu dei `git pull` e liguei a memória local ao repo.
-3. Corrigi e commitei o `setup-memory-sync.bat`, depois push.
-4. O usuário disse: "o claude e o melhor, ele ja mudou minha vida". O sistema da clínica tem feito muita diferença para ele.
-5. Pediu para salvar a sessão na memória. Salvei e commitei.
-6. Instalou o Vercel CLI no PC.
-7. Começou a página Conexão e pausou ("esquece isso por enquanto").
-8. Perguntou se eu salvo as conversas. Expliquei que a memória guarda resumos e não a conversa inteira, e criei a regra [[feedback-salvar-memoria-sempre]].
-9. Perguntou por que o elogio não estava salvo. Expliquei que a memória guarda só o que é útil para o trabalho e que a conversa completa fica em `.jsonl`, só nesta máquina.
-10. Disse que, ao abrir o Claude no Mac à tarde, quer que eu saiba de tudo o que falamos de manhã. Por isso este resumo existe. Ele quer continuidade total entre as máquinas, inclusive do que foi conversado e não só do código.
+## Tarde — Fixes InboxWhatsApp (clinica-app)
 
-11. O usuário pediu que toda conversa já comece com `git pull`. Criei um hook SessionStart em `.claude/settings.json` (commitado, vale no Mac e no PC) que roda `scripts/session-pull.mjs`. O script faz `git pull --ff-only`, avisa quantos commits chegaram e injeta no contexto o conteúdo dos arquivos de `memory/` que mudaram, porque o MEMORY.md pode ter carregado antes do pull. Testado num clone atrasado 2 commits.
+**Fix 1 — Modal mostra lembretes existentes:** o modal RegistrarLead agora recebe `leadInicial` com o lead existente encontrado pelo telefone. Antes abria vazio e duplicava lembretes.
 
-**Why:** usuário trabalha alternando Mac e Windows e quer a mesma memória nos dois.
-**How to apply:** `git pull` ao começar e commitar `memory/` ao terminar, em qualquer máquina. Ver [[project-pendencias]].
+**Fix 2 — Detecção de lead existente:** comparação por `endsWith(tel.slice(-8))` (8 últimos dígitos) para lidar com prefixo `+55` do WhatsApp vs formato local.
+
+**Fix 3 — Botão "Registrar" não aparece para lead já cadastrado:** mesma lógica de comparação por telefone na abertura da conversa.
+
+**Fix 4/5/6 — Modal Lead Recorrente:** removidos campos Status, Origem e Mídia (não fazem sentido para pacientes recorrentes). Modal ficou mais largo (max-w-2xl) e com layout em grid.
+
+**Fix API Key Anthropic:** chave `joao-api-key` venceu em 18/Out/2026. Nova chave criada e adicionada como `ANTHROPIC_API_KEY` nas env vars do Vercel. Campo de API key não existe nas Configurações (fica só no Vercel).
+
+## Tarde — obra-app Controle Mensal layout
+
+Problema: tabela não preenchia a tela inteira (espaço em branco à direita e embaixo).
+
+Solução final (3 mudanças em `src/pages/Controle.jsx`):
+1. Outer div: `flex flex-col` → permite o card crescer em altura
+2. Card branco: `w-full flex-1` → ocupa toda largura e altura disponível
+3. `<table>`: `w-full` → preenche o card, coluna "Pessoa · Cartão" absorve espaço extra à direita
+
+**Why:** usuário queria a tabela preenchendo a tela como uma planilha, sem espaços cinza/branco vazios.
+**How to apply:** para tabelas full-page no obra-app, usar `flex flex-col` no container, `w-full flex-1` no card, `w-full` na table.
