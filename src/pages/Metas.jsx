@@ -131,6 +131,7 @@ export default function Metas() {
   diasOrdenados.forEach(({ dia }) => { metaDinamicaPorDia[dia] = metaBase })
 
   const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  const fmtS = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 })
 
   const parseValorInput = (str) => parseFloat(str.replace(/[^\d,]/g, '').replace(',', '.')) || 0
 
@@ -374,7 +375,9 @@ export default function Metas() {
             if (diasDaSemana.length === 0) return null
             const diasTrabalho = diasDaSemana.filter(d => diasSelecionados.has(`${si}-${d.di}`))
             if (diasTrabalho.length === 0) return null
-            const metaSemanal = diasTrabalho.length * metaDiariaOriginal
+            const idealSemanal = diasTrabalho.length * metaDiariaOriginal
+            const metaSemanal = diasTrabalho.length * (diasAtendimento > 0 ? superMeta / diasAtendimento : 0)
+            const superSemanal = diasTrabalho.length * (diasAtendimento > 0 ? recordeValor / diasAtendimento : 0)
             const faturamento = diasDaSemana.reduce((acc, d) => acc + (vendasPorDia[d.dia] || 0), 0)
             const minDia = Math.min(...diasTrabalho.map(d => d.dia))
             const maxDia = Math.max(...diasTrabalho.map(d => d.dia))
@@ -383,13 +386,13 @@ export default function Metas() {
             const futura = !algumPassado
             const emAndamento = !todosPassados && algumPassado
             const diasTrabalhoPassados = diasTrabalho.filter(d => d.dia < diaHoje)
-            const metaParaAvaliar = emAndamento
+            const idealParaAvaliar = emAndamento
               ? diasTrabalhoPassados.length * metaDiariaOriginal
-              : metaSemanal
-            const bateu = (todosPassados || emAndamento) && faturamento >= metaParaAvaliar && metaParaAvaliar > 0
-            const nao = (todosPassados || emAndamento) && faturamento < metaParaAvaliar && metaParaAvaliar > 0
-            const pct = metaSemanal > 0 ? Math.min((faturamento / metaSemanal) * 100, 100) : 0
-            return { si, minDia, maxDia, diasTrabalho: diasTrabalho.length, metaSemanal, faturamento, bateu, nao, emAndamento, futura, pct }
+              : idealSemanal
+            const bateu = (todosPassados || emAndamento) && faturamento >= idealParaAvaliar && idealParaAvaliar > 0
+            const nao = (todosPassados || emAndamento) && faturamento < idealParaAvaliar && idealParaAvaliar > 0
+            const pct = idealSemanal > 0 ? Math.min((faturamento / idealSemanal) * 100, 100) : 0
+            return { si, minDia, maxDia, diasTrabalho: diasTrabalho.length, idealSemanal, metaSemanal, superSemanal, faturamento, bateu, nao, emAndamento, futura, pct }
           }).filter(Boolean)
 
           if (semanasResumo.length === 0) return null
@@ -413,7 +416,11 @@ export default function Metas() {
                         />
                       )}
                     </div>
-                    <span className="text-xs text-gray-400 w-24 text-right shrink-0">meta {fmt(s.metaSemanal)}</span>
+                    <div className="shrink-0 text-right space-y-0.5 w-28">
+                      <div className="text-[10px] text-gray-400">ideal {fmtS(s.idealSemanal)}</div>
+                      <div className="text-[10px] text-gray-500">meta {fmtS(s.metaSemanal)}</div>
+                      <div className="text-[10px] text-orange-300">super {fmtS(s.superSemanal)}</div>
+                    </div>
                     {!s.futura
                       ? <span className={`text-xs font-semibold w-24 text-right shrink-0 ${s.bateu ? 'text-green-600' : s.nao ? 'text-red-500' : 'text-blue-500'}`}>{fmt(s.faturamento)}</span>
                       : <span className="text-xs text-gray-300 w-24 text-right shrink-0">—</span>

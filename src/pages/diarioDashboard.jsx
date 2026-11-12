@@ -59,7 +59,10 @@ export default function DiarioDashboard() {
 
   useEffect(() => {
     const mesStr = `${ano}-${String(mes + 1).padStart(2, '0')}`
-    if (!dia.startsWith(mesStr)) setDia(`${mesStr}-01`)
+    if (!dia.startsWith(mesStr)) {
+      const todayStr = new Date().toISOString().slice(0, 10)
+      setDia(todayStr.startsWith(mesStr) ? todayStr : `${mesStr}-01`)
+    }
   }, [mes, ano])
 
   const isConsulta = (l) => (l.procedimentos || '').toLowerCase().trim() === 'consulta'
