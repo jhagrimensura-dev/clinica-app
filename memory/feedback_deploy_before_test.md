@@ -12,3 +12,5 @@ Sempre fazer `vercel --prod` antes de pedir ao usuário para testar qualquer mud
 **Why:** Esqueci de fazer deploy e pedi para o usuário testar no console várias vezes — os logs não apareciam porque o código de produção era antigo. O usuário ficou frustrado ("pelo amor de deus, como vc esquece isso").
 
 **How to apply:** Imediatamente após editar qualquer arquivo, fazer deploy antes de pedir teste. Se adicionar logs de debug, deploy → teste → remove logs → deploy de novo.
+
+**Atualização 2026-11-12:** usuário pediu "sempre que eu te pedir algo, vc já pode fazer e ir direto para o vercel e deploy" — vale para clinica-app e obra-app. Implementar e rodar `vercel --prod --yes` sem perguntar. Permissão `Bash(vercel --prod *)` está em ~/.claude/settings.json; para obra-app usar `vercel --prod --yes --cwd /c/Users/User/obra-app` (o cwd do shell volta para clinica-app).

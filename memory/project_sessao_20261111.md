@@ -38,3 +38,8 @@ Solução final (3 mudanças em `src/pages/Controle.jsx`):
 
 **Why:** usuário queria a tabela preenchendo a tela como uma planilha, sem espaços cinza/branco vazios.
 **How to apply:** para tabelas full-page no obra-app, usar `flex flex-col` no container, `w-full flex-1` no card, `w-full` na table.
+
+## 2026-11-12 — obra-app Controle Mensal
+- Tabela compacta (text-xs, px-2 py-2, coluna nome 140px, card/table w-full) → 12 meses cabem sem rolagem.
+- Meses sempre até dezembro do ano selecionado (inclusive 2028).
+- Git identity configurada no repo obra-app.
