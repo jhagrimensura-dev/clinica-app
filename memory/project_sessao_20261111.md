@@ -1,45 +1,41 @@
 ---
 name: project-sessao-20261111
-description: Sessão 2026-11-11 — Setup PC Windows + fixes InboxWhatsApp + obra-app Controle Mensal layout
+description: Sessão 2026-11-11/12 — Windows setup + InboxWhatsApp fixes + obra-app Controle Mensal layout
 metadata:
   type: project
 ---
 
-## Manhã — Setup PC Windows
+## Manhã 11/11 — Setup PC Windows
 
-- Memória sincronizada: `~/.claude/projects/C--Users-User-clinica-app/memory` é uma junction para `repo/memory/` (mklink /J, não precisa admin).
-- `scripts/setup-memory-sync.bat` corrigido: path era `-C-Users-...`, o certo é `C--Users-...` (`:` e `\` viram `-`); usa junction; detecta se já configurado.
-- Git identity configurada no repo do PC: Joao Henrique.
-- Vercel CLI 65.14.0 instalado no PC, logado e linkado ao projeto.
-- Python não está instalado no PC (usar bash/node em scripts).
-- Página Conexão: análise iniciada e pausada pelo usuário ("esquece isso por enquanto").
-- Hook SessionStart: `git pull --ff-only` automático ao iniciar sessão para sincronizar memória entre Mac e Windows.
+- Memória sincronizada: `~/.claude/projects/C--Users-User-clinica-app/memory` é uma junction para `repo/memory/`.
+- `scripts/setup-memory-sync.bat` corrigido: path `C--Users-...` (`:` e `\` viram `-`); usa junction; detecta se já configurado.
+- Hook SessionStart: `git pull --ff-only` automático ao iniciar sessão.
+- Vercel CLI 65.14.0 instalado no PC.
+- Git identity configurada no repo obra-app.
 
-## Tarde — Fixes InboxWhatsApp (clinica-app)
+## Fixes InboxWhatsApp (clinica-app)
 
-**Fix 1 — Modal mostra lembretes existentes:** o modal RegistrarLead agora recebe `leadInicial` com o lead existente encontrado pelo telefone. Antes abria vazio e duplicava lembretes.
+- Modal RegistrarLead agora recebe `leadInicial` com lead existente encontrado por telefone (evita duplicar lembretes).
+- Comparação de telefone por `endsWith(tel.slice(-8))` para lidar com prefixo `+55`.
+- Modal Lead Recorrente: removidos campos Status, Origem e Mídia. Modal mais largo (max-w-2xl, grid layout).
+- API Key Anthropic atualizada no Vercel (`ANTHROPIC_API_KEY`). Chave `joao-api-key` venceu 18/Out/2026.
 
-**Fix 2 — Detecção de lead existente:** comparação por `endsWith(tel.slice(-8))` (8 últimos dígitos) para lidar com prefixo `+55` do WhatsApp vs formato local.
+## obra-app Controle Mensal — layout final (Mac + Windows)
 
-**Fix 3 — Botão "Registrar" não aparece para lead já cadastrado:** mesma lógica de comparação por telefone na abertura da conversa.
+Solução final após várias iterações:
+- Outer div: `flex flex-col` + `min-h-screen`
+- Card branco: `w-full flex-1`
+- `<table>`: `w-full`
+- Colunas de mês (`<th>`): `min-w-[100px]` → garante largura mínima legível
+- Quando poucos meses (2026, 2028): tabela preenche o card (`w-full`) ✓
+- Quando muitos meses (2027, 12 colunas × 100px > tela): tabela scrolla horizontalmente ✓
+- `scrollbar-hide` removido → scrollbar visível para o usuário saber que pode rolar
+- Padding das linhas: `py-0.5` em todas as tabelas (Controle, Lançamentos, Cartões)
 
-**Fix 4/5/6 — Modal Lead Recorrente:** removidos campos Status, Origem e Mídia (não fazem sentido para pacientes recorrentes). Modal ficou mais largo (max-w-2xl) e com layout em grid.
+## Manhã 12/11 — obra-app Controle Mensal (Windows)
 
-**Fix API Key Anthropic:** chave `joao-api-key` venceu em 18/Out/2026. Nova chave criada e adicionada como `ANTHROPIC_API_KEY` nas env vars do Vercel. Campo de API key não existe nas Configurações (fica só no Vercel).
-
-## Tarde — obra-app Controle Mensal layout
-
-Problema: tabela não preenchia a tela inteira (espaço em branco à direita e embaixo).
-
-Solução final (3 mudanças em `src/pages/Controle.jsx`):
-1. Outer div: `flex flex-col` → permite o card crescer em altura
-2. Card branco: `w-full flex-1` → ocupa toda largura e altura disponível
-3. `<table>`: `w-full` → preenche o card, coluna "Pessoa · Cartão" absorve espaço extra à direita
-
-**Why:** usuário queria a tabela preenchendo a tela como uma planilha, sem espaços cinza/branco vazios.
-**How to apply:** para tabelas full-page no obra-app, usar `flex flex-col` no container, `w-full flex-1` no card, `w-full` na table.
-
-## 2026-11-12 — obra-app Controle Mensal
 - Tabela compacta (text-xs, px-2 py-2, coluna nome 140px, card/table w-full) → 12 meses cabem sem rolagem.
 - Meses sempre até dezembro do ano selecionado (inclusive 2028).
-- Git identity configurada no repo obra-app.
+
+**Why:** usuário queria tabela preenchendo a tela como planilha, sem espaços vazios, colunas legíveis em todos os anos.
+**How to apply:** para tabelas full-page no obra-app: flex-col container + w-full card + w-full table + min-w-[100px] em colunas de data.
