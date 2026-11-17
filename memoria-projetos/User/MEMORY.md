@@ -1,0 +1,2 @@
+- [Idioma: português](idioma-portugues.md) — responder ao usuário em português
+- [Abrir no Chrome](abrir-no-chrome.md) — sempre abrir sites no Google Chrome
