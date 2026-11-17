@@ -8,7 +8,18 @@
             "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR/scripts/session-pull.mjs\"",
             "timeout": 30,
-            "statusMessage": "git pull..."
+            "statusMessage": "git sync..."
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/session-push.mjs\"",
+            "timeout": 30
           }
         ]
       }

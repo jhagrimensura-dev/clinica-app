@@ -8,12 +8,30 @@ const git = cmd => execSync(`git ${cmd}`, { cwd: dir, encoding: 'utf8', stdio: [
 const out = obj => process.stdout.write(JSON.stringify(obj))
 
 try {
+  let memLocal = ''
+  if (git('status --porcelain -- memory')) {
+    git('add memory')
+    git('commit -q -m "memory: sync automático (sessão anterior)"')
+    memLocal = 'memória pendente commitada; '
+  }
+
   const antes = git('rev-parse HEAD')
-  git('pull --ff-only -q')
+  try {
+    git('pull --rebase --autostash -q')
+  } catch (e) {
+    try { git('rebase --abort') } catch {}
+    throw e
+  }
   const depois = git('rev-parse HEAD')
 
+  let pushMsg = ''
+  if (git('rev-list --count @{u}..HEAD') !== '0') {
+    git('push -q')
+    pushMsg = 'push feito; '
+  }
+
   if (antes === depois) {
-    out({ systemMessage: 'git pull: já estava atualizado' })
+    out({ systemMessage: `git sync: ${memLocal}${pushMsg}já estava atualizado` })
     process.exit(0)
   }
 
@@ -31,13 +49,13 @@ try {
 
   const n = commits.split('\n').length
   out({
-    systemMessage: `git pull: ${n} commit(s) novo(s)${memAlterada.length ? `, ${memAlterada.length} arquivo(s) de memória` : ''}`,
+    systemMessage: `git sync: ${memLocal}${pushMsg}${n} commit(s) novo(s)${memAlterada.length ? `, ${memAlterada.length} arquivo(s) de memória` : ''}`,
     hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: ctx },
   })
 } catch (e) {
   const msg = (e.stderr || e.message || '').toString().trim().split('\n')[0]
   out({
-    systemMessage: `git pull falhou: ${msg}`,
-    hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: `O git pull automático do início da sessão falhou: ${msg}. Avise o usuário e não presuma que a memória está atualizada.` },
+    systemMessage: `git sync falhou: ${msg}`,
+    hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: `O git sync automático do início da sessão falhou: ${msg}. Avise o usuário e não presuma que a memória está atualizada.` },
   })
 }
