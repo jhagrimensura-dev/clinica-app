@@ -141,12 +141,15 @@ const COLS = [
   { key: 'reagendado',         label: 'Reagendado',   type: 'bool'     },
   { key: 'consulta',           label: 'Consulta',     type: 'currency' },
   { key: 'valor_procedimento', label: 'Valor (R$)',   type: 'currency' },
-  { key: 'follow_up_1',        label: 'Follow Up 1',  type: 'date'     },
-  { key: 'follow_up_2',        label: 'Follow Up 2',  type: 'date'     },
-  { key: 'follow_up_3',        label: 'Follow Up 3',  type: 'date'     },
-  { key: 'follow_up_4',        label: 'Follow Up 4',  type: 'date'     },
-  { key: 'follow_up_5',        label: 'Follow Up 5',  type: 'date'     },
-  { key: 'observacao',         label: 'Observação',   type: 'text'     },
+  { key: 'follow_up_1',  label: 'Follow Up 1',  type: 'date'      },
+  { key: 'respondeu_1', label: 'Respondeu',    type: 'respondeu', fuIndex: 1 },
+  { key: 'follow_up_2',  label: 'Follow Up 2',  type: 'date'      },
+  { key: 'respondeu_2', label: 'Respondeu',    type: 'respondeu', fuIndex: 2 },
+  { key: 'follow_up_3',  label: 'Follow Up 3',  type: 'date'      },
+  { key: 'respondeu_3', label: 'Respondeu',    type: 'respondeu', fuIndex: 3 },
+  { key: 'follow_up_4',  label: 'Follow Up 4',  type: 'date'      },
+  { key: 'follow_up_5',  label: 'Follow Up 5',  type: 'date'      },
+  { key: 'observacao',   label: 'Observação',   type: 'text'      },
 ]
 
 function parseSheetDate(s) {
@@ -539,8 +542,13 @@ export default function PlanilhaLeads() {
   }
 
   const sortedRows = sortKey ? [...rows].sort((a, b) => {
-    const av = a[sortKey] ?? ''
-    const bv = b[sortKey] ?? ''
+    let av = a[sortKey] ?? ''
+    let bv = b[sortKey] ?? ''
+    if (sortKey?.startsWith('respondeu_')) {
+      const idx = parseInt(sortKey.replace('respondeu_', ''))
+      av = (a.follow_ups_feitos || '').split(',').map(Number).includes(idx)
+      bv = (b.follow_ups_feitos || '').split(',').map(Number).includes(idx)
+    }
     const cmp = typeof av === 'boolean'
       ? (av === bv ? 0 : av ? -1 : 1)
       : String(av).localeCompare(String(bv), 'pt-BR', { numeric: true })
@@ -659,25 +667,30 @@ export default function PlanilhaLeads() {
       display = value != null ? String(value) : ''
     }
 
-    if (isFollowUp) {
-      const fuIndex = parseInt(col.key.replace('follow_up_', ''))
+    if (col.type === 'respondeu') {
       const feitos = new Set((row.follow_ups_feitos || '').split(',').filter(Boolean).map(Number))
-      const isFeito = feitos.has(fuIndex)
-      const toggleFeito = (e) => {
-        e.stopPropagation()
+      const isFeito = feitos.has(col.fuIndex)
+      const toggleFeito = () => {
         const s = new Set(feitos)
-        if (s.has(fuIndex)) s.delete(fuIndex)
-        else s.add(fuIndex)
+        if (s.has(col.fuIndex)) s.delete(col.fuIndex)
+        else s.add(col.fuIndex)
         saveCell(row.id, 'follow_ups_feitos', [...s].join(','))
       }
+      return (
+        <td key={col.key} style={{ textAlign: 'center' }} className="px-2 py-1.5 cursor-pointer select-none" onClick={toggleFeito}>
+          <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold transition-colors ${
+            isFeito ? 'bg-green-100 text-green-600' : 'bg-red-50 text-red-300'
+          }`}>{isFeito ? '✓' : '×'}</span>
+        </td>
+      )
+    }
+
+    if (isFollowUp) {
       return (
         <td key={col.key} className="px-2 py-1.5 whitespace-nowrap group/fu">
           {display ? (
             <div className="flex items-center gap-1">
-              <span onClick={toggleFeito}
-                className={`cursor-pointer text-xs font-semibold px-2 py-0.5 rounded-full transition-colors select-none ${
-                  isFeito ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                }`}>
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
                 {display}
               </span>
               <button onClick={() => setEditingCell({ rowId: row.id, col: col.key })}
@@ -860,7 +873,7 @@ export default function PlanilhaLeads() {
                   {COLS.map(col => (
                     <th key={col.key}
                       onClick={() => toggleSort(col.key)}
-                      className={`px-2 py-2.5 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-gray-800 transition-colors ${col.key === 'criativo' ? 'text-center' : ''}`}>
+                      className={`px-2 py-2.5 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-gray-800 transition-colors ${['criativo', 'respondeu_1', 'respondeu_2', 'respondeu_3'].includes(col.key) ? 'text-center' : ''}`}>
                       <span className="inline-flex items-center gap-1">
                         {col.label}
                         {sortKey === col.key
