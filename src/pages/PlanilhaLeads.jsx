@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, cloneElement } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
@@ -11,6 +11,42 @@ const AGENDOU_COLORS = {
   'Próximo Mês':    'bg-green-100 text-green-700 border border-green-200',
   'Mês Específico': 'bg-blue-100  text-blue-700  border border-blue-200',
   'Não':            'bg-red-50    text-red-400    border border-red-100',
+}
+
+const CELL_COLORS = [
+  { label: 'Limpar',        value: null,      bg: '#ffffff', border: '#d1d5db' },
+  { label: 'Verde',         value: '#bbf7d0', bg: '#bbf7d0' },
+  { label: 'Verde claro',   value: '#dcfce7', bg: '#dcfce7' },
+  { label: 'Amarelo',       value: '#fef08a', bg: '#fef08a' },
+  { label: 'Laranja',       value: '#fed7aa', bg: '#fed7aa' },
+  { label: 'Vermelho',      value: '#fecaca', bg: '#fecaca' },
+  { label: 'Rosa',          value: '#fce7f3', bg: '#fce7f3' },
+  { label: 'Azul',          value: '#bfdbfe', bg: '#bfdbfe' },
+  { label: 'Roxo',          value: '#e9d5ff', bg: '#e9d5ff' },
+  { label: 'Cinza',         value: '#f3f4f6', bg: '#f3f4f6' },
+]
+
+function CellColorPicker({ picker, onPick, onClose }) {
+  return (
+    <>
+      <div className="fixed inset-0 z-[9998]" onMouseDown={onClose} onContextMenu={e => e.preventDefault()} />
+      <div
+        className="fixed z-[9999] bg-white border border-gray-200 rounded-xl shadow-2xl p-2.5"
+        style={{ top: picker.y + 4, left: picker.x }}
+        onMouseDown={e => e.stopPropagation()}
+      >
+        <p className="text-[10px] text-gray-400 font-semibold pb-1.5 px-0.5">Cor da célula</p>
+        <div className="grid grid-cols-5 gap-1">
+          {CELL_COLORS.map(c => (
+            <button key={c.label} title={c.label}
+              onClick={() => onPick(picker.rowId, picker.colKey, c.value)}
+              style={{ backgroundColor: c.bg, border: `2px solid ${c.border || c.bg}` }}
+              className="w-7 h-7 rounded-lg hover:scale-110 transition-transform" />
+          ))}
+        </div>
+      </div>
+    </>
+  )
 }
 
 async function syncRowData(row, clinicaId) {
@@ -320,6 +356,7 @@ export default function PlanilhaLeads() {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [editingCell, setEditingCell] = useState(null)
+  const [colorPicker, setColorPicker] = useState(null)
   const [modalImport, setModalImport] = useState(false)
   const [metaAg, setMetaAg] = useState(20)
   const [editandoMeta, setEditandoMeta] = useState(false)
@@ -453,6 +490,18 @@ export default function PlanilhaLeads() {
     setRows(prev => prev.filter(r => r.id !== rowId))
     await supabase.from('planilha_leads').delete().eq('id', rowId)
   }
+
+  const saveCellColor = useCallback(async (rowId, colKey, color) => {
+    setRows(prev => prev.map(r => {
+      if (r.id !== rowId) return r
+      const colors = { ...(r.cell_colors || {}) }
+      if (color) colors[colKey] = color
+      else delete colors[colKey]
+      supabase.from('planilha_leads').update({ cell_colors: colors }).eq('id', rowId)
+      return { ...r, cell_colors: colors }
+    }))
+    setColorPicker(null)
+  }, [])
 
   const handleBlur = (rowId, col, value) => {
     saveCell(rowId, col, value)
@@ -780,7 +829,19 @@ export default function PlanilhaLeads() {
                       i % 2 === 0 ? 'bg-white' : 'bg-gray-50'
                     }`}>
                     <td className="px-3 py-1.5 text-[10px] text-gray-300 select-none">{i + 1}</td>
-                    {COLS.map(col => renderCell(row, col))}
+                    {COLS.map(col => {
+                      const cell = renderCell(row, col)
+                      const bg = row.cell_colors?.[col.key]
+                      return cloneElement(cell, {
+                        style: bg ? { backgroundColor: bg } : undefined,
+                        onContextMenu: e => {
+                          e.preventDefault()
+                          const x = Math.min(e.clientX, window.innerWidth - 200)
+                          const y = Math.min(e.clientY, window.innerHeight - 130)
+                          setColorPicker({ rowId: row.id, colKey: col.key, x, y })
+                        },
+                      })
+                    })}
                     <td className="px-2 py-1.5">
                       <button onClick={() => deleteRow(row.id)}
                         className="text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all w-6 h-6 flex items-center justify-center rounded-md text-lg leading-none"
@@ -799,6 +860,14 @@ export default function PlanilhaLeads() {
           </>
         )}
       </div>
+
+      {colorPicker && (
+        <CellColorPicker
+          picker={colorPicker}
+          onPick={saveCellColor}
+          onClose={() => setColorPicker(null)}
+        />
+      )}
 
       {modalImport && (
         <ModalImport
