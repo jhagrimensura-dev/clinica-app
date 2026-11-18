@@ -5,12 +5,10 @@ import { useAuth } from '../context/AuthContext'
 const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 const MESES_ABR  = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
 const ORIGENS = ['Instagram Bio', 'Instagram Stories', 'Tráfego', 'Conexão', 'Indicação', 'Outro']
-const AGENDOU_OPTS = ['Mês Anterior', 'Próximo Mês', 'Mês Específico', 'Não']
+const AGENDOU_OPTS = ['Sim', 'Não']
 const AGENDOU_COLORS = {
-  'Mês Anterior':   'bg-amber-100 text-amber-700 border border-amber-200',
-  'Próximo Mês':    'bg-green-100 text-green-700 border border-green-200',
-  'Mês Específico': 'bg-blue-100  text-blue-700  border border-blue-200',
-  'Não':            'bg-red-50    text-red-400    border border-red-100',
+  'Sim': 'bg-green-100 text-green-700 border border-green-200',
+  'Não': 'bg-red-50    text-red-400   border border-red-100',
 }
 
 const CELL_COLORS = [
@@ -463,7 +461,7 @@ export default function PlanilhaLeads() {
     const dbVal = value === '' ? null : value
     const updates = { [col]: dbVal }
     if (col === 'agendou_tipo') {
-      updates.agendou = !!dbVal && dbVal !== 'Não'
+      updates.agendou = dbVal === 'Sim'
     }
     setRows(prev => prev.map(r => r.id === rowId ? { ...r, ...updates } : r))
     const { error } = await supabase.from('planilha_leads').update(updates).eq('id', rowId)
@@ -534,7 +532,7 @@ export default function PlanilhaLeads() {
   }
 
   const total = rows.length
-  const agendouCount = rows.filter(r => r.agendou || (r.agendou_tipo && r.agendou_tipo !== 'Não')).length
+  const agendouCount = rows.filter(r => r.agendou || r.agendou_tipo === 'Sim').length
   const compareceuCount = rows.filter(r => r.compareceu).length
   const vendeuCount = rows.filter(r => r.vendeu).length
   const valorTotal = rows.reduce((s, r) => s + (parseFloat(r.valor_procedimento) || 0), 0)
@@ -856,7 +854,7 @@ export default function PlanilhaLeads() {
                   <tr key={row.id}
                     className={`border-b border-gray-100 group hover:brightness-95 transition-all ${
                       row.vendeu ? 'bg-green-100' :
-                      (row.agendou || (row.agendou_tipo && row.agendou_tipo !== 'Não')) ? 'bg-green-50' :
+                      (row.agendou || row.agendou_tipo === 'Sim') ? 'bg-green-50' :
                       i % 2 === 0 ? 'bg-white' : 'bg-gray-50'
                     }`}>
                     <td className="px-3 py-1.5 text-[10px] text-gray-300 select-none">{i + 1}</td>
