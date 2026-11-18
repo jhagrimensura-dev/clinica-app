@@ -1,6 +1,6 @@
 # Memory Index
 
-> Última atualização: 2026-11-16
+> Última atualização: 2026-11-18
 
 - [Recarregar browser após alterações](feedback_reload_browser.md) — sempre recarregar o Chrome após editar arquivos do projeto
 - [Commitar quando funcionar](feedback_commit_on_success.md) — commitar automaticamente toda vez que uma feature for confirmada como funcionando
@@ -55,3 +55,4 @@
 - [Sessão 2026-11-11](project_sessao_20261111.md) — Setup PC Windows: memória via junction para repo/memory, fix setup-memory-sync.bat, Vercel CLI instalado, Conexão pausada
 - [Salvar memória sempre](feedback_salvar_memoria_sempre.md) — atualizar arquivo da sessão durante a conversa sem esperar pedido + commit/push de memory/
 - [Sessão 2026-11-16](project_sessao_20261116.md) — XAU Journal criado do zero: diário de trades, calculadora, analytics, importar MT5, Coach IA (Claude). URL: xau-journal-eight.vercel.app
+- [Sessão 2026-11-18](project_sessao_20261118.md) — PlanilhaLeads refactor visual completo: cores por célula, abas mês, criativos coloridos+dropdown, RESPONDEU fu1-5, sticky header, fundo cinza
