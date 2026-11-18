@@ -855,13 +855,13 @@ export default function PlanilhaLeads() {
               + Adicionar Lead
             </button>
             <table className="text-left text-xs border-collapse" style={{ minWidth: '1600px' }}>
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="px-3 py-2.5 text-[10px] font-bold text-gray-300 uppercase w-8">#</th>
+              <thead className="sticky top-0 z-10">
+                <tr className="bg-gray-200 border-b border-gray-300">
+                  <th className="px-3 py-2.5 text-[10px] font-bold text-gray-500 uppercase w-8">#</th>
                   {COLS.map(col => (
                     <th key={col.key}
                       onClick={() => toggleSort(col.key)}
-                      className="px-2 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-gray-600 transition-colors">
+                      className="px-2 py-2.5 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-gray-800 transition-colors">
                       <span className="inline-flex items-center gap-1">
                         {col.label}
                         {sortKey === col.key
