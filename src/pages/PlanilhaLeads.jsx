@@ -774,7 +774,11 @@ export default function PlanilhaLeads() {
                   </tr>
                 ) : rows.map((row, i) => (
                   <tr key={row.id}
-                    className={`border-b border-gray-100 group ${i % 2 === 0 ? 'bg-white' : 'bg-gray-100'} hover:bg-orange-50/40`}>
+                    className={`border-b border-gray-100 group hover:brightness-95 transition-all ${
+                      row.vendeu ? 'bg-green-100' :
+                      (row.agendou || (row.agendou_tipo && row.agendou_tipo !== 'Não')) ? 'bg-green-50' :
+                      i % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                    }`}>
                     <td className="px-3 py-1.5 text-[10px] text-gray-300 select-none">{i + 1}</td>
                     {COLS.map(col => renderCell(row, col))}
                     <td className="px-2 py-1.5">
