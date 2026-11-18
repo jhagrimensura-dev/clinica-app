@@ -745,7 +745,7 @@ export default function PlanilhaLeads() {
             ↑ Importar Planilha
           </button>
           <button onClick={addRow}
-            className="flex items-center gap-2 bg-orange-400 hover:bg-orange-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-sm">
+            className="flex items-center gap-2 bg-white hover:bg-green-50 text-green-600 border border-green-300 text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-sm">
             + Novo Lead
           </button>
         </div>
@@ -855,10 +855,6 @@ export default function PlanilhaLeads() {
           <div className="py-16 text-center text-gray-300 text-sm">Carregando...</div>
         ) : (
           <>
-            <button onClick={addRow}
-              className="w-full py-1.5 text-xs text-gray-300 hover:text-orange-500 hover:bg-orange-50 transition-colors text-left px-4 border-b border-gray-50">
-              + Adicionar Lead
-            </button>
             <table className="text-left text-xs border-collapse" style={{ minWidth: '1600px' }}>
               <thead className="sticky top-0 z-10">
                 <tr className="bg-gray-200 border-b border-gray-300">
