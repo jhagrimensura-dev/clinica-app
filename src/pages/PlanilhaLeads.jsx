@@ -182,33 +182,31 @@ function parseValue(s) {
   return isNaN(num) ? null : num
 }
 
-function parseFUField(s) {
-  // Returns { date, obs } — if it's a date, date is set; otherwise it's an obs
-  if (!s || !s.trim()) return { date: null, obs: '' }
-  const d = parseSheetDate(s)
-  if (d) return { date: d, obs: '' }
-  // It's a text, treat as observation
-  return { date: null, obs: s.trim() }
-}
-
 function parseSheetRows(text, clinicaId) {
+  // col[0]=data col[1]=nome col[2]=tel col[3]=origem col[4]=criativo
+  // col[5]=agendou col[6]=compareceu col[7]=vendeu col[8]=reagendado
+  // col[9]=consulta col[10]=valor
+  // col[11]=fu1 col[12]=respondeu1 col[13]=fu2 col[14]=respondeu2
+  // col[15]=fu3 col[16]=respondeu3 col[17]=fu4 col[18]=fu5 col[19]=obs
   const lines = text.split('\n').filter(l => l.trim())
   const rows = []
   for (const line of lines) {
     const cols = line.split('\t')
     const rawDate = cols[0]?.trim()
-    // Skip header row and empty rows
     if (!rawDate || !rawDate.match(/\d{1,2}[\/\-]+\d{1,2}[\/\-]+\d{4}/)) continue
 
-    const fu1 = parseFUField(cols[11])
-    const fu2 = parseFUField(cols[12])
-    const fu3 = parseFUField(cols[13])
-    const fu4 = parseFUField(cols[14])
-    const fu5 = parseFUField(cols[15])
+    const isSIM = s => (s || '').trim().toUpperCase() === 'SIM'
 
-    const obsSheet = cols[16]?.trim() || ''
-    const extraObs = [fu1.obs, fu2.obs, fu3.obs, fu4.obs, fu5.obs].filter(Boolean).join(' | ')
-    const fullObs = [obsSheet, extraObs].filter(Boolean).join(' | ')
+    const fu1Date = parseSheetDate(cols[11]?.trim())
+    const fu1Feito = isSIM(cols[12])
+    const fu2Date = parseSheetDate(cols[13]?.trim())
+    const fu2Feito = isSIM(cols[14])
+    const fu3Date = parseSheetDate(cols[15]?.trim())
+    const fu3Feito = isSIM(cols[16])
+    const fu4Date = parseSheetDate(cols[17]?.trim())
+    const fu5Date = parseSheetDate(cols[18]?.trim())
+
+    const feitoStr = [fu1Feito&&1, fu2Feito&&2, fu3Feito&&3].filter(Boolean).join(',')
 
     rows.push({
       id: genId(),
@@ -218,19 +216,20 @@ function parseSheetRows(text, clinicaId) {
       telefone: cols[2]?.trim() || '',
       origem: parseOrigin(cols[3]),
       criativo: cols[4]?.trim() || '',
-      agendou: (cols[5] || '').trim().toUpperCase() === 'SIM',
-      agendou_tipo: (cols[5] || '').trim().toUpperCase() === 'SIM' ? 'Sim' : ((cols[5] || '').trim() ? 'Não' : null),
-      compareceu: (cols[6] || '').trim().toUpperCase() === 'SIM',
-      vendeu: (cols[7] || '').trim().toUpperCase() === 'SIM',
-      reagendado: (cols[8] || '').trim().toUpperCase() === 'SIM',
+      agendou: isSIM(cols[5]),
+      agendou_tipo: isSIM(cols[5]) ? 'Sim' : ((cols[5] || '').trim() ? 'Não' : null),
+      compareceu: isSIM(cols[6]),
+      vendeu: isSIM(cols[7]),
+      reagendado: isSIM(cols[8]),
       consulta: cols[9]?.trim() || '',
       valor_procedimento: parseValue(cols[10]),
-      follow_up_1: fu1.date,
-      follow_up_2: fu2.date,
-      follow_up_3: fu3.date,
-      follow_up_4: fu4.date,
-      follow_up_5: fu5.date,
-      observacao: fullObs,
+      follow_up_1: fu1Date,
+      follow_up_2: fu2Date,
+      follow_up_3: fu3Date,
+      follow_up_4: fu4Date,
+      follow_up_5: fu5Date,
+      follow_ups_feitos: feitoStr,
+      observacao: cols[19]?.trim() || '',
     })
   }
   return rows
