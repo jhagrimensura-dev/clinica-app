@@ -4,6 +4,13 @@ import { useAuth } from '../context/AuthContext'
 
 const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 const ORIGENS = ['Instagram Bio', 'Instagram Stories', 'Tráfego', 'Conexão', 'Indicação', 'Outro']
+const AGENDOU_OPTS = ['Mês Anterior', 'Próximo Mês', 'Mês Específico', 'Não']
+const AGENDOU_COLORS = {
+  'Mês Anterior':   'bg-amber-100 text-amber-700 border border-amber-200',
+  'Próximo Mês':    'bg-green-100 text-green-700 border border-green-200',
+  'Mês Específico': 'bg-blue-100  text-blue-700  border border-blue-200',
+  'Não':            'bg-red-50    text-red-400    border border-red-100',
+}
 
 async function syncRowData(row, clinicaId) {
   if (!row?.id || !clinicaId || !row.nome?.trim()) return
@@ -72,7 +79,7 @@ const COLS = [
   { key: 'telefone',           label: 'Telefone',     type: 'text'     },
   { key: 'origem',             label: 'Origem',       type: 'select'   },
   { key: 'criativo',           label: 'Criativo',     type: 'text'     },
-  { key: 'agendou',            label: 'Agendou',      type: 'bool'     },
+  { key: 'agendou_tipo',        label: 'Agendou',      type: 'agendou_tipo' },
   { key: 'compareceu',         label: 'Compareceu',   type: 'bool'     },
   { key: 'vendeu',             label: 'Vendeu',       type: 'bool'     },
   { key: 'reagendado',         label: 'Reagendado',   type: 'bool'     },
@@ -413,10 +420,13 @@ export default function PlanilhaLeads() {
   }
 
   const saveCell = useCallback(async (rowId, col, value) => {
-    setRows(prev => prev.map(r => r.id === rowId ? { ...r, [col]: value } : r))
     const dbVal = value === '' ? null : value
-    const { error } = await supabase
-      .from('planilha_leads').update({ [col]: dbVal }).eq('id', rowId)
+    const updates = { [col]: dbVal }
+    if (col === 'agendou_tipo') {
+      updates.agendou = !!dbVal && dbVal !== 'Não'
+    }
+    setRows(prev => prev.map(r => r.id === rowId ? { ...r, ...updates } : r))
+    const { error } = await supabase.from('planilha_leads').update(updates).eq('id', rowId)
     if (error) console.error('saveCell error:', error)
     if (['consulta', 'valor_procedimento'].includes(col)) {
       const row = rowsRef.current.find(r => r.id === rowId)
@@ -458,7 +468,7 @@ export default function PlanilhaLeads() {
   }
 
   const total = rows.length
-  const agendouCount = rows.filter(r => r.agendou).length
+  const agendouCount = rows.filter(r => r.agendou || (r.agendou_tipo && r.agendou_tipo !== 'Não')).length
   const compareceuCount = rows.filter(r => r.compareceu).length
   const vendeuCount = rows.filter(r => r.vendeu).length
   const valorTotal = rows.reduce((s, r) => s + (parseFloat(r.valor_procedimento) || 0), 0)
@@ -466,6 +476,32 @@ export default function PlanilhaLeads() {
   const renderCell = (row, col) => {
     const isEditing = editingCell?.rowId === row.id && editingCell?.col === col.key
     const value = row[col.key]
+
+    if (col.type === 'agendou_tipo') {
+      const isEditing = editingCell?.rowId === row.id && editingCell?.col === col.key
+      if (isEditing) {
+        return (
+          <td key={col.key} className="px-1 py-0.5">
+            <select ref={editInputRef} defaultValue={value || ''} autoFocus
+              onBlur={e => { saveCell(row.id, col.key, e.target.value); setEditingCell(null) }}
+              onKeyDown={e => { if (e.key === 'Escape') setEditingCell(null) }}
+              className="text-xs border border-orange-400 rounded px-1 py-0.5 outline-none bg-white min-w-[130px]">
+              <option value="">—</option>
+              {AGENDOU_OPTS.map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </td>
+        )
+      }
+      return (
+        <td key={col.key} className="px-2 py-1.5 cursor-pointer"
+          onClick={() => setEditingCell({ rowId: row.id, col: col.key })}>
+          {value
+            ? <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${AGENDOU_COLORS[value] || 'bg-gray-100 text-gray-600'}`}>{value}</span>
+            : <span className="text-gray-300 text-xs">—</span>
+          }
+        </td>
+      )
+    }
 
     if (col.type === 'bool') {
       return (
