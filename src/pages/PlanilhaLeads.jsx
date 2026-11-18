@@ -357,6 +357,8 @@ export default function PlanilhaLeads() {
   const [loading, setLoading] = useState(true)
   const [editingCell, setEditingCell] = useState(null)
   const [colorPicker, setColorPicker] = useState(null)
+  const [sortKey, setSortKey] = useState(null)
+  const [sortDir, setSortDir] = useState('asc')
   const [modalImport, setModalImport] = useState(false)
   const [metaAg, setMetaAg] = useState(20)
   const [editandoMeta, setEditandoMeta] = useState(false)
@@ -515,6 +517,20 @@ export default function PlanilhaLeads() {
       setEditingCell(null)
     }
     if (e.key === 'Escape') setEditingCell(null)
+  }
+
+  const sortedRows = sortKey ? [...rows].sort((a, b) => {
+    const av = a[sortKey] ?? ''
+    const bv = b[sortKey] ?? ''
+    const cmp = typeof av === 'boolean'
+      ? (av === bv ? 0 : av ? -1 : 1)
+      : String(av).localeCompare(String(bv), 'pt-BR', { numeric: true })
+    return sortDir === 'asc' ? cmp : -cmp
+  }) : rows
+
+  const toggleSort = (key) => {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortKey(key); setSortDir('asc') }
   }
 
   const total = rows.length
@@ -707,7 +723,7 @@ export default function PlanilhaLeads() {
           <button key={i} onClick={() => setMes(i)}
             className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors shrink-0 ${
               mes === i
-                ? 'text-orange-500 border border-orange-400 bg-orange-50 font-semibold'
+                ? 'text-white bg-orange-400 font-semibold'
                 : 'text-gray-400 hover:text-gray-700'
             }`}>
             {m}
@@ -807,21 +823,36 @@ export default function PlanilhaLeads() {
                 <tr className="bg-gray-50 border-b border-gray-100">
                   <th className="px-3 py-2.5 text-[10px] font-bold text-gray-300 uppercase w-8">#</th>
                   {COLS.map(col => (
-                    <th key={col.key} className="px-2 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap">
-                      {col.label}
+                    <th key={col.key}
+                      onClick={() => toggleSort(col.key)}
+                      className="px-2 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-gray-600 transition-colors">
+                      <span className="inline-flex items-center gap-1">
+                        {col.label}
+                        {sortKey === col.key
+                          ? <span className="text-orange-400">{sortDir === 'asc' ? '↑' : '↓'}</span>
+                          : <span className="text-gray-200">↕</span>}
+                      </span>
                     </th>
                   ))}
                   <th className="w-8 px-2" />
                 </tr>
               </thead>
               <tbody>
+                <tr>
+                  <td colSpan={COLS.length + 2} className="border-b border-gray-50">
+                    <button onClick={addRow}
+                      className="w-full py-1.5 text-xs text-gray-300 hover:text-orange-500 hover:bg-orange-50 transition-colors text-left px-4">
+                      + Adicionar linha
+                    </button>
+                  </td>
+                </tr>
                 {rows.length === 0 ? (
                   <tr>
                     <td colSpan={COLS.length + 2} className="py-16 text-center text-gray-300 text-sm">
                       Nenhum lead este mês · clique em "+ Novo Lead" ou "Importar Planilha"
                     </td>
                   </tr>
-                ) : rows.map((row, i) => (
+                ) : sortedRows.map((row, i) => (
                   <tr key={row.id}
                     className={`border-b border-gray-100 group hover:brightness-95 transition-all ${
                       row.vendeu ? 'bg-green-100' :
