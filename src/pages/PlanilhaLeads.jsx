@@ -139,7 +139,7 @@ const COLS = [
   { key: 'compareceu',         label: 'Compareceu',   type: 'bool'     },
   { key: 'vendeu',             label: 'Vendeu',       type: 'bool'     },
   { key: 'reagendado',         label: 'Reagendado',   type: 'bool'     },
-  { key: 'consulta',           label: 'Consulta',     type: 'text'     },
+  { key: 'consulta',           label: 'Consulta',     type: 'currency' },
   { key: 'valor_procedimento', label: 'Valor (R$)',   type: 'currency' },
   { key: 'follow_up_1',        label: 'Follow Up 1',  type: 'date'     },
   { key: 'follow_up_2',        label: 'Follow Up 2',  type: 'date'     },
@@ -697,14 +697,15 @@ export default function PlanilhaLeads() {
       )
     }
 
-    if (col.key === 'criativo' && display) {
+    if (col.key === 'criativo') {
       return (
         <td key={col.key}
           onClick={() => setEditingCell({ rowId: row.id, col: col.key })}
           className="px-2 py-1.5 cursor-text whitespace-nowrap text-center">
-          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${criativoColor(display)}`}>
-            {display}
-          </span>
+          {display
+            ? <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${criativoColor(display)}`}>{display}</span>
+            : <span className="text-gray-200 text-xs">—</span>
+          }
         </td>
       )
     }
