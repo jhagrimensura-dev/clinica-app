@@ -816,6 +816,10 @@ export default function PlanilhaLeads() {
           <div className="py-16 text-center text-gray-300 text-sm">Carregando...</div>
         ) : (
           <>
+            <button onClick={addRow}
+              className="w-full py-1.5 text-xs text-gray-300 hover:text-orange-500 hover:bg-orange-50 transition-colors text-left px-4 border-b border-gray-50">
+              + Adicionar Lead
+            </button>
             <table className="text-left text-xs border-collapse" style={{ minWidth: '1600px' }}>
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100">
@@ -836,14 +840,6 @@ export default function PlanilhaLeads() {
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td colSpan={COLS.length + 2} className="border-b border-gray-50">
-                    <button onClick={addRow}
-                      className="w-full py-1.5 text-xs text-gray-300 hover:text-orange-500 hover:bg-orange-50 transition-colors text-left px-4">
-                      + Adicionar linha
-                    </button>
-                  </td>
-                </tr>
                 {rows.length === 0 ? (
                   <tr>
                     <td colSpan={COLS.length + 2} className="py-16 text-center text-gray-300 text-sm">
@@ -884,7 +880,7 @@ export default function PlanilhaLeads() {
             </table>
             <button onClick={addRow}
               className="w-full py-2 text-xs text-gray-300 hover:text-orange-500 hover:bg-orange-50 border-t border-gray-50 transition-colors text-left px-4">
-              + Adicionar linha
+              + Adicionar Lead
             </button>
           </>
         )}
