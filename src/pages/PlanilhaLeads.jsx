@@ -589,7 +589,7 @@ export default function PlanilhaLeads() {
         <td key={col.key} className="px-2 py-1.5 cursor-pointer"
           onClick={() => setEditingCell({ rowId: row.id, col: col.key })}>
           {value
-            ? <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${AGENDOU_COLORS[value] || 'bg-gray-100 text-gray-600'}`}>{value}</span>
+            ? <span className={`text-sm font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${AGENDOU_COLORS[value] || 'bg-gray-100 text-gray-600'}`}>{value}</span>
             : <span className="text-gray-300 text-xs">—</span>
           }
         </td>
@@ -719,7 +719,7 @@ export default function PlanilhaLeads() {
           style={{ textAlign: 'center' }}
           className="px-2 py-1.5 cursor-text whitespace-nowrap">
           {display
-            ? <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${criativoColor(display)}`}>{display}</span>
+            ? <span className={`text-sm font-semibold px-2 py-0.5 rounded-full ${criativoColor(display)}`}>{display}</span>
             : <span className="text-gray-200 text-xs">—</span>
           }
         </td>
@@ -866,19 +866,19 @@ export default function PlanilhaLeads() {
           <div className="py-16 text-center text-gray-300 text-sm">Carregando...</div>
         ) : (
           <>
-            <table className="text-left text-xs border-collapse" style={{ minWidth: '1600px' }}>
+            <table className="text-left text-sm border-collapse" style={{ minWidth: '1600px' }}>
               <thead className="sticky top-0 z-10">
                 <tr className="bg-gray-200 border-b border-gray-300">
                   <th className="px-3 py-2.5 text-[10px] font-bold text-gray-500 uppercase w-8">#</th>
                   {COLS.map(col => (
                     <th key={col.key}
-                      onClick={() => toggleSort(col.key)}
-                      className={`px-2 py-2.5 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-gray-800 transition-colors ${['criativo', 'respondeu_1', 'respondeu_2', 'respondeu_3'].includes(col.key) ? 'text-center' : ''}`}>
+                      onClick={() => col.key === 'data' && toggleSort('data')}
+                      className={`px-2 py-2.5 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap transition-colors ${col.key === 'data' ? 'cursor-pointer select-none hover:text-gray-800' : ''} ${['criativo', 'respondeu_1', 'respondeu_2', 'respondeu_3'].includes(col.key) ? 'text-center' : ''}`}>
                       <span className="inline-flex items-center gap-1">
                         {col.label}
-                        {sortKey === col.key
+                        {col.key === 'data' && (sortKey === 'data'
                           ? <span className="text-orange-400">{sortDir === 'asc' ? '↑' : '↓'}</span>
-                          : <span className="text-gray-200">↕</span>}
+                          : <span className="text-gray-300">↕</span>)}
                       </span>
                     </th>
                   ))}
