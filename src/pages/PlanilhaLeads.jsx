@@ -704,13 +704,12 @@ export default function PlanilhaLeads() {
       return (
         <td key={col.key}
           onClick={() => setEditingCell({ rowId: row.id, col: col.key })}
+          style={{ textAlign: 'center' }}
           className="px-2 py-1.5 cursor-text whitespace-nowrap">
-          <div className="flex justify-center">
-            {display
-              ? <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${criativoColor(display)}`}>{display}</span>
-              : <span className="text-gray-200 text-xs">—</span>
-            }
-          </div>
+          {display
+            ? <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${criativoColor(display)}`}>{display}</span>
+            : <span className="text-gray-200 text-xs">—</span>
+          }
         </td>
       )
     }
@@ -893,7 +892,7 @@ export default function PlanilhaLeads() {
                       const cell = renderCell(row, col)
                       const bg = row.cell_colors?.[col.key]
                       return cloneElement(cell, {
-                        style: bg ? { backgroundColor: bg } : undefined,
+                        style: { ...(cell.props.style || {}), ...(bg ? { backgroundColor: bg } : {}) },
                         onContextMenu: e => {
                           e.preventDefault()
                           const x = Math.min(e.clientX, window.innerWidth - 200)
