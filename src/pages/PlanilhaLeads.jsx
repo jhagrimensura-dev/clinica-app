@@ -687,10 +687,10 @@ export default function PlanilhaLeads() {
 
     if (isFollowUp) {
       return (
-        <td key={col.key} className="px-2 py-1.5 whitespace-nowrap group/fu">
+        <td key={col.key} className="px-3 py-2 whitespace-nowrap group/fu">
           {display ? (
-            <div className="flex items-center gap-1">
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-semibold px-3 py-1 rounded-full bg-gray-100 text-gray-600">
                 {display}
               </span>
               <button onClick={() => setEditingCell({ rowId: row.id, col: col.key })}
