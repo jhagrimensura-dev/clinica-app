@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
 const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+const MESES_ABR  = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
 const ORIGENS = ['Instagram Bio', 'Instagram Stories', 'Tráfego', 'Conexão', 'Indicação', 'Outro']
 const AGENDOU_OPTS = ['Mês Anterior', 'Próximo Mês', 'Mês Específico', 'Não']
 const AGENDOU_COLORS = {
@@ -625,17 +626,13 @@ export default function PlanilhaLeads() {
 
   return (
     <div className="p-3 sm:p-6 space-y-5">
-      <div className="flex items-center justify-between">
+      {/* Título + botões */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Planilha de Leads Novos</h1>
           <p className="text-sm text-gray-400 mt-0.5">Clique em qualquer célula para editar · salva automaticamente</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 border border-gray-200 rounded-xl px-3 py-1.5 bg-white">
-            <button onClick={() => navMes(-1)} className="text-gray-400 hover:text-gray-600 px-1">‹</button>
-            <span className="text-sm font-semibold text-gray-700 w-28 text-center">{MESES_FULL[mes]} {ano}</span>
-            <button onClick={() => navMes(1)} className="text-gray-400 hover:text-gray-600 px-1">›</button>
-          </div>
+        <div className="flex items-center gap-2 flex-wrap">
           <button onClick={sincronizarMes} disabled={sincronizando}
             className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-600 text-sm font-semibold px-4 py-2 rounded-xl border border-gray-200 transition-colors shadow-sm disabled:opacity-50"
             title="Apaga os leads de Leads Novos deste mês e repõe com os da planilha">
@@ -650,6 +647,23 @@ export default function PlanilhaLeads() {
             + Novo Lead
           </button>
         </div>
+      </div>
+
+      {/* Navegação por mês — estilo Lumy */}
+      <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-2xl px-4 py-2 overflow-x-auto shadow-sm">
+        <button onClick={() => setAno(a => a - 1)} className="text-gray-400 hover:text-gray-600 font-bold px-1 shrink-0">‹</button>
+        <span className="text-sm font-bold text-gray-700 w-12 text-center shrink-0">{ano}</span>
+        <button onClick={() => setAno(a => a + 1)} className="text-gray-400 hover:text-gray-600 font-bold px-1 mr-2 shrink-0">›</button>
+        {MESES_ABR.map((m, i) => (
+          <button key={i} onClick={() => setMes(i)}
+            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors shrink-0 ${
+              mes === i
+                ? 'text-orange-500 border border-orange-400 bg-orange-50 font-semibold'
+                : 'text-gray-400 hover:text-gray-700'
+            }`}>
+            {m}
+          </button>
+        ))}
       </div>
 
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
