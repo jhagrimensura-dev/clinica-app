@@ -769,7 +769,11 @@ export default function PlanilhaLeads() {
     if (col.key === 'criativo') {
       return (
         <td key={col.key}
-          onClick={e => setCriatvoDropdown({ rowId: row.id, current: display, y: e.clientY + 8, x: e.clientX - 80 })}
+          onClick={e => {
+            const spaceBelow = window.innerHeight - e.clientY
+            const y = spaceBelow < 320 ? e.clientY - 320 : e.clientY + 8
+            setCriatvoDropdown({ rowId: row.id, current: display, y: Math.max(8, y), x: e.clientX - 80 })
+          }}
           style={{ textAlign: 'center' }}
           className="px-2 py-1.5 cursor-pointer whitespace-nowrap">
           {display
