@@ -798,7 +798,7 @@ export default function PlanilhaLeads() {
   }
 
   return (
-    <div className="p-3 sm:p-6 space-y-5">
+    <div className="p-3 sm:p-6 space-y-5 min-h-screen bg-gray-100">
       {/* Título + botões */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
