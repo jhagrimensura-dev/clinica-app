@@ -690,7 +690,7 @@ export default function PlanilhaLeads() {
         <td key={col.key} className="px-3 py-2 whitespace-nowrap group/fu">
           {display ? (
             <div className="flex items-center gap-1.5">
-              <span className="text-xs font-semibold px-3 py-1 rounded-full bg-gray-100 text-gray-600">
+              <span className="text-xs font-semibold px-2 py-1 rounded-lg bg-gray-100 text-gray-600 flex-1 text-center">
                 {display}
               </span>
               <button onClick={() => setEditingCell({ rowId: row.id, col: col.key })}
