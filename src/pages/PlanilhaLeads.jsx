@@ -11,6 +11,27 @@ const AGENDOU_COLORS = {
   'Não': 'bg-red-50    text-red-400   border border-red-100',
 }
 
+const CRIATIVO_PALETTE = [
+  'bg-violet-500 text-white',
+  'bg-rose-500 text-white',
+  'bg-blue-500 text-white',
+  'bg-emerald-500 text-white',
+  'bg-orange-400 text-white',
+  'bg-pink-400 text-white',
+  'bg-yellow-400 text-white',
+  'bg-indigo-500 text-white',
+  'bg-teal-500 text-white',
+  'bg-red-500 text-white',
+  'bg-cyan-500 text-white',
+  'bg-purple-500 text-white',
+]
+function criativoColor(str) {
+  if (!str) return ''
+  let h = 0
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0
+  return CRIATIVO_PALETTE[h % CRIATIVO_PALETTE.length]
+}
+
 const CELL_COLORS = [
   { label: 'Limpar',        value: null,      bg: '#ffffff', border: '#d1d5db' },
   { label: 'Verde',         value: '#bbf7d0', bg: '#bbf7d0' },
@@ -672,6 +693,18 @@ export default function PlanilhaLeads() {
               —
             </span>
           )}
+        </td>
+      )
+    }
+
+    if (col.key === 'criativo' && display) {
+      return (
+        <td key={col.key}
+          onClick={() => setEditingCell({ rowId: row.id, col: col.key })}
+          className="px-2 py-1.5 cursor-text whitespace-nowrap">
+          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${criativoColor(display)}`}>
+            {display}
+          </span>
         </td>
       )
     }
