@@ -861,7 +861,7 @@ export default function PlanilhaLeads() {
                   {COLS.map(col => (
                     <th key={col.key}
                       onClick={() => toggleSort(col.key)}
-                      className="px-2 py-2.5 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-gray-800 transition-colors">
+                      className={`px-2 py-2.5 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-gray-800 transition-colors ${col.key === 'criativo' ? 'text-center' : ''}`}>
                       <span className="inline-flex items-center gap-1">
                         {col.label}
                         {sortKey === col.key
