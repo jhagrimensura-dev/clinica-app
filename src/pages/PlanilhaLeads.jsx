@@ -701,7 +701,7 @@ export default function PlanilhaLeads() {
       return (
         <td key={col.key}
           onClick={() => setEditingCell({ rowId: row.id, col: col.key })}
-          className="px-2 py-1.5 cursor-text whitespace-nowrap">
+          className="px-2 py-1.5 cursor-text whitespace-nowrap text-center">
           <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${criativoColor(display)}`}>
             {display}
           </span>
