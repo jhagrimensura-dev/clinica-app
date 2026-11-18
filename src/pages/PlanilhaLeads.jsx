@@ -68,6 +68,58 @@ function CellColorPicker({ picker, onPick, onClose }) {
   )
 }
 
+function CriativoDropdown({ dropdown, allCriativos, onSelect, onClose }) {
+  const [search, setSearch] = useState('')
+  const [addingNew, setAddingNew] = useState(false)
+  const [newVal, setNewVal] = useState('')
+  const filtered = allCriativos.filter(c => !search || c.toLowerCase().includes(search.toLowerCase()))
+  return (
+    <>
+      <div className="fixed inset-0 z-[9998]" onMouseDown={onClose} />
+      <div className="fixed z-[9999] bg-white border border-gray-200 rounded-xl shadow-2xl p-3 w-56 max-h-96 flex flex-col"
+        style={{ top: dropdown.y, left: Math.min(dropdown.x, window.innerWidth - 240) }}
+        onMouseDown={e => e.stopPropagation()}>
+        <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-2 mb-2 shrink-0">
+          <span className="text-gray-400 text-xs">🔍</span>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..."
+            className="text-xs outline-none flex-1 py-1.5" autoFocus />
+        </div>
+        <div className="overflow-y-auto flex-1 space-y-1.5 pr-0.5">
+          {dropdown.current && (
+            <button onClick={() => onSelect('')}
+              className="w-full text-left px-3 py-1 rounded-lg text-xs text-gray-400 hover:bg-gray-50 transition-colors">
+              — Limpar
+            </button>
+          )}
+          {filtered.map(c => (
+            <button key={c} onClick={() => onSelect(c)}
+              className={`w-full text-left px-3 py-1.5 rounded-full text-sm font-semibold transition-opacity hover:opacity-80 ${criativoColor(c)}`}>
+              {c}
+            </button>
+          ))}
+        </div>
+        <div className="mt-2 pt-2 border-t border-gray-100 shrink-0">
+          {addingNew ? (
+            <div className="flex gap-1">
+              <input value={newVal} onChange={e => setNewVal(e.target.value)}
+                placeholder="Nome do criativo..."
+                onKeyDown={e => { if (e.key === 'Enter' && newVal.trim()) onSelect(newVal.trim()) }}
+                className="flex-1 text-xs border border-orange-400 rounded-lg px-2 py-1 outline-none" autoFocus />
+              <button onClick={() => newVal.trim() && onSelect(newVal.trim())}
+                className="text-xs bg-orange-400 text-white px-2 py-1 rounded-lg font-semibold">OK</button>
+            </div>
+          ) : (
+            <button onClick={() => setAddingNew(true)}
+              className="w-full text-left text-xs text-gray-400 hover:text-orange-500 py-1 flex items-center gap-1.5 transition-colors">
+              ✏️ Adicionar novo
+            </button>
+          )}
+        </div>
+      </div>
+    </>
+  )
+}
+
 async function syncRowData(row, clinicaId) {
   if (!row?.id || !clinicaId || !row.nome?.trim()) return
   const origemLeads = row.origem === 'Indicação' ? 'indicacao' : 'leads_novos'
@@ -379,6 +431,7 @@ export default function PlanilhaLeads() {
   const [loading, setLoading] = useState(true)
   const [editingCell, setEditingCell] = useState(null)
   const [colorPicker, setColorPicker] = useState(null)
+  const [criatvoDropdown, setCriatvoDropdown] = useState(null)
   const [sortKey, setSortKey] = useState(null)
   const [sortDir, setSortDir] = useState('asc')
   const [modalImport, setModalImport] = useState(false)
@@ -565,6 +618,7 @@ export default function PlanilhaLeads() {
   const compareceuCount = rows.filter(r => r.compareceu).length
   const vendeuCount = rows.filter(r => r.vendeu).length
   const valorTotal = rows.reduce((s, r) => s + (parseFloat(r.valor_procedimento) || 0), 0)
+  const allCriativos = [...new Set(rows.map(r => r.criativo).filter(Boolean))].sort()
 
   const renderCell = (row, col) => {
     const isEditing = editingCell?.rowId === row.id && editingCell?.col === col.key
@@ -589,7 +643,7 @@ export default function PlanilhaLeads() {
         <td key={col.key} className="px-2 py-1.5 cursor-pointer"
           onClick={() => setEditingCell({ rowId: row.id, col: col.key })}>
           {value
-            ? <span className={`text-sm font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${AGENDOU_COLORS[value] || 'bg-gray-100 text-gray-600'}`}>{value}</span>
+            ? <span className={`text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${AGENDOU_COLORS[value] || 'bg-gray-100 text-gray-600'}`}>{value}</span>
             : <span className="text-gray-300 text-xs">—</span>
           }
         </td>
@@ -715,11 +769,11 @@ export default function PlanilhaLeads() {
     if (col.key === 'criativo') {
       return (
         <td key={col.key}
-          onClick={() => setEditingCell({ rowId: row.id, col: col.key })}
+          onClick={e => setCriatvoDropdown({ rowId: row.id, current: display, y: e.clientY + 8, x: e.clientX - 80 })}
           style={{ textAlign: 'center' }}
-          className="px-2 py-1.5 cursor-text whitespace-nowrap">
+          className="px-2 py-1.5 cursor-pointer whitespace-nowrap">
           {display
-            ? <span className={`text-sm font-semibold px-2 py-0.5 rounded-full ${criativoColor(display)}`}>{display}</span>
+            ? <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${criativoColor(display)}`}>{display}</span>
             : <span className="text-gray-200 text-xs">—</span>
           }
         </td>
@@ -866,7 +920,7 @@ export default function PlanilhaLeads() {
           <div className="py-16 text-center text-gray-300 text-sm">Carregando...</div>
         ) : (
           <>
-            <table className="text-left text-sm border-collapse" style={{ minWidth: '1600px' }}>
+            <table className="text-left text-xs border-collapse" style={{ minWidth: '1600px' }}>
               <thead className="sticky top-0 z-10">
                 <tr className="bg-gray-200 border-b border-gray-300">
                   <th className="px-3 py-2.5 text-[10px] font-bold text-gray-500 uppercase w-8">#</th>
@@ -931,6 +985,15 @@ export default function PlanilhaLeads() {
           </>
         )}
       </div>
+
+      {criatvoDropdown && (
+        <CriativoDropdown
+          dropdown={criatvoDropdown}
+          allCriativos={allCriativos}
+          onSelect={val => { saveCell(criatvoDropdown.rowId, 'criativo', val); setCriatvoDropdown(null) }}
+          onClose={() => setCriatvoDropdown(null)}
+        />
+      )}
 
       {colorPicker && (
         <CellColorPicker
