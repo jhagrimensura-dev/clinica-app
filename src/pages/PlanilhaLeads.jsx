@@ -219,6 +219,7 @@ function parseSheetRows(text, clinicaId) {
       origem: parseOrigin(cols[3]),
       criativo: cols[4]?.trim() || '',
       agendou: (cols[5] || '').trim().toUpperCase() === 'SIM',
+      agendou_tipo: (cols[5] || '').trim().toUpperCase() === 'SIM' ? 'Sim' : ((cols[5] || '').trim() ? 'Não' : null),
       compareceu: (cols[6] || '').trim().toUpperCase() === 'SIM',
       vendeu: (cols[7] || '').trim().toUpperCase() === 'SIM',
       reagendado: (cols[8] || '').trim().toUpperCase() === 'SIM',
@@ -651,8 +652,10 @@ export default function PlanilhaLeads() {
     let display = ''
     if (col.type === 'date' && value) {
       display = `${String(value).slice(8,10)}/${String(value).slice(5,7)}`
-    } else if (col.type === 'currency' && value != null) {
-      display = `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+    } else if (col.type === 'currency') {
+      const n = Number(value)
+      if (value != null && value !== '' && !isNaN(n) && n !== 0)
+        display = `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
     } else {
       display = value != null ? String(value) : ''
     }
@@ -701,11 +704,13 @@ export default function PlanilhaLeads() {
       return (
         <td key={col.key}
           onClick={() => setEditingCell({ rowId: row.id, col: col.key })}
-          className="px-2 py-1.5 cursor-text whitespace-nowrap text-center">
-          {display
-            ? <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${criativoColor(display)}`}>{display}</span>
-            : <span className="text-gray-200 text-xs">—</span>
-          }
+          className="px-2 py-1.5 cursor-text whitespace-nowrap">
+          <div className="flex justify-center">
+            {display
+              ? <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${criativoColor(display)}`}>{display}</span>
+              : <span className="text-gray-200 text-xs">—</span>
+            }
+          </div>
         </td>
       )
     }
