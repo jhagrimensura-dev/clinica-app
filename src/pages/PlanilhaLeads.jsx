@@ -200,7 +200,9 @@ const COLS = [
   { key: 'follow_up_3',  label: 'Follow Up 3',  type: 'date'      },
   { key: 'respondeu_3', label: 'Respondeu',    type: 'respondeu', fuIndex: 3 },
   { key: 'follow_up_4',  label: 'Follow Up 4',  type: 'date'      },
+  { key: 'respondeu_4', label: 'Respondeu',    type: 'respondeu', fuIndex: 4 },
   { key: 'follow_up_5',  label: 'Follow Up 5',  type: 'date'      },
+  { key: 'respondeu_5', label: 'Respondeu',    type: 'respondeu', fuIndex: 5 },
   { key: 'observacao',   label: 'Observação',   type: 'text'      },
 ]
 
@@ -925,13 +927,13 @@ export default function PlanilhaLeads() {
         ) : (
           <>
             <table className="text-left text-xs border-collapse" style={{ minWidth: '1600px' }}>
-              <thead className="sticky top-0 z-10">
+              <thead className="sticky top-0 z-10 bg-gray-200">
                 <tr className="bg-gray-200 border-b border-gray-300">
                   <th className="px-3 py-2.5 text-[10px] font-bold text-gray-500 uppercase w-8">#</th>
                   {COLS.map(col => (
                     <th key={col.key}
                       onClick={() => col.key === 'data' && toggleSort('data')}
-                      className={`px-2 py-2.5 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap transition-colors ${col.key === 'data' ? 'cursor-pointer select-none hover:text-gray-800' : ''} ${['criativo', 'respondeu_1', 'respondeu_2', 'respondeu_3'].includes(col.key) ? 'text-center' : ''}`}>
+                      className={`px-2 py-2.5 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap transition-colors ${col.key === 'data' ? 'cursor-pointer select-none hover:text-gray-800' : ''} ${['criativo', 'respondeu_1', 'respondeu_2', 'respondeu_3', 'respondeu_4', 'respondeu_5'].includes(col.key) ? 'text-center' : ''}`}>
                       <span className="inline-flex items-center gap-1">
                         {col.label}
                         {col.key === 'data' && (sortKey === 'data'
