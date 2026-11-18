@@ -888,8 +888,8 @@ export default function PlanilhaLeads() {
                 ) : sortedRows.map((row, i) => (
                   <tr key={row.id}
                     className={`border-b border-gray-100 group hover:brightness-95 transition-all ${
-                      row.vendeu ? 'bg-green-100' :
-                      (row.agendou || row.agendou_tipo === 'Sim') ? 'bg-green-50' :
+                      row.vendeu ? 'bg-green-200' :
+                      (row.agendou || row.agendou_tipo === 'Sim') ? 'bg-green-100' :
                       i % 2 === 0 ? 'bg-white' : 'bg-gray-50'
                     }`}>
                     <td className="px-3 py-1.5 text-[10px] text-gray-300 select-none">{i + 1}</td>
