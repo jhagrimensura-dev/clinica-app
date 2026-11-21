@@ -35,3 +35,14 @@ Mistura também vídeos de vida pessoal/marca (filha, ternos sob medida, "um dia
 2. Fotos de antes/depois padronizadas: mesma luz, fundo neutro, mesma pose, sem maquiagem.
 3. Gravar "análise de caso" com tablet/iPad desenhando no rosto.
 4. Citar o método "Elifo Face" em todos os vídeos de caso.
+
+## Biblioteca de Anúncios (21/11/2026)
+- Anunciante: página **guilhermevieirap** (ligada ao IG @dr.guilhermepradoo), page_id 101773768596546. A @pradoclinicc não tem anúncios ativos.
+- **~75 anúncios ativos.**
+- Lotes de lançamento: 20/08, 22/09, 06/10, 10/10, 06/11. Ele sobe um lote novo a cada 2–4 semanas e mantém os antigos rodando. Os de 20/08 estão no ar há 3 meses, o que indica que funcionam.
+- Quase todos são **caso de paciente com nome + história + "Técnica Full Face Prado" + "não é transformar, é realçar"**.
+- Histórias: emagreceu e o rosto "derreteu", noiva, 64 anos sem cirurgia, corrigiu procedimento de outro profissional, rosto redondo, paciente há 4 anos ("cada ano melhor").
+- **Muitos anúncios de pacientes homens** (empresário, autoridade, mandíbula), nicho que a Dra. Amanda não explora.
+- Destino: a maioria leva ao **perfil do Instagram**, não ao WhatsApp.
+- Também anuncia vaga de social media (clínica crescendo a equipe).
+- Gasto: a Meta não divulga no Brasil (só anúncios políticos). Volume de ~75 anúncios ativos sugere verba alta, provavelmente igual ou maior que a da Dra. Amanda, mas é estimativa sem base exata.
