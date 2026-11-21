@@ -510,5 +510,350 @@
     "texto": "[Música]"
    }
   ]
+ },
+ "conc_drguilhermepradoo_top1": {
+  "texto": "Ela cuidou de todo mundo, mas quando se olhou no espelho, percebeu que também deveria cuidar de si Então essa paciente nos procurou por que? Estava sentindo o seu rosto ficar cansado, olheiras profundas, bigode, neis evidente, cantina boca triste, marionete, o bulldogzim, essa sensação de derretimento Nós propomos o nosso método FU Face Prado para levantar todo o seu rosto e melhorar o contorno e definições. E esse foi o resultado da nossa paciente após o nosso método fofeisprado. Veja, o contorno facial melhorou todas as profundidades do rosto dela, que ao longo do tempo o rosto vai derretendo. E olha como ela ficou mais jovem, mais bonita e realçou a beleza dela. Esse é o nosso método fofeisprado. Se você quer rejuvenecer sem passar por uma cirurgia entre fantáticos anusos.",
+  "trechos": [
+   {
+    "t": [
+     0,
+     5.68
+    ],
+    "texto": "Ela cuidou de todo mundo, mas quando se olhou no espelho, percebeu que também deveria cuidar de si"
+   },
+   {
+    "t": [
+     5.68,
+     7.68
+    ],
+    "texto": "Então essa paciente nos procurou por que?"
+   },
+   {
+    "t": [
+     7.68,
+     18.48
+    ],
+    "texto": "Estava sentindo o seu rosto ficar cansado, olheiras profundas, bigode, neis evidente, cantina boca triste, marionete, o bulldogzim, essa sensação de derretimento"
+   },
+   {
+    "t": [
+     18.48,
+     28.48
+    ],
+    "texto": "Nós propomos o nosso método FU Face Prado para levantar todo o seu rosto e melhorar o contorno e definições. E esse foi o resultado da nossa paciente após o nosso método fofeisprado."
+   },
+   {
+    "t": [
+     28.48,
+     33.32
+    ],
+    "texto": "Veja, o contorno facial melhorou todas as profundidades do rosto dela, que ao longo"
+   },
+   {
+    "t": [
+     33.32,
+     35.52
+    ],
+    "texto": "do tempo o rosto vai derretendo."
+   },
+   {
+    "t": [
+     35.52,
+     39.88
+    ],
+    "texto": "E olha como ela ficou mais jovem, mais bonita e realçou a beleza dela."
+   },
+   {
+    "t": [
+     39.88,
+     41.48
+    ],
+    "texto": "Esse é o nosso método fofeisprado."
+   },
+   {
+    "t": [
+     41.48,
+     45.92
+    ],
+    "texto": "Se você quer rejuvenecer sem passar por uma cirurgia entre fantáticos anusos."
+   }
+  ]
+ },
+ "conc_drguilhermepradoo_top2": {
+  "texto": "Você não precisa de harmonização, aceita esse envelhecimento, deixa acontecer Isso é que essa paciente ouviu antes de realizar o nosso método FacePrat Então essa paciente chegou dessa forma para a gente Aspecto de cansaço, derretimento facial, esse é o envelhecimento Agora você prefere continuar dessa forma e cada dia o rosto caindo mais Ou realizar o nosso método FacePrat e sair daqui assim",
+  "trechos": [
+   {
+    "t": [
+     0,
+     4.16
+    ],
+    "texto": "Você não precisa de harmonização, aceita esse envelhecimento, deixa acontecer"
+   },
+   {
+    "t": [
+     4.16,
+     8.16
+    ],
+    "texto": "Isso é que essa paciente ouviu antes de realizar o nosso método FacePrat"
+   },
+   {
+    "t": [
+     8.16,
+     10.56
+    ],
+    "texto": "Então essa paciente chegou dessa forma para a gente"
+   },
+   {
+    "t": [
+     10.56,
+     15.3
+    ],
+    "texto": "Aspecto de cansaço, derretimento facial, esse é o envelhecimento"
+   },
+   {
+    "t": [
+     15.3,
+     20.26
+    ],
+    "texto": "Agora você prefere continuar dessa forma e cada dia o rosto caindo mais"
+   },
+   {
+    "t": [
+     20.26,
+     24.7
+    ],
+    "texto": "Ou realizar o nosso método FacePrat e sair daqui assim"
+   }
+  ]
+ },
+ "conc_drguilhermepradoo_top3": {
+  "texto": "[Música] [Música] Esse é o caso da... Esse é o caso, velho. Rapaz, está certo isso. Esse é o caso da Raquel. Quando... Eu já fiz uma... 70 minhas, vai. [Música] Agora ela... [Música] É que eu estou tentando começar assim pessoal. Agora ela... Ah, fico... É que eu tô tentando começar assim pessoal. Pessoal? Pessoal hoje? Pessoal? Muito bom dia pessoal! Pessoal, eu sinto fierda aí.",
+  "trechos": [
+   {
+    "t": [
+     0,
+     2
+    ],
+    "texto": "[Música]"
+   },
+   {
+    "t": [
+     2,
+     8
+    ],
+    "texto": "[Música]"
+   },
+   {
+    "t": [
+     8,
+     9.5
+    ],
+    "texto": "Esse é o caso da..."
+   },
+   {
+    "t": [
+     9.5,
+     10.7
+    ],
+    "texto": "Esse é o caso, velho."
+   },
+   {
+    "t": [
+     10.7,
+     12.5
+    ],
+    "texto": "Rapaz, está certo isso."
+   },
+   {
+    "t": [
+     12.5,
+     14.5
+    ],
+    "texto": "Esse é o caso da Raquel."
+   },
+   {
+    "t": [
+     14.5,
+     15.5
+    ],
+    "texto": "Quando..."
+   },
+   {
+    "t": [
+     15.5,
+     17
+    ],
+    "texto": "Eu já fiz uma..."
+   },
+   {
+    "t": [
+     17,
+     18.5
+    ],
+    "texto": "70 minhas, vai."
+   },
+   {
+    "t": [
+     18.5,
+     21.5
+    ],
+    "texto": "[Música]"
+   },
+   {
+    "t": [
+     21.5,
+     22.5
+    ],
+    "texto": "Agora ela..."
+   },
+   {
+    "t": [
+     22.5,
+     26
+    ],
+    "texto": "[Música] É que eu estou tentando começar assim pessoal. Agora ela... Ah, fico..."
+   },
+   {
+    "t": [
+     28,
+     30
+    ],
+    "texto": "É que eu tô tentando começar assim pessoal. Pessoal? Pessoal hoje? Pessoal?"
+   },
+   {
+    "t": [
+     30,
+     32
+    ],
+    "texto": "Muito bom dia pessoal!"
+   },
+   {
+    "t": [
+     32,
+     36
+    ],
+    "texto": "Pessoal, eu sinto fierda aí."
+   }
+  ]
+ },
+ "conc_drguilhermepradoo_top4": {
+  "texto": "medo de ficar exagerado, medador, pavor de agulha, esse era o sentimento que essa pacientinha antes de realizar nosso método full face para ela. Ela emagreceu 20 quilos com as canetas emagrecedoras e viu seu rosto desabar, essa foi a consequência dessa perda de peso, uma sensação de derretimento e uma sensação de cansaço. Então a gente realizou o nosso método full face para a 12 minuto, esse foi o restado após a primeira seção Percebam quanto nós tiramos a sensação de cansar e também preenchemos regiões estratégicas para valorizar o rosto dela e deixar ela mais bonita",
+  "trechos": [
+   {
+    "t": [
+     0,
+     5.68
+    ],
+    "texto": "medo de ficar exagerado, medador, pavor de agulha, esse era o sentimento que essa pacientinha"
+   },
+   {
+    "t": [
+     5.68,
+     9.94
+    ],
+    "texto": "antes de realizar nosso método full face para ela. Ela emagreceu 20 quilos com as canetas"
+   },
+   {
+    "t": [
+     9.94,
+     16.12
+    ],
+    "texto": "emagrecedoras e viu seu rosto desabar, essa foi a consequência dessa perda de peso,"
+   },
+   {
+    "t": [
+     16.12,
+     21.08
+    ],
+    "texto": "uma sensação de derretimento e uma sensação de cansaço. Então a gente realizou o nosso"
+   },
+   {
+    "t": [
+     21.08,
+     25.76
+    ],
+    "texto": "método full face para a 12 minuto, esse foi o restado após a primeira seção"
+   },
+   {
+    "t": [
+     25.76,
+     32.26
+    ],
+    "texto": "Percebam quanto nós tiramos a sensação de cansar e também preenchemos regiões estratégicas"
+   },
+   {
+    "t": [
+     32.26,
+     35.26
+    ],
+    "texto": "para valorizar o rosto dela e deixar ela mais bonita"
+   }
+  ]
+ },
+ "conc_drguilhermepradoo_top5": {
+  "texto": "Bom dia pessoal, agora acompanhar o dia de atendimento aqui em Goiânia, é perigoso! E se deixar com duas vezes o meu e o dela né! Agora ainda o Japro Oryon é onde nós temos a nossa clínica e hoje a gente vai ter alguns pacientes nós que quer conhecer a mantensão para manter o resultado.",
+  "trechos": [
+   {
+    "t": [
+     0,
+     8.6
+    ],
+    "texto": "Bom dia pessoal, agora acompanhar o dia de atendimento aqui em Goiânia, é perigoso!"
+   },
+   {
+    "t": [
+     14.6,
+     19
+    ],
+    "texto": "E se deixar com duas vezes o meu e o dela né!"
+   },
+   {
+    "t": [
+     35,
+     null
+    ],
+    "texto": "Agora ainda o Japro Oryon é onde nós temos a nossa clínica e hoje a gente vai ter alguns pacientes nós que quer conhecer a mantensão para manter o resultado."
+   }
+  ]
+ },
+ "conc_drguilhermepradoo_top6": {
+  "texto": "Então não pode tomar um manjado e emagrecer mais, então vai para o seu configurado, hein? Você tirou a medida e você vai falar \"seu amando aquela\" Hoje eu vim aqui no P do Martão, ele está fazendo agora a ternos submedidas Vim conhecer um pouquinho do trabalho dele, é o trabalho de ternos todo dia Vim buscar uma peça para mim, sob medida.",
+  "trechos": [
+   {
+    "t": [
+     0,
+     3.6
+    ],
+    "texto": "Então não pode tomar um manjado e emagrecer mais, então vai para o seu configurado, hein?"
+   },
+   {
+    "t": [
+     4,
+     7
+    ],
+    "texto": "Você tirou a medida e você vai falar \"seu amando aquela\""
+   },
+   {
+    "t": [
+     11.6,
+     15.4
+    ],
+    "texto": "Hoje eu vim aqui no P do Martão, ele está fazendo agora a ternos submedidas"
+   },
+   {
+    "t": [
+     15.4,
+     19.2
+    ],
+    "texto": "Vim conhecer um pouquinho do trabalho dele, é o trabalho de ternos todo dia"
+   },
+   {
+    "t": [
+     19.2,
+     null
+    ],
+    "texto": "Vim buscar uma peça para mim, sob medida."
+   }
+  ]
  }
 }
