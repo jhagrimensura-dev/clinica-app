@@ -56,3 +56,5 @@
 - [Salvar memória sempre](feedback_salvar_memoria_sempre.md) — atualizar arquivo da sessão durante a conversa sem esperar pedido + commit/push de memory/
 - [Sessão 2026-11-16](project_sessao_20261116.md) — XAU Journal criado do zero: diário de trades, calculadora, analytics, importar MT5, Coach IA (Claude). URL: xau-journal-eight.vercel.app
 - [Sessão 2026-11-18](project_sessao_20261118.md) — PlanilhaLeads refactor visual completo: cores por célula, abas mês, criativos coloridos+dropdown, RESPONDEU fu1-5, sticky header, fundo cinza
+- [Sempre em português](feedback_portugues.md) — conversar sempre em português com o usuário
+- [Sessão 2026-11-21](project_sessao_20261121.md) — Início integração Meta Ads API p/ diagnosticar gestor (R$15k/mês), passo a passo token System User, voz pt, extensão Chrome
