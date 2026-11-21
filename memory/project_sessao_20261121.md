@@ -14,6 +14,8 @@ metadata:
 - InstagramAnalytics.jsx já tem tela Meta Ads (insights por campanha/anúncio) lendo `configuracoes.instagram_ads_config` ({token, accounts:[{id,label}]}) — mas NÃO há config salva no Supabase (nunca conectada).
 - Próximo: passo a passo para gerar token permanente (System User) no Business Manager: 1) confirmar usuário é admin e conta de anúncios pertence ao Business da clínica (não ao gestor) 2) criar app tipo Empresa + API de Marketing 3) usuário do sistema "clinica-app" Admin com ativos 4) token sem expiração com ads_read, ads_management, business_management, pages_read_engagement, instagram_basic, instagram_manage_insights 5) salvar token + act_ID.
 - Parou no passo 1. Extensão Claude in Chrome instalada via /chrome; precisa reiniciar o Claude Code para as ferramentas carregarem. Usuário quer que eu navegue pelo Chrome dele.
+- 2ª conversa (mesmo dia): usuário rodou /chrome e aceitou permissões, mas as ferramentas `mcp__claude-in-chrome__*` ainda NÃO aparecem no ToolSearch. Próximo passo: reiniciar o Claude Code e testar de novo; se falhar, pedir print da tela do /chrome.
+- Hook SessionStart/End trocado para `scripts/memoria-sync.mjs start|end` (substitui session-pull/push).
 - Depois do token: diagnóstico (custo por lead, gasto x leads reais da planilha_leads por criativo), depois ensinar estrutura de campanha.
 
 **Outros:** voz ativada (/voice, segurar espaço), `language: "portuguese"` no ~/.claude/settings.json (com "portugues" o ditado caía em inglês). Usuário quer TUDO em português, inclusive perguntas.

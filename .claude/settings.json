@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/session-pull.mjs\"",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/memoria-sync.mjs\" start",
             "timeout": 30,
             "statusMessage": "git sync..."
           }
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/session-push.mjs\"",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/memoria-sync.mjs\" end",
             "timeout": 30
           }
         ]
