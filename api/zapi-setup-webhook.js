@@ -32,8 +32,18 @@ export default async function handler(req, res) {
     }
   }
 
+  try {
+    const r = await fetch(`https://api.z-api.io/instances/${i}/token/${t}/update-notify-sent-by-me`, {
+      method: 'PUT', headers, body: JSON.stringify({ notifySentByMe: true }),
+    })
+    const body = await r.json().catch(() => ({}))
+    results.send = { status: r.status, body, method: 'PUT', path: 'update-notify-sent-by-me' }
+  } catch (e) {
+    results.send = { error: e.message }
+  }
+
   // Webhook de mensagens ENVIADAS (pelo celular) — tenta todas as variações conhecidas
-  const sendEndpoints = [
+  const sendEndpoints = results.send?.status === 200 && !results.send?.body?.error ? [] : [
     { method: 'PUT',  path: 'update-webhook-send' },
     { method: 'POST', path: 'update-webhook-send' },
     { method: 'PUT',  path: 'webhook-send' },
