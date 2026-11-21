@@ -9,7 +9,32 @@ const PERIODOS = [
   { label: '7 dias',  value: 'last_7d'  },
   { label: '30 dias', value: 'last_30d' },
   { label: '90 dias', value: 'last_90d' },
+  { label: 'Este mês', value: 'this_month' },
+  { label: 'Mês passado', value: 'last_month' },
 ]
+
+function periodoRange(periodo) {
+  const hoje = new Date()
+  const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const diasAtras = n => { const d = new Date(hoje); d.setDate(d.getDate() - n); return d }
+  if (periodo === 'this_month') return [iso(new Date(hoje.getFullYear(), hoje.getMonth(), 1)), iso(diasAtras(-1))]
+  if (periodo === 'last_month') return [iso(new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1)), iso(new Date(hoje.getFullYear(), hoje.getMonth(), 1))]
+  const n = { last_7d: 7, last_30d: 30, last_90d: 90 }[periodo] || 30
+  return [iso(diasAtras(n)), iso(hoje)]
+}
+
+function Secao({ titulo, icone, children }) {
+  return (
+    <details className="mt-4 bg-white rounded-2xl border border-brand-100/60 shadow-sm group">
+      <summary className="px-5 py-3 cursor-pointer select-none flex items-center gap-2 text-sm font-bold text-gray-700 list-none">
+        <span className="text-base">{icone}</span>
+        {titulo}
+        <span className="ml-auto text-gray-400 text-xs group-open:rotate-180 transition-transform">▼</span>
+      </summary>
+      <div className="border-t border-gray-100">{children}</div>
+    </details>
+  )
+}
 
 function fmt(n, prefix = '') {
   if (n == null || n === '') return '—'
@@ -1464,6 +1489,25 @@ export default function InstagramAnalytics() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
+  const [planilha, setPlanilha] = useState([])
+  useEffect(() => {
+    const [ini, fim] = periodoRange(periodo)
+    supabase.from('planilha_leads').select('origem,agendou,compareceu,vendeu,valor_procedimento').gte('data', ini).lt('data', fim)
+      .then(({ data, error }) => { if (error) console.error('planilha_leads', error); setPlanilha(data || []) })
+  }, [periodo])
+
+  const resumoOrigem = (re) => {
+    const rows = planilha.filter(l => re.test(l.origem || ''))
+    return {
+      leads: rows.length,
+      agendou: rows.filter(l => l.agendou).length,
+      vendeu: rows.filter(l => l.vendeu).length,
+      faturamento: rows.filter(l => l.vendeu).reduce((s, l) => s + (parseFloat(l.valor_procedimento) || 0), 0),
+    }
+  }
+  const trafego = resumoOrigem(/tr[aá]fego/i)
+  const bio = resumoOrigem(/bio/i)
+
   const metaLeads = overview?.actions?.find(a => a.action_type === 'lead')?.value
   const mensagensAds = overview?.actions?.find(a => a.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value
 
@@ -1475,7 +1519,9 @@ export default function InstagramAnalytics() {
     POST_ENGAGEMENT: 'Engajamento', LINK_CLICKS: 'Cliques no link',
   }
   const tiposDisponiveis = [...new Set(campanhas.map(c => c.objetivo).filter(Boolean))]
-  const campanhasFiltradas = filtroTipo ? campanhas.filter(c => c.objetivo === filtroTipo) : campanhas
+  const campanhasFiltradas = (filtroTipo ? campanhas.filter(c => c.objetivo === filtroTipo) : campanhas)
+    .slice().sort((a, b) => parseFloat(b.spend || 0) - parseFloat(a.spend || 0))
+  const totalGasto = campanhas.reduce((s, c) => s + parseFloat(c.spend || 0), 0)
 
   if (!config) {
     return (
@@ -1489,11 +1535,6 @@ export default function InstagramAnalytics() {
             <p className="text-sm text-gray-400">Meta Ads · Performance dos anúncios</p>
           </div>
         </div>
-
-        <PainelOrganico leads={leads} mes={mesPainel} ano={anoPainel} navMes={navMes} igConfig={igConfig} onOpenSetup={() => setShowIGSetup(true)} />
-        <CriativosSection mes={mesPainel} ano={anoPainel} igConfig={igConfig} onOpenSetup={() => setShowIGSetup(true)} boostedPermalinks={boostedPermalinks} />
-        <LeadsMidia leads={leads} periodo={periodo} />
-        <LeadsOrigem leads={leads} periodo={periodo} />
 
         <div className="bg-white rounded-2xl border border-brand-100 p-8 text-center max-w-md mx-auto shadow-sm">
           <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #f9ce34, #ee2a7b, #6228d7)' }}>
@@ -1584,13 +1625,6 @@ export default function InstagramAnalytics() {
         </div>
       )}
 
-      {/* Painel orgânico — sempre visível */}
-      <PainelOrganico leads={leads} mes={mesPainel} ano={anoPainel} navMes={navMes} igConfig={igConfig} onOpenSetup={() => setShowIGSetup(true)} />
-      <CriativosSection mes={mesPainel} ano={anoPainel} igConfig={igConfig} onOpenSetup={() => setShowIGSetup(true)} boostedPermalinks={boostedPermalinks} />
-
-      {/* Leads por origem — sempre visível */}
-      <LeadsOrigem leads={leads} periodo={periodo} />
-
       {/* Error */}
       {error && (
         <div className="mb-4 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
@@ -1608,19 +1642,30 @@ export default function InstagramAnalytics() {
       )}
 
       {/* Métricas overview */}
-      {overview && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <MetricCard label="Gasto total" value={fmt(overview.spend, 'R$ ')} sub="valor investido em anúncios" />
-          <MetricCard label="Impressões" value={fmtInt(overview.impressions)} sub="vezes que o anúncio foi exibido" />
-          <MetricCard label="Alcance" value={fmtInt(overview.reach)} sub="pessoas únicas que viram" />
-          <MetricCard label="Cliques" value={fmtInt(overview.clicks)} sub="cliques no anúncio" />
-          <MetricCard label="CTR" value={fmtPct(overview.ctr)} sub="% de quem viu e clicou" info="Click-Through Rate: de cada 100 pessoas que viram o anúncio, quantas clicaram. Acima de 1% é considerado bom." />
-          <MetricCard label="CPM" value={fmt(overview.cpm, 'R$ ')} sub="custo para 1.000 exibições" info="Custo por Mil impressões: quanto você paga para o anúncio ser exibido 1.000 vezes. Quanto menor, mais barato está alcançando pessoas." />
-          <MetricCard label="Custo por resultado" value={fmt(overview.cpp, 'R$ ')} sub="quanto custa cada ação gerada" />
-          {metaLeads && <MetricCard label="Leads (Meta)" value={fmtInt(metaLeads)} sub="formulários preenchidos" />}
-          {mensagensAds && <MetricCard label="Conversas iniciadas" value={fmtInt(mensagensAds)} sub="pessoas enviadas ao WhatsApp" />}
-        </div>
-      )}
+      {overview && (() => {
+        const gasto = parseFloat(overview.spend || 0)
+        const conversas = parseInt(mensagensAds || 0) + parseInt(metaLeads || 0)
+        const div = (a, b) => b > 0 ? fmt((a / b).toFixed(2), 'R$ ') : '—'
+        const pct = (a, b) => b > 0 ? `${Math.round(a / b * 100)}%` : '—'
+        return (
+          <div className="mb-6">
+            <h2 className="text-sm font-bold text-gray-700 mb-2">Funil do período <span className="font-normal text-gray-400">· Meta Ads + Planilha de Leads (origem Tráfego)</span></h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <MetricCard label="Gasto" value={fmt(gasto.toFixed(2), 'R$ ')} sub={config.accounts?.[contaIdx]?.label || 'conta selecionada'} />
+              <MetricCard label="Conversas iniciadas" value={fmtInt(conversas)} sub={`${div(gasto, conversas)} por conversa`} info="Conversas no WhatsApp + formulários que o Meta registrou vindos dos anúncios." />
+              <MetricCard label="Leads na planilha" value={fmtInt(trafego.leads)} sub={`${pct(trafego.leads, conversas)} das conversas`} info="Leads com origem Tráfego registrados na Planilha de Leads no período. Se for bem menor que as conversas, leads estão se perdendo no atendimento ou não estão sendo anotados." />
+              <MetricCard label="Agendaram" value={fmtInt(trafego.agendou)} sub={`${pct(trafego.agendou, trafego.leads)} dos leads · ${div(gasto, trafego.agendou)} cada`} />
+              <MetricCard label="Venderam" value={fmtInt(trafego.vendeu)} sub={`${pct(trafego.vendeu, trafego.agendou)} dos agendados`} />
+              <MetricCard label="Faturamento" value={fmt(trafego.faturamento.toFixed(2), 'R$ ')} sub="vendas de leads de Tráfego" />
+              <MetricCard label="Custo por venda" value={div(gasto, trafego.vendeu)} sub="gasto ÷ vendas" />
+              <MetricCard label="Retorno" value={gasto > 0 ? `${(trafego.faturamento / gasto).toFixed(1)}x` : '—'} sub="faturamento ÷ gasto" info="Quantos reais voltaram em venda para cada R$ 1 investido. Abaixo de 1x o anúncio está dando prejuízo (sem contar leads que vêm pela Bio)." />
+            </div>
+            <p className="text-xs text-gray-400 mt-2">
+              Instagram Bio no mesmo período: {bio.leads} leads · {bio.agendou} agendaram · {bio.vendeu} venderam · {fmt(bio.faturamento.toFixed(2), 'R$ ')} — parte pode vir das campanhas de visita ao perfil.
+            </p>
+          </div>
+        )
+      })()}
 
       {/* Tabela campanhas */}
       {campanhas.length > 0 && (
@@ -1656,18 +1701,17 @@ export default function InstagramAnalytics() {
                   <th className="px-5 py-3 text-left">Campanha</th>
                   <th className="px-4 py-3 text-left">Tipo</th>
                   <ThInfo label="Gasto" info="Total investido nesta campanha no período selecionado." align="right" />
-                  <ThInfo label="Impressões" info="Quantas vezes o anúncio foi exibido. Uma mesma pessoa pode ver mais de uma vez — por isso impressões é sempre maior que alcance." align="right" />
-                  <ThInfo label="Alcance" info="Quantidade de pessoas únicas que viram o anúncio pelo menos uma vez no período." align="right" />
-                  <ThInfo label="Cliques" info="Total de cliques no anúncio, incluindo cliques no link, no perfil ou no botão de ação." align="right" />
-                  <ThInfo label="CTR" info="Click-Through Rate: de cada 100 pessoas que viram o anúncio, quantas clicaram. Acima de 1% é considerado bom." align="right" />
-                  <ThInfo label="CPM" info="Custo por Mil impressões: quanto você paga para o anúncio aparecer 1.000 vezes. Quanto menor, mais barato está alcançando pessoas." align="right" />
-                  <ThInfo label="Conv. WA" info="Pessoas que clicaram neste anúncio e abriram uma conversa no WhatsApp da clínica nos últimos 7 dias." align="right" />
-                  <ThInfo label="Freq." info="Frequência: quantas vezes em média a mesma pessoa viu este anúncio. Acima de 3-4 vezes o público está saturado — hora de trocar o criativo." align="right" />
+                  <ThInfo label="% verba" info="Quanto do gasto total do período foi para esta campanha." align="right" />
+                  <ThInfo label="Conversas" info="Pessoas que clicaram neste anúncio e abriram uma conversa no WhatsApp da clínica." align="right" />
+                  <ThInfo label="R$/conversa" info="Gasto ÷ conversas. Quanto menor, melhor." align="right" />
+                  <ThInfo label="Cliques" info="Cliques no link do anúncio (perfil, site ou WhatsApp)." align="right" />
+                  <ThInfo label="Freq." info="Frequência: quantas vezes em média a mesma pessoa viu este anúncio. Acima de 4x o público está saturado — hora de trocar o criativo." align="right" />
                 </tr>
               </thead>
               <tbody>
                 {campanhasFiltradas.map((c, i) => {
                   const convWA = c.actions?.find(a => a.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value
+                  const linkClicks = c.actions?.find(a => a.action_type === 'link_click')?.value
                   return (
                   <tr key={c.campaign_id || i} className="border-b border-gray-50 hover:bg-brand-50/30 transition-colors">
                     <td className="px-5 py-3">
@@ -1689,19 +1733,17 @@ export default function InstagramAnalytics() {
                         <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">{LABEL_OBJETIVO[c.objetivo] || c.objetivo}</span>
                       ) : <span className="text-gray-300">—</span>}
                     </td>
-                    <td className="px-4 py-3 text-right text-gray-700">{fmt(c.spend, 'R$ ')}</td>
-                    <td className="px-4 py-3 text-right text-gray-500">{fmtInt(c.impressions)}</td>
-                    <td className="px-4 py-3 text-right text-gray-500">{fmtInt(c.reach)}</td>
-                    <td className="px-4 py-3 text-right text-gray-500">{fmtInt(c.clicks)}</td>
-                    <td className="px-4 py-3 text-right text-gray-500">{fmtPct(c.ctr)}</td>
-                    <td className="px-4 py-3 text-right text-gray-500">{fmt(c.cpm, 'R$ ')}</td>
+                    <td className="px-4 py-3 text-right text-gray-700 font-medium">{fmt(c.spend, 'R$ ')}</td>
+                    <td className="px-4 py-3 text-right text-gray-500">{totalGasto > 0 ? `${Math.round(parseFloat(c.spend || 0) / totalGasto * 100)}%` : '—'}</td>
                     <td className="px-4 py-3 text-right">
                       {convWA ? <span className="font-semibold text-green-600">{fmtInt(convWA)}</span> : <span className="text-gray-300">—</span>}
                     </td>
+                    <td className="px-4 py-3 text-right text-gray-600">{convWA ? fmt((parseFloat(c.spend || 0) / parseInt(convWA)).toFixed(2), 'R$ ') : <span className="text-gray-300">—</span>}</td>
+                    <td className="px-4 py-3 text-right text-gray-500">{fmtInt(linkClicks || 0)}</td>
                     <td className="px-4 py-3 text-right">
                       {c.frequency ? (
                         <span className={`font-medium ${parseFloat(c.frequency) >= 4 ? 'text-red-500' : parseFloat(c.frequency) >= 3 ? 'text-yellow-500' : 'text-gray-500'}`}>
-                          {parseFloat(c.frequency).toFixed(1)}x
+                          {parseFloat(c.frequency) >= 4 && '⚠️ '}{parseFloat(c.frequency).toFixed(1)}x
                         </span>
                       ) : <span className="text-gray-300">—</span>}
                     </td>
@@ -1715,20 +1757,17 @@ export default function InstagramAnalytics() {
                   <td className="px-4 py-3 text-right text-sm font-bold text-gray-800">
                     {fmt(campanhasFiltradas.reduce((s, c) => s + parseFloat(c.spend || 0), 0).toString(), 'R$ ')}
                   </td>
-                  <td className="px-4 py-3 text-right text-sm font-bold text-gray-800">
-                    {fmtInt(campanhasFiltradas.reduce((s, c) => s + parseInt(c.impressions || 0), 0).toString())}
-                  </td>
-                  <td className="px-4 py-3 text-right text-sm font-bold text-gray-800">
-                    {fmtInt(campanhasFiltradas.reduce((s, c) => s + parseInt(c.reach || 0), 0).toString())}
-                  </td>
-                  <td className="px-4 py-3 text-right text-sm font-bold text-gray-800">
-                    {fmtInt(campanhasFiltradas.reduce((s, c) => s + parseInt(c.clicks || 0), 0).toString())}
-                  </td>
                   <td className="px-4 py-3 text-right text-gray-400 text-xs">—</td>
-                  <td className="px-4 py-3 text-right text-gray-400 text-xs">—</td>
-                  <td className="px-4 py-3 text-right text-sm font-bold text-green-600">
-                    {(() => { const t = campanhasFiltradas.reduce((s, c) => s + parseInt(c.actions?.find(a => a.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value || 0), 0); return t > 0 ? fmtInt(t.toString()) : <span className="text-gray-400">—</span> })()}
-                  </td>
+                  {(() => {
+                    const g = campanhasFiltradas.reduce((s, c) => s + parseFloat(c.spend || 0), 0)
+                    const t = campanhasFiltradas.reduce((s, c) => s + parseInt(c.actions?.find(a => a.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value || 0), 0)
+                    const lc = campanhasFiltradas.reduce((s, c) => s + parseInt(c.actions?.find(a => a.action_type === 'link_click')?.value || 0), 0)
+                    return (<>
+                      <td className="px-4 py-3 text-right text-sm font-bold text-green-600">{t > 0 ? fmtInt(t) : <span className="text-gray-400">—</span>}</td>
+                      <td className="px-4 py-3 text-right text-sm font-bold text-gray-800">{t > 0 ? fmt((g / t).toFixed(2), 'R$ ') : '—'}</td>
+                      <td className="px-4 py-3 text-right text-sm font-bold text-gray-800">{fmtInt(lc)}</td>
+                    </>)
+                  })()}
                   <td className="px-4 py-3 text-right text-gray-400 text-xs">—</td>
                 </tr>
               </tfoot>
@@ -1752,12 +1791,7 @@ export default function InstagramAnalytics() {
               }))
         if (rows.length === 0) return null
         return (
-          <div className="mt-4 bg-white rounded-2xl border border-brand-100/60 shadow-sm overflow-hidden">
-            <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
-              <span className="text-base">❤️</span>
-              <h2 className="text-sm font-bold text-gray-700">Criativos — Engajamento</h2>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-pink-100 text-pink-600">{rows.length} criativo{rows.length !== 1 ? 's' : ''}</span>
-            </div>
+          <Secao icone="❤️" titulo={`Criativos — Engajamento (${rows.length})`}>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -1825,7 +1859,7 @@ export default function InstagramAnalytics() {
                 </tfoot>
               </table>
             </div>
-          </div>
+          </Secao>
         )
       })()}
 
@@ -1837,12 +1871,9 @@ export default function InstagramAnalytics() {
       )}
 
       {/* Mensagens de boas-vindas CTWA por campanha */}
-      <div className="mt-4 bg-white rounded-2xl border border-brand-100/60 shadow-sm p-5">
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-2">
-            <span className="text-base">💬</span>
-            <h3 className="text-sm font-bold text-gray-700">Mensagem de saudação por campanha (CTWA)</h3>
-          </div>
+      <Secao icone="💬" titulo="Mensagem de saudação por campanha (CTWA)">
+      <div className="p-5">
+        <div className="flex items-center justify-end mb-1">
           <div className="flex gap-2">
             {ctwaCarregado && (
               <button onClick={salvarMensagensCtwa} disabled={salvandoCtwa}
@@ -1907,13 +1938,10 @@ export default function InstagramAnalytics() {
               </div>
         )}
       </div>
+      </Secao>
 
-      {/* Glossário de termos */}
-      <div className="mt-6 bg-white rounded-2xl border border-brand-100/60 shadow-sm p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-base">💡</span>
-          <h3 className="text-sm font-bold text-gray-700">Glossário de termos</h3>
-        </div>
+      <Secao icone="💡" titulo="Glossário e como identificar problemas">
+      <div className="p-5">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {[
             { termo: 'CTR', def: 'Click-Through Rate — % de pessoas que viram o anúncio e clicaram. Acima de 1% é bom para clínicas.' },
@@ -1933,14 +1961,8 @@ export default function InstagramAnalytics() {
             </div>
           ))}
         </div>
-      </div>
 
-      {/* Raciocínio prático */}
-      <div className="mt-4 bg-white rounded-2xl border border-brand-100/60 shadow-sm p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-base">🧠</span>
-          <h3 className="text-sm font-bold text-gray-700">Como identificar o problema</h3>
-        </div>
+        <h3 className="text-sm font-bold text-gray-700 mt-5 mb-3">🧠 Como identificar o problema</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {[
             { sinal: 'CTR baixo (abaixo de 1%)', problema: 'O criativo não está chamando atenção — troque a imagem ou o texto do anúncio.', cor: 'text-red-600 bg-red-50' },
@@ -1959,6 +1981,7 @@ export default function InstagramAnalytics() {
           ))}
         </div>
       </div>
+      </Secao>
 
       {showConfig && (
         <ConfigModal
