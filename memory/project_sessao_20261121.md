@@ -35,6 +35,7 @@ metadata:
 - Taynah v2 no Drive/Claude: legenda premium (Montserrat SemiBold + Playfair Display itálico na palavra-chave, palavra por palavra, sem caixa, sombra), desfoque só na faixa da legenda antiga (x160 y955 400x75). Script edicoes/taynah_v2.mjs; fontes em scripts/video-analise/fontes (OFL).
 - Ads concorrente: página guilhermevieirap (page_id 101773768596546) ~75 anúncios ativos, lotes a cada 2-4 sem desde 20/08, todos caso+história+"Full Face Prado", muitos homens, destino perfil IG. Gasto não divulgado (só político no BR).
 - Ranking de casos p/ anúncio: só na planilha privada do Drive/Claude (id 13T5om6RL4oK7MjhpDiZudkbVtvr0QI25CPDr1onui1w). NÃO gravar nomes de pacientes no repo. Pendente: autorização da doutora/pacientes.
+- PRÓXIMOS PASSOS (fim 21/11): (1) João confirma autorizações na planilha do Drive/Claude; (2) montar vídeos dos casos autorizados no estilo taynah_v2 (precisa 1 frase da história de cada); (3) teste R$5k campanha MENSAGEM WhatsApp c/ mensagem automática própria p/ rastrear; (4) usuário avaliar v1 x v2 da Taynah p/ definir padrão de legenda; (5) sugestões pendentes: banner de WhatsApp desconectado no Dashboard, roteiros p/ doutora gravar (análise de caso no iPad), padronizar fotos antes/depois.
 - Hook SessionStart/End trocado para `scripts/memoria-sync.mjs start|end` (substitui session-pull/push).
 - Depois do token: diagnóstico (custo por lead, gasto x leads reais da planilha_leads por criativo), depois ensinar estrutura de campanha.
 
