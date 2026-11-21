@@ -15,6 +15,7 @@ metadata:
 - Próximo: passo a passo para gerar token permanente (System User) no Business Manager: 1) confirmar usuário é admin e conta de anúncios pertence ao Business da clínica (não ao gestor) 2) criar app tipo Empresa + API de Marketing 3) usuário do sistema "clinica-app" Admin com ativos 4) token sem expiração com ads_read, ads_management, business_management, pages_read_engagement, instagram_basic, instagram_manage_insights 5) salvar token + act_ID.
 - Parou no passo 1. Extensão Claude in Chrome instalada via /chrome; precisa reiniciar o Claude Code para as ferramentas carregarem. Usuário quer que eu navegue pelo Chrome dele.
 - 2ª conversa (mesmo dia): usuário rodou /chrome e aceitou permissões, mas as ferramentas `mcp__claude-in-chrome__*` ainda NÃO aparecem no ToolSearch. Próximo passo: reiniciar o Claude Code e testar de novo; se falhar, pedir print da tela do /chrome.
+- 3ª conversa: Chrome FUNCIONANDO (abriu draamandaliima.com.br, Dashboard carregou logado). Próximo: retomar passo 1 do token Meta navegando no Business Manager.
 - Hook SessionStart/End trocado para `scripts/memoria-sync.mjs start|end` (substitui session-pull/push).
 - Depois do token: diagnóstico (custo por lead, gasto x leads reais da planilha_leads por criativo), depois ensinar estrutura de campanha.
 
