@@ -409,7 +409,7 @@ const IG_KEY = 'instagram_graph_config'
 function loadIGConfig() { try { return JSON.parse(localStorage.getItem(IG_KEY) || 'null') } catch { return null } }
 function saveIGConfig(cfg) {
   localStorage.setItem(IG_KEY, JSON.stringify(cfg))
-  supabase.from('configuracoes').upsert({ chave: IG_KEY, valor: cfg }, { onConflict: 'chave' })
+  supabase.from('configuracoes').upsert({ chave: IG_KEY, valor: cfg }, { onConflict: 'chave' }).then(({ error }) => { if (error) console.error('configuracoes upsert', error) })
 }
 
 async function igFetch(path, token) {
@@ -683,7 +683,7 @@ function loadOrganico(ano, mes) {
 function saveOrganico(ano, mes, dados) {
   const key = `instagram_organico_${ano}_${mes}`
   localStorage.setItem(key, JSON.stringify(dados))
-  supabase.from('configuracoes').upsert({ chave: key, valor: dados }, { onConflict: 'chave' })
+  supabase.from('configuracoes').upsert({ chave: key, valor: dados }, { onConflict: 'chave' }).then(({ error }) => { if (error) console.error('configuracoes upsert', error) })
 }
 function loadCriativos(ano, mes) {
   try { return JSON.parse(localStorage.getItem(`instagram_criativos_${ano}_${mes}`) || '[]') } catch { return [] }
@@ -691,7 +691,7 @@ function loadCriativos(ano, mes) {
 function saveCriativos(ano, mes, lista) {
   const key = `instagram_criativos_${ano}_${mes}`
   localStorage.setItem(key, JSON.stringify(lista))
-  supabase.from('configuracoes').upsert({ chave: key, valor: lista }, { onConflict: 'chave' })
+  supabase.from('configuracoes').upsert({ chave: key, valor: lista }, { onConflict: 'chave' }).then(({ error }) => { if (error) console.error('configuracoes upsert', error) })
 }
 
 function Tooltip({ texto }) {
@@ -723,7 +723,7 @@ function PainelOrganico({ leads, mes, ano, navMes, igConfig, onOpenSetup }) {
         if (data?.valor) { localStorage.setItem(key, JSON.stringify(data.valor)); setDados(data.valor) }
         else {
           const local = loadOrganico(ano, mes)
-          if (Object.keys(local).length > 0) supabase.from('configuracoes').upsert({ chave: key, valor: local }, { onConflict: 'chave' })
+          if (Object.keys(local).length > 0) supabase.from('configuracoes').upsert({ chave: key, valor: local }, { onConflict: 'chave' }).then(({ error }) => { if (error) console.error('configuracoes upsert', error) })
           setDados(local)
         }
       })
@@ -983,7 +983,7 @@ function CriativosSection({ mes, ano, igConfig, onOpenSetup, boostedPermalinks }
         if (data?.valor) { localStorage.setItem(key, JSON.stringify(data.valor)); setCriativos(data.valor) }
         else {
           const local = loadCriativos(ano, mes)
-          if (local.length > 0) supabase.from('configuracoes').upsert({ chave: key, valor: local }, { onConflict: 'chave' })
+          if (local.length > 0) supabase.from('configuracoes').upsert({ chave: key, valor: local }, { onConflict: 'chave' }).then(({ error }) => { if (error) console.error('configuracoes upsert', error) })
           setCriativos(local)
         }
       })
@@ -1256,10 +1256,10 @@ export default function InstagramAnalytics() {
         ;(data || []).forEach(row => { found[row.chave] = row.valor })
 
         if (found[IG_KEY]) { localStorage.setItem(IG_KEY, JSON.stringify(found[IG_KEY])); setIGConfig(found[IG_KEY]) }
-        else { const local = loadIGConfig(); if (local) { supabase.from('configuracoes').upsert({ chave: IG_KEY, valor: local }, { onConflict: 'chave' }); setIGConfig(local) } }
+        else { const local = loadIGConfig(); if (local) { supabase.from('configuracoes').upsert({ chave: IG_KEY, valor: local }, { onConflict: 'chave' }).then(({ error }) => { if (error) console.error('configuracoes upsert', error) }); setIGConfig(local) } }
 
         if (found['instagram_ads_config']) { localStorage.setItem('instagram_ads_config', JSON.stringify(found['instagram_ads_config'])); setConfig(found['instagram_ads_config']) }
-        else { try { const local = JSON.parse(localStorage.getItem('instagram_ads_config') || 'null'); if (local) { supabase.from('configuracoes').upsert({ chave: 'instagram_ads_config', valor: local }, { onConflict: 'chave' }); setConfig(local) } } catch {} }
+        else { try { const local = JSON.parse(localStorage.getItem('instagram_ads_config') || 'null'); if (local) { supabase.from('configuracoes').upsert({ chave: 'instagram_ads_config', valor: local }, { onConflict: 'chave' }).then(({ error }) => { if (error) console.error('configuracoes upsert', error) }); setConfig(local) } } catch {} }
       })
   }, [])
   const [boostedPermalinks, setBoostedPermalinks] = useState(new Set())
@@ -1345,7 +1345,7 @@ export default function InstagramAnalytics() {
   const saveConfig = (token, accounts) => {
     const c = { token, accounts }
     localStorage.setItem('instagram_ads_config', JSON.stringify(c))
-    supabase.from('configuracoes').upsert({ chave: 'instagram_ads_config', valor: c }, { onConflict: 'chave' })
+    supabase.from('configuracoes').upsert({ chave: 'instagram_ads_config', valor: c }, { onConflict: 'chave' }).then(({ error }) => { if (error) console.error('configuracoes upsert', error) })
     setConfig(c)
     setContaIdx(0)
     setShowConfig(false)
@@ -1388,7 +1388,7 @@ export default function InstagramAnalytics() {
         const earlyMap = {}
         ;(existingEarly?.valor || []).forEach(a => { earlyMap[a.ad_id] = a })
         adsPayloadEarly.forEach(a => { earlyMap[a.ad_id] = a })
-        supabase.from('configuracoes').upsert({ chave: 'ads_engajamento', valor: Object.values(earlyMap) }, { onConflict: 'chave' })
+        supabase.from('configuracoes').upsert({ chave: 'ads_engajamento', valor: Object.values(earlyMap) }, { onConflict: 'chave' }).then(({ error }) => { if (error) console.error('configuracoes upsert', error) })
       }
 
       if (overviewJson.error) throw new Error(overviewJson.error.message)
