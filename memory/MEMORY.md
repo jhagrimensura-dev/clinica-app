@@ -58,3 +58,4 @@
 - [Sessão 2026-11-18](project_sessao_20261118.md) — PlanilhaLeads refactor visual completo: cores por célula, abas mês, criativos coloridos+dropdown, RESPONDEU fu1-5, sticky header, fundo cinza
 - [Sempre em português](feedback_portugues.md) — conversar sempre em português com o usuário
 - [Sessão 2026-11-21](project_sessao_20261121.md) — Início integração Meta Ads API p/ diagnosticar gestor (R$15k/mês), passo a passo token System User, voz pt, extensão Chrome
+- [⚠️ Token Meta expira 2027-01-20](project_token_meta_expira.md) — AVISAR usuário a partir de 2027-01-15 para renovar
