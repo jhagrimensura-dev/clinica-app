@@ -16,6 +16,7 @@ metadata:
 - Parou no passo 1. Extensão Claude in Chrome instalada via /chrome; precisa reiniciar o Claude Code para as ferramentas carregarem. Usuário quer que eu navegue pelo Chrome dele.
 - 2ª conversa (mesmo dia): usuário rodou /chrome e aceitou permissões, mas as ferramentas `mcp__claude-in-chrome__*` ainda NÃO aparecem no ToolSearch. Próximo passo: reiniciar o Claude Code e testar de novo; se falhar, pedir print da tela do /chrome.
 - 3ª conversa: Chrome FUNCIONANDO (abriu draamandaliima.com.br, Dashboard carregou logado). Próximo: retomar passo 1 do token Meta navegando no Business Manager.
+- PASSO 1 OK: João (jhagrimensura) tem Acesso total no Business "Amanda Lima Silva" (business_id 1866413210037163, verificado). 3 contas de anúncios, todas propriedade da clínica: CA - AMANDA LIMA 03 (1446093280693129), Dra Amanda 02 (407454144724912), Amanda Lima - Rio Verde (2586845538290274). Alerta: ~10+ pessoas com Acesso total (gestores/terceiros) — revisar depois. Próximo: passo 2 (criar app Empresa + API de Marketing).
 - Hook SessionStart/End trocado para `scripts/memoria-sync.mjs start|end` (substitui session-pull/push).
 - Depois do token: diagnóstico (custo por lead, gasto x leads reais da planilha_leads por criativo), depois ensinar estrutura de campanha.
 
