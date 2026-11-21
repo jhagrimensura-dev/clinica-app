@@ -1,0 +1,514 @@
+{
+ "ad_barato1_analise_caso": {
+  "texto": "você deseja ficar mais bonita e mais jovem e não quer que ninguém perceba que você realizou algum procedimento olha só esses resultados aqui das minhas pacientes elas também tinham esse mesmo desejo queriam se sentir mais bonitas e mais confiantes mas que ninguém percebessem que elas haviam realizado algum procedimento e depois de passar pela minha técnica a Elifo Face elas receberam vários elogios dizendo que elas estavam mais bonitas, mais jovens, o que elas tinham feito mas ninguém soube dizer exatamente qual procedimento foi feito. E esse é o desejo de muitas de vocês. Se você deseja resultados como esse, clique aqui no link, fale com a minha equipe e agente a sua consulta.",
+  "trechos": [
+   {
+    "t": [
+     0,
+     5.5
+    ],
+    "texto": "você deseja ficar mais bonita e mais jovem e não quer que ninguém perceba que você realizou algum procedimento"
+   },
+   {
+    "t": [
+     5.5,
+     8.2
+    ],
+    "texto": "olha só esses resultados aqui das minhas pacientes"
+   },
+   {
+    "t": [
+     8.2,
+     10.7
+    ],
+    "texto": "elas também tinham esse mesmo desejo"
+   },
+   {
+    "t": [
+     10.7,
+     16
+    ],
+    "texto": "queriam se sentir mais bonitas e mais confiantes mas que ninguém percebessem que elas haviam realizado algum procedimento"
+   },
+   {
+    "t": [
+     16,
+     19
+    ],
+    "texto": "e depois de passar pela minha técnica a Elifo Face"
+   },
+   {
+    "t": [
+     19,
+     24.5
+    ],
+    "texto": "elas receberam vários elogios dizendo que elas estavam mais bonitas, mais jovens, o que elas tinham feito"
+   },
+   {
+    "t": [
+     24.5,
+     28.36
+    ],
+    "texto": "mas ninguém soube dizer exatamente qual procedimento foi feito."
+   },
+   {
+    "t": [
+     28.36,
+     30.64
+    ],
+    "texto": "E esse é o desejo de muitas de vocês."
+   },
+   {
+    "t": [
+     30.64,
+     35.4
+    ],
+    "texto": "Se você deseja resultados como esse, clique aqui no link, fale com a minha equipe e agente"
+   },
+   {
+    "t": [
+     35.4,
+     36
+    ],
+    "texto": "a sua consulta."
+   }
+  ]
+ },
+ "ad_barato2_atendimento_cadeira": {
+  "texto": "Se você tem medo de fazer harmonização facial e tem medo de resultados exagerados, você precisa ver o resultado dessa paciente. Ela também tinha muito medo de se transformar em outra pessoa, de ficar com um rosto muito caricato, muito exagerado, mas confiou no meu planejamento e após 10 ml de ácido elurônico nós tivemos esse resultado aqui incrível. E olha só a reação dela, ela ficou super feliz e satisfeita com o resultado já no pós-imediato Nossa, melhorou demais, olha aqui, bem que se abriu um pouco aqui mesmo e subiu, subiu olhar também pra continuar Então, se você também deseja ter essa transformação e dar uma chance para harmonização facial clica aqui no link e fale com a minha equipe",
+  "trechos": [
+   {
+    "t": [
+     0,
+     7
+    ],
+    "texto": "Se você tem medo de fazer harmonização facial e tem medo de resultados exagerados, você precisa ver o resultado dessa paciente."
+   },
+   {
+    "t": [
+     7,
+     13.3
+    ],
+    "texto": "Ela também tinha muito medo de se transformar em outra pessoa, de ficar com um rosto muito caricato, muito exagerado,"
+   },
+   {
+    "t": [
+     13.3,
+     18.78
+    ],
+    "texto": "mas confiou no meu planejamento e após 10 ml de ácido elurônico nós tivemos esse resultado aqui incrível."
+   },
+   {
+    "t": [
+     18.78,
+     29
+    ],
+    "texto": "E olha só a reação dela, ela ficou super feliz e satisfeita com o resultado já no pós-imediato Nossa, melhorou demais, olha aqui, bem que se abriu um pouco aqui mesmo"
+   },
+   {
+    "t": [
+     29,
+     33
+    ],
+    "texto": "e subiu, subiu olhar também pra continuar"
+   },
+   {
+    "t": [
+     34,
+     39
+    ],
+    "texto": "Então, se você também deseja ter essa transformação e dar uma chance para harmonização facial"
+   },
+   {
+    "t": [
+     39,
+     41
+    ],
+    "texto": "clica aqui no link e fale com a minha equipe"
+   }
+  ]
+ },
+ "ad_barato3_mqv4": {
+  "texto": "Olha só como essa paciente chegou e agora olha só esse resultado. Eu sou a doutora Amanda Lima e trabalho há mais de 10 anos com rejuvencimento e embelezamento facial. Através do meu método exclusivo, a Elifo Face, eu quero te ajudar a fazer as pazes com o espelho e ter uma autoestima mais elevada. Clique aqui no link e fale com a minha equipe.",
+  "trechos": [
+   {
+    "t": [
+     0,
+     4.28
+    ],
+    "texto": "Olha só como essa paciente chegou e agora olha só esse resultado."
+   },
+   {
+    "t": [
+     4.28,
+     9.68
+    ],
+    "texto": "Eu sou a doutora Amanda Lima e trabalho há mais de 10 anos com rejuvencimento e embelezamento facial."
+   },
+   {
+    "t": [
+     9.68,
+     15.12
+    ],
+    "texto": "Através do meu método exclusivo, a Elifo Face, eu quero te ajudar a fazer as pazes com o espelho"
+   },
+   {
+    "t": [
+     15.12,
+     17.4
+    ],
+    "texto": "e ter uma autoestima mais elevada."
+   },
+   {
+    "t": [
+     17.4,
+     19.36
+    ],
+    "texto": "Clique aqui no link e fale com a minha equipe."
+   }
+  ]
+ },
+ "ad_caro1_o_que_mais_incomodava": {
+  "texto": "Meu nome é Thaina Sanchez, eu procurei a manda porque eu estava me queixando muito do meu bigote chinês, com a idade, né gente? A idade vai avançando e a bigote chinês aqui estava muito marcado, eu estava com olheiras profundas e eu queria dar uma realçada no meus lábios. Eu sou paciente da Dra. Quase dez anos, desde que ela formou, sou uma das primeiras pacientes dela então sempre confie no trabalho dela a amanda é extremamente competente, cuidadosa, ela tem uma característica muito importante da harmonização que ela não harmoniza o seu rosto, ela realça a beleza que você já tem sutilmente, ou seja ela melhora a sua beleza ela não transforma o seu rosto. Então assim, eu sempre confio no trabalho dela, eu vim sem medo nenhum. Eu fiquei extremamente satisfeita com os resultados, eu já sabia que eu ia ficar muito satisfeita. O que melhorou depois que eu fiz a minha hermandização é o testembro completo, a gente se olhar no espelho, se reconhecer, se sentir bonita, principalmente depois dos 40 anos, a gente vai mudando a textura da pele, e não tem preço. Você acordar e olhar no espelho e se achar mais bonita.",
+  "trechos": [
+   {
+    "t": [
+     0,
+     7.36
+    ],
+    "texto": "Meu nome é Thaina Sanchez, eu procurei a manda porque eu estava me queixando muito do meu bigote chinês,"
+   },
+   {
+    "t": [
+     7.36,
+     12.8
+    ],
+    "texto": "com a idade, né gente? A idade vai avançando e a bigote chinês aqui estava muito marcado,"
+   },
+   {
+    "t": [
+     12.8,
+     18.62
+    ],
+    "texto": "eu estava com olheiras profundas e eu queria dar uma realçada no meus lábios."
+   },
+   {
+    "t": [
+     18.62,
+     25.9
+    ],
+    "texto": "Eu sou paciente da Dra. Quase dez anos, desde que ela formou, sou uma das primeiras pacientes dela então sempre confie no trabalho dela"
+   },
+   {
+    "t": [
+     25.9,
+     34.4
+    ],
+    "texto": "a amanda é extremamente competente, cuidadosa, ela tem uma característica muito importante da harmonização"
+   },
+   {
+    "t": [
+     34.4,
+     43.6
+    ],
+    "texto": "que ela não harmoniza o seu rosto, ela realça a beleza que você já tem sutilmente, ou seja ela melhora a sua beleza"
+   },
+   {
+    "t": [
+     43.6,
+     47.2
+    ],
+    "texto": "ela não transforma o seu rosto. Então assim, eu sempre confio"
+   },
+   {
+    "t": [
+     47.2,
+     52.72
+    ],
+    "texto": "no trabalho dela, eu vim sem medo nenhum. Eu fiquei extremamente satisfeita com os resultados, eu já"
+   },
+   {
+    "t": [
+     52.72,
+     58.72
+    ],
+    "texto": "sabia que eu ia ficar muito satisfeita. O que melhorou depois que eu fiz a minha hermandização"
+   },
+   {
+    "t": [
+     58.72,
+     67
+    ],
+    "texto": "é o testembro completo, a gente se olhar no espelho, se reconhecer, se sentir bonita, principalmente depois dos 40 anos,"
+   },
+   {
+    "t": [
+     67,
+     74
+    ],
+    "texto": "a gente vai mudando a textura da pele, e não tem preço."
+   },
+   {
+    "t": [
+     74,
+     76
+    ],
+    "texto": "Você acordar e olhar no espelho e se achar mais bonita."
+   }
+  ]
+ },
+ "ad_caro2_voce_nao_precisa": {
+  "texto": "Eu acho que eu vou pegar minha whisky",
+  "trechos": [
+   {
+    "t": [
+     0,
+     5.9
+    ],
+    "texto": "Eu acho que eu vou pegar minha whisky"
+   }
+  ]
+ },
+ "org_bom1_medo_artificial": {
+  "texto": "So fucking special But I'm a creep I'm a winner What the hell am I to hear?",
+  "trechos": [
+   {
+    "t": [
+     0,
+     3
+    ],
+    "texto": "So fucking special"
+   },
+   {
+    "t": [
+     5.5,
+     7.5
+    ],
+    "texto": "But I'm a creep"
+   },
+   {
+    "t": [
+     11,
+     13.5
+    ],
+    "texto": "I'm a winner"
+   },
+   {
+    "t": [
+     15.5,
+     18.5
+    ],
+    "texto": "What the hell am I to hear?"
+   }
+  ]
+ },
+ "org_bom4_vini_jr": {
+  "texto": "",
+  "semAudio": true,
+  "obs": "Arquivo sem faixa de áudio (a API do Instagram remove o som de reels com música licenciada)"
+ },
+ "org_ruim1_muitas_vezes": {
+  "texto": "Doutora, eu vou falar aqui, você fala a solução. Bora? Combinado, bora lá! Bigot Nays Bigot Nays a gente tem que fazer toda essa sustentação da região de têmpora e crawl lifting lá dentro do cabelo pra gente promover esse efeito de lifting. Oé! Bigot Nays não é só essa ruginha que marca aqui, a gente não pode preencher só que a causa começa em toda essa queda aqui, por isso a gente precisa começar a tratar por aqui. Papada. Ultreformer e dependendo do caso a gente precisa trabalhar o contorno aqui dessa região para disfarçar a papadinha. Pescoço flácido, com toda certeza a associação do ultraformer com escutra. Quando fizemos os dois juntos ele estimula até sete vezes mais o coladino. E quando está muito flácido? Aí já não é comigo mais, tem casos que é somente com cirurgias que se resolve. Boca triste, associação de botox para a gente paralisar, mas geralmente preenchimento nos labros para melhorar o contorno e associação de ultraformer com skinbuster para melhorar os códigos de barro. Testa marcada. Botox. Rosto sem contorno. Preenchimento com ácido elurônico para gente transir sua definição e marcação ali do arco. para melhorar os códigos de barro. Testa marcada. Botox. Rosto sem contorno. Preenchimento com ácido elurônico para a gente trazer sua definição e marcação ali do ângulo da mandíbula. E o derretimento facial? A, com certeza, harmonização com o meu método \"A-L-F-O-F-A-C\". E aí, alguma dessas é a sua queija? Me conta aqui nos comentários que eu vou responder o que eu faria.",
+  "trechos": [
+   {
+    "t": [
+     0,
+     4.08
+    ],
+    "texto": "Doutora, eu vou falar aqui, você fala a solução. Bora? Combinado, bora lá!"
+   },
+   {
+    "t": [
+     4.08,
+     5.38
+    ],
+    "texto": "Bigot Nays"
+   },
+   {
+    "t": [
+     5.38,
+     9.3
+    ],
+    "texto": "Bigot Nays a gente tem que fazer toda essa sustentação da região de têmpora e"
+   },
+   {
+    "t": [
+     9.3,
+     13.12
+    ],
+    "texto": "crawl lifting lá dentro do cabelo pra gente promover esse efeito de lifting."
+   },
+   {
+    "t": [
+     13.12,
+     18.32
+    ],
+    "texto": "Oé! Bigot Nays não é só essa ruginha que marca aqui, a gente não pode preencher só que"
+   },
+   {
+    "t": [
+     18.32,
+     23.12
+    ],
+    "texto": "a causa começa em toda essa queda aqui, por isso a gente precisa começar a tratar por aqui."
+   },
+   {
+    "t": [
+     23.12,
+     24.08
+    ],
+    "texto": "Papada."
+   },
+   {
+    "t": [
+     24.08,
+     28.44
+    ],
+    "texto": "Ultreformer e dependendo do caso a gente precisa trabalhar o contorno aqui dessa"
+   },
+   {
+    "t": [
+     28.44,
+     32.72
+    ],
+    "texto": "região para disfarçar a papadinha. Pescoço flácido, com toda certeza a"
+   },
+   {
+    "t": [
+     32.72,
+     36.56
+    ],
+    "texto": "associação do ultraformer com escutra. Quando fizemos os dois juntos ele"
+   },
+   {
+    "t": [
+     36.56,
+     40.36
+    ],
+    "texto": "estimula até sete vezes mais o coladino. E quando está muito flácido?"
+   },
+   {
+    "t": [
+     40.36,
+     44.38
+    ],
+    "texto": "Aí já não é comigo mais, tem casos que é somente com cirurgias que se resolve."
+   },
+   {
+    "t": [
+     44.38,
+     47
+    ],
+    "texto": "Boca triste, associação de botox para a gente paralisar, mas geralmente preenchimento nos labros para melhorar o contorno e associação"
+   },
+   {
+    "t": [
+     47,
+     51.2
+    ],
+    "texto": "de ultraformer com skinbuster para melhorar os códigos de barro."
+   },
+   {
+    "t": [
+     51.2,
+     52.2
+    ],
+    "texto": "Testa marcada."
+   },
+   {
+    "t": [
+     52.2,
+     53.2
+    ],
+    "texto": "Botox."
+   },
+   {
+    "t": [
+     53.2,
+     54.2
+    ],
+    "texto": "Rosto sem contorno."
+   },
+   {
+    "t": [
+     54.2,
+     58.7
+    ],
+    "texto": "Preenchimento com ácido elurônico para gente transir sua definição e marcação"
+   },
+   {
+    "t": [
+     58.7,
+     65.7
+    ],
+    "texto": "ali do arco. para melhorar os códigos de barro. Testa marcada. Botox. Rosto sem contorno."
+   },
+   {
+    "t": [
+     65.7,
+     69.7
+    ],
+    "texto": "Preenchimento com ácido elurônico para a gente trazer sua definição e marcação"
+   },
+   {
+    "t": [
+     69.7,
+     71.2
+    ],
+    "texto": "ali do ângulo da mandíbula."
+   },
+   {
+    "t": [
+     71.2,
+     72.5
+    ],
+    "texto": "E o derretimento facial?"
+   },
+   {
+    "t": [
+     72.5,
+     76.3
+    ],
+    "texto": "A, com certeza, harmonização com o meu método \"A-L-F-O-F-A-C\"."
+   },
+   {
+    "t": [
+     76.3,
+     78.7
+    ],
+    "texto": "E aí, alguma dessas é a sua queija?"
+   },
+   {
+    "t": [
+     78.7,
+     81.7
+    ],
+    "texto": "Me conta aqui nos comentários que eu vou responder o que eu faria."
+   }
+  ]
+ },
+ "org_ruim2_autocuidado": {
+  "texto": "[MÚSICA]",
+  "trechos": [
+   {
+    "t": [
+     0,
+     20.24
+    ],
+    "texto": "[MÚSICA]"
+   }
+  ]
+ },
+ "org_ruim3_maquiagem": {
+  "texto": "[Música]",
+  "trechos": [
+   {
+    "t": [
+     0,
+     10.32
+    ],
+    "texto": "[Música]"
+   }
+  ]
+ }
+}
