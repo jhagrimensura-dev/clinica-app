@@ -19,3 +19,5 @@ metadata:
 - Ofereci teste de correção de luz num caso com vídeo — aguardando resposta.
 
 **Ferramentas explicadas:** edição via scripts próprios (scripts/video-analise/): ffmpeg (corte, legenda, cor), Whisper (transcrição palavra por palavra), fontes Montserrat/Playfair (OFL). Confiro por quadros extraídos — ajuste fino depende do retorno do usuário.
+
+**Teste de luz (24/11):** feito num caso 🟡 a partir da montagem pronta da pasta (SCRL_*). Método: medir cor média da pele (testa+bochecha) em cada metade com ffmpeg crop+scale 1x1, levar as duas metades ao meio-termo com colorchannelmixer (ganhos opostos, nada no rosto). Resultado: tom de pele igualado (antes era o depois mais avermelhado). Fundo, cabelo e batom continuam diferentes — luz não resolve isso. Arquivos no Drive/Claude. Conversor HEIC: scripts/video-analise/heic.mjs (npm heic-convert). Fotos em fotos/ (gitignored).
