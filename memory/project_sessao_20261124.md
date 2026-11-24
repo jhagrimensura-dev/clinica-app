@@ -8,3 +8,5 @@ metadata:
 Usuário perguntou "como tá o sistema". Estado repassado: último trabalho foi 21/11 (Meta Ads conectado, diagnóstico tráfego, Leads Novos WhatsApp reconectado, vídeos Taynah v1/v2, análise concorrente). Working tree limpo, último commit 34bebb0.
 
 Pendências em aberto: ver próximos passos em [[project-sessao-20261121]] e [[project-pendencias]]. Token Meta expira 2027-01-20 ([[project-token-meta-expira]]).
+
+- Listei pastas de CASOS PARA POSTAR: 28 pacientes na raiz (12 avaliados na planilha privada, 16 não avaliados) + 15 em "Z. Casos em pausa". Nomes só no chat/Drive. Usuário vai perguntar à doutora quais autorizam. Perguntou se dá p/ corrigir luz dos casos ruins e que ferramenta uso (ffmpeg via script).
