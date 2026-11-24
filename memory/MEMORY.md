@@ -60,4 +60,5 @@
 - [Sessão 2026-11-21](project_sessao_20261121.md) — Início integração Meta Ads API p/ diagnosticar gestor (R$15k/mês), passo a passo token System User, voz pt, extensão Chrome
 - [⚠️ Token Meta expira 2027-01-20](project_token_meta_expira.md) — AVISAR usuário a partir de 2027-01-15 para renovar
 - [Dados de pacientes fora do repo](feedback_dados_pacientes.md) — nunca gravar nomes/fotos/avaliações de pacientes em memory/ ou scripts/ (vai pro GitHub)
-- [Sessão 2026-11-24](project_sessao_20261124.md) — status geral, 43 casos da pasta CASOS PARA POSTAR p/ autorização da doutora, correção de luz (só equalizar, nunca retocar), ferramentas de edição
+- [Sessão 2026-11-24](project_sessao_20261124.md) — status, 43 casos p/ autorização da doutora, teste de luz (igualar tom de pele), obra-app: Cheque c/ vencimento + Itaú Amanda
+- [git pull antes de mexer](feedback_git_pull_antes.md) — PC e Mac: sempre pull antes de editar/deployar (obra-app estava 6 commits atrás)
