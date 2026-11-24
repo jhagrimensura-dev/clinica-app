@@ -60,3 +60,4 @@
 - [Sessão 2026-11-21](project_sessao_20261121.md) — Início integração Meta Ads API p/ diagnosticar gestor (R$15k/mês), passo a passo token System User, voz pt, extensão Chrome
 - [⚠️ Token Meta expira 2027-01-20](project_token_meta_expira.md) — AVISAR usuário a partir de 2027-01-15 para renovar
 - [Dados de pacientes fora do repo](feedback_dados_pacientes.md) — nunca gravar nomes/fotos/avaliações de pacientes em memory/ ou scripts/ (vai pro GitHub)
+- [Sessão 2026-11-24](project_sessao_20261124.md) — status geral pedido pelo usuário; pendências do 21/11 seguem abertas
